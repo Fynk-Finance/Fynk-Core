@@ -10,3 +10,10 @@ saveExact: true
 allowBuilds:
   '@parcel/watcher': false
   unrs-resolver: false
+  # Install-time telemetry ping pulled in by a tooling dependency. Never needed.
+  '@scarf/scarf': false
+# openapi-typescript 7.13 declares TypeScript 5 as its peer. It generates correctly with the
+# TypeScript 6 of Expo SDK 58 (checked by `make generate`), see docs/adr/0001-stack.md.
+peerDependencyRules:
+  allowedVersions:
+    openapi-typescript>typescript: '6'

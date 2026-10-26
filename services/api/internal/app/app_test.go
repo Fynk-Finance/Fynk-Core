@@ -161,3 +161,18 @@ func TestNewRouterRejectsDuplicateModules(t *testing.T) {
 		t.Fatal("expected an error for a duplicate module")
 	}
 }
+
+func TestGeneratedHealthPathsArePublicAndAnswerFromTheContract(t *testing.T) {
+	srv := newServer(t, nil)
+	for _, m := range All(Deps{}) {
+		res, body := get(t, srv.URL+"/v1/"+m.Name()+"/health", "")
+		if res.status != http.StatusOK {
+			t.Errorf("%s: status %d, want 200", m.Name(), res.status)
+			continue
+		}
+		var got struct{ Module, Status string }
+		if err := json.Unmarshal(body, &got); err != nil || got.Module != m.Name() || got.Status != "stub" {
+			t.Errorf("%s: body %s", m.Name(), body)
+		}
+	}
+}
