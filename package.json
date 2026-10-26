@@ -13,6 +13,9 @@
     "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "prettier": "3.9.10"
+    "@redocly/cli": "2.71.0",
+    "@stoplight/prism-cli": "5.16.0",
+    "prettier": "3.9.10",
+    "yaml": "2.9.1"
   }
 }
