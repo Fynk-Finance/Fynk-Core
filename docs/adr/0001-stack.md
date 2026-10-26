@@ -57,6 +57,8 @@ Two packages ship prebuilt native binaries and their install scripts are denied 
 | Library | Version | Why |
 | --- | --- | --- |
 | github.com/go-chi/chi/v5 | v5.5.0 | Small `net/http` compatible router, works with oapi-codegen's strict server |
+| github.com/jackc/pgx/v5 | v5.11.0 | Postgres driver and pool (`pgxpool`), the most used native Go driver, supported by sqlc |
+| github.com/redis/go-redis/v9 | v9.23.0 | Official Redis client: nonces, rate limits, caches |
 | golangci-lint (run with `go run …@v2.15.0`) | v2.15.0 | Linters, including `depguard`, which blocks `internal/<a>` from importing `internal/<b>` except `internal/<b>/ports` |
 
 ## Added in later M0 steps
@@ -65,11 +67,9 @@ These are already decided (M0 prompt). Their exact versions are recorded here wh
 
 | Library | Step | Purpose |
 | --- | --- | --- |
-| sql.js | 2 | In-memory SQLite for the `VaultDb` test stub. WebAssembly, so there is no native build on Windows or CI |
-| pgx v5, go-redis v9 | 2 | Postgres and Redis clients |
 | Redocly CLI, openapi-typescript, openapi-fetch, Prism, oapi-codegen | 3 | Contract bundle, generated clients and servers, mock API |
 | React Navigation v7, TanStack Query, Zustand, react-native-svg, react-native-gifted-charts, react-native-reanimated, expo-font with `@expo-google-fonts/*` | 4 | App shell and design system |
-| sqlc, golang-migrate, aws-sdk-go-v2 | 2 to 5 | Queries, per-module migrations, AWS clients |
+| sqlc, golang-migrate, aws-sdk-go-v2 | 3 to 5 | Queries, per-module migrations, AWS clients |
 | Maestro | 4 or later | End to end flows in `apps/mobile/e2e/` |
 
 ## Consequences
