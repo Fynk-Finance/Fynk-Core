@@ -23,7 +23,7 @@ Sofia asked to "continue next step 5". The M0 prompt says:
 * **Step 4 fix, PR #7 (`feature/design-system-and-app-shell`).**
   * Problem: PRs #5 and #6 had been squash-merged into their stacked base branches instead of `develop`, so `develop` only had Step 4 part 1.
   * Fix: the 10 reviewed commits were replayed onto `develop`. The resulting tree is identical to the reviewed branch, and lint and tests pass (256 tests, 50 snapshots).
-  * Sofia chose to open that PR and start Step 5 at the same time.
+  * Sofia chose to open that PR and start Step 5 at the same time. #7 was merged during the session, and this branch was rebased on it without conflicts.
 * **Migrations.**
   * `internal/platform/migrate` runs golang-migrate v4.20.1 for one module at a time, in its own schema with its own `<schema>_migrations` table.
   * `internal/app/migrations.go` lists every module plus `audit` once.
@@ -79,5 +79,5 @@ Sofia asked to "continue next step 5". The M0 prompt says:
 
 ## Next step
 
-* Merge PR #7, then this PR.
+* Review and merge this PR (owners of M1, M13, M14 and M16 review their placeholders).
 * Step 6, `chore/ci-pipeline`. After it, add CI as a required check in branch protection.
