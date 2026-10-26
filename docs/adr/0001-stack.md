@@ -49,6 +49,22 @@
 | prettier (workspace root) | 3.9.10 | Code formatting |
 | sql.js | 1.15.1 | In-memory SQLite (WebAssembly) behind the `VaultDb` test stub in `src/shared/testing`, so module SQL runs in Jest without native code. 1.15.2 was published the same day and is held back by pnpm's minimum release age policy |
 | @types/sql.js | 1.4.11 | Types for sql.js |
+| @react-navigation/native | 7.5.1 | Navigation (decided: React Navigation v7). Root stack, tabs and `fynk://` deep links |
+| @react-navigation/native-stack | 7.21.0 | Native stack for pushed screens and full-screen flows |
+| @react-navigation/bottom-tabs | 7.21.0 | The four main tabs, drawn by the custom `TabBar` of the design |
+| react-native-screens | 4.30.0 | Native screen containers required by React Navigation |
+| react-native-safe-area-context | 5.10.1 | Safe area insets for headers and the tab bar |
+| react-native-svg | 15.16.0 | Icons, logo, illustrations and charts copied from the design SVG |
+| react-native-reanimated | 4.7.1 | Design animations (shine, step fill, skeleton pulse) on the UI thread, turned off with reduced motion |
+| react-native-worklets | 0.13.0 | Required by Reanimated 4. Jest uses Reanimated's own resolver (`jest.config.js`) |
+| react-native-gifted-charts | 1.4.81 | Line chart (decided library). The donut is drawn with react-native-svg because gifted-charts cannot draw the design's rounded, separated arcs |
+| expo-linear-gradient | 58.0.3 | Gradient peer that react-native-gifted-charts needs |
+| expo-font | 58.0.10 | Loads the design fonts before the first screen |
+| @expo-google-fonts/plus-jakarta-sans | 0.4.2 | Body font, weights 400 to 700, imported per weight so only those files are bundled |
+| @expo-google-fonts/space-grotesk | 0.4.1 | Heading font, weights 500 and 700 |
+| @expo-google-fonts/ibm-plex-mono | 0.4.1 | Money font, weights 500 and 600 |
+| expo-system-ui | 58.0.6 | Applies `userInterfaceStyle: light` on Android (the design is light only) |
+| @tanstack/react-query | 5.104.5 | Async server state (decided). No background refetch, see `src/app/queryClient.ts`. 5.105.0 was a few hours old and is held back by the release age policy |
 | openapi-fetch | 0.17.0 | Typed fetch client built on the generated `paths` types. Small, no runtime codegen, lets the client add headers and retry once after a token refresh |
 | openapi-typescript | 7.13.0 | Generates `src/shared/api/schema.gen.ts` from the bundled contract. It declares TypeScript 5 as its peer. It generates correctly with TypeScript 6, so `pnpm-workspace.yaml` allows it (`peerDependencyRules`) |
 
@@ -81,9 +97,9 @@ These are already decided (M0 prompt). Their exact versions are recorded here wh
 
 | Library | Step | Purpose |
 | --- | --- | --- |
-| React Navigation v7, TanStack Query, Zustand, react-native-svg, react-native-gifted-charts, react-native-reanimated, expo-font with `@expo-google-fonts/*` | 4 | App shell and design system |
+| Zustand | when a module first needs small UI state | Decided for small UI state. Not added yet because nothing in the shell needs it |
 | sqlc, golang-migrate, aws-sdk-go-v2 | 5 or the module that first needs them | Queries, per-module migrations, AWS clients |
-| Maestro | 4 or later | End to end flows in `apps/mobile/e2e/` |
+| Maestro | installed on the developer machine | `make e2e` runs `apps/mobile/e2e/*.yaml`. It is a CLI, not a package dependency |
 
 ## Consequences
 
