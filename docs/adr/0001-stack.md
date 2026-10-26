@@ -47,6 +47,8 @@
 | @types/jest | 30.0.0 | Jest types (TypeScript 6 no longer loads them automatically, so `tsconfig.json` lists them) |
 | @testing-library/react-native | 14.1.0 | Component tests. v14 makes `render` async: tests use `await render(...)` |
 | prettier (workspace root) | 3.9.10 | Code formatting |
+| sql.js | 1.15.1 | In-memory SQLite (WebAssembly) behind the `VaultDb` test stub in `src/shared/testing`, so module SQL runs in Jest without native code. 1.15.2 was published the same day and is held back by pnpm's minimum release age policy |
+| @types/sql.js | 1.4.11 | Types for sql.js |
 
 The aliases `@shared/*` and `@modules/*` are declared once in `tsconfig.json`. Metro reads them from there (Expo's built-in tsconfig paths support), and Jest maps them in `jest.config.js`. No Babel alias plugin is needed.
 
