@@ -6,7 +6,7 @@ Personal finance app for Colombia, built under the Open Finance rules. Universit
 * Module prompts, shared contracts, phases and gates: [`docs/modules/`](docs/modules/)
 * Design source: [`docs/design/README.md`](docs/design/README.md)
 * Stack and pinned versions: [`docs/adr/0001-stack.md`](docs/adr/0001-stack.md)
-* Local stack (Postgres, Redis, Keycloak, API, Banco Demo, Caddy): `docs/local-dev.md`, added in M0 Step 5
+* Local stack (Postgres, Redis, Keycloak, API, Banco Demo, Caddy): [`docs/local-dev.md`](docs/local-dev.md)
 
 ## Layout
 
@@ -29,6 +29,7 @@ Requirements: Node 22.20 or newer, pnpm through corepack, Go 1.27 (the exact too
 corepack enable pnpm
 make install
 make lint test
+make dev        # local stack in Docker, see docs/local-dev.md
 ```
 
 `make help` lists every target.
