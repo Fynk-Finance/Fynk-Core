@@ -81,8 +81,9 @@ dev: ## Start the local stack with docker compose and run migrations
 migrate: ## Run the Postgres migrations of every backend module
 	@echo "make migrate is added in M0 Step 5 (feature/local-dev-stack)."; exit 1
 
-e2e: ## Run the Maestro end to end flows in apps/mobile/e2e
-	@echo "make e2e is added once the first Maestro flow exists (M0 Step 4 or later)."; exit 1
+e2e: ## Run the Maestro flows in apps/mobile/e2e on the connected device or emulator
+	@command -v maestro >/dev/null 2>&1 || { echo "Maestro is not installed: https://maestro.mobile.dev (needs Java 17+)"; exit 1; }
+	maestro test apps/mobile/e2e
 
 history: ## Join the session logs into docs/history/PROJECT_HISTORY.md
 	node scripts/build-history.mjs
