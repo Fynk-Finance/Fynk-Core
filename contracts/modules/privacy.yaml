@@ -1,0 +1,31 @@
+# Contract of the privacy module, owned by M13 (see CODEOWNERS).
+# Only M13 edits this file. Shared parts come from ../openapi.yaml.
+# The health path below is M0's example so generation works from day one.
+# Replace it with the real endpoints of docs/modules/00-shared-contracts.md, section 5.
+openapi: 3.1.0
+info:
+  title: Fynk API · Privacy
+  version: 0.1.0
+tags:
+  - name: privacy
+    description: 'Privacy policy, my data and deletion requests (M13).'
+paths:
+  /privacy/health:
+    get:
+      tags: [privacy]
+      operationId: privacyHealth
+      summary: Example health path of the privacy module
+      description: Public. Answers while the module is a stub. Removed when the module adds real endpoints.
+      security: []
+      responses:
+        '200':
+          description: The module is mounted.
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ModuleHealth'
+              example:
+                module: privacy
+                status: stub
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'

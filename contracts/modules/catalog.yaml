@@ -1,0 +1,31 @@
+# Contract of the catalog module, owned by M9 (see CODEOWNERS).
+# Only M9 edits this file. Shared parts come from ../openapi.yaml.
+# The health path below is M0's example so generation works from day one.
+# Replace it with the real endpoints of docs/modules/00-shared-contracts.md, section 5.
+openapi: 3.1.0
+info:
+  title: Fynk API · Catalog
+  version: 0.1.0
+tags:
+  - name: catalog
+    description: 'Shared merchant catalog with cancellation links (M9).'
+paths:
+  /catalog/health:
+    get:
+      tags: [catalog]
+      operationId: catalogHealth
+      summary: Example health path of the catalog module
+      description: Public. Answers while the module is a stub. Removed when the module adds real endpoints.
+      security: []
+      responses:
+        '200':
+          description: The module is mounted.
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ModuleHealth'
+              example:
+                module: catalog
+                status: stub
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'

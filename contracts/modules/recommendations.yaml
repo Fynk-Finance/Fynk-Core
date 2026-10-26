@@ -1,0 +1,31 @@
+# Contract of the recommendations module, owned by M11 (see CODEOWNERS).
+# Only M11 edits this file. Shared parts come from ../openapi.yaml.
+# The health path below is M0's example so generation works from day one.
+# Replace it with the real endpoints of docs/modules/00-shared-contracts.md, section 5.
+openapi: 3.1.0
+info:
+  title: Fynk API · Recommendations
+  version: 0.1.0
+tags:
+  - name: recommendations
+    description: 'AI recommendations from the aggregate snapshot (M11).'
+paths:
+  /recommendations/health:
+    get:
+      tags: [recommendations]
+      operationId: recommendationsHealth
+      summary: Example health path of the recommendations module
+      description: Public. Answers while the module is a stub. Removed when the module adds real endpoints.
+      security: []
+      responses:
+        '200':
+          description: The module is mounted.
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ModuleHealth'
+              example:
+                module: recommendations
+                status: stub
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'

@@ -1,0 +1,35 @@
+# Redocly CLI config for the Fynk API contract (owned by M0).
+# `make generate` lints the joined contract with it. Any error fails CI.
+extends:
+  - recommended
+
+rules:
+  # The local API and the Prism mock are real servers, not placeholders.
+  no-server-example.com: off
+  # Real endpoints must answer at least one 4xx. The example health paths do not, so warn only.
+  operation-4xx-response: warn
+
+  # Generation needs these: one Go server per tag, typed TypeScript per operation.
+  operation-operationId: error
+  operation-operationId-unique: error
+  operation-tag-defined: error
+  tag-description: error
+  operation-summary: error
+  security-defined: error
+  no-invalid-media-type-examples: error
+
+  # CLAUDE.md, Security rules: personal data and tokens never travel in URLs or query strings.
+  rule/no-sensitive-query-params:
+    subject:
+      type: Parameter
+      property: name
+    where:
+      - subject:
+          type: Parameter
+          property: in
+        assertions:
+          const: query
+    assertions:
+      notPattern: /(token|password|secret|email|correo|cedula|account|cuenta|card|tarjeta|amount|monto|code|codigo)/i
+    message: Personal data, amounts and tokens never go in query strings (CLAUDE.md, Security rules). Send them in the request body.
+    severity: error

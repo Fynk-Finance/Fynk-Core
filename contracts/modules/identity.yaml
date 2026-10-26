@@ -1,0 +1,31 @@
+# Contract of the identity module, owned by M1 (see CODEOWNERS).
+# Only M1 edits this file. Shared parts come from ../openapi.yaml.
+# The health path below is M0's example so generation works from day one.
+# Replace it with the real endpoints of docs/modules/00-shared-contracts.md, section 5.
+openapi: 3.1.0
+info:
+  title: Fynk API · Identity
+  version: 0.1.0
+tags:
+  - name: identity
+    description: "Profile and linked devices (M1). Login and passwords are Keycloak's."
+paths:
+  /identity/health:
+    get:
+      tags: [identity]
+      operationId: identityHealth
+      summary: Example health path of the identity module
+      description: Public. Answers while the module is a stub. Removed when the module adds real endpoints.
+      security: []
+      responses:
+        '200':
+          description: The module is mounted.
+          content:
+            application/json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/ModuleHealth'
+              example:
+                module: identity
+                status: stub
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
