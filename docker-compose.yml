@@ -1,0 +1,177 @@
+# Fynk local stack (owned by M0). Start it with `make dev`; ports and users are in docs/local-dev.md.
+# Values come from .env (copied from .env.example, fake values only). Every image is pinned.
+name: fynk
+
+x-required: &required
+  POSTGRES_USER: ${POSTGRES_USER:?missing in .env, run make dev or copy .env.example}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?missing in .env}
+  POSTGRES_DB: ${POSTGRES_DB:?missing in .env}
+
+x-api-env: &api-env
+  APP_ENV: local
+  PORT: '8080'
+  DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+  REDIS_URL: redis://redis:6379/0
+  KEYCLOAK_ISSUER: http://localhost:8081/realms/fynk
+  KEYCLOAK_AUDIENCE: fynk-api
+
+services:
+  postgres:
+    image: postgres:16.15-alpine
+    environment:
+      <<: *required
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?missing in .env}
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/dev/postgres-init.sh:/docker-entrypoint-initdb.d/10-keycloak.sh:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7.4.11-alpine
+    ports:
+      - '127.0.0.1:6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  # Realms fynk (M1) and banco-demo (M16) are imported from services/keycloak/realms/ on the
+  # first start. After changing a realm file, reset with `docker compose down -v`.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: ['start-dev', '--import-realm']
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?missing in .env}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:?missing in .env}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?missing in .env}
+      KC_HEALTH_ENABLED: 'true'
+      # Tokens carry the issuer http://localhost:8081/realms/<realm>; containers still reach
+      # Keycloak on keycloak:8080.
+      KC_HOSTNAME: http://localhost:8081
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: 'true'
+      # Read by the ${...} placeholders of the realm files.
+      FYNK_DEMO_USER_PASSWORD: ${FYNK_DEMO_USER_PASSWORD:?missing in .env}
+      BANCO_DEMO_USER_PASSWORD: ${BANCO_DEMO_USER_PASSWORD:?missing in .env}
+    ports:
+      - '8081:8080'
+    volumes:
+      - ./services/keycloak/realms:/opt/keycloak/data/import:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # The image has no curl: ask the management port with bash.
+      test:
+        - CMD
+        - bash
+        - -c
+        - "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q UP <&3"
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+
+  # Catches every email Keycloak sends (verification, password reset). UI on localhost:8025.
+  mailpit:
+    image: axllent/mailpit:v1.31.6
+    ports:
+      - '8025:8025'
+
+  # One-off: make migrate runs it (profile tools keeps it out of a plain `docker compose up`).
+  migrate:
+    image: fynk-api:local
+    profiles: ['tools']
+    entrypoint: ['/migrate']
+    command: ['up']
+    environment: *api-env
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: ./services/api
+    image: fynk-api:local
+    environment: *api-env
+    ports:
+      - '8080:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # PLACEHOLDER of M16 until the real Banco Demo exists. Its internal mTLS listener (9443) is
+  # not published, as in AWS: only Caddy reaches it.
+  bank-simulator:
+    build: ./services/bank-simulator
+    image: fynk-bank-simulator:local
+    environment:
+      BANK_TLS_CERT: /certs/bank-simulator.crt
+      BANK_TLS_KEY: /certs/bank-simulator.key
+      BANK_CLIENT_CA: /certs/ca.crt
+    ports:
+      - '8082:8443'
+    volumes:
+      - ./certs/ca.crt:/certs/ca.crt:ro
+      - ./certs/bank-simulator.crt:/certs/bank-simulator.crt:ro
+      - ./certs/bank-simulator.key:/certs/bank-simulator.key:ro
+
+  # Egress with mTLS towards the banks (M14). Only the certificates it needs are mounted.
+  caddy:
+    image: caddy:2.11.7-alpine
+    command: ['caddy', 'run', '--config', '/etc/caddy/Caddyfile', '--adapter', 'caddyfile']
+    ports:
+      - '8443:8443'
+    volumes:
+      - ./services/caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - ./certs/ca.crt:/certs/ca.crt:ro
+      - ./certs/caddy.crt:/certs/caddy.crt:ro
+      - ./certs/caddy.key:/certs/caddy.key:ro
+      - ./certs/fynk-client.crt:/certs/fynk-client.crt:ro
+      - ./certs/fynk-client.key:/certs/fynk-client.key:ro
+    depends_on:
+      bank-simulator:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '-q',
+          '-O',
+          '/dev/null',
+          '--no-check-certificate',
+          'https://127.0.0.1:8443/healthz',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # One-off: make certs runs it. Creates the local CA and certificates in certs/ with step-cli.
+  certs:
+    image: smallstep/step-cli:0.31.0
+    profiles: ['tools']
+    user: '${HOST_UID:-1000}:${HOST_GID:-1000}'
+    entrypoint: ['/bin/sh', '/scripts/certs.sh']
+    environment:
+      FORCE: ${FORCE:-}
+      HOME: /tmp
+      STEPPATH: /tmp/step
+    volumes:
+      - ./certs:/certs
+      - ./scripts/dev/certs.sh:/scripts/certs.sh:ro
+
+volumes:
+  postgres-data:

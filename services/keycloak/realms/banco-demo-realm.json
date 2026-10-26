@@ -1,0 +1,35 @@
+{
+  "realm": "banco-demo",
+  "displayName": "Banco Demo, banco simulado (local placeholder by M0, M16 replaces it)",
+  "enabled": true,
+  "loginWithEmailAllowed": true,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "bruteForceProtected": true,
+  "defaultSignatureAlgorithm": "PS256",
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-reply@bancodemo.local",
+    "fromDisplayName": "Banco Demo (simulado)"
+  },
+  "users": [
+    {
+      "username": "cliente.demo@bancodemo.local",
+      "email": "cliente.demo@bancodemo.local",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Cliente",
+      "lastName": "Demo",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${BANCO_DEMO_USER_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

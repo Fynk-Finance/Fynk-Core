@@ -90,6 +90,25 @@ Install scripts denied in `pnpm-workspace.yaml` (`allowBuilds`): `@parcel/watche
 | github.com/oapi-codegen/oapi-codegen/v2 (Go `tool` directive) | v2.8.1 | Strict chi server per module, filtered by tag (`internal/<module>/http/oapi-codegen.yaml`). Run with `go tool oapi-codegen` |
 | github.com/oapi-codegen/runtime | v1.8.0 | Runtime helpers the generated servers import |
 | golangci-lint (run with `go run …@v2.15.0`) | v2.15.0 | Linters, including `depguard`, which blocks `internal/<a>` from importing `internal/<b>` except `internal/<b>/ports` |
+| github.com/golang-migrate/migrate/v4 | v4.20.1 | Per-module Postgres migrations (decided). `internal/platform/migrate` runs each module in its own schema with its own `<schema>_migrations` table, through the `pgx/v5` driver and the `iofs` source, so modules embed their SQL |
+| github.com/jackc/pgx/v5/stdlib | v5.11.0 (part of pgx) | `database/sql` adapter that golang-migrate needs. The API itself keeps using `pgxpool` |
+
+The bank simulator placeholder (`services/bank-simulator`, M16) uses only the Go standard library.
+
+## Local stack (`docker-compose.yml`)
+
+Images are pinned to exact versions. A version is taken only once it has been out for a few days, like the pnpm release age rule.
+
+| Image | Version | Why |
+| --- | --- | --- |
+| postgres | 16.15-alpine | Postgres 16, as in the M0 prompt and RDS. One database `fynk` (one schema per module) plus `keycloak` |
+| redis | 7.4.11-alpine | Redis 7 (nonces, rate limits, caches). 7.4.12 was released the same day and is held back |
+| quay.io/keycloak/keycloak | 26.8.1 | Login (decided). `start-dev --import-realm` imports `services/keycloak/realms/*.json`. M1 later builds its own image with the theme from the same version |
+| axllent/mailpit | v1.31.6 | Catches the emails Keycloak sends locally (named in the M1 prompt). v1.32.0 was 4 days old |
+| caddy | 2.11.7-alpine | mTLS egress towards the banks (decided, M14). Uses `tls_trust_pool`, the current syntax |
+| smallstep/step-cli | 0.31.0 | `make certs`: creates the local CA and certificates inside Docker, so nobody installs mkcert or step |
+| golang | 1.27.3-bookworm | Build stage of the API and bank simulator images, same Go as `go.mod` |
+| gcr.io/distroless/static-debian12 | nonroot, pinned by digest | Runtime image: no shell, no package manager, non-root user. The tag moves, so the digest is pinned |
 
 ## Added in later M0 steps
 
@@ -98,7 +117,7 @@ These are already decided (M0 prompt). Their exact versions are recorded here wh
 | Library | Step | Purpose |
 | --- | --- | --- |
 | Zustand | when a module first needs small UI state | Decided for small UI state. Not added yet because nothing in the shell needs it |
-| sqlc, golang-migrate, aws-sdk-go-v2 | 5 or the module that first needs them | Queries, per-module migrations, AWS clients |
+| sqlc, aws-sdk-go-v2 | the module that first needs them | Queries, AWS clients |
 | Maestro | installed on the developer machine | `make e2e` runs `apps/mobile/e2e/*.yaml`. It is a CLI, not a package dependency |
 
 ## Consequences

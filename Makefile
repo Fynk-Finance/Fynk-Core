@@ -10,10 +10,13 @@ CONTRACT      := contracts/dist/openapi.json
 API_MODULES   := $(basename $(notdir $(wildcard contracts/modules/*.yaml)))
 REDOCLY       := REDOCLY_TELEMETRY=off REDOCLY_SUPPRESS_UPDATE_NOTICE=true pnpm exec redocly
 
+# Local stack (docker-compose.yml, docs/local-dev.md).
+COMPOSE       := docker compose
+
 .DEFAULT_GOAL := help
 
 .PHONY: help install lint lint-mobile lint-go test test-mobile test-go test-scripts \
-        generate generate-contract generate-go generate-ts mock-api dev migrate e2e history
+        generate generate-contract generate-go generate-ts mock-api dev down migrate certs e2e history
 
 help: ## List the available targets
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -75,11 +78,32 @@ generate-ts: generate-contract ## TypeScript types for openapi-fetch (apps/mobil
 mock-api: generate-contract ## Serve the contract with Prism on port 4010 (example responses)
 	pnpm exec prism mock $(CONTRACT) --port 4010 --host 0.0.0.0
 
-dev: ## Start the local stack with docker compose and run migrations
-	@echo "make dev is added in M0 Step 5 (feature/local-dev-stack)."; exit 1
+dev: generate-go ## Start the local stack with docker compose and run migrations (docs/local-dev.md)
+	@docker info >/dev/null 2>&1 || { echo "Docker is not running. Start Docker Desktop and run make dev again."; exit 1; }
+	@[ -f .env ] || { cp .env.example .env; echo "Created .env from .env.example (fake local values)."; }
+	@[ -f certs/ca.crt ] || $(MAKE) --no-print-directory certs
+	$(COMPOSE) up -d --wait postgres redis keycloak mailpit
+	@$(MAKE) --no-print-directory migrate
+	$(COMPOSE) up -d --build --wait api bank-simulator caddy
+	@echo ""
+	@echo "Fynk local stack is up:"
+	@echo "  API            http://localhost:8080/healthz"
+	@echo "  Keycloak       http://localhost:8081  (admin console: /admin)"
+	@echo "  Mailpit        http://localhost:8025"
+	@echo "  Banco Demo     http://localhost:8082/healthz  (placeholder)"
+	@echo "  Caddy egress   https://localhost:8443  (mTLS towards the bank)"
+	@echo "Stop it with make down. Ports and seeded users: docs/local-dev.md"
 
-migrate: ## Run the Postgres migrations of every backend module
-	@echo "make migrate is added in M0 Step 5 (feature/local-dev-stack)."; exit 1
+down: ## Stop the local stack (keeps the data; docker compose down -v also deletes it)
+	$(COMPOSE) down
+
+migrate: generate-go ## Run the Postgres migrations of every backend module (one schema and table each)
+	$(COMPOSE) build api
+	$(COMPOSE) run --rm migrate
+
+certs: ## Create the local CA and the mTLS certificates in certs/ (FORCE=1 recreates them)
+	@mkdir -p certs
+	HOST_UID=$$(id -u) HOST_GID=$$(id -g) FORCE=$(FORCE) $(COMPOSE) run --rm certs
 
 e2e: ## Run the Maestro flows in apps/mobile/e2e on the connected device or emulator
 	@command -v maestro >/dev/null 2>&1 || { echo "Maestro is not installed: https://maestro.mobile.dev (needs Java 17+)"; exit 1; }
