@@ -1,9 +1,12 @@
 // The design tokens must match the table in docs/design/README.md, the team's written source.
-import { readFileSync } from 'fs';
-import { join } from 'path';
-
 import { colors, fontSize, fonts, radius, size } from './tokens';
 
+// Node modules through Jest, so the app keeps no Node types (it runs on React Native).
+declare const __dirname: string;
+const { readFileSync } = jest.requireActual<{
+  readFileSync(path: string, encoding: string): string;
+}>('fs');
+const { join } = jest.requireActual<{ join(...parts: string[]): string }>('path');
 const README = readFileSync(join(__dirname, '../../../../../docs/design/README.md'), 'utf8');
 
 function readmeColors(): Record<string, string> {
