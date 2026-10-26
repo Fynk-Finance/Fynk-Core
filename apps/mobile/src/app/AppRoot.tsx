@@ -1,20 +1,48 @@
+import { DefaultTheme, NavigationContainer, type Theme } from '@react-navigation/native';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-// Placeholder root. Step 4 of M0 replaces it with the navigation and the design system.
-export function AppRoot() {
-  return (
-    <View style={styles.container} testID="app-root">
-      <Text>Fynk</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+import { colors, useAppFonts } from '@shared/ui';
+
+import { buildLinking } from './linking';
+import { RootNavigator } from './navigation/RootNavigator';
+import { createQueryClient } from './queryClient';
+
+const theme: Theme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: colors.primary,
+    background: colors.background,
+    card: colors.background,
+    text: colors.textPrimary,
+    border: colors.border,
+  },
+};
+
+const linking = buildLinking();
+if (__DEV__ && linking.config) {
+  // fynk://dev/catalogo opens the design system catalog in development builds.
+  linking.config.screens = { ...linking.config.screens, DevCatalog: 'dev/catalogo' };
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export function AppRoot() {
+  const fontsReady = useAppFonts();
+  const [queryClient] = useState(createQueryClient);
+
+  // The native splash screen stays until the design fonts are ready.
+  if (!fontsReady) return null;
+
+  return (
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <NavigationContainer theme={theme} linking={linking}>
+          <StatusBar style="light" />
+          <RootNavigator />
+        </NavigationContainer>
+      </QueryClientProvider>
+    </SafeAreaProvider>
+  );
+}
