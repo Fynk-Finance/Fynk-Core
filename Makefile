@@ -47,7 +47,11 @@ test-go: generate-go ## go test on every Go module that has code
 	@set -e; for m in $(GO_MODULES); do \
 	  if [ -z "$$(find $$m -name '*.go' -print -quit)" ]; then echo "skip $$m (no Go files yet)"; continue; fi; \
 	  echo "test $$m"; \
-	  (cd $$m && go test ./...); \
+	  if [ "$$OS" = "Windows_NT" ]; then \
+	    (cd $$m && { go test ./... || { echo "retrying once (Windows can lock the test binary: unlinkat)"; go test ./...; }; }); \
+	  else \
+	    (cd $$m && go test ./...); \
+	  fi; \
 	done
 
 generate: generate-contract generate-go generate-ts ## Lint and bundle the contract, generate the Go servers and the TypeScript types
