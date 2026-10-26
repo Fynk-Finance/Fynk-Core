@@ -49,10 +49,20 @@
 | prettier (workspace root) | 3.9.10 | Code formatting |
 | sql.js | 1.15.1 | In-memory SQLite (WebAssembly) behind the `VaultDb` test stub in `src/shared/testing`, so module SQL runs in Jest without native code. 1.15.2 was published the same day and is held back by pnpm's minimum release age policy |
 | @types/sql.js | 1.4.11 | Types for sql.js |
+| openapi-fetch | 0.17.0 | Typed fetch client built on the generated `paths` types. Small, no runtime codegen, lets the client add headers and retry once after a token refresh |
+| openapi-typescript | 7.13.0 | Generates `src/shared/api/schema.gen.ts` from the bundled contract. It declares TypeScript 5 as its peer. It generates correctly with TypeScript 6, so `pnpm-workspace.yaml` allows it (`peerDependencyRules`) |
 
 The aliases `@shared/*` and `@modules/*` are declared once in `tsconfig.json`. Metro reads them from there (Expo's built-in tsconfig paths support), and Jest maps them in `jest.config.js`. No Babel alias plugin is needed.
 
-Two packages ship prebuilt native binaries and their install scripts are denied in `pnpm-workspace.yaml` (`allowBuilds`): `@parcel/watcher` and `unrs-resolver`.
+Install scripts denied in `pnpm-workspace.yaml` (`allowBuilds`): `@parcel/watcher` and `unrs-resolver` (they ship prebuilt binaries), and `@scarf/scarf` (an install-time telemetry ping pulled in by a tooling dependency).
+
+## Contract tooling (workspace root)
+
+| Library | Version | Why |
+| --- | --- | --- |
+| @redocly/cli | 2.71.0 | Lints (`redocly.yaml`) and bundles the contract into `contracts/dist/openapi.json`. 2.71.1 was published the same day and is held back by the minimum release age policy. Its `join` command was tried and not used: it drops the root `servers` and `security` |
+| @stoplight/prism-cli | 5.16.0 | `make mock-api`: serves the contract on port 4010 with its examples, so mobile modules work before the backend exists |
+| yaml | 2.9.1 | Parser used by `scripts/contract-root.mjs`, which builds the root that references every module file |
 
 ## Backend (`services/api`)
 
@@ -61,6 +71,8 @@ Two packages ship prebuilt native binaries and their install scripts are denied 
 | github.com/go-chi/chi/v5 | v5.5.0 | Small `net/http` compatible router, works with oapi-codegen's strict server |
 | github.com/jackc/pgx/v5 | v5.11.0 | Postgres driver and pool (`pgxpool`), the most used native Go driver, supported by sqlc |
 | github.com/redis/go-redis/v9 | v9.23.0 | Official Redis client: nonces, rate limits, caches |
+| github.com/oapi-codegen/oapi-codegen/v2 (Go `tool` directive) | v2.8.1 | Strict chi server per module, filtered by tag (`internal/<module>/http/oapi-codegen.yaml`). Run with `go tool oapi-codegen` |
+| github.com/oapi-codegen/runtime | v1.8.0 | Runtime helpers the generated servers import |
 | golangci-lint (run with `go run …@v2.15.0`) | v2.15.0 | Linters, including `depguard`, which blocks `internal/<a>` from importing `internal/<b>` except `internal/<b>/ports` |
 
 ## Added in later M0 steps
@@ -69,9 +81,8 @@ These are already decided (M0 prompt). Their exact versions are recorded here wh
 
 | Library | Step | Purpose |
 | --- | --- | --- |
-| Redocly CLI, openapi-typescript, openapi-fetch, Prism, oapi-codegen | 3 | Contract bundle, generated clients and servers, mock API |
 | React Navigation v7, TanStack Query, Zustand, react-native-svg, react-native-gifted-charts, react-native-reanimated, expo-font with `@expo-google-fonts/*` | 4 | App shell and design system |
-| sqlc, golang-migrate, aws-sdk-go-v2 | 3 to 5 | Queries, per-module migrations, AWS clients |
+| sqlc, golang-migrate, aws-sdk-go-v2 | 5 or the module that first needs them | Queries, per-module migrations, AWS clients |
 | Maestro | 4 or later | End to end flows in `apps/mobile/e2e/` |
 
 ## Consequences
