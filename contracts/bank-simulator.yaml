@@ -1,0 +1,8 @@
+# Banco Demo contract, owned by M16 (see docs/modules/M16-banco-demo.md).
+# M0 created this stub only so the file exists. M16 step 1 fills it.
+openapi: 3.1.0
+info:
+  title: Banco Demo API (simulado)
+  version: 0.1.0
+  description: Simulated Open Finance data provider. Not a real bank.
+paths: {}

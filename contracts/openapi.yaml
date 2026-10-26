@@ -1,0 +1,15 @@
+# Root of the Fynk API contract (owned by M0).
+# Each backend module writes its paths in contracts/modules/<module>.yaml.
+# This file only references them. M0 Step 3 adds the references, the bearerAuth
+# security scheme and the shared Problem schema, and `make generate` bundles it.
+openapi: 3.1.0
+info:
+  title: Fynk API
+  version: 0.1.0
+  description: Backend API of Fynk. Every path lives under /v1.
+servers:
+  - url: http://localhost:8080/v1
+    description: Local API
+  - url: http://localhost:4010
+    description: Prism mock (make mock-api)
+paths: {}
