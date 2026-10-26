@@ -1,0 +1,12 @@
+packages:
+  - apps/*
+
+# Metro (React Native bundler) needs a flat node_modules.
+nodeLinker: hoisted
+# Every dependency is pinned to an exact version (see docs/adr/0001-stack.md).
+saveExact: true
+# Install scripts are off unless listed here. These two ship prebuilt binaries,
+# so their scripts are not needed.
+allowBuilds:
+  '@parcel/watcher': false
+  unrs-resolver: false

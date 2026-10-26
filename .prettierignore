@@ -1,0 +1,19 @@
+# Prettier checks code and config only. Docs, design source and generated files are left alone.
+node_modules/
+pnpm-lock.yaml
+coverage/
+dist/
+contracts/dist/
+**/*.gen.ts
+apps/mobile/android/
+apps/mobile/ios/
+apps/mobile/.expo/
+docs/
+*.md
+.claude/
+.github/
+.idea/
+services/
+infra/
+# Kit file, kept as delivered.
+scripts/build-history.mjs

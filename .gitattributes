@@ -1,0 +1,9 @@
+# The team works on Windows and macOS: keep LF in the repository.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ttf binary
+*.otf binary
+*.cmd text eol=crlf
+*.bat text eol=crlf

@@ -1,9 +1,45 @@
-# Default ignored files
-/shelf/
-/.idea/workspace.xml
-# Editor-based HTTP Client requests
-/httpRequests/
-# Datasource local storage ignored files
-/dataSources/
-/dataSources.local.xml
-.idea/*
+# Generated code (rebuilt by `make generate` locally and in CI, never committed)
+contracts/dist/
+**/*.gen.go
+apps/mobile/src/shared/api/schema.gen.ts
+
+# Secrets and local environment
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+*.jks
+certs/
+**/secrets/
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+bin/
+build/
+coverage/
+*.tsbuildinfo
+*.test
+*.out
+
+# Expo and React Native
+.expo/
+apps/mobile/android/
+apps/mobile/ios/
+.metro-health-check*
+
+# Terraform local state (M14 uses a remote backend)
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Editors and OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
