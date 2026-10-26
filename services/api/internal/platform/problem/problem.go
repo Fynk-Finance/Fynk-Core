@@ -4,6 +4,7 @@ package problem
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 )
 
@@ -53,4 +54,26 @@ func NotFound(w http.ResponseWriter, _ *http.Request) {
 // MethodNotAllowed answers 405.
 func MethodNotAllowed(w http.ResponseWriter, _ *http.Request) {
 	Write(w, New(http.StatusMethodNotAllowed, "method_not_allowed", "Method not allowed", ""))
+}
+
+// RequestError answers 400 for a request the generated server could not parse (bad parameter
+// or body). The parse error is not echoed: it can contain what the client sent.
+// Use it as ChiServerOptions.ErrorHandlerFunc and StrictHTTPServerOptions.RequestErrorHandlerFunc.
+func RequestError(w http.ResponseWriter, _ *http.Request, _ error) {
+	Write(w, New(http.StatusBadRequest, "bad_request", "Bad request",
+		"The request does not match the API contract."))
+}
+
+// ResponseErrorHandler returns a StrictHTTPServerOptions.ResponseErrorHandlerFunc: it logs the
+// error and answers 500 without details. Errors must never contain personal data, because
+// the redacting logger only masks known keys, not text inside messages.
+func ResponseErrorHandler(log *slog.Logger) func(http.ResponseWriter, *http.Request, error) {
+	if log == nil {
+		log = slog.Default()
+	}
+	return func(w http.ResponseWriter, r *http.Request, err error) {
+		log.ErrorContext(r.Context(), "handler failed", "path", r.URL.Path, "error", err)
+		Write(w, New(http.StatusInternalServerError, "internal", "Internal error",
+			"Something went wrong. Try again later."))
+	}
 }

@@ -1,9 +1,13 @@
 package problem
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -73,5 +77,40 @@ func TestHelpers(t *testing.T) {
 				t.Fatalf("got %d %+v", rec.Code, p)
 			}
 		})
+	}
+}
+
+func TestRequestErrorDoesNotEchoTheError(t *testing.T) {
+	rec := httptest.NewRecorder()
+	RequestError(rec, httptest.NewRequest(http.MethodGet, "/x", nil), errors.New("bad email a@b.co"))
+	p := decode(t, rec)
+	if rec.Code != 400 || p.Code != "bad_request" {
+		t.Fatalf("got %d %+v", rec.Code, p)
+	}
+	if strings.Contains(rec.Body.String(), "a@b.co") {
+		t.Fatalf("body echoes the error: %s", rec.Body.String())
+	}
+}
+
+func TestResponseErrorHandlerLogsAndHidesTheError(t *testing.T) {
+	var logs bytes.Buffer
+	h := ResponseErrorHandler(slog.New(slog.NewJSONHandler(&logs, nil)))
+	rec := httptest.NewRecorder()
+	h(rec, httptest.NewRequest(http.MethodGet, "/v1/me", nil), errors.New("db timeout"))
+
+	p := decode(t, rec)
+	if rec.Code != 500 || p.Code != "internal" || strings.Contains(rec.Body.String(), "db timeout") {
+		t.Fatalf("got %d %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(logs.String(), "db timeout") {
+		t.Fatalf("error not logged: %s", logs.String())
+	}
+}
+
+func TestResponseErrorHandlerWithoutALogger(t *testing.T) {
+	rec := httptest.NewRecorder()
+	ResponseErrorHandler(nil)(rec, httptest.NewRequest(http.MethodGet, "/", nil), errors.New("x"))
+	if rec.Code != 500 {
+		t.Fatalf("status = %d", rec.Code)
 	}
 }
