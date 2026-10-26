@@ -1,24 +1,24 @@
 # Fynk code owners. Replace each placeholder with that person's GitHub username:
-# @owner-daniel (Daniel Palacios), @owner-sofia (Sofia Nicolle Ariza), @owner-juan-carlos (Juan Carlos Leal),
+# @owner-daniel (Daniel Palacios), @sofia-ariza-783 (Sofia Nicolle Ariza, done), @owner-juan-carlos (Juan Carlos Leal),
 # @owner-juan-pablo (Juan Pablo Contreras), @owner-karol (Karol), @owner-julian (Julián Castiblanco)
 # The last matching line wins, so specific paths go after general ones.
 
-*                                          @owner-sofia
+*                                          @sofia-ariza-783
 
 # Session logs: anyone adds their own file, no owner review needed
 /docs/history/sessions/
 
 # M0 Foundations
-/apps/mobile/src/app/                      @owner-sofia
-/apps/mobile/src/shared/                   @owner-sofia
-/services/api/cmd/                         @owner-sofia
-/services/api/internal/app/                @owner-sofia
-/services/api/internal/platform/           @owner-sofia
-/contracts/openapi.yaml                    @owner-sofia
-/docs/modules/00-shared-contracts.md       @owner-sofia
-/CLAUDE.md                                 @owner-sofia
-/.claude/                                  @owner-sofia
-/.github/                                  @owner-sofia
+/apps/mobile/src/app/                      @sofia-ariza-783
+/apps/mobile/src/shared/                   @sofia-ariza-783
+/services/api/cmd/                         @sofia-ariza-783
+/services/api/internal/app/                @sofia-ariza-783
+/services/api/internal/platform/           @sofia-ariza-783
+/contracts/openapi.yaml                    @sofia-ariza-783
+/docs/modules/00-shared-contracts.md       @sofia-ariza-783
+/CLAUDE.md                                 @sofia-ariza-783
+/.claude/                                  @sofia-ariza-783
+/.github/                                  @sofia-ariza-783
 
 # M1 Identity
 /apps/mobile/src/modules/identity/         @owner-daniel
@@ -32,7 +32,7 @@
 /contracts/modules/backup.yaml             @owner-daniel
 
 # M3 Onboarding
-/apps/mobile/src/modules/onboarding/       @owner-sofia
+/apps/mobile/src/modules/onboarding/       @sofia-ariza-783
 
 # M4 Consents
 /apps/mobile/src/modules/consents/         @owner-juan-carlos
@@ -45,10 +45,10 @@
 /contracts/modules/bank.yaml               @owner-juan-carlos
 
 # M6 Accounts
-/apps/mobile/src/modules/accounts/         @owner-sofia
+/apps/mobile/src/modules/accounts/         @sofia-ariza-783
 
 # M7 Transactions
-/apps/mobile/src/modules/transactions/     @owner-sofia
+/apps/mobile/src/modules/transactions/     @sofia-ariza-783
 
 # M8 Savings goals
 /apps/mobile/src/modules/savings/          @owner-karol
