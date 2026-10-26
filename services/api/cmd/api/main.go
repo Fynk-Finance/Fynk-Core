@@ -1,4 +1,4 @@
-// Command api is the Fynk backend.
+// Command api is the Fynk backend. "api healthcheck" checks a running instance (Docker).
 package main
 
 import (
@@ -22,6 +22,9 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		os.Exit(healthcheck(context.Background(), http.DefaultClient, healthURL(os.Getenv("PORT"))))
+	}
 	logger := fynklog.New(os.Stdout, slog.LevelInfo)
 	if err := run(logger); err != nil {
 		logger.Error("api stopped", "error", err)

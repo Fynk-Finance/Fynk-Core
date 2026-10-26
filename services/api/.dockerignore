@@ -1,0 +1,8 @@
+# Keep the build context small and free of local secrets.
+.env
+.env.*
+**/*_test.go
+**/testdata
+bin/
+coverage*
+*.md
