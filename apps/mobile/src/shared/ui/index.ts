@@ -2,4 +2,5 @@
 export * from './tokens';
 export { useAppFonts, fontAssets } from './fonts';
 export { uiStrings } from './strings.es-CO';
+export * from './icons';
 export * from './components/AppText';
