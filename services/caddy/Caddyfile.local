@@ -1,0 +1,43 @@
+# Local Caddy egress: PLACEHOLDER added by M0 for docker compose. Owned by M14, which keeps
+# it in line with the AWS Caddyfile (docs/modules/M14-infrastructure.md).
+#
+# The API calls https://caddy:8443/<provider>/... and Caddy adds the Fynk client certificate
+# (mTLS) towards the bank. Certificates come from make certs (certs/, local CA only).
+{
+	admin off
+	auto_https off
+}
+
+:8443 {
+	tls /certs/caddy.crt /certs/caddy.key
+
+	# Access log in JSON without headers or query strings (no tokens or personal data in logs).
+	log {
+		output stdout
+		format filter {
+			wrap json
+			request>headers delete
+			request>tls delete
+			request>uri regexp \?.* ""
+			resp_headers delete
+		}
+	}
+
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	handle_path /banco-demo/* {
+		reverse_proxy https://bank-simulator:9443 {
+			transport http {
+				tls_client_auth /certs/fynk-client.crt /certs/fynk-client.key
+				tls_trust_pool file /certs/ca.crt
+				tls_server_name bank-simulator
+			}
+		}
+	}
+
+	handle {
+		respond 404
+	}
+}
