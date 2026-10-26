@@ -2113,69 +2113,6 @@ exports[`design system catalog Card / Primary matches its snapshot 1`] = `
         />
       </RNSVGGroup>
     </RNSVGSvgView>
-    <View
-      collapsable={false}
-      jestAnimatedProps={
-        {
-          "value": {},
-        }
-      }
-      jestAnimatedStyle={
-        {
-          "value": {
-            "transform": [
-              {
-                "translateX": 0,
-              },
-              {
-                "skewX": "-18deg",
-              },
-            ],
-          },
-        }
-      }
-      jestInlineStyle={
-        [
-          {
-            "backgroundColor": "#FFFFFF",
-            "position": "absolute",
-            "top": -40,
-          },
-          {
-            "height": 176,
-            "left": -100,
-            "opacity": 0.18,
-            "width": 40,
-          },
-        ]
-      }
-      pointerEvents="none"
-      style={
-        [
-          {
-            "backgroundColor": "#FFFFFF",
-            "position": "absolute",
-            "top": -40,
-          },
-          {
-            "height": 176,
-            "left": -100,
-            "opacity": 0.18,
-            "width": 40,
-          },
-          {
-            "transform": [
-              {
-                "translateX": 0,
-              },
-              {
-                "skewX": "-18deg",
-              },
-            ],
-          },
-        ]
-      }
-    />
   </View>
   <Text
     style={
@@ -7766,7 +7703,7 @@ exports[`design system catalog StepProgress / Step1 matches its snapshot 1`] = `
               "value": {
                 "transform": [
                   {
-                    "scaleX": 0,
+                    "scaleX": 1,
                   },
                 ],
               },
@@ -7809,7 +7746,7 @@ exports[`design system catalog StepProgress / Step1 matches its snapshot 1`] = `
               {
                 "transform": [
                   {
-                    "scaleX": 0,
+                    "scaleX": 1,
                   },
                 ],
               },
@@ -8202,7 +8139,7 @@ exports[`design system catalog StepProgress / Step3 matches its snapshot 1`] = `
               "value": {
                 "transform": [
                   {
-                    "scaleX": 0,
+                    "scaleX": 1,
                   },
                 ],
               },
@@ -8245,7 +8182,7 @@ exports[`design system catalog StepProgress / Step3 matches its snapshot 1`] = `
               {
                 "transform": [
                   {
-                    "scaleX": 0,
+                    "scaleX": 1,
                   },
                 ],
               },

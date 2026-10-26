@@ -3,6 +3,13 @@ import { act, render, screen } from '@testing-library/react-native';
 
 import { storyGroups } from './index';
 
+// Snapshots are taken with reduced motion on, so every animation sits still and the output is
+// the same on every run. The animations themselves are tested in components/motion.test.tsx.
+jest.mock('react-native-reanimated', () => {
+  const actual = jest.requireActual<{ default: unknown }>('react-native-reanimated');
+  return { __esModule: true, ...actual, default: actual.default, useReducedMotion: () => true };
+});
+
 // The chart library renders hundreds of internal views. The snapshot keeps the props Fynk passes.
 jest.mock('react-native-gifted-charts', () => ({
   LineChart: (props: object) => {
