@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>App azul y verde · Suscripción · Pago</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;background:#ffffff;color:#0f2233}
+a{color:#177fa9}
+.vscroll{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;overflow-x:hidden;overflow-y:auto}
+.vscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.btn{cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.cta{cursor:pointer;transition:background-color .2s ease}
+.cta:hover{background-color:#279dcc !important}
+.cta-lime:hover{background-color:#93cc26 !important}
+.cta:hover .cta-arrow{transform:translateX(4px)}
+.cta-arrow{transition:transform .25s ease}
+.opt{cursor:pointer;transition:border-color .2s ease,background-color .2s ease}
+.opt:hover{border-color:#bfe6f6 !important}
+.btn:focus-visible,.cta:focus-visible,.link:focus-visible,.opt:focus-visible{outline:3px solid #b5e5f7;outline-offset:2px}
+@keyframes sb-shine{0%,62%{transform:translateX(0)}86%,100%{transform:translateX(620px)}}
+.shine{animation:sb-shine 8s ease-in-out infinite 1.5s}
+@keyframes sb-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes sb-float2{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+@keyframes sb-tw{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+@keyframes sb-spin{to{transform:rotate(360deg)}}
+@keyframes sb-rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes sb-pop{0%{transform:scale(0) rotate(-14deg)}60%{transform:scale(1.12) rotate(3deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes sb-burst{0%{opacity:0;transform:translate(0,0) scale(.2)}15%{opacity:1}70%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(var(--sc)) rotate(var(--r))}}
+@keyframes sb-sheet{from{transform:translateY(105%)}to{transform:translateY(0)}}
+@keyframes sb-pulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.18);opacity:0}}
+.fl1{animation:sb-float 5s ease-in-out infinite}
+.fl2{animation:sb-float2 6s ease-in-out infinite .6s}
+.fl3{animation:sb-float 4.4s ease-in-out infinite 1.2s}
+.tw{transform-box:fill-box;transform-origin:center;animation:sb-tw 2.6s ease-in-out infinite}
+.spin{transform-box:fill-box;transform-origin:center;animation:sb-spin 40s linear infinite}
+.spin-fast{transform-origin:center;animation:sb-spin 1.1s linear infinite}
+.rise{animation:sb-rise .5s ease-out both .1s}
+.pop{animation:sb-pop .6s cubic-bezier(.34,1.56,.64,1) both .1s}
+.bit{position:absolute;left:50%;top:50%;width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);animation:sb-burst var(--du) cubic-bezier(.15,.7,.3,1) both var(--d)}
+.sheet-up{animation:sb-sheet .55s cubic-bezier(.22,1,.36,1) both .9s}
+.pulse{transform-origin:center;animation:sb-pulse 2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.shine,.fl1,.fl2,.fl3,.tw,.spin,.spin-fast,.rise,.pop,.sheet-up,.pulse{animation:none}.bit{display:none}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: #ffffff; position: relative; overflow: hidden">
+<div style="position: absolute; left: 0; top: 0; width: 390px; height: 176px; background-color: #2fa8d8; border-radius: 0 0 24px 24px; overflow: hidden">
+<svg width="390" height="176" viewBox="0 0 390 176" aria-hidden="true" style="position: absolute; top: 0; left: 0">
+<rect x="250" y="-80" width="210" height="210" rx="48" fill="#3ab3e3"></rect>
+<rect x="312" y="-28" width="104" height="104" rx="26" fill="#47b6e2"></rect>
+<rect x="-60" y="96" width="140" height="140" rx="34" fill="#279dcc"></rect>
+<g class="shine"><rect x="-140" y="-40" width="50" height="256" fill="#ffffff" fill-opacity=".12" transform="skewX(-18)"></rect></g>
+</svg>
+<div style="position: relative; padding: 20px 20px 0; color: #ffffff">
+<a class="btn" href="VerdeSubPromo.dc.html" aria-label="Volver" style="width: 44px; height: 44px; box-sizing: border-box; border-radius: 14px; background-color: rgba(255, 255, 255, 0.2); color: #ffffff; display: flex; align-items: center; justify-content: center; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></a>
+<h1 style="margin: 16px 0 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; line-height: 32px; letter-spacing: -0.01em">Completa tu suscripción</h1>
+<p style="margin: 4px 0 0; font-size: 14px; line-height: 20px; font-weight: 500; opacity: 0.92">Elige tu plan y cómo quieres pagar.</p>
+</div>
+</div>
+<div class="vscroll" style="position: absolute; left: 0; top: 176px; width: 390px; height: 512px; box-sizing: border-box; padding: 20px 20px 20px; display: flex; flex-direction: column; gap: 18px">
+
+<section aria-labelledby="pg-plan" style="display: flex; flex-direction: column; gap: 10px; flex-shrink: 0">
+<h2 id="pg-plan" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; line-height: 22px">Plan</h2>
+<div role="radiogroup" aria-labelledby="pg-plan" style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{plans}}" as="p" hint-placeholder-count="2">
+<button class="opt" type="button" role="radio" aria-checked="{{p.checked}}" onClick="{{p.pick}}" style="position: relative; display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; border: 1.5px solid {{p.border}}; background-color: {{p.bg}}; font-family: inherit; color: #0f2233; text-align: left">
+<span aria-hidden="true" style="width: 22px; height: 22px; box-sizing: border-box; border-radius: 999px; border: 2px solid {{p.dot}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><span style="width: 10px; height: 10px; border-radius: 999px; background-color: {{p.dotFill}}"></span></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 700">{{p.name}}</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">{{p.note}}</span></span>
+<span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; line-height: 20px; font-weight: 600">{{p.price}}</span><span style="font-size: 11px; line-height: 14px; color: #5e7482">{{p.per}}</span></span>
+<sc-if value="{{p.badge}}" hint-placeholder-val="{{false}}"><span style="position: absolute; top: -10px; right: 14px; height: 20px; padding: 0 8px; border-radius: 999px; background-color: #a8e03a; color: #ffffff; font-size: 10px; line-height: 20px; font-weight: 700; letter-spacing: .04em">AHORRA 17 %</span></sc-if>
+</button>
+</sc-for>
+</div>
+</section>
+
+<section aria-labelledby="pg-met" style="display: flex; flex-direction: column; gap: 10px; flex-shrink: 0">
+<h2 id="pg-met" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; line-height: 22px">Método de pago</h2>
+<div role="radiogroup" aria-labelledby="pg-met" style="border-radius: 18px; background-color: #ffffff; border: 1px solid #e4f5fc; box-shadow: 0 8px 20px -14px rgba(15, 34, 51, 0.25); padding: 4px 6px">
+<sc-for list="{{methods}}" as="m" hint-placeholder-count="4">
+<button class="opt" type="button" role="radio" aria-checked="{{m.checked}}" onClick="{{m.pick}}" style="width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 8px; border: none; border-radius: 12px; background-color: {{m.bg}}; font-family: inherit; color: #0f2233; text-align: left">
+<span style="width: 38px; height: 38px; border-radius: 11px; background-color: {{m.tileBg}}; color: {{m.tileFg}}; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 12px; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.icon}}"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 14px; line-height: 19px; font-weight: 600">{{m.name}}</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">{{m.desc}}</span></span>
+<span aria-hidden="true" style="width: 22px; height: 22px; box-sizing: border-box; border-radius: 999px; border: 2px solid {{m.dot}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><span style="width: 10px; height: 10px; border-radius: 999px; background-color: {{m.dotFill}}"></span></span>
+</button>
+</sc-for>
+</div>
+</section>
+
+<section aria-labelledby="pg-res" style="border-radius: 18px; background-color: #ffffff; border: 1px solid #e4f5fc; box-shadow: 0 8px 20px -14px rgba(15, 34, 51, 0.25); padding: 16px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0">
+<h2 id="pg-res" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; line-height: 22px">Resumen</h2>
+<div style="display: flex; justify-content: space-between; font-size: 14px; line-height: 19px"><span style="color: #5e7482">Fynk Plus · {{planName}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">{{price}}</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 14px; line-height: 19px"><span style="color: #5e7482">Se renueva el</span><span style="font-weight: 600">{{renew}}</span></div>
+<div style="display: flex; justify-content: space-between; align-items: baseline; padding-top: 10px; border-top: 1px solid #edf1f4"><span style="font-size: 15px; font-weight: 700">Total hoy</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 600; color: #177fa9">{{price}}</span></div>
+</section>
+
+<p style="margin: 0; display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; background-color: #f4fbfe; font-size: 12px; line-height: 18px; color: #5e7482; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1f93c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg><span>El pago se hace en una pasarela de pagos certificada. Fynk no ve ni guarda los datos de tu tarjeta o de tu cuenta.</span></p>
+</div>
+
+<div style="position: absolute; left: 0; bottom: 0; width: 390px; height: 156px; box-sizing: border-box; padding: 14px 20px 30px; background-color: #ffffff; border-top: 1px solid #edf1f4; display: flex; flex-direction: column; gap: 12px">
+<label for="pg-ok" style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; font-size: 12px; line-height: 18px; color: #0f2233">
+<input id="pg-ok" type="checkbox" checked="" style="flex-shrink: 0; width: 20px; height: 20px; margin: 0; accent-color: #2fa8d8; cursor: pointer">
+<span>Acepto la renovación automática y los <a class="link" href="#" style="font-weight: 700; text-decoration: none">Términos de la suscripción</a>. Puedes cancelar cuando quieras.</span>
+</label>
+<a class="cta" href="VerdeSubProcesando.dc.html" style="box-sizing: border-box; text-decoration: none; height: 56px; width: 100%; border: none; border-radius: 16px; font-family: inherit; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; flex-shrink: 0; background-color: #2fa8d8; color: #ffffff"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4"></path></svg><span>Pagar {{price}}</span></a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+const st = this.state || {};
+const plan = st.plan || 'anual', met = st.met || 'card';
+const P = [
+  { key: 'anual', name: 'Anual', note: 'Equivale a $12.417 al mes', price: '$149.000', per: 'al año', renew: '24 oct 2027', badge: true },
+  { key: 'mensual', name: 'Mensual', note: 'Sin compromiso de permanencia', price: '$14.900', per: 'al mes', renew: '24 nov 2026', badge: false }
+];
+const M = [
+  { key: 'card', name: 'Tarjeta de crédito o débito', desc: 'Visa, Mastercard y otras', icon: 'M2 6h20v12H2zM2 10h20M6 15h4' },
+  { key: 'pse', name: 'PSE', desc: 'Débito desde tu cuenta bancaria', icon: 'M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18M12 3l9 5H3z' },
+  { key: 'nequi', name: 'Nequi', desc: 'Aprueba el pago en tu app', icon: 'M7 2h10v20H7zM11 18h2' },
+  { key: 'daviplata', name: 'Daviplata', desc: 'Aprueba el pago en tu app', icon: 'M7 2h10v20H7zM11 18h2' }
+];
+const go = (patch) => this.setState(Object.assign({ plan: plan, met: met }, patch));
+const p = P.find(x => x.key === plan);
+return {
+  plans: P.map(x => { const on = x.key === plan; return Object.assign({}, x, { checked: on ? 'true' : 'false', border: on ? '#2fa8d8' : '#e4f5fc', bg: on ? '#f4fbfe' : '#ffffff', dot: on ? '#2fa8d8' : '#c9d6de', dotFill: on ? '#2fa8d8' : 'transparent', pick: () => go({ plan: x.key }) }); }),
+  methods: M.map(x => { const on = x.key === met; return Object.assign({}, x, { checked: on ? 'true' : 'false', bg: on ? '#f4fbfe' : 'transparent', tileBg: on ? '#2fa8d8' : '#e4f5fc', tileFg: on ? '#ffffff' : '#1f93c2', dot: on ? '#2fa8d8' : '#c9d6de', dotFill: on ? '#2fa8d8' : 'transparent', pick: () => go({ met: x.key }) }); }),
+  planName: p.name, price: p.price, renew: p.renew
+};
+}
+}
+</script>
+</body>
+</html>

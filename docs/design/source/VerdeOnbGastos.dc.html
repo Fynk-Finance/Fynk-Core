@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>App azul y verde · Configuración · 5 Gastos recurrentes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;background:#ffffff;color:#0f2233}
+a{color:#177fa9}
+.field{transition:border-color .2s ease,background-color .2s ease}
+.field:focus-within{border-color:#2fa8d8 !important;background-color:#ffffff !important}
+.field input{border:none;outline:none;background:transparent;font-family:inherit;font-size:15px;color:#0f2233;flex-grow:1;min-width:0;height:100%}
+.field input::placeholder{color:#8a9ba6}
+.vscroll{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;overflow-x:hidden;overflow-y:auto}
+.vscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.btn{cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.cta{cursor:pointer;transition:background-color .2s ease}
+.cta:hover{background-color:#279dcc !important}
+.cta:hover .cta-arrow{transform:translateX(4px)}
+.cta-arrow{transition:transform .25s ease}
+.btn:focus-visible,.cta:focus-visible,.link:focus-visible,.chip:focus-visible{outline:3px solid #b5e5f7;outline-offset:2px}
+.chip{cursor:pointer;transition:background-color .2s ease}
+.row{transition:background-color .15s ease}
+.del{cursor:pointer;transition:background-color .2s ease,color .2s ease}
+.del:hover{background-color:#fdeaea !important;color:#c0392b !important}
+.del:focus-visible{outline:3px solid #b5e5f7;outline-offset:2px}
+@keyframes ob-shine{0%,62%{transform:translateX(0)}86%,100%{transform:translateX(620px)}}
+.shine{animation:ob-shine 8s ease-in-out infinite 1.5s}
+@keyframes ob-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.rise{animation:ob-rise .5s ease-out both .05s}
+@media (prefers-reduced-motion:reduce){.shine,.rise{animation:none}}
+@keyframes pb-fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.pb-fill{transform-origin:left center;animation:pb-fill .6s cubic-bezier(.65,0,.35,1) both .15s}
+@keyframes pb-pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(0)}18%{opacity:1}65%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(var(--sc)) rotate(var(--r))}}
+.pb-p{position:absolute;top:0;width:var(--s);height:var(--s);display:block;overflow:visible;animation:pb-pop var(--du) cubic-bezier(.15,.7,.3,1) both var(--d)}
+@media (prefers-reduced-motion:reduce){.pb-fill{animation:none}.pb-p{display:none}}
+
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: #ffffff; position: relative; overflow: hidden">
+<div style="position: absolute; left: 0; top: 0; width: 390px; height: 206px; background-color: #2fa8d8; border-radius: 0 0 24px 24px; overflow: hidden; z-index: 0">
+<svg width="390" height="206" viewBox="0 0 390 206" aria-hidden="true" style="position: absolute; top: 0; left: 0">
+<rect x="250" y="-80" width="210" height="210" rx="48" fill="#3ab3e3"></rect>
+<rect x="312" y="-28" width="104" height="104" rx="26" fill="#47b6e2"></rect>
+<rect x="-60" y="116" width="150" height="150" rx="36" fill="#279dcc"></rect>
+<g class="shine"><rect x="-140" y="-40" width="50" height="286" fill="#ffffff" fill-opacity=".12" transform="skewX(-18)"></rect></g>
+</svg>
+<div style="position: relative; padding: 20px 20px 0; display: flex; flex-direction: column; color: #ffffff">
+<header style="display: flex; align-items: center; justify-content: space-between; height: 44px">
+<a class="btn" href="VerdeOnbMetas.dc.html" aria-label="Volver al paso anterior" style="width: 44px; height: 44px; box-sizing: border-box; border-radius: 14px; background-color: rgba(255, 255, 255, 0.2); color: #ffffff; display: flex; align-items: center; justify-content: center; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></a>
+<span style="font-size: 13px; line-height: 18px; font-weight: 700; letter-spacing: 0.02em">Paso 5 de 5</span>
+<a class="link" href="VerdeOnbOmitir.dc.html" style="min-width: 44px; height: 44px; display: flex; align-items: center; justify-content: flex-end; font-size: 14px; font-weight: 700; color: #ffffff; text-decoration: none">Omitir</a>
+</header>
+<div role="progressbar" aria-label="Progreso de la configuración" aria-valuemin="1" aria-valuemax="5" aria-valuenow="5" style="display: flex; gap: 6px; margin-top: 16px"><span style="flex: 1; height: 6px; border-radius: 999px; background-color: #a8e03a"></span><span style="flex: 1; height: 6px; border-radius: 999px; background-color: #a8e03a"></span><span style="flex: 1; height: 6px; border-radius: 999px; background-color: #a8e03a"></span><span style="flex: 1; height: 6px; border-radius: 999px; background-color: #a8e03a"></span><span style="flex: 1; height: 6px; border-radius: 999px; background-color: rgba(255, 255, 255, 0.32); position: relative"><span class="pb-fill" style="position: absolute; inset: 0; border-radius: 999px; background-color: #a8e03a"></span><span aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 3px; height: 0"><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 54%; --dx: 2px; --dy: 41px; --s: 8px; --d: 0.51s; --du: 0.94s; --r: 102deg; --sc: 1.16"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#d4f294"></path></svg><span class="pb-p" style="left: 93%; --dx: -25px; --dy: 28px; --s: 9px; --d: 0.69s; --du: 0.92s; --r: 175deg; --sc: 0.72; border-radius: 3px; background-color: #ffffff"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 28%; --dx: -17px; --dy: 40px; --s: 7px; --d: 0.32s; --du: 0.87s; --r: 115deg; --sc: 1.03"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#ffffff"></path></svg><span class="pb-p" style="left: 99%; --dx: -5px; --dy: -28px; --s: 10px; --d: 0.7s; --du: 0.8s; --r: -170deg; --sc: 1.09; border-radius: 3px; background-color: #a8e03a"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 38%; --dx: 6px; --dy: -14px; --s: 8px; --d: 0.47s; --du: 0.78s; --r: 100deg; --sc: 0.7"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#ffffff"></path></svg><span class="pb-p" style="left: 68%; --dx: 34px; --dy: -27px; --s: 8px; --d: 0.6s; --du: 1.02s; --r: -15deg; --sc: 0.81; border-radius: 2px; background-color: #a8e03a"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 66%; --dx: -10px; --dy: -32px; --s: 12px; --d: 0.62s; --du: 0.97s; --r: -178deg; --sc: 0.85"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#ffffff"></path></svg><span class="pb-p" style="left: 40%; --dx: 24px; --dy: -41px; --s: 8px; --d: 0.39s; --du: 0.85s; --r: 40deg; --sc: 1.0; border-radius: 2px; background-color: #d4f294"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 74%; --dx: -24px; --dy: 32px; --s: 14px; --d: 0.62s; --du: 0.81s; --r: 71deg; --sc: 1.14"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#a8e03a"></path></svg><span class="pb-p" style="left: 60%; --dx: 30px; --dy: 41px; --s: 9px; --d: 0.62s; --du: 1.04s; --r: 63deg; --sc: 1.17; border-radius: 3px; background-color: #ffffff"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 99%; --dx: -11px; --dy: 39px; --s: 9px; --d: 0.77s; --du: 0.76s; --r: -91deg; --sc: 0.83"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#ffffff"></path></svg><span class="pb-p" style="left: 24%; --dx: 3px; --dy: -23px; --s: 10px; --d: 0.31s; --du: 0.8s; --r: 170deg; --sc: 1.05; border-radius: 3px; background-color: #a8e03a"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 74%; --dx: 34px; --dy: -22px; --s: 8px; --d: 0.59s; --du: 0.93s; --r: 17deg; --sc: 1.07"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#a8e03a"></path></svg><span class="pb-p" style="left: 28%; --dx: 9px; --dy: -23px; --s: 9px; --d: 0.35s; --du: 0.89s; --r: 23deg; --sc: 1.07; border-radius: 3px; background-color: #ffffff"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 77%; --dx: -25px; --dy: -34px; --s: 12px; --d: 0.69s; --du: 0.95s; --r: 34deg; --sc: 0.7"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#a8e03a"></path></svg><span class="pb-p" style="left: 66%; --dx: 13px; --dy: 20px; --s: 7px; --d: 0.55s; --du: 0.76s; --r: 74deg; --sc: 0.78; border-radius: 2px; background-color: #d4f294"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 49%; --dx: 32px; --dy: -37px; --s: 14px; --d: 0.54s; --du: 0.84s; --r: 115deg; --sc: 1.19"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#ffffff"></path></svg><span class="pb-p" style="left: 74%; --dx: -16px; --dy: -34px; --s: 9px; --d: 0.68s; --du: 0.8s; --r: 92deg; --sc: 0.95; border-radius: 3px; background-color: #ffffff"></span></span></span></div>
+<h1 style="margin: 22px 0 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px; line-height: 34px; letter-spacing: -0.01em">Gastos recurrentes</h1>
+<p style="margin: 6px 0 0; font-size: 14px; line-height: 20px; font-weight: 500; opacity: 0.92">Registra pagos fijos y suscripciones para no olvidarlos.</p>
+</div>
+</div>
+
+<div class="vscroll rise" style="position: absolute; left: 0; top: 206px; width: 390px; height: 538px; box-sizing: border-box; padding: 22px 20px 16px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; justify-content: space-between"><h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; line-height: 24px">Gastos fijos</h2></div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 16px; background-color: #ffffff; border: 1px solid #e4f5fc; box-shadow: 0 6px 16px -12px rgba(15, 34, 51, 0.2)">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex-grow: 1"><span style="font-size: 14px; line-height: 19px; font-weight: 600">Arriendo</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Mensual · día 5</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; white-space: nowrap">$1.200.000</span>
+<button class="del" type="button" aria-label="Eliminar Arriendo" title="Eliminar" style="width: 32px; height: 32px; padding: 0; border: none; border-radius: 10px; background-color: #f4f6f8; color: #8a9ba6; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 16px; background-color: #ffffff; border: 1px solid #e4f5fc; box-shadow: 0 6px 16px -12px rgba(15, 34, 51, 0.2)">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0M12 20h.01"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex-grow: 1"><span style="font-size: 14px; line-height: 19px; font-weight: 600">Internet y celular</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Mensual · día 12</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; white-space: nowrap">$95.000</span>
+<button class="del" type="button" aria-label="Eliminar Internet y celular" title="Eliminar" style="width: 32px; height: 32px; padding: 0; border: none; border-radius: 10px; background-color: #f4f6f8; color: #8a9ba6; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; justify-content: space-between"><h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; line-height: 24px">Suscripciones</h2></div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 16px; background-color: #ffffff; border: 1px solid #e4f5fc; box-shadow: 0 6px 16px -12px rgba(15, 34, 51, 0.2)">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M4 4h16v12H4zM8 20h8M12 16v4"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex-grow: 1"><span style="font-size: 14px; line-height: 19px; font-weight: 600">Streaming</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Mensual · día 18</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; white-space: nowrap">$38.900</span>
+<button class="del" type="button" aria-label="Eliminar Streaming" title="Eliminar" style="width: 32px; height: 32px; padding: 0; border: none; border-radius: 10px; background-color: #f4f6f8; color: #8a9ba6; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 16px; background-color: #ffffff; border: 1px solid #e4f5fc; box-shadow: 0 6px 16px -12px rgba(15, 34, 51, 0.2)">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M6 6v12M18 6v12M3 9v6M21 9v6M6 12h12"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex-grow: 1"><span style="font-size: 14px; line-height: 19px; font-weight: 600">Gimnasio</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Mensual · día 1</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; white-space: nowrap">$120.000</span>
+<button class="del" type="button" aria-label="Eliminar Gimnasio" title="Eliminar" style="width: 32px; height: 32px; padding: 0; border: none; border-radius: 10px; background-color: #f4f6f8; color: #8a9ba6; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+</div>
+</div>
+<a class="btn" href="#" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px; box-sizing: border-box; border-radius: 16px; border: 1.5px dashed #2fa8d8; background-color: #f4fbfe; color: #177fa9; font-size: 15px; font-weight: 700; text-decoration: none; flex-shrink: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 5v14M5 12h14"></path></svg>Agregar gasto o suscripción</a>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: 16px; background-color: #e4f5fc; flex-shrink: 0">
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; line-height: 18px; font-weight: 600">Total mensual</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Te avisaremos 2 días antes de cada pago</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 17px; line-height: 22px; font-weight: 600; color: #177fa9; white-space: nowrap">$1.453.900</span>
+</div>
+</div>
+
+<div style="position: absolute; left: 0; bottom: 0; width: 390px; height: 100px; box-sizing: border-box; padding: 14px 20px 30px; background-color: #ffffff; border-top: 1px solid #edf1f4">
+<a class="cta" href="VerdeOnbListo.dc.html" style="box-sizing: border-box; text-decoration: none; height: 56px; width: 100%; border-radius: 16px; background-color: #2fa8d8; color: #ffffff; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px">
+<span>Terminar configuración</span>
+<svg class="cta-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

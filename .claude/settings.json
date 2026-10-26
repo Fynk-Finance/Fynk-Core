@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git push origin main *)",
+      "Bash(git push origin develop *)",
+      "Bash(git push origin HEAD:main *)",
+      "Bash(git push origin HEAD:develop *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean -fdx *)",
+      "Bash(gh pr merge *)",
+      "Bash(terraform apply *)",
+      "Bash(terraform destroy *)",
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(*.pem)",
+      "Read(*.key)",
+      "Read(**/secrets/**)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Edit(/CLAUDE.md)",
+      "Edit(/.claude/**)",
+      "Edit(/.github/**)",
+      "Edit(/contracts/openapi.yaml)",
+      "Edit(/docs/modules/00-shared-contracts.md)",
+      "Edit(/apps/mobile/src/app/**)",
+      "Edit(/apps/mobile/src/shared/**)",
+      "Edit(/services/api/cmd/**)",
+      "Edit(/services/api/internal/app/**)",
+      "Edit(/services/api/internal/platform/**)",
+      "Edit(/Makefile)",
+      "Edit(/docker-compose.yml)"
+    ]
+  }
+}

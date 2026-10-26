@@ -1,0 +1,703 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Billetera.dc.html": {
+      "h": 844,
+      "title": "Billetera",
+      "w": 390,
+      "x": 2225,
+      "y": 0
+    },
+    "Dashboard-cyan-oscuro.dc.html": {
+      "h": 844,
+      "title": "Dashboard · Cyan · Oscuro",
+      "w": 390,
+      "x": 5232,
+      "y": -907
+    },
+    "Dashboard-cyan.dc.html": {
+      "h": 844,
+      "title": "Dashboard · Cyan",
+      "w": 390,
+      "x": 923,
+      "y": -907
+    },
+    "Dashboard-oscuro.dc.html": {
+      "h": 844,
+      "title": "Dashboard · Oscuro",
+      "w": 390,
+      "x": 5232,
+      "y": 0
+    },
+    "Dashboard-ujog-cyan-oscuro.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative · Cyan · Oscuro",
+      "w": 390,
+      "x": 5666,
+      "y": -907
+    },
+    "Dashboard-ujog-cyan-rzb3.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative · Cyan copy",
+      "w": 390,
+      "x": 1791,
+      "y": -907
+    },
+    "Dashboard-ujog-cyan.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative · Cyan",
+      "w": 390,
+      "x": 1357,
+      "y": -907
+    },
+    "Dashboard-ujog-jldc.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative details",
+      "w": 390,
+      "x": 1791,
+      "y": 0
+    },
+    "Dashboard-ujog-navflecha.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative · Navbar flecha",
+      "w": 390,
+      "x": 2659,
+      "y": 0
+    },
+    "Dashboard-ujog-oscuro.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative · Oscuro",
+      "w": 390,
+      "x": 5666,
+      "y": 0
+    },
+    "Dashboard-ujog.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative",
+      "w": 390,
+      "x": 1357,
+      "y": 0
+    },
+    "Dashboard.dc.html": {
+      "h": 844,
+      "title": "Dashboard",
+      "w": 390,
+      "x": 923,
+      "y": 0
+    },
+    "DashboardLimon-oscuro.dc.html": {
+      "h": 844,
+      "title": "Dashboard · Azul y verde limón · Oscuro",
+      "w": 390,
+      "x": 5232,
+      "y": 1928
+    },
+    "DashboardLimon.dc.html": {
+      "h": 844,
+      "title": "Dashboard · Azul y verde limón",
+      "w": 390,
+      "x": 923,
+      "y": 1928
+    },
+    "DashboardMorado-oscuro.dc.html": {
+      "h": 844,
+      "title": "Dashboard · Azul y morado · Oscuro",
+      "w": 390,
+      "x": 5232,
+      "y": 2892
+    },
+    "DashboardMorado.dc.html": {
+      "h": 844,
+      "title": "Dashboard · Azul y morado",
+      "w": 390,
+      "x": 923,
+      "y": 2892
+    },
+    "DashboardNaranja-oscuro.dc.html": {
+      "h": 844,
+      "title": "Dashboard · Azul y naranja · Oscuro",
+      "w": 390,
+      "x": 5232,
+      "y": 964
+    },
+    "DashboardNaranja.dc.html": {
+      "h": 844,
+      "title": "Dashboard · Azul y naranja",
+      "w": 390,
+      "x": 923,
+      "y": 964
+    },
+    "DashboardNegativoLimon-1twj-oscuro.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative · Azul y verde limón copy · Oscuro",
+      "w": 390,
+      "x": 6100,
+      "y": 1928
+    },
+    "DashboardNegativoLimon-navblanca.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative · Azul y verde limón · Navbar blanca",
+      "w": 404,
+      "x": 1777,
+      "y": 1928
+    },
+    "DashboardNegativoLimon-oscuro.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative · Azul y verde limón · Oscuro",
+      "w": 390,
+      "x": 5666,
+      "y": 1928
+    },
+    "DashboardNegativoLimon.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative · Azul y verde limón",
+      "w": 390,
+      "x": 1357,
+      "y": 1928
+    },
+    "DashboardNegativoMorado-oscuro.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative · Azul y morado · Oscuro",
+      "w": 390,
+      "x": 5666,
+      "y": 2892
+    },
+    "DashboardNegativoMorado.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative · Azul y morado",
+      "w": 390,
+      "x": 1357,
+      "y": 2892
+    },
+    "DashboardNegativoNaranja-oscuro.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative · Azul y naranja · Oscuro",
+      "w": 390,
+      "x": 5666,
+      "y": 964
+    },
+    "DashboardNegativoNaranja.dc.html": {
+      "h": 844,
+      "title": "Dashboard negative · Azul y naranja",
+      "w": 390,
+      "x": 1357,
+      "y": 964
+    },
+    "InicioMorado-oscuro.dc.html": {
+      "h": 844,
+      "title": "Inicio · Azul y morado · Oscuro",
+      "w": 390,
+      "x": 4309,
+      "y": 2892
+    },
+    "InicioMorado.dc.html": {
+      "h": 844,
+      "title": "Inicio · Azul y morado",
+      "w": 390,
+      "x": 0,
+      "y": 2892
+    },
+    "InicioNaranja-oscuro.dc.html": {
+      "h": 844,
+      "title": "Inicio · Azul y naranja · Oscuro",
+      "w": 390,
+      "x": 4309,
+      "y": 964
+    },
+    "InicioNaranja.dc.html": {
+      "h": 844,
+      "title": "Inicio · Azul y naranja",
+      "w": 390,
+      "x": 0,
+      "y": 964
+    },
+    "InicioPila-cyan-oscuro.dc.html": {
+      "h": 844,
+      "title": "Inicio · Pila de monedas · Cyan · Oscuro",
+      "w": 390,
+      "x": 4779,
+      "y": -907
+    },
+    "InicioPila-cyan.dc.html": {
+      "h": 844,
+      "title": "Inicio · Pila de monedas · Cyan",
+      "w": 390,
+      "x": 470,
+      "y": -907
+    },
+    "InicioPila-oscuro.dc.html": {
+      "h": 844,
+      "title": "Inicio · Pila de monedas · Oscuro",
+      "w": 390,
+      "x": 4779,
+      "y": 0
+    },
+    "InicioPila.dc.html": {
+      "h": 844,
+      "title": "Inicio · Pila de monedas",
+      "w": 390,
+      "x": 470,
+      "y": 0
+    },
+    "InicioPilaMorado-oscuro.dc.html": {
+      "h": 844,
+      "title": "Inicio · Pila · Azul y morado · Oscuro",
+      "w": 390,
+      "x": 4779,
+      "y": 2892
+    },
+    "InicioPilaMorado.dc.html": {
+      "h": 844,
+      "title": "Inicio · Pila · Azul y morado",
+      "w": 390,
+      "x": 470,
+      "y": 2892
+    },
+    "InicioPilaNaranja-oscuro.dc.html": {
+      "h": 844,
+      "title": "Inicio · Pila · Azul y naranja · Oscuro",
+      "w": 390,
+      "x": 4779,
+      "y": 964
+    },
+    "InicioPilaNaranja.dc.html": {
+      "h": 844,
+      "title": "Inicio · Pila · Azul y naranja",
+      "w": 390,
+      "x": 470,
+      "y": 964
+    },
+    "InicioPilaVerde-oscuro.dc.html": {
+      "h": 844,
+      "title": "Inicio · Pila · Azul y verde · Oscuro",
+      "w": 390,
+      "x": 4779,
+      "y": 1928
+    },
+    "InicioPilaVerde.dc.html": {
+      "h": 844,
+      "title": "Inicio · Pila · Azul y verde",
+      "w": 390,
+      "x": 470,
+      "y": 1928
+    },
+    "InicioVerde-oscuro.dc.html": {
+      "h": 844,
+      "title": "Inicio · Azul y verde · Oscuro",
+      "w": 390,
+      "x": 4309,
+      "y": 1928
+    },
+    "InicioVerde.dc.html": {
+      "h": 844,
+      "title": "Inicio · Azul y verde",
+      "w": 390,
+      "x": 0,
+      "y": 1928
+    },
+    "Main-cyan-oscuro.dc.html": {
+      "h": 844,
+      "title": "Inicio · Cyan · Oscuro",
+      "w": 390,
+      "x": 4309,
+      "y": -907
+    },
+    "Main-cyan.dc.html": {
+      "h": 844,
+      "title": "Inicio · Cyan",
+      "w": 390,
+      "x": 0,
+      "y": -907
+    },
+    "Main-oscuro.dc.html": {
+      "h": 844,
+      "title": "Inicio · Oscuro",
+      "w": 390,
+      "x": 4309,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 844,
+      "title": "Inicio",
+      "w": 390,
+      "x": 0,
+      "y": 0
+    },
+    "VerdeBilletera.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Billetera",
+      "w": 390,
+      "x": 3290,
+      "y": 0
+    },
+    "VerdeConectarBanco-37ko.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Conectar banco copy",
+      "w": 390,
+      "x": 431,
+      "y": 2200
+    },
+    "VerdeConectarBanco.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Conectar banco",
+      "w": 390,
+      "x": 0,
+      "y": 2200
+    },
+    "VerdeDashboard.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Dashboard",
+      "w": 390,
+      "x": 1410,
+      "y": 0
+    },
+    "VerdeDashboardDetalles.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Dashboard · Detalle de cuentas",
+      "w": 390,
+      "x": 1880,
+      "y": 0
+    },
+    "VerdeDetalleCuentas.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Mi cuenta",
+      "w": 390,
+      "x": 2350,
+      "y": 0
+    },
+    "VerdeInicio.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Inicio",
+      "w": 390,
+      "x": 0,
+      "y": 0
+    },
+    "VerdeInversion.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Inversión",
+      "w": 390,
+      "x": 4230,
+      "y": 0
+    },
+    "VerdeLogin.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Iniciar sesión",
+      "w": 390,
+      "x": 470,
+      "y": 0
+    },
+    "VerdeNotificaciones.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Notificaciones",
+      "w": 390,
+      "x": 2820,
+      "y": 0
+    },
+    "VerdeOnbCorreo.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Configuración · 2 Correo",
+      "w": 390,
+      "x": 1880,
+      "y": 1100
+    },
+    "VerdeOnbCuentas.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Configuración · 3 Cuentas",
+      "w": 390,
+      "x": 2350,
+      "y": 1100
+    },
+    "VerdeOnbGastos.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Configuración · 5 Gastos recurrentes",
+      "w": 390,
+      "x": 3290,
+      "y": 1100
+    },
+    "VerdeOnbIntro.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Configuración · Aviso",
+      "w": 390,
+      "x": 940,
+      "y": 1100
+    },
+    "VerdeOnbListo.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Configuración · Listo",
+      "w": 390,
+      "x": 3760,
+      "y": 1100
+    },
+    "VerdeOnbMetas.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Configuración · 4 Metas",
+      "w": 390,
+      "x": 2820,
+      "y": 1100
+    },
+    "VerdeOnbNombre.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Configuración · 1 Nombre",
+      "w": 390,
+      "x": 1410,
+      "y": 1100
+    },
+    "VerdeOnbOmitir.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Configuración · Omitir (advertencia)",
+      "w": 390,
+      "x": 4230,
+      "y": 1100
+    },
+    "VerdeRecomendaciones.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Recomendaciones",
+      "w": 390,
+      "x": 3760,
+      "y": 0
+    },
+    "VerdeRecuperar.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Recuperar contraseña",
+      "w": 390,
+      "x": 470,
+      "y": 1100
+    },
+    "VerdeRegistro.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Crear cuenta",
+      "w": 390,
+      "x": 940,
+      "y": 0
+    },
+    "VerdeSubPromo.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Suscripción · Promoción",
+      "w": 390,
+      "x": 0,
+      "y": 3300
+    },
+    "VerdeSubPago.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Suscripción · Pago",
+      "w": 390,
+      "x": 470,
+      "y": 3300
+    },
+    "VerdeSubProcesando.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Suscripción · Procesando",
+      "w": 390,
+      "x": 940,
+      "y": 3300
+    },
+    "VerdeSubExito.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Suscripción · Pago exitoso",
+      "w": 390,
+      "x": 1410,
+      "y": 3300
+    },
+    "VerdeSubPendiente.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Suscripción · Pago pendiente",
+      "w": 390,
+      "x": 1880,
+      "y": 3300
+    },
+    "VerdeSubRechazado.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "app-verde",
+      "title": "Suscripción · Pago rechazado",
+      "w": 390,
+      "x": 2350,
+      "y": 3300
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-09-23T20:35:25.619Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "appVerdeTitle": {
+      "kind": "title1",
+      "maxW": 4620,
+      "page": "app-verde",
+      "text": "App · Azul y verde",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "bankTitle": {
+      "kind": "title1",
+      "maxW": 1200,
+      "page": "app-verde",
+      "text": "Conectar cuentas",
+      "w": 300,
+      "x": 0,
+      "y": 2060
+    },
+    "onbTitle": {
+      "kind": "title1",
+      "maxW": 3680,
+      "page": "app-verde",
+      "text": "Primer ingreso · Configuración guiada",
+      "w": 420,
+      "x": 940,
+      "y": 960
+    },
+    "subTitle": {
+      "kind": "title1",
+      "maxW": 2800,
+      "page": "app-verde",
+      "text": "Suscripción · Fynk Plus",
+      "w": 340,
+      "x": 0,
+      "y": 3160
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "InicioPila.dc.html",
+    "InicioNaranja.dc.html",
+    "InicioPilaNaranja.dc.html",
+    "InicioVerde.dc.html",
+    "InicioPilaVerde.dc.html",
+    "InicioMorado.dc.html",
+    "InicioPilaMorado.dc.html",
+    "Dashboard.dc.html",
+    "Dashboard-ujog.dc.html",
+    "DashboardNaranja.dc.html",
+    "DashboardNegativoNaranja.dc.html",
+    "DashboardLimon.dc.html",
+    "DashboardNegativoLimon.dc.html",
+    "DashboardMorado.dc.html",
+    "DashboardNegativoMorado.dc.html",
+    "Main-oscuro.dc.html",
+    "InicioPila-oscuro.dc.html",
+    "InicioNaranja-oscuro.dc.html",
+    "InicioPilaNaranja-oscuro.dc.html",
+    "InicioVerde-oscuro.dc.html",
+    "InicioPilaVerde-oscuro.dc.html",
+    "InicioMorado-oscuro.dc.html",
+    "InicioPilaMorado-oscuro.dc.html",
+    "Dashboard-oscuro.dc.html",
+    "Dashboard-ujog-oscuro.dc.html",
+    "DashboardNaranja-oscuro.dc.html",
+    "DashboardNegativoNaranja-oscuro.dc.html",
+    "DashboardLimon-oscuro.dc.html",
+    "DashboardNegativoLimon-oscuro.dc.html",
+    "DashboardMorado-oscuro.dc.html",
+    "DashboardNegativoMorado-oscuro.dc.html",
+    "DashboardNegativoLimon-1twj-oscuro.dc.html",
+    "Main-cyan.dc.html",
+    "InicioPila-cyan.dc.html",
+    "Dashboard-cyan.dc.html",
+    "Dashboard-ujog-cyan.dc.html",
+    "Main-cyan-oscuro.dc.html",
+    "InicioPila-cyan-oscuro.dc.html",
+    "Dashboard-cyan-oscuro.dc.html",
+    "Dashboard-ujog-cyan-oscuro.dc.html",
+    "Dashboard-ujog-jldc.dc.html",
+    "Dashboard-ujog-cyan-rzb3.dc.html",
+    "Billetera.dc.html",
+    "Dashboard-ujog-navflecha.dc.html",
+    "DashboardNegativoLimon-navblanca.dc.html",
+    "VerdeInicio.dc.html",
+    "VerdeLogin.dc.html",
+    "VerdeRecuperar.dc.html",
+    "VerdeRegistro.dc.html",
+    "VerdeOnbIntro.dc.html",
+    "VerdeOnbNombre.dc.html",
+    "VerdeOnbCorreo.dc.html",
+    "VerdeOnbCuentas.dc.html",
+    "VerdeOnbMetas.dc.html",
+    "VerdeOnbGastos.dc.html",
+    "VerdeOnbListo.dc.html",
+    "VerdeOnbOmitir.dc.html",
+    "VerdeConectarBanco.dc.html",
+    "VerdeDashboard.dc.html",
+    "VerdeDashboardDetalles.dc.html",
+    "VerdeDetalleCuentas.dc.html",
+    "VerdeNotificaciones.dc.html",
+    "VerdeBilletera.dc.html",
+    "VerdeRecomendaciones.dc.html",
+    "VerdeInversion.dc.html",
+    "VerdeConectarBanco-37ko.dc.html",
+    "VerdeSubPromo.dc.html",
+    "VerdeSubPago.dc.html",
+    "VerdeSubProcesando.dc.html",
+    "VerdeSubExito.dc.html",
+    "VerdeSubPendiente.dc.html",
+    "VerdeSubRechazado.dc.html"
+  ],
+  "pages": [
+    {
+      "id": "exploracion",
+      "name": "Exploración"
+    },
+    {
+      "id": "app-verde",
+      "name": "App azul y verde"
+    }
+  ],
+  "title": "Pantalla de inicio"
+}

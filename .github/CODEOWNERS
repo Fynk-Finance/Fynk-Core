@@ -1,0 +1,94 @@
+# Fynk code owners. Replace each placeholder with that person's GitHub username:
+# @owner-daniel (Daniel Palacios), @owner-sofia (Sofia Nicolle Ariza), @owner-juan-carlos (Juan Carlos Leal),
+# @owner-juan-pablo (Juan Pablo Contreras), @owner-karol (Karol), @owner-julian (Julián Castiblanco)
+# The last matching line wins, so specific paths go after general ones.
+
+*                                          @owner-sofia
+
+# Session logs: anyone adds their own file, no owner review needed
+/docs/history/sessions/
+
+# M0 Foundations
+/apps/mobile/src/app/                      @owner-sofia
+/apps/mobile/src/shared/                   @owner-sofia
+/services/api/cmd/                         @owner-sofia
+/services/api/internal/app/                @owner-sofia
+/services/api/internal/platform/           @owner-sofia
+/contracts/openapi.yaml                    @owner-sofia
+/docs/modules/00-shared-contracts.md       @owner-sofia
+/CLAUDE.md                                 @owner-sofia
+/.claude/                                  @owner-sofia
+/.github/                                  @owner-sofia
+
+# M1 Identity
+/apps/mobile/src/modules/identity/         @owner-daniel
+/services/api/internal/identity/           @owner-daniel
+/contracts/modules/identity.yaml           @owner-daniel
+/services/keycloak/                        @owner-daniel
+
+# M2 Vault and backup
+/apps/mobile/src/modules/vault/            @owner-daniel
+/services/api/internal/backup/             @owner-daniel
+/contracts/modules/backup.yaml             @owner-daniel
+
+# M3 Onboarding
+/apps/mobile/src/modules/onboarding/       @owner-sofia
+
+# M4 Consents
+/apps/mobile/src/modules/consents/         @owner-juan-carlos
+/services/api/internal/consents/           @owner-juan-carlos
+/contracts/modules/consents.yaml           @owner-juan-carlos
+
+# M5 Bank and sync
+/apps/mobile/src/modules/bank/             @owner-juan-carlos
+/services/api/internal/bank/               @owner-juan-carlos
+/contracts/modules/bank.yaml               @owner-juan-carlos
+
+# M6 Accounts
+/apps/mobile/src/modules/accounts/         @owner-sofia
+
+# M7 Transactions
+/apps/mobile/src/modules/transactions/     @owner-sofia
+
+# M8 Savings goals
+/apps/mobile/src/modules/savings/          @owner-karol
+
+# M9 Recurring and subscriptions
+/apps/mobile/src/modules/recurring/        @owner-karol
+/services/api/internal/catalog/            @owner-karol
+/contracts/modules/catalog.yaml            @owner-karol
+
+# M10 Analytics and caps
+/apps/mobile/src/modules/analytics/        @owner-julian
+
+# M11 AI recommendations
+/apps/mobile/src/modules/recommendations/  @owner-julian
+/services/api/internal/recommendations/    @owner-julian
+/contracts/modules/recommendations.yaml    @owner-julian
+
+# M12 Notifications
+/apps/mobile/src/modules/notifications/    @owner-karol
+
+# M13 Compliance and audit
+/apps/mobile/src/modules/compliance/       @owner-juan-pablo
+/services/api/internal/privacy/            @owner-juan-pablo
+/services/api/internal/audit/              @owner-juan-pablo
+/contracts/modules/privacy.yaml            @owner-juan-pablo
+
+# M14 Infrastructure
+/infra/                                    @owner-juan-pablo
+/services/caddy/                           @owner-juan-pablo
+/.github/workflows/deploy-staging.yml      @owner-juan-pablo
+/.github/workflows/terraform-plan.yml      @owner-juan-pablo
+/docs/runbooks/                            @owner-juan-pablo
+
+# M15 Investment
+/apps/mobile/src/modules/investment/       @owner-julian
+/services/api/internal/market/             @owner-julian
+/contracts/modules/market.yaml             @owner-julian
+
+# M16 Banco Demo
+/services/bank-simulator/                  @owner-juan-pablo
+/contracts/bank-simulator.yaml             @owner-juan-pablo
+/fixtures/                                 @owner-juan-pablo
+/services/keycloak/realms/banco-demo-realm.json  @owner-juan-pablo
