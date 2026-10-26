@@ -1,0 +1,202 @@
+# golangci-lint v2 config for the Fynk API.
+# Module isolation (CLAUDE.md, Conflict rules): internal/<a> may import internal/<b>
+# only through internal/<b>/ports. internal/platform is shared by everyone.
+# internal/app and cmd are the composition root and may import anything.
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard
+  enable:
+    - depguard
+    - bodyclose
+    - errorlint
+    - misspell
+    - revive
+    - unconvert
+  settings:
+    depguard:
+      rules:
+        identity:
+          list-mode: lax
+          files:
+            - "**/internal/identity/**"
+          allow:
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/catalog/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/privacy/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/market/ports
+          deny:
+            - pkg: github.com/Fynk-Finance/Fynk-Core/services/api/internal/
+              desc: "Another module is reachable only through its ports package (internal/<module>/ports)."
+        backup:
+          list-mode: lax
+          files:
+            - "**/internal/backup/**"
+          allow:
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/catalog/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/privacy/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/market/ports
+          deny:
+            - pkg: github.com/Fynk-Finance/Fynk-Core/services/api/internal/
+              desc: "Another module is reachable only through its ports package (internal/<module>/ports)."
+        consents:
+          list-mode: lax
+          files:
+            - "**/internal/consents/**"
+          allow:
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/catalog/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/privacy/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/market/ports
+          deny:
+            - pkg: github.com/Fynk-Finance/Fynk-Core/services/api/internal/
+              desc: "Another module is reachable only through its ports package (internal/<module>/ports)."
+        bank:
+          list-mode: lax
+          files:
+            - "**/internal/bank/**"
+          allow:
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/catalog/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/privacy/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/market/ports
+          deny:
+            - pkg: github.com/Fynk-Finance/Fynk-Core/services/api/internal/
+              desc: "Another module is reachable only through its ports package (internal/<module>/ports)."
+        catalog:
+          list-mode: lax
+          files:
+            - "**/internal/catalog/**"
+          allow:
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/catalog
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/privacy/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/market/ports
+          deny:
+            - pkg: github.com/Fynk-Finance/Fynk-Core/services/api/internal/
+              desc: "Another module is reachable only through its ports package (internal/<module>/ports)."
+        recommendations:
+          list-mode: lax
+          files:
+            - "**/internal/recommendations/**"
+          allow:
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/catalog/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/privacy/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/market/ports
+          deny:
+            - pkg: github.com/Fynk-Finance/Fynk-Core/services/api/internal/
+              desc: "Another module is reachable only through its ports package (internal/<module>/ports)."
+        privacy:
+          list-mode: lax
+          files:
+            - "**/internal/privacy/**"
+          allow:
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/privacy
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/catalog/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/market/ports
+          deny:
+            - pkg: github.com/Fynk-Finance/Fynk-Core/services/api/internal/
+              desc: "Another module is reachable only through its ports package (internal/<module>/ports)."
+        audit:
+          list-mode: lax
+          files:
+            - "**/internal/audit/**"
+          allow:
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/catalog/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/privacy/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/market/ports
+          deny:
+            - pkg: github.com/Fynk-Finance/Fynk-Core/services/api/internal/
+              desc: "Another module is reachable only through its ports package (internal/<module>/ports)."
+        market:
+          list-mode: lax
+          files:
+            - "**/internal/market/**"
+          allow:
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/market
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/catalog/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/privacy/ports
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports
+          deny:
+            - pkg: github.com/Fynk-Finance/Fynk-Core/services/api/internal/
+              desc: "Another module is reachable only through its ports package (internal/<module>/ports)."
+        platform:
+          list-mode: lax
+          files:
+            - "**/internal/platform/**"
+          allow:
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform
+            - github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports
+          deny:
+            - pkg: github.com/Fynk-Finance/Fynk-Core/services/api/internal/
+              desc: "platform is shared infrastructure and must not depend on modules."
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
