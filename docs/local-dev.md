@@ -82,7 +82,7 @@ curl http://localhost:8080/v1/consents/health
 curl -H "Authorization: Bearer dev-token" http://localhost:8080/v1/consents
 ```
 
-`dev-token` works only with `APP_ENV=local`, which the compose file sets. M1 replaces it with real Keycloak tokens.
+The API accepts Keycloak access tokens of the fynk realm (PS256, `aud=fynk-api`) in every environment. With `APP_ENV=local`, which the compose file sets, it also accepts `dev-token`, so modules can be tried without signing in.
 
 **mTLS through Caddy to the Banco Demo:**
 

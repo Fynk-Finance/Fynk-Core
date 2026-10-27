@@ -53,8 +53,11 @@ func run(logger *slog.Logger) error {
 	}
 	defer func() { _ = rdb.Close() }()
 
-	// M1 replaces the dev verifier with the Keycloak one here.
-	auth.Install(auth.DevVerifier{Env: cfg.AppEnv})
+	verifier, err := newVerifier(cfg, logger)
+	if err != nil {
+		return err
+	}
+	auth.Install(verifier)
 
 	deps := app.Deps{
 		DB:     pool,
