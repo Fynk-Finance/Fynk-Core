@@ -67,6 +67,8 @@
 | @tanstack/react-query | 5.104.5 | Async server state (decided). No background refetch, see `src/app/queryClient.ts`. 5.105.0 was a few hours old and is held back by the release age policy |
 | openapi-fetch | 0.17.0 | Typed fetch client built on the generated `paths` types. Small, no runtime codegen, lets the client add headers and retry once after a token refresh |
 | openapi-typescript | 7.13.0 | Generates `src/shared/api/schema.gen.ts` from the bundled contract. It declares TypeScript 5 as its peer. It generates correctly with TypeScript 6, so `pnpm-workspace.yaml` allows it (`peerDependencyRules`) |
+| react-native-app-auth | 9.0.0 | Added for M1. OpenID Connect with Authorization Code and PKCE S256 in the system browser (ASWebAuthenticationSession on iOS, Custom Tabs on Android), never a webview. Its Expo config plugin in `app.json` registers the redirect scheme `co.fynk.app` on both platforms. 9.0.0 needs React Native 0.86 or newer; it was out for 8 days when added |
+| react-native-keychain | 10.0.0 | Added for M1. Keeps the Keycloak tokens in the iOS Keychain and the Android Keystore with `WHEN_UNLOCKED_THIS_DEVICE_ONLY`, so they never reach AsyncStorage, backups or another phone. M2 reuses it for the vault key |
 
 The aliases `@shared/*` and `@modules/*` are declared once in `tsconfig.json`. Metro reads them from there (Expo's built-in tsconfig paths support), and Jest maps them in `jest.config.js`. No Babel alias plugin is needed.
 

@@ -24,6 +24,9 @@
       "favicon": "./assets/favicon.png"
     },
     "scheme": "fynk",
-    "plugins": ["expo-font"]
+    "plugins": [
+      "expo-font",
+      ["react-native-app-auth", { "redirectUrls": ["co.fynk.app://oauth/callback"] }]
+    ]
   }
 }
