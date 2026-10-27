@@ -92,6 +92,8 @@ Install scripts denied in `pnpm-workspace.yaml` (`allowBuilds`): `@parcel/watche
 | golangci-lint (run with `go run …@v2.15.0`) | v2.15.0 | Linters, including `depguard`, which blocks `internal/<a>` from importing `internal/<b>` except `internal/<b>/ports` |
 | github.com/golang-migrate/migrate/v4 | v4.20.1 | Per-module Postgres migrations (decided). `internal/platform/migrate` runs each module in its own schema with its own `<schema>_migrations` table, through the `pgx/v5` driver and the `iofs` source, so modules embed their SQL |
 | github.com/jackc/pgx/v5/stdlib | v5.11.0 (part of pgx) | `database/sql` adapter that golang-migrate needs. The API itself keeps using `pgxpool` |
+| github.com/golang-jwt/jwt/v5 | v5.3.1 | Added for M1. Parses and checks Keycloak access tokens: `WithValidMethods(["PS256"])` rejects every other algorithm before a key is looked up, plus issuer, audience, expiry and leeway checks. The JWKS cache is M1's own code. Marked `// indirect` until M1's verifier imports it |
+| github.com/testcontainers/testcontainers-go | v0.44.0 | Added for M1. Starts real containers (Keycloak, later Postgres and Redis) from Go integration tests (`-tags integration`), the same way on Windows with Docker Desktop and in CI. Test-only. Marked `// indirect` until M1's tests import it |
 
 The bank simulator placeholder (`services/bank-simulator`, M16) uses only the Go standard library.
 
