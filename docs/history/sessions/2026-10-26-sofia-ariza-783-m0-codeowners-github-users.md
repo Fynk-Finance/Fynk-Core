@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: chore/codeowners-github-users
 tool: Claude Code
-pr: none
+pr: #10
 status: done
 ---
 
@@ -40,6 +40,7 @@ Sofia asked to "update the info of codeowners and plan using as reference the fo
 
 * No `@owner-` placeholder is left in the repository, outside the untracked kit copy.
 * Prettier passes on the changed docs.
+* Pull request #10. CI passed in about 40 s. The mobile, Expo prebuild and Go jobs were skipped because no app or Go file changed: the first real proof of the path filters from step 6.
 
 ## Decisions and problems
 
