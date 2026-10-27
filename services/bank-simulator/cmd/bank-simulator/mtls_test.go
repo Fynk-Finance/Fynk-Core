@@ -67,7 +67,7 @@ func TestOpenFinanceAPIOverMTLSListener(t *testing.T) {
 	if err != nil {
 		t.Fatalf("valid mTLS request failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 OK, got %d", resp.StatusCode)
@@ -125,7 +125,7 @@ func TestOpenFinanceAPIOverMTLSListener(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to revoke consent over mTLS: %v", err)
 	}
-	defer delResp.Body.Close()
+	defer func() { _ = delResp.Body.Close() }()
 	if delResp.StatusCode != http.StatusNoContent {
 		t.Errorf("expected 204 No Content, got %d", delResp.StatusCode)
 	}
@@ -137,7 +137,7 @@ func TestOpenFinanceAPIOverMTLSListener(t *testing.T) {
 	if err != nil {
 		t.Fatalf("call after revocation failed: %v", err)
 	}
-	defer afterResp.Body.Close()
+	defer func() { _ = afterResp.Body.Close() }()
 	if afterResp.StatusCode != http.StatusForbidden {
 		body, _ := io.ReadAll(afterResp.Body)
 		t.Fatalf("expected 403 Forbidden after revocation, got %d: %s", afterResp.StatusCode, string(body))

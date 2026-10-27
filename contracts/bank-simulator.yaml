@@ -106,7 +106,7 @@ paths:
                       hasMore:
                         type: boolean
                       nextCursor:
-                        type: [string, "null"]
+                        type: [string, 'null']
                       total:
                         type: integer
         '401':
@@ -296,13 +296,13 @@ components:
           type: integer
           example: 320000000
         creditLimit:
-          type: [string, "null"]
+          type: [string, 'null']
           example: '5000000.00'
         creditLimitMinor:
-          type: [integer, "null"]
+          type: [integer, 'null']
           example: 500000000
         paymentDueDate:
-          type: [integer, "null"]
+          type: [integer, 'null']
           example: 5
           description: Day of month for credit card payment
         status:
@@ -355,10 +355,10 @@ components:
           type: string
           example: 'NOMINA EMPRESA DEMO SAS'
         merchantName:
-          type: [string, "null"]
+          type: [string, 'null']
           example: 'EMPRESA DEMO SAS'
         category:
-          type: [string, "null"]
+          type: [string, 'null']
           example: 'salary'
         simulated:
           type: boolean

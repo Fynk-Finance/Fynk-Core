@@ -30,7 +30,7 @@ func TestGetAccounts_Unauthorized(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Errorf("expected 401 Unauthorized, got %d", resp.StatusCode)
@@ -51,7 +51,7 @@ func TestGetAccounts_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error performing request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 OK, got %d", resp.StatusCode)
@@ -81,7 +81,7 @@ func TestGetTransactions_Pagination(t *testing.T) {
 		Data []domain.Account `json:"data"`
 	}
 	_ = json.NewDecoder(resp.Body).Decode(&accRes)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	accountID := accRes.Data[0].ID
 
@@ -92,7 +92,7 @@ func TestGetTransactions_Pagination(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error: %v", err)
 	}
-	defer resp1.Body.Close()
+	defer func() { _ = resp1.Body.Close() }()
 
 	var txRes1 struct {
 		Data []domain.Transaction `json:"data"`
@@ -120,7 +120,7 @@ func TestGetTransactions_Pagination(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error: %v", err)
 	}
-	defer resp2.Body.Close()
+	defer func() { _ = resp2.Body.Close() }()
 
 	var txRes2 struct {
 		Data []domain.Transaction `json:"data"`
@@ -146,7 +146,7 @@ func TestRevokeConsent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error revoking: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusNoContent {
 		t.Errorf("expected 204 No Content, got %d", resp.StatusCode)
@@ -159,7 +159,7 @@ func TestRevokeConsent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error: %v", err)
 	}
-	defer resp2.Body.Close()
+	defer func() { _ = resp2.Body.Close() }()
 
 	if resp2.StatusCode != http.StatusForbidden {
 		t.Errorf("expected 403 Forbidden after revocation, got %d", resp2.StatusCode)
@@ -181,7 +181,7 @@ func TestGetCdtProducts_Public(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200 OK, got %d", resp.StatusCode)
