@@ -229,3 +229,15 @@ module "ecs_bank_simulator" {
     { name = "BANK_INTERNAL_ADDR", value = ":9443" }
   ]
 }
+
+# Caddy Egress Proxy on EC2 (Public subnet, Elastic IP, SSM only)
+module "caddy_egress" {
+  source = "../../modules/caddy-egress"
+
+  vpc_id                = module.network.vpc_id
+  subnet_id             = module.network.primary_public_subnet_id
+  api_security_group_id = module.ecs_api.security_group_id
+  mtls_cert_secret_arn  = module.secrets.mtls_client_cert_secret_arn
+  mtls_key_secret_arn   = module.secrets.mtls_client_key_secret_arn
+  environment           = var.environment
+}
