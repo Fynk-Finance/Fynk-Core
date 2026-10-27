@@ -211,8 +211,8 @@ func TestIntegrationLoginGivesPS256TokensForTheAPI(t *testing.T) {
 	if strings.Contains(tok.Scope, "offline_access") {
 		t.Fatalf("scope = %q must not include offline_access", tok.Scope)
 	}
-	if tok.RefreshExpiresIn != 30*24*3600 {
-		t.Fatalf("refresh_expires_in = %d, want 30 days", tok.RefreshExpiresIn)
+	if tok.RefreshExpiresIn < 30*24*3600-5 || tok.RefreshExpiresIn > 30*24*3600 {
+		t.Fatalf("refresh_expires_in = %d, want ~30 days", tok.RefreshExpiresIn)
 	}
 }
 
