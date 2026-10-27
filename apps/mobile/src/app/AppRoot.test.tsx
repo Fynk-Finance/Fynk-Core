@@ -3,7 +3,34 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { AppRoot } from './AppRoot';
 import { notchLeft } from './navigation/TabBar';
 
+// The real identity module (M1) keeps its sign-in gate open until there is a session, and it
+// talks to Keychain and the system browser. The shell tests use a stand-in whose gate they set.
+let mockSignInGateOpen = false;
+jest.mock('@modules/identity', () => {
+  const { createPlaceholderScreen } = jest.requireActual('@shared/navigation');
+  return {
+    routes: {
+      module: 'identity',
+      flow: createPlaceholderScreen({ title: 'Inicio', owner: 'M1 · Identidad' }),
+      useGate: () => mockSignInGateOpen,
+      screens: [],
+    },
+  };
+});
+
+beforeEach(() => {
+  mockSignInGateOpen = false;
+});
+
 describe('AppRoot', () => {
+  it('shows the sign-in flow instead of the tabs while its gate is open', async () => {
+    mockSignInGateOpen = true;
+    await render(<AppRoot />);
+
+    expect(screen.getByText('Inicio')).toBeTruthy();
+    expect(screen.queryByRole('tab', { name: 'Dashboard' })).toBeNull();
+  });
+
   it('opens on the Dashboard tab with the four tabs of the design', async () => {
     await render(<AppRoot />);
 
