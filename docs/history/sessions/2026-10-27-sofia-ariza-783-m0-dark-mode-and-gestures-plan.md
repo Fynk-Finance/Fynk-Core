@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: docs/dark-mode-and-gestures-plan
 tool: Claude Code
-pr: none
+pr: #12
 status: done
 ---
 
@@ -34,7 +34,7 @@ Same session as `docs/update-design` (#11): "update the plan with the new screen
 
 * Docs only, no tests to run. The old `design/source` paths and numbered PNG names no longer appear in `docs/modules/` or `CLAUDE.md`.
 * The claude.ai doc "Fynk Implementation Plan by Modules" was not updated. It is not in Sofia's artifact list, and the Docs connector cannot look up a doc by name, so its link is needed.
-* Pull request: not opened yet.
+* Pull request: #12.
 
 ## Decisions and problems
 
