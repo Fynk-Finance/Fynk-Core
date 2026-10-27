@@ -6,7 +6,7 @@ module: M16
 jira: [SCRUM-65]
 branch: feature/banco-demo-portal
 tool: Claude Code
-pr: none
+pr: 30
 status: done
 ---
 
@@ -27,14 +27,16 @@ Juan Pablo instructed to build the Web Portal of Banco Demo (HU-048): "Yes conti
   * `portal.go`: Web handlers for dashboard (`/portal`), account transaction history (`/portal/account`), banking operations (`/portal/actions`), subscriptions (`/portal/subscriptions`), Fynk consents (`/portal/consents`), and admin controls (`/portal/admin`).
   * `templates.go`: Embedded Go templates with Banco Demo styling in grey and green, responsive cards, and the required regulatory disclaimer banner ("Banco simulado para pruebas. No es un banco real.").
   * `portal_test.go`: Tested portal rendering, immediate API visibility of registered payments (verifying that payments created in the portal appear immediately in `GET /open-finance/v1/accounts/{id}/transactions`), transfers, card payments, subscription price updates, and admin state resets.
-* `services/bank-simulator/cmd/bank-simulator/server.go`:
-  * Mounted portal routes and root redirect (`/` -> `/portal`) on the HTTP server.
+* `services/bank-simulator/cmd/bank-simulator/`:
+  * `server.go`: Mounted portal routes and root redirect (`/` -> `/portal`) on the HTTP server.
+  * `main.go`: Added `BANK_DEV_MODE=1` environment variable support to allow running standalone locally without pre-generating mTLS CA certificates while strictly keeping mutual TLS required in production.
+* Verified live portal rendering and HTTP 200 response on `http://localhost:8082/portal`.
 
 ## Result
 
 * Tests: All 18 unit, contract, and portal integration tests pass across `cmd/bank-simulator`, `internal/api`, `internal/domain`, `internal/oauth`, and `internal/portal`.
 * `go vet ./...` reports 0 issues.
-* Pull request: not opened yet (working on `feature/banco-demo-portal`).
+* Pull request: [#30](https://github.com/Fynk-Finance/Fynk-Core/pull/30) opened against `develop`.
 
 ## Decisions and problems
 
