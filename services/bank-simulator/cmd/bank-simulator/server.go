@@ -25,7 +25,6 @@ func newBankMux(s *store.BankStore) http.Handler {
 
 	oauthService := oauth.NewService(s)
 	oauthService.RegisterRoutes(mux)
-
 	return mux
 }
 
