@@ -19,7 +19,7 @@ You are building module M4 Open Finance consents of Fynk. A consent is the user'
 ## Read first
 
 1. `CLAUDE.md` (Regulatory guardrails), `docs/modules/00-shared-contracts.md` sections 4.3, 4.5 and 5.
-2. Design PNGs `20-conectar-banco.png` and `07-mi-cuenta.png` and `07-mi-cuenta-2.png`. Read the code of the same screens in `docs/design/source/` first (file map in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs are for checking the result.
+2. Design screens `ConectarBanco`, `CfgPrivacidad` ("Cuentas conectadas" with "Revocar") and `CuentaDetalle` ("Eliminar cuenta" on a connected account revokes its consent). Read the code of these screens in `docs/design/sources/light/` and `docs/design/sources/dark/` first (inventory, gestures and transitions in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` are for checking the result. Every screen works in light and dark (colors only from `useTheme()`), and uses the default transition and back gesture of its kind unless the inventory says otherwise.
 3. Jira SCRUM-20, SCRUM-21, SCRUM-22.
 
 ## Stories and criteria
@@ -43,7 +43,7 @@ You are building module M4 Open Finance consents of Fynk. A consent is the user'
 * Add the purpose and the term in plain words: "Finalidad: mostrarte tus finanzas y recomendaciones dentro de Fynk. Vigencia: 12 meses."
 * Checkbox "Autorizo a Fynk a consultar y tratar estos datos según la Política de privacidad." (unchecked by default, the button stays disabled until checked) and button "Ir al portal de <Entidad>" which hands over to M5.
 
-**Consentimientos** (new screens, from Mi cuenta, Privacidad y datos):
+**Consentimientos** (new screens, from Mi cuenta, Privacidad y datos; the design shows the entry point as "Cuentas conectadas" with "Revocar" in `CfgPrivacidad`):
 * List: one card per consent with entity, status chip (Activo, Revocado, Vencido, Pendiente), "Otorgado el", "Vence el".
 * Detail: the same scope list, purpose, term, the consent text version, and the red action "Revocar acceso". Revoking asks for biometrics or password, then shows "Fynk ya no recibirá datos de <Entidad>."
 

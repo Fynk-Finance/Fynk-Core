@@ -20,7 +20,7 @@ JESTFLAGS     ?=
 .DEFAULT_GOAL := help
 
 .PHONY: help install lint lint-mobile lint-go format-check test test-mobile test-go test-scripts \
-        test-integration build-go generate generate-contract generate-go generate-ts mock-api dev down migrate certs e2e history
+        test-integration test-keycloak build-go generate generate-contract generate-go generate-ts mock-api dev down migrate certs e2e history
 
 help: ## List the available targets
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -66,6 +66,9 @@ test-go: generate-go ## go test on every Go module that has code (GOTESTFLAGS ad
 test-integration: generate-go ## Migration tests against a real Postgres (needs DATABASE_URL, see docs/local-dev.md)
 	@[ -n "$$DATABASE_URL" ] || { echo "DATABASE_URL is not set. Start the stack with make dev, then see docs/local-dev.md."; exit 1; }
 	cd services/api && go test -tags integration -count=1 ./internal/platform/migrate/...
+
+test-keycloak: ## Realm tests on a real Keycloak and Mailpit started with testcontainers (needs Docker)
+	cd services/api && go test -tags integration -count=1 ./internal/identity/keycloak/...
 
 build-go: generate-go ## Build every Go module that has code into bin/ (static binaries, as in the Dockerfiles)
 	@set -e; for m in $(GO_MODULES); do \
