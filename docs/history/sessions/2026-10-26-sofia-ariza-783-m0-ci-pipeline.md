@@ -55,6 +55,7 @@ Sofia asked to "proceed with step 6". The M0 prompt says:
   * Go, 5 min 12 s without cache (race tests, integration test and both Docker images included).
 * **Coverage.** The `coverage-mobile` and `coverage-go` artifacts were uploaded. Jest covers about 97 % of lines.
 * Pull request #9, opened as a draft until CI is green with this log.
+* **Second push, with this log.** All 7 checks passed, including "CI passed". With caches warm the Go job took 2 min 9 s, and the whole run about 2.5 minutes.
 
 ## Decisions and problems
 
