@@ -1,6 +1,6 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { colors } from '../tokens';
+import { useTheme } from '../theme';
 import { CURRENT, icons, type IconName, type IconShape } from './paths';
 
 export interface IconProps {
@@ -55,10 +55,12 @@ function Shape({ shape, color }: { shape: IconShape; color: string }) {
 export function Icon({
   name,
   size = 24,
-  color = colors.textPrimary,
+  color: colorProp,
   strokeWidth = 2,
   accessibilityLabel,
 }: IconProps) {
+  const { colors } = useTheme();
+  const color = colorProp ?? colors.textPrimary;
   return (
     <Svg
       width={size}

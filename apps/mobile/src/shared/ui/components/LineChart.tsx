@@ -3,7 +3,7 @@
 import { StyleSheet, View } from 'react-native';
 import { LineChart as GiftedLineChart } from 'react-native-gifted-charts';
 
-import { colors } from '../tokens';
+import { useTheme, useThemedStyles, type Theme } from '../theme';
 
 export interface LineChartProps {
   values: number[];
@@ -17,6 +17,7 @@ export interface LineChartProps {
 const DOT = 12;
 
 function EndDot() {
+  const styles = useThemedStyles(createStyles);
   return <View style={styles.dot} testID="line-chart-end-dot" />;
 }
 
@@ -24,9 +25,10 @@ export function LineChart({
   values,
   width,
   height = 120,
-  color = colors.white,
+  color,
   accessibilityLabel,
 }: LineChartProps) {
+  const { colors } = useTheme();
   const finite = values.filter((v) => Number.isFinite(v));
   const min = finite.length ? Math.min(...finite) : 0;
   const max = finite.length ? Math.max(...finite) : 1;
@@ -54,7 +56,7 @@ export function LineChart({
         endSpacing={DOT / 2}
         spacing={finite.length > 1 ? (width - DOT / 2) / (finite.length - 1) : width}
         thickness={2.5}
-        color={color}
+        color={color ?? colors.onPrimary}
         yAxisOffset={offset}
         maxValue={span * 1.24}
         hideRules
@@ -71,13 +73,14 @@ export function LineChart({
   );
 }
 
-const styles = StyleSheet.create({
-  dot: {
-    width: DOT,
-    height: DOT,
-    borderRadius: DOT / 2,
-    backgroundColor: colors.accent,
-    borderWidth: 2.5,
-    borderColor: colors.white,
-  },
-});
+const createStyles = ({ colors }: Theme) =>
+  StyleSheet.create({
+    dot: {
+      width: DOT,
+      height: DOT,
+      borderRadius: DOT / 2,
+      backgroundColor: colors.accent,
+      borderWidth: 2.5,
+      borderColor: colors.onPrimary,
+    },
+  });

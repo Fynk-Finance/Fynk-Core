@@ -8,7 +8,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import type { TabName } from '@shared/navigation';
-import { Icon, colors, fonts, radius, shadow, size, uiStrings, type IconName } from '@shared/ui';
+import {
+  Icon,
+  fonts,
+  radius,
+  size,
+  uiStrings,
+  useTheme,
+  useThemedStyles,
+  type IconName,
+  type Theme,
+} from '@shared/ui';
 
 const ICONS: Record<TabName, { idle: IconName; active: IconName }> = {
   Dashboard: { idle: 'tabDashboard', active: 'tabDashboardActive' },
@@ -37,6 +47,8 @@ export function notchLeft(barWidth: number, tabs: number, index: number): number
 }
 
 export function TabBar({ state, navigation }: BottomTabBarProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const [width, setWidth] = useState<number>(size.screenWidth);
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
@@ -74,7 +86,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
               <Icon
                 name={focused ? ICONS[name].active : ICONS[name].idle}
                 size={22}
-                color={focused ? colors.white : colors.onPrimaryMuted}
+                color={focused ? colors.onPrimary : colors.onPrimaryMuted}
               />
             </View>
             <Text
@@ -82,7 +94,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
               style={[
                 styles.label,
                 focused
-                  ? { color: colors.white, fontFamily: fonts.body.bold }
+                  ? { color: colors.onPrimary, fontFamily: fonts.body.bold }
                   : { color: colors.onPrimaryMuted, fontFamily: fonts.body.semibold },
               ]}
             >
@@ -101,37 +113,39 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
       >
         <Path
           d="M0 13C9 13 13.5 9.5 17.5 4.2 19.8 1.2 21.2 0 23 0s3.2 1.2 5.5 4.2C32.5 9.5 37 13 46 13Z"
-          fill={colors.white}
+          fill={colors.onPrimary}
         />
       </Svg>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  bar: {
-    flexDirection: 'row',
-    gap: GAP,
-    paddingTop: PADDING,
-    paddingHorizontal: PADDING,
-    minHeight: size.tabBar,
-    backgroundColor: colors.primaryLight,
-    borderTopLeftRadius: radius.button,
-    borderTopRightRadius: radius.button,
-    overflow: 'hidden',
-    ...shadow.tabBar,
-  },
-  item: { flex: 1, alignItems: 'center', gap: 4 },
-  iconBox: { width: 52, height: 32, alignItems: 'center', justifyContent: 'center' },
-  dot: {
-    position: 'absolute',
-    top: -4,
-    left: 26 - 2.5,
-    width: 5,
-    height: 5,
-    borderRadius: radius.pill,
-    backgroundColor: colors.white,
-  },
-  label: { fontSize: 10, lineHeight: 13, textAlign: 'center' },
-  notch: { position: 'absolute', bottom: 0 },
-});
+// The bar, its icons and the white notch are drawn on blue: the same colors in both themes.
+const createStyles = ({ colors, shadow }: Theme) =>
+  StyleSheet.create({
+    bar: {
+      flexDirection: 'row',
+      gap: GAP,
+      paddingTop: PADDING,
+      paddingHorizontal: PADDING,
+      minHeight: size.tabBar,
+      backgroundColor: colors.primaryLight,
+      borderTopLeftRadius: radius.button,
+      borderTopRightRadius: radius.button,
+      overflow: 'hidden',
+      ...shadow.tabBar,
+    },
+    item: { flex: 1, alignItems: 'center', gap: 4 },
+    iconBox: { width: 52, height: 32, alignItems: 'center', justifyContent: 'center' },
+    dot: {
+      position: 'absolute',
+      top: -4,
+      left: 26 - 2.5,
+      width: 5,
+      height: 5,
+      borderRadius: radius.pill,
+      backgroundColor: colors.onPrimary,
+    },
+    label: { fontSize: 10, lineHeight: 13, textAlign: 'center' },
+    notch: { position: 'absolute', bottom: 0 },
+  });

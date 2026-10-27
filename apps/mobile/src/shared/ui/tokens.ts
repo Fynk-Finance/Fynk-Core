@@ -60,8 +60,7 @@ export const lightColors = {
 } as const;
 
 export type PaletteToken = keyof typeof lightColors;
-/** `white` is deprecated with `colors` below and goes away with it. */
-export type ColorToken = PaletteToken | 'white';
+export type ColorToken = PaletteToken;
 export type Palette = Record<PaletteToken, string>;
 
 /** The dark twin of every light color (docs/design/sources/dark/, README tokens table). */
@@ -266,11 +265,3 @@ export const shadows: Record<ColorScheme, Shadows> = {
   light: makeShadows(lightColors),
   dark: makeShadows(darkColors),
 };
-
-/**
- * @deprecated Light only. Kept until the components move to useTheme() (M0 Step 7.2, part 2),
- * then removed. New code reads colors with useTheme().
- */
-export const colors = { ...lightColors, white: '#FFFFFF' } as const;
-/** @deprecated Light only, see `colors`. */
-export const shadow = shadows.light;
