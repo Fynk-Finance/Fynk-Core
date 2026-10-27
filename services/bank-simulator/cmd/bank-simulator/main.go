@@ -19,6 +19,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/store"
 )
 
 func main() {
@@ -71,10 +73,13 @@ func run(ctx context.Context, cfg config, logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	public := &http.Server{Addr: cfg.PublicAddr, Handler: healthMux(), ReadHeaderTimeout: 5 * time.Second}
+	bankStore := store.NewBankStore(time.Time{})
+	bankMux := newBankMux(bankStore)
+
+	public := &http.Server{Addr: cfg.PublicAddr, Handler: bankMux, ReadHeaderTimeout: 5 * time.Second}
 	internal := &http.Server{
 		Addr:              cfg.InternalAddr,
-		Handler:           logClientCert(logger, healthMux()),
+		Handler:           logClientCert(logger, bankMux),
 		TLSConfig:         tlsCfg,
 		ReadHeaderTimeout: 5 * time.Second,
 	}

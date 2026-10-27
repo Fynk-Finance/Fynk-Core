@@ -1,8 +1,426 @@
-# Banco Demo contract, owned by M16 (see docs/modules/M16-banco-demo.md).
-# M0 created this stub only so the file exists. M16 step 1 fills it.
 openapi: 3.1.0
 info:
   title: Banco Demo API (simulado)
   version: 0.1.0
-  description: Simulated Open Finance data provider. Not a real bank.
-paths: {}
+  description: Simulated Open Finance data provider. Not a real bank. All data is synthetic and marked as simulated.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: https://bancodemo.fynk.local/open-finance/v1
+    description: Internal mTLS egress endpoint
+  - url: http://localhost:8082/open-finance/v1
+    description: Local development public listener
+tags:
+  - name: accounts
+    description: Accounts covered by consent
+  - name: transactions
+    description: Transactions pagination
+  - name: consents
+    description: Consent lifecycle
+  - name: products
+    description: Public product catalogs
+paths:
+  /open-finance/v1/accounts:
+    get:
+      tags: [accounts]
+      summary: Accounts covered by consent
+      description: Returns accounts associated with the authorized consent.
+      operationId: getAccounts
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of accounts covered by the active consent.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Account'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /open-finance/v1/accounts/{id}/transactions:
+    get:
+      tags: [transactions]
+      summary: Account transactions
+      description: Returns booked and pending movements for an account, newest first, cursor-based pagination.
+      operationId: getAccountTransactions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Account identifier
+          schema:
+            type: string
+        - name: fromBookingDate
+          in: query
+          required: false
+          description: Filter transactions booked on or after this ISO datetime or date
+          schema:
+            type: string
+        - name: cursor
+          in: query
+          required: false
+          description: Pagination cursor for next page
+          schema:
+            type: string
+        - name: pageSize
+          in: query
+          required: false
+          description: Page size, max 200 (default 50)
+          schema:
+            type: integer
+            maximum: 200
+            default: 50
+      responses:
+        '200':
+          description: Page of transactions.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                  meta:
+                    type: object
+                    required: [hasMore]
+                    properties:
+                      hasMore:
+                        type: boolean
+                      nextCursor:
+                        type: [string, "null"]
+                      total:
+                        type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /open-finance/v1/consents/{id}:
+    delete:
+      tags: [consents]
+      summary: Revoke consent
+      description: Revokes the specified consent. Subsequent calls using tokens for this consent fail with 403 consent_revoked.
+      operationId: revokeConsent
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Consent identifier
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Consent revoked successfully.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /open-finance/v1/products/cdt:
+    get:
+      tags: [products]
+      summary: Public CDT catalog
+      description: Public list of available CDT products from Banco Demo. No user token required.
+      operationId: getCdtProducts
+      security: []
+      responses:
+        '200':
+          description: List of CDT products.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CdtProduct'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token issued by Keycloak realm banco-demo or static test token.
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid authentication token.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: Access forbidden (e.g. consent revoked or expired).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Resource not found.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    TooManyRequests:
+      description: Rate limit exceeded (60 req/min per consent).
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retrying.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Problem:
+      description: Generic problem details response.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    InternalError:
+      description: Internal server error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    AccountType:
+      type: string
+      enum: [SAVINGS, WALLET, CREDIT_CARD, CDT]
+
+    AccountStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE, CLOSED]
+
+    CdtDetails:
+      type: object
+      required: [rateEa, rateEaBps, termDays, opened, maturity]
+      properties:
+        rateEa:
+          type: number
+          example: 10.5
+          description: Effective annual rate as a percentage (10.5 = 10.50% E.A.)
+        rateEaBps:
+          type: integer
+          example: 1050
+          description: Effective annual rate in basis points (1050 = 10.50%)
+        termDays:
+          type: integer
+          example: 180
+        opened:
+          type: string
+          format: date
+          example: '2026-08-28'
+        maturity:
+          type: string
+          format: date
+          example: '2027-02-24'
+
+    Account:
+      type: object
+      required:
+        - id
+        - type
+        - name
+        - maskedNumber
+        - currency
+        - balance
+        - available
+        - simulated
+      properties:
+        id:
+          type: string
+          example: 'acc-ahorros-demo-01'
+        type:
+          $ref: '#/components/schemas/AccountType'
+        name:
+          type: string
+          example: 'Cuenta de Ahorros Demo'
+        maskedNumber:
+          type: string
+          example: '****4821'
+        currency:
+          type: string
+          example: 'COP'
+        balance:
+          type: string
+          example: '3200000.00'
+          description: Current balance as signed decimal string in COP
+        balanceMinor:
+          type: integer
+          example: 320000000
+          description: Current balance in COP centavos
+        available:
+          type: string
+          example: '3200000.00'
+          description: Available balance as signed decimal string in COP
+        availableMinor:
+          type: integer
+          example: 320000000
+        creditLimit:
+          type: [string, "null"]
+          example: '5000000.00'
+        creditLimitMinor:
+          type: [integer, "null"]
+          example: 500000000
+        paymentDueDate:
+          type: [integer, "null"]
+          example: 5
+          description: Day of month for credit card payment
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+          default: ACTIVE
+        cdt:
+          $ref: '#/components/schemas/CdtDetails'
+        simulated:
+          type: boolean
+          default: true
+          description: Always true. Indicates data is generated by Banco Demo.
+
+    TransactionStatus:
+      type: string
+      enum: [BOOKED, PENDING]
+
+    Transaction:
+      type: object
+      required:
+        - id
+        - accountId
+        - bookingDateTime
+        - amount
+        - amountMinor
+        - status
+        - description
+        - simulated
+      properties:
+        id:
+          type: string
+          example: 'tx-2026-10-30-salario'
+        accountId:
+          type: string
+          example: 'acc-ahorros-demo-01'
+        bookingDateTime:
+          type: string
+          format: date-time
+          example: '2026-10-30T08:00:00Z'
+        amount:
+          type: string
+          example: '+5200000.00'
+          description: Signed decimal amount (+ for deposit, - for expense)
+        amountMinor:
+          type: integer
+          example: 520000000
+          description: Signed integer amount in COP centavos
+        status:
+          $ref: '#/components/schemas/TransactionStatus'
+        description:
+          type: string
+          example: 'NOMINA EMPRESA DEMO SAS'
+        merchantName:
+          type: [string, "null"]
+          example: 'EMPRESA DEMO SAS'
+        category:
+          type: [string, "null"]
+          example: 'salary'
+        simulated:
+          type: boolean
+          default: true
+
+    CdtProduct:
+      type: object
+      required:
+        - id
+        - name
+        - termDays
+        - rateEa
+        - rateEaBps
+        - minAmount
+        - minAmountMinor
+        - risk
+      properties:
+        id:
+          type: string
+          example: 'cdt-demo-180'
+        name:
+          type: string
+          example: 'CDT Digital Banco Demo 180 Días'
+        termDays:
+          type: integer
+          example: 180
+        rateEa:
+          type: number
+          example: 10.5
+        rateEaBps:
+          type: integer
+          example: 1050
+        minAmount:
+          type: string
+          example: '500000.00'
+        minAmountMinor:
+          type: integer
+          example: 50000000
+        risk:
+          type: string
+          example: 'BAJO'
+
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          example: 'https://bancodemo.fynk.local/errors/consent-revoked'
+        title:
+          type: string
+          example: 'Consent Revoked'
+        status:
+          type: integer
+          example: 403
+        detail:
+          type: string
+          example: 'The consent for this account access has been revoked.'
+        code:
+          type: string
+          example: 'consent_revoked'
+        instance:
+          type: string
+          example: '/open-finance/v1/accounts'
