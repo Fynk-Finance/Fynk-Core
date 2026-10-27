@@ -35,6 +35,7 @@ Sofia asked to "update the info of codeowners and plan using as reference the fo
   * CLAUDE.md, Team: new GitHub column;
   * each module prompt (`docs/modules/M00` to `M16`): the Owner row now has the GitHub user;
   * `docs/developer-kit.md`: no longer says to replace placeholders.
+* **Design link in the shared contracts.** Sofia asked whether the contracts were really complete. Every item of M0 Steps 2 and 3 is in code. The bank provider port (section 4.4) is M5's first branch, and `fixtures/demo-user.json` is M16's. The check found one stale line: `00-shared-contracts.md` pointed to the original design artifact, which the team cannot read. Sofia asked to fix it in this pull request. It now points to the team's copy, as CLAUDE.md does.
 
 ## Result
 
