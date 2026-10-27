@@ -183,12 +183,15 @@ jobs:
         run: make test-go GOTESTFLAGS="-race -covermode=atomic -coverprofile=coverage.out"
       - name: Migration integration test (real Postgres)
         run: make test-integration
+      - name: Keycloak realm integration test (Keycloak and Mailpit through testcontainers)
+        run: make test-keycloak
       - name: Build both services
         run: make build-go
-      - name: Build both Docker images
+      - name: Build the Docker images
         run: |
           docker build --pull -t fynk-api:ci services/api
           docker build --pull -t fynk-bank-simulator:ci services/bank-simulator
+          docker build --pull -t fynk-keycloak:ci services/keycloak
       - name: Coverage summary
         if: always()
         run: |
