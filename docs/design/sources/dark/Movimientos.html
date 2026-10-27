@@ -1,0 +1,344 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390"><title>App azul y verde · Oscuro · Movimientos</title></head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;background:#13212d;color:#e8f1f6}
+a{color:#62c8f0}
+.vscroll{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;overflow-x:hidden;overflow-y:auto}
+.vscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.btn{cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.row{cursor:pointer;transition:background-color .15s ease}
+.row:hover{background-color:#182a37 !important}
+.sw{position:relative;flex-shrink:0;width:48px;height:28px;padding:0;border:none;border-radius:999px;cursor:pointer;transition:background-color .2s ease}
+.sw-k{position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:999px;background:#13212d;box-shadow:0 2px 6px rgba(0,0,0,.25);transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.chip{cursor:pointer;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
+.chip:hover{border-color:#2b5267 !important}
+.field{transition:border-color .2s ease,background-color .2s ease}
+.field:focus-within{border-color:#2fa8d8 !important;background-color:#13212d !important}
+.field input,.field textarea{border:none;outline:none;background:transparent;font-family:inherit;font-size:15px;color:#e8f1f6;flex-grow:1;min-width:0;width:100%;resize:none}
+.field input::placeholder,.field textarea::placeholder{color:#71889a}
+.cta{cursor:pointer;transition:background-color .2s ease}
+.cta:hover{background-color:#279dcc !important}
+.cta-red:hover{background-color:#a93226 !important}
+.link{cursor:pointer}
+.btn:focus-visible,.row:focus-visible,.sw:focus-visible,.chip:focus-visible,.cta:focus-visible,.link:focus-visible{outline:3px solid #b5e5f7;outline-offset:2px}
+@keyframes cf-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.cf-in{animation:cf-in .26s ease-out both}
+@keyframes cf-scrim{from{opacity:0}to{opacity:1}}
+@keyframes cf-sheet{from{transform:translateY(100%)}to{transform:none}}
+@keyframes cf-dlg{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes cf-toast{0%{opacity:0;transform:translate(-50%,10px)}12%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,6px)}}
+.cf-scrim{animation:cf-scrim .2s ease-out both}
+.cf-sheet{animation:cf-sheet .36s cubic-bezier(.22,1,.36,1) both}
+.cf-dlg{animation:cf-dlg .26s cubic-bezier(.22,1,.36,1) both}
+.cf-toast{animation:cf-toast 2.6s ease both}
+@media (prefers-reduced-motion:reduce){.cf-in,.cf-scrim,.cf-sheet,.cf-dlg,.cf-toast{animation:none}.sw,.sw-k{transition:none}}
+.mv-sticky{position:sticky;top:0;z-index:3;background:#13212d}
+.fbtn{cursor:pointer;transition:background-color .2s ease,border-color .2s ease}
+.fbtn:hover{border-color:#2b5267 !important}
+.fbtn:focus-visible,.more:focus-visible,.x:focus-visible{outline:3px solid #b5e5f7;outline-offset:2px}
+.more{cursor:pointer;transition:background-color .2s ease}
+.more:hover{background-color:#1a3444 !important}
+.x{cursor:pointer}
+@keyframes mv-skel{0%,100%{opacity:.5}50%{opacity:1}}
+.skel{background-color:#22313d;animation:mv-skel 1.2s ease-in-out infinite}
+@keyframes mv-spin{to{transform:rotate(360deg)}}
+.spin{animation:mv-spin .8s linear infinite}
+@keyframes mv-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.mv-in{animation:mv-in .3s ease-out both}
+@media (prefers-reduced-motion:reduce){.skel,.spin,.mv-in{animation:none}}
+</style>
+
+<div class="cf-root" style="width: 390px; height: 844px; box-sizing: border-box; background-color: #0b1620; position: relative; overflow: hidden">
+<div class="vscroll mv-scroll" onScroll="" style="position: absolute; inset: 0; display: flex; flex-direction: column; padding-bottom: 40px">
+<div style="padding: 16px 16px 0; flex-shrink: 0">
+<div style="margin-top: 16px"><div data-dc-group="" style="box-sizing: border-box; display: flex; flex-direction: row; justify-content: space-between; align-items: center"><h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px; line-height: 34px; letter-spacing: -0.01em">Movimientos</h1><a class="btn" href="Dashboard.html" aria-label="Volver al dashboard" style="width: 48px; height: 48px; box-sizing: border-box; border-radius: 14px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; text-decoration: none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></a></div>
+</div>
+</div>
+
+<div class="mv-sticky" style="flex-shrink: 0; padding: 16px 16px 8px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid #22313d">
+<div style="display: flex; gap: 8px">
+<label class="field" style="flex-grow: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 48px; box-sizing: border-box; padding: 0 16px; border-radius: 16px; border: 1.5px solid #223746; background-color: #182a37">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#62c8f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"></path></svg>
+<input type="search" aria-label="Buscar por nombre" placeholder="Buscar por nombre" onInput="">
+</label>
+<button class="fbtn" type="button" onClick="" aria-label="Filtros" aria-haspopup="dialog" style="position: relative; flex-shrink: 0; width: 48px; height: 48px; box-sizing: border-box; border-radius: 16px; border: 1.5px solid #223746; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+
+</button>
+</div>
+
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Mostrando 20 de 94 · +$16.545.000 · −$9.903.300</span>
+</div>
+
+<div style="padding: 8px 16px 0; display: flex; flex-direction: column; gap: 16px">
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 8px 2px 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #97abb8">Hoy · 22 sep</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #b6e45a">+$5.179.900</span>
+</div>
+<div style="border-radius: 20px; background-color: #13212d; padding: 2px 0">
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Salario, +$5.200.000" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: none; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #223318; color: #b6e45a; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7 7 7-7"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Salario</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Ingreso · Bancolombia</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #62c8f0">+$5.200.000</span>
+</button>
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Tienda de barrio, −$20.100" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: 1px solid #edf1f4; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Tienda de barrio</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Mercado · Efectivo</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$20.100</span>
+</button>
+
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 8px 2px 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #97abb8">Ayer · 21 sep</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #97abb8">−$41.000</span>
+</div>
+<div style="border-radius: 20px; background-color: #13212d; padding: 2px 0">
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Tienda de barrio, −$41.000" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: none; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Tienda de barrio</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Mercado · Efectivo</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$41.000</span>
+</button>
+
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 8px 2px 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #97abb8">dom 20 sep</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #97abb8">−$312.300</span>
+</div>
+<div style="border-radius: 20px; background-color: #13212d; padding: 2px 0">
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Aporte a Viaje a Cartagena, −$300.000" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: none; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2V5zM2 9v1c0 1.1.9 2 2 2h1"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Aporte a Viaje a Cartagena</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Ahorro · Bancolombia</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$300.000</span>
+</button>
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Café, −$12.300" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: 1px solid #edf1f4; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 2v9M4 2v5a3 3 0 0 0 6 0V2M7 11v11M17 2c-2 2-3 5-3 8h3v12"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Café</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Comida · Efectivo</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$12.300</span>
+</button>
+
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 8px 2px 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #97abb8">sáb 19 sep</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #97abb8">−$16.200</span>
+</div>
+<div style="border-radius: 20px; background-color: #13212d; padding: 2px 0">
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Taxi, −$16.200" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: none; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6v6M16 6v6M2 12h20M6 18h12M4 18V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12M7 21v-3M17 21v-3"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Taxi</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Transporte · Efectivo</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$16.200</span>
+</button>
+
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 8px 2px 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #97abb8">vie 18 sep</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #97abb8">−$73.500</span>
+</div>
+<div style="border-radius: 20px; background-color: #13212d; padding: 2px 0">
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Suscripción streaming, −$38.900" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: none; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Suscripción streaming</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Entretenimiento · Nu Bank</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$38.900</span>
+</button>
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Recarga transporte, −$34.600" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: 1px solid #edf1f4; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6v6M16 6v6M2 12h20M6 18h12M4 18V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12M7 21v-3M17 21v-3"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Recarga transporte</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Transporte · Daviplata</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$34.600</span>
+</button>
+
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 8px 2px 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #97abb8">mar 15 sep</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #b6e45a">+$53.000</span>
+</div>
+<div style="border-radius: 20px; background-color: #13212d; padding: 2px 0">
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Tienda de barrio, −$26.700" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: none; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Tienda de barrio</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Mercado · Efectivo</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$26.700</span>
+</button>
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Transferencia recibida, +$79.700" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: 1px solid #edf1f4; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #223318; color: #b6e45a; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7 7 7-7"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Transferencia recibida</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Ingreso · Daviplata</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #62c8f0">+$79.700</span>
+</button>
+
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 8px 2px 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #97abb8">lun 14 sep</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #97abb8">−$29.300</span>
+</div>
+<div style="border-radius: 20px; background-color: #13212d; padding: 2px 0">
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Cine, −$29.300" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: none; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Cine</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Entretenimiento · Bancolombia</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$29.300</span>
+</button>
+
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 8px 2px 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #97abb8">sáb 12 sep</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #97abb8">−$10.400</span>
+</div>
+<div style="border-radius: 20px; background-color: #13212d; padding: 2px 0">
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Café, −$10.400" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: none; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 2v9M4 2v5a3 3 0 0 0 6 0V2M7 11v11M17 2c-2 2-3 5-3 8h3v12"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Café</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Comida · Efectivo</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$10.400</span>
+</button>
+
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 8px 2px 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #97abb8">vie 11 sep</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #97abb8">−$151.600</span>
+</div>
+<div style="border-radius: 20px; background-color: #13212d; padding: 2px 0">
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Internet hogar, −$89.900" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: none; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Internet hogar</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Servicios · Bancolombia</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$89.900</span>
+</button>
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Videojuego, −$61.700" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: 1px solid #edf1f4; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Videojuego</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Entretenimiento · Nu Bank</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$61.700</span>
+</button>
+
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 8px 2px 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #97abb8">jue 10 sep</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #97abb8">−$95.800</span>
+</div>
+<div style="border-radius: 20px; background-color: #13212d; padding: 2px 0">
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Tienda de ropa, −$95.800" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: none; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7 16 3h-2a2 2 0 0 1-4 0H8L4 7l3 3 1-1v12h8V9l1 1z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Tienda de ropa</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Ropa · Nu Bank</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$95.800</span>
+</button>
+
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 8px 2px 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #97abb8">mié 9 sep</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #97abb8">−$10.800</span>
+</div>
+<div style="border-radius: 20px; background-color: #13212d; padding: 2px 0">
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Café, −$10.800" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: none; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 2v9M4 2v5a3 3 0 0 0 6 0V2M7 11v11M17 2c-2 2-3 5-3 8h3v12"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Café</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Comida · Efectivo</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$10.800</span>
+</button>
+
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 8px 2px 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #97abb8">mar 8 sep</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #97abb8">−$35.100</span>
+</div>
+<div style="border-radius: 20px; background-color: #13212d; padding: 2px 0">
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Cine, −$25.500" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: none; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Cine</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Entretenimiento · Bancolombia</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$25.500</span>
+</button>
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Café, −$9.600" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: 1px solid #edf1f4; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 2v9M4 2v5a3 3 0 0 0 6 0V2M7 11v11M17 2c-2 2-3 5-3 8h3v12"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Café</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Comida · Efectivo</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$9.600</span>
+</button>
+
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 8px 2px 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #97abb8">sáb 5 sep</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #97abb8">−$89.700</span>
+</div>
+<div style="border-radius: 20px; background-color: #13212d; padding: 2px 0">
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Cine, −$46.800" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: none; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Cine</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Entretenimiento · Bancolombia</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$46.800</span>
+</button>
+
+<button class="row" type="button" onClick="" aria-label="Ver detalle de Domicilio, −$42.900" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 8px; border: none; border-top: 1px solid #edf1f4; border-radius: 14px; background-color: #13212d; font-family: inherit; color: #e8f1f6; text-align: left">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #182a37; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 2v9M4 2v5a3 3 0 0 0 6 0V2M7 11v11M17 2c-2 2-3 5-3 8h3v12"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Domicilio</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">Comida · Nu Bank</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$42.900</span>
+</button>
+
+</div>
+</section>
+
+
+
+
+<button class="more" type="button" onClick="" style="height: 48px; border-radius: 15px; border: 1.5px solid #223746; background-color: #182a37; color: #62c8f0; font-family: inherit; font-size: 14px; font-weight: 700">Cargar 20 más</button>
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+</div>
+</body></html>
