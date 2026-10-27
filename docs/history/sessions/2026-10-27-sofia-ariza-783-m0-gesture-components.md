@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: feature/gesture-components
 tool: Claude Code
-pr: none
+pr: #32
 status: partial
 ---
 
@@ -38,7 +38,7 @@ Same session as #11 to #15 and #29. Sofia asked to "review the current design to
 * Spot checks of the snapshots against the design:
   * switch track `#CFDBE3`, `#344755` in dark;
   * knob, selected segment and current dot white in light, `#13212D` in dark.
-* Pull request: not opened yet.
+* Pull request: #32.
 
 ## Decisions and problems
 
