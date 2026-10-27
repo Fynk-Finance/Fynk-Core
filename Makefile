@@ -13,10 +13,14 @@ REDOCLY       := REDOCLY_TELEMETRY=off REDOCLY_SUPPRESS_UPDATE_NOTICE=true pnpm 
 # Local stack (docker-compose.yml, docs/local-dev.md).
 COMPOSE       := docker compose
 
+# Extra flags for the test runners, empty locally. CI adds coverage (.github/workflows/ci.yml).
+GOTESTFLAGS   ?=
+JESTFLAGS     ?=
+
 .DEFAULT_GOAL := help
 
-.PHONY: help install lint lint-mobile lint-go test test-mobile test-go test-scripts \
-        generate generate-contract generate-go generate-ts mock-api dev down migrate certs e2e history
+.PHONY: help install lint lint-mobile lint-go format-check test test-mobile test-go test-scripts \
+        test-integration build-go generate generate-contract generate-go generate-ts mock-api dev down migrate certs e2e history
 
 help: ## List the available targets
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -24,11 +28,13 @@ help: ## List the available targets
 install: ## Install JavaScript dependencies with the pinned pnpm
 	pnpm install --frozen-lockfile
 
-lint: lint-mobile lint-go ## Lint everything (ESLint, tsc, Prettier, go vet, golangci-lint)
+lint: lint-mobile lint-go format-check ## Lint everything (ESLint, tsc, go vet, golangci-lint, Prettier)
 
 lint-mobile: generate-ts ## Lint and typecheck the mobile app
 	pnpm --filter @fynk/mobile lint
 	pnpm --filter @fynk/mobile typecheck
+
+format-check: ## Check the formatting of the whole repository with Prettier
 	pnpm exec prettier --check .
 
 lint-go: generate-go ## go vet and golangci-lint on every Go module that has code
@@ -40,21 +46,32 @@ lint-go: generate-go ## go vet and golangci-lint on every Go module that has cod
 
 test: test-mobile test-go test-scripts ## Run every unit test
 
-test-mobile: ## Jest for the mobile app
-	pnpm --filter @fynk/mobile test
+test-mobile: ## Jest for the mobile app (JESTFLAGS="--coverage" adds coverage)
+	pnpm --filter @fynk/mobile test $(JESTFLAGS)
 
 test-scripts: ## node:test for the repository scripts
 	node --test scripts/*.test.mjs
 
-test-go: generate-go ## go test on every Go module that has code
+test-go: generate-go ## go test on every Go module that has code (GOTESTFLAGS adds flags)
 	@set -e; for m in $(GO_MODULES); do \
 	  if [ -z "$$(find $$m -name '*.go' -print -quit)" ]; then echo "skip $$m (no Go files yet)"; continue; fi; \
 	  echo "test $$m"; \
 	  if [ "$$OS" = "Windows_NT" ]; then \
-	    (cd $$m && { go test ./... || { echo "retrying once (Windows can lock the test binary: unlinkat)"; go test ./...; }; }); \
+	    (cd $$m && { go test $(GOTESTFLAGS) ./... || { echo "retrying once (Windows can lock the test binary: unlinkat)"; go test $(GOTESTFLAGS) ./...; }; }); \
 	  else \
-	    (cd $$m && go test ./...); \
+	    (cd $$m && go test $(GOTESTFLAGS) ./...); \
 	  fi; \
+	done
+
+test-integration: generate-go ## Migration tests against a real Postgres (needs DATABASE_URL, see docs/local-dev.md)
+	@[ -n "$$DATABASE_URL" ] || { echo "DATABASE_URL is not set. Start the stack with make dev, then see docs/local-dev.md."; exit 1; }
+	cd services/api && go test -tags integration -count=1 ./internal/platform/migrate/...
+
+build-go: generate-go ## Build every Go module that has code into bin/ (static binaries, as in the Dockerfiles)
+	@set -e; for m in $(GO_MODULES); do \
+	  if [ -z "$$(find $$m -name '*.go' -print -quit)" ]; then echo "skip $$m (no Go files yet)"; continue; fi; \
+	  echo "build $$m"; \
+	  (cd $$m && CGO_ENABLED=0 go build -trimpath -o ../../bin/$$(basename $$m)/ ./...); \
 	done
 
 generate: generate-contract generate-go generate-ts ## Lint and bundle the contract, generate the Go servers and the TypeScript types
