@@ -30,10 +30,8 @@ func newBankMux(s *store.BankStore) http.Handler {
 
 	oauthService := oauth.NewService(s)
 	oauthService.RegisterRoutes(mux)
-
 	portalHandler := portal.NewHandler(s)
 	portalHandler.RegisterRoutes(mux)
-
 	return mux
 }
 
