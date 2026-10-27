@@ -35,7 +35,7 @@ describe('design tokens', () => {
   const expected = readmeColors();
 
   it('reads every color row of the README table', () => {
-    expect(Object.keys(expected).length).toBe(41);
+    expect(Object.keys(expected).length).toBe(42);
   });
 
   it.each(Object.entries(expected))('%s has the README light and dark values', (name, value) => {
