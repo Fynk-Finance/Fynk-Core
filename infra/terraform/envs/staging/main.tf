@@ -255,3 +255,10 @@ module "monitoring" {
   caddy_instance_id                      = module.caddy_egress.instance_id
   api_log_group_name                     = module.ecs_api.log_group_name
 }
+
+# GitHub Actions OIDC Deploy Role (No static AWS keys per HU-034)
+module "github_oidc" {
+  source = "../../modules/github-oidc"
+
+  environment = var.environment
+}

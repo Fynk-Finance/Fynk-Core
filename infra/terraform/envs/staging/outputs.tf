@@ -114,3 +114,9 @@ output "dashboard_name" {
   value       = module.monitoring.dashboard_name
   description = "CloudWatch dashboard name"
 }
+
+# CI/CD Outputs
+output "github_deploy_role_arn" {
+  value       = module.github_oidc.role_arn
+  description = "IAM Role ARN for GitHub Actions deployment workflows"
+}
