@@ -5,7 +5,7 @@
 | Phase | 1 (audit store, HU-027) and 4 (privacy, HU-028 and HU-029) |
 | Stories | HU-027 SCRUM-41 (5), HU-028 SCRUM-42 (5), HU-029 SCRUM-43 (2) |
 | Points | 12 |
-| Owner | Juan Pablo Contreras |
+| Owner | Juan Pablo Contreras (`@juancontrerasp`) |
 | Owns | `services/api/internal/privacy/`, `services/api/internal/audit/`, `contracts/modules/privacy.yaml`, `apps/mobile/src/modules/compliance/` |
 | Depends on | M0, M1 (Keycloak admin client), M2 (`wipe`, `exportAll`), M4 (revoke all), M5 (links) |
 | Used by | every backend module (audit recorder) |

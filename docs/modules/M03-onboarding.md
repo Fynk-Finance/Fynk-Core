@@ -5,7 +5,7 @@
 | Phase | 3 (can start in Phase 2 with stubs) |
 | Stories | HU-052 SCRUM-69 (5) |
 | Points | 5 |
-| Owner | Sofia Nicolle Ariza |
+| Owner | Sofia Nicolle Ariza (`@sofia-ariza-783`) |
 | Owns | `apps/mobile/src/modules/onboarding/` |
 | Depends on | M1 (`EmailVerificationStep`, `PATCH /me`), M5 (link flow), M6 (cash), M8 (goal form), M9 (recurring form) |
 | Used by | first run after registration |

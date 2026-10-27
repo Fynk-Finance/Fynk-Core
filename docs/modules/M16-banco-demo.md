@@ -5,7 +5,7 @@
 | Phase | 0 (API and data), 1 (OAuth with consent), 2 (portal) |
 | Stories | HU-047 SCRUM-64 (8), HU-048 SCRUM-65 (5) |
 | Points | 13 |
-| Owner | Juan Pablo Contreras |
+| Owner | Juan Pablo Contreras (`@juancontrerasp`) |
 | Owns | `services/bank-simulator/`, `contracts/bank-simulator.yaml`, `fixtures/demo-user.json`, the `banco-demo` realm and theme inside `services/keycloak/` (coordinate the shared Keycloak image with M1) |
 | Depends on | M0, M14 (hosting and mTLS listener) |
 | Used by | M5 (main client), M15 (CDT products), every module's tests (fixture) |

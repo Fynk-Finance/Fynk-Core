@@ -5,7 +5,7 @@
 | Phase | 2 |
 | Stories | HU-012 SCRUM-26 (3), HU-013 SCRUM-27 (3), HU-014 SCRUM-28 (5), HU-019 SCRUM-33 (3), HU-020 SCRUM-34 (3), HU-054 SCRUM-71 (2) |
 | Points | 19 |
-| Owner | Sofia Nicolle Ariza |
+| Owner | Sofia Nicolle Ariza (`@sofia-ariza-783`) |
 | Owns | `apps/mobile/src/modules/accounts/` |
 | Depends on | M2 (vault), M5 (accounts written by sync), M7 (movement list component for account detail) |
 | Used by | M3, M10, M15, Dashboard |

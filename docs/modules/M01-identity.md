@@ -5,7 +5,7 @@
 | Phase | 1 |
 | Stories | HU-001 SCRUM-5 (2), HU-002 SCRUM-6 (3), HU-005 SCRUM-9 (5), HU-050 SCRUM-67 (5) |
 | Points | 15 |
-| Owner | Daniel Palacios |
+| Owner | Daniel Palacios (`@Komi-yes`) |
 | Owns | `services/keycloak/`, `services/api/internal/identity/`, `contracts/modules/identity.yaml`, `apps/mobile/src/modules/identity/` |
 | Depends on | M0 (Gate A), M14 (Keycloak running on staging) |
 | Used by | every module through the auth middleware and the session hook |

@@ -103,14 +103,14 @@ fynk/
 
 ## Team
 
-| Person | Modules | Points |
-| --- | --- | --- |
-| Daniel Palacios | M1 Identity, M2 Vault and backup | 39 |
-| Sofia Nicolle Ariza | M0 Foundations, M3 Onboarding, M6 Accounts, M7 Transactions | 42 |
-| Juan Carlos Leal | M4 Consents, M5 Bank and sync | 41 |
-| Juan Pablo Contreras | M13 Compliance and audit, M14 Infrastructure, M16 Banco Demo | 35 |
-| Karol | M8 Savings goals, M9 Recurring and subscriptions, M12 Notifications | 36 |
-| Julián Castiblanco | M10 Analytics and caps, M11 AI recommendations, M15 Investment | 42 |
+| Person | GitHub | Modules | Points |
+| --- | --- | --- | --- |
+| Daniel Palacios | `@Komi-yes` | M1 Identity, M2 Vault and backup | 39 |
+| Sofia Nicolle Ariza | `@sofia-ariza-783` | M0 Foundations, M3 Onboarding, M6 Accounts, M7 Transactions | 42 |
+| Juan Carlos Leal | `@JuanLeal05` | M4 Consents, M5 Bank and sync | 41 |
+| Juan Pablo Contreras | `@juancontrerasp` | M13 Compliance and audit, M14 Infrastructure, M16 Banco Demo | 35 |
+| Karol | `@Karol2905` | M8 Savings goals, M9 Recurring and subscriptions, M12 Notifications | 36 |
+| Julián Castiblanco | `@JulCR34l` | M10 Analytics and caps, M11 AI recommendations, M15 Investment | 42 |
 
 Each person reviews the pull requests of their modules (see `.github/CODEOWNERS`). A change to another person's module needs that person's approval.
 

@@ -5,7 +5,7 @@
 | Phase | 1 |
 | Stories | HU-003 SCRUM-7 (3), HU-004 SCRUM-8 (8), HU-045 SCRUM-62 (8), HU-046 SCRUM-63 (5) |
 | Points | 24 |
-| Owner | Daniel Palacios |
+| Owner | Daniel Palacios (`@Komi-yes`) |
 | Owns | `apps/mobile/src/modules/vault/`, `services/api/internal/backup/`, `contracts/modules/backup.yaml` |
 | Depends on | M0, M1 (session, device key pair, `ActivateDevice`) |
 | Used by | every mobile module that stores data (M5 to M12) |

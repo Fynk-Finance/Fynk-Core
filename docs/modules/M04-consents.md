@@ -5,7 +5,7 @@
 | Phase | 2 (the backend part is needed by M5 in Phase 1, start with it) |
 | Stories | HU-006 SCRUM-20 (5), HU-007 SCRUM-21 (2), HU-008 SCRUM-22 (5) |
 | Points | 12 |
-| Owner | Juan Carlos Leal |
+| Owner | Juan Carlos Leal (`@JuanLeal05`) |
 | Owns | `services/api/internal/consents/`, `contracts/modules/consents.yaml`, `apps/mobile/src/modules/consents/` |
 | Depends on | M0, M1, M13 audit |
 | Used by | M5 (consent check before every bank call), M13 (deletion revokes all) |

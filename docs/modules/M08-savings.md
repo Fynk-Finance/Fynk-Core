@@ -5,7 +5,7 @@
 | Phase | 3 |
 | Stories | HU-035 SCRUM-51 (3), HU-036 SCRUM-52 (3), HU-037 SCRUM-53 (3) |
 | Points | 9 |
-| Owner | Karol |
+| Owner | Karol (`@Karol2905`) |
 | Owns | `apps/mobile/src/modules/savings/` |
 | Depends on | M2 (vault, backup), M7 (`setTransactionGoal`, movement list), M12 (milestone notifications) |
 | Used by | M3 (onboarding step 4), M10 (goals in the snapshot), M11 ("Aporte automático" action), Dashboard |
