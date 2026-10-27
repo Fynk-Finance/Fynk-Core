@@ -1,12 +1,15 @@
 // Root of the app: the first full-screen flow whose gate is open (sign in, unlock, onboarding),
-// otherwise the main tabs plus every module's pushed screens.
+// otherwise the main tabs plus every module's pushed screens. Every screen gets the default
+// transition and back gesture of its kind (screenOptions.ts) unless its ModuleScreen says otherwise.
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useReducedMotion } from 'react-native-reanimated';
 
 import type { ModuleName } from '@shared/domain/types';
 import { CatalogScreen } from '@shared/ui/__catalog__/CatalogScreen';
 
 import { collectScreens, gateOrder, moduleRoutes } from '../registry';
 import { MainTabs } from './MainTabs';
+import { flowOptions, screenOptionsFor } from './screenOptions';
 
 const Stack = createNativeStackNavigator();
 const SCREENS = collectScreens();
@@ -25,21 +28,24 @@ function useOpenGate(): ModuleName | null {
 
 export function RootNavigator() {
   const gate = useOpenGate();
+  const reduceMotion = useReducedMotion();
   const Flow = gate ? moduleRoutes[gate].flow : undefined;
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{ headerShown: false, ...screenOptionsFor({}, { reduceMotion }) }}
+    >
       {gate && Flow ? (
-        <Stack.Screen name={`${gate}.Flow`} component={Flow} />
+        <Stack.Screen name={`${gate}.Flow`} component={Flow} options={flowOptions} />
       ) : (
         <>
-          <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen name="Main" component={MainTabs} options={flowOptions} />
           {SCREENS.map((s) => (
             <Stack.Screen
               key={s.name}
               name={s.name}
               component={s.component}
-              options={{ presentation: s.presentation ?? 'card' }}
+              options={screenOptionsFor(s, { reduceMotion })}
             />
           ))}
           {__DEV__ ? <Stack.Screen name="DevCatalog" component={CatalogScreen} /> : null}
