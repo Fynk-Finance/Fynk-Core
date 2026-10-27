@@ -1,5 +1,14 @@
 // The design tokens must match the table in docs/design/README.md, the team's written source.
-import { colors, fontSize, fonts, radius, size } from './tokens';
+import {
+  darkColors,
+  fontSize,
+  fonts,
+  lightColors,
+  radius,
+  shadows,
+  size,
+  type PaletteToken,
+} from './tokens';
 
 // Node modules through Jest, so the app keeps no Node types (it runs on React Native).
 declare const __dirname: string;
@@ -9,18 +18,53 @@ const { readFileSync } = jest.requireActual<{
 const { join } = jest.requireActual<{ join(...parts: string[]): string }>('path');
 const README = readFileSync(join(__dirname, '../../../../../docs/design/README.md'), 'utf8');
 
-function readmeColors(): Record<string, string> {
-  const rows = README.matchAll(/^\| `color\.(\w+)` \| `(#[0-9A-Fa-f]{6})` \|/gm);
-  return Object.fromEntries([...rows].map((m) => [m[1]!, m[2]!.toUpperCase()]));
+/** Rows like | `color.divider` | `#EDF1F4` | `#22313D` | … | where "same" repeats the light value. */
+function readmeColors(): Record<string, { light: string; dark: string }> {
+  const rows = README.matchAll(
+    /^\| `color\.(\w+)` \| `(#[0-9A-Fa-f]{6})` \| (?:`(#[0-9A-Fa-f]{6})`|same) \|/gm,
+  );
+  return Object.fromEntries(
+    [...rows].map((m) => {
+      const light = m[2]!.toUpperCase();
+      return [m[1]!, { light, dark: (m[3] ?? light).toUpperCase() }];
+    }),
+  );
 }
 
 describe('design tokens', () => {
-  it('has every color of the README table with the same value', () => {
-    const expected = readmeColors();
-    expect(Object.keys(expected).length).toBe(24);
-    for (const [name, value] of Object.entries(expected)) {
-      expect({ name, value: colors[name as keyof typeof colors] }).toEqual({ name, value });
+  const expected = readmeColors();
+
+  it('reads every color row of the README table', () => {
+    expect(Object.keys(expected).length).toBe(41);
+  });
+
+  it.each(Object.entries(expected))('%s has the README light and dark values', (name, value) => {
+    const token = name as PaletteToken;
+    expect({ light: lightColors[token], dark: darkColors[token] }).toEqual(value);
+  });
+
+  it('has the same keys in both palettes', () => {
+    expect(Object.keys(darkColors).sort()).toEqual(Object.keys(lightColors).sort());
+  });
+
+  it('keeps everything drawn on blue the same in dark', () => {
+    for (const token of [
+      'primary',
+      'primaryLight',
+      'accent',
+      'onPrimary',
+      'onPrimaryMuted',
+      'onPrimaryOverlay',
+    ] as const) {
+      expect(darkColors[token]).toBe(lightColors[token]);
     }
+  });
+
+  it('uses black ink shadows in dark and keeps the lime shadows', () => {
+    expect(shadows.light.card.shadowColor).toBe('#0F2233');
+    expect(shadows.dark.card.shadowColor).toBe('#000000');
+    expect(shadows.dark.card.shadowOpacity).toBe(shadows.light.card.shadowOpacity);
+    expect(shadows.dark.tabBar).toEqual(shadows.light.tabBar);
   });
 
   it('has the README font sizes', () => {
