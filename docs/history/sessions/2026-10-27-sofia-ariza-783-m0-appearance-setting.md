@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: feature/appearance-setting
 tool: Claude Code
-pr: none
+pr: #34
 status: done
 ---
 
@@ -28,7 +28,7 @@ Same session as #11 to #32. Sofia asked to "manage a default and allow specifica
 ## Result
 
 * Tests: 21 suites, 403 tests and 116 snapshots pass. ESLint, `tsc` and Prettier are clean.
-* Pull request: not opened yet. Listed as "new screen, needs design review".
+* Pull request: #34.
 
 ## Decisions and problems
 
