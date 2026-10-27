@@ -14,7 +14,7 @@ Plan and prompts:
 1. Know your module and the Jira key (project SCRUM). Every line under "Criterios de Calidad" becomes at least one test.
 2. Read the latest session logs of your module in `docs/history/sessions/` to know what was already done and what was left pending.
 3. Read this file, your module prompt in `docs/modules/` and `00-shared-contracts.md`.
-4. Read the design code of your screens in `docs/design/source/` and their PNGs in `docs/design/screens/` (see Design source below).
+4. Read the design code of your screens in `docs/design/sources/light/` and `docs/design/sources/dark/`, and their PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` (see Design source below).
 5. Create your branch from the latest `develop` (see Git workflow). Never work on `develop` or `main` directly.
 6. Write the tests from the criteria first, then the code.
 7. Stay inside your module's folders. Anything another module needs goes through its `index.ts`, a port, or the API contract.
@@ -23,9 +23,10 @@ Plan and prompts:
 ## Design source
 
 * **The only visual source is the design artifact "Diseño App Fynk (Copy)", page "App azul y verde", owned by the team: https://claude.ai/artifact/DzjgXy5aVtdYQiTzq6gquk**
-* The repository keeps the design's own code for every screen in `docs/design/source/` (`Verde*.dc.html`). Read the code of your screens first and take exact colors, fonts, sizes, SVG illustrations, icons and animations from it. Never guess a value that is in that code.
-* `docs/design/screens/` keeps a PNG of each screen to check that the result looks the same. Screens taller than the phone have a second image with the suffix `-2`.
-* `docs/design/README.md` maps each screen to its code file, image and module, and explains how to turn the design's HTML, SVG and CSS animations into React Native.
+* The repository keeps the design's own code for every screen in two themes: `docs/design/sources/light/<Screen>.html` and `docs/design/sources/dark/<Screen>.html`. Both files have the same markup and only the colors differ. Read the code of your screens first and take exact colors, fonts, sizes, SVG illustrations, icons and animations from it. Never guess a value that is in that code. `node scripts/design-color-pairs.mjs '<light color>'` gives the dark value of any color.
+* `docs/design/screens/light/` and `docs/design/screens/dark/` keep a PNG of each screen to check that the result looks the same in both themes.
+* Every screen works in light and dark. The app follows the phone's setting unless the person picks Claro or Oscuro in the app.
+* `docs/design/README.md` maps each screen to its code file, image, module, buttons, gestures and transition, and explains how to turn the design's HTML, SVG, CSS animations and gestures into React Native. Every screen uses the default transition and back gesture of its kind unless its inventory row says otherwise.
 * When the design changes, it is edited in the copy artifact and the affected files in `docs/design/` are updated in a `docs/update-design` pull request.
 * Colors, fonts, spacing and components come only from `apps/mobile/src/shared/ui/` (built by M0 from the design). Never hardcode a color or invent a style.
 * When a screen is missing in the design, build it from existing components and list it in the pull request as "new screen, needs design review".
@@ -277,7 +278,7 @@ These rules let 17 modules work in parallel without stepping on each other.
 3. Whether the Bancolombia sandbox allows delegated access to personal accounts (spike in M5).
 4. Audit retention periods (M13).
 5. Offline sessions in Keycloak for long lived mobile logins (M1).
-6. The design has 6 Fynk Plus subscription screens (`VerdeSub*.dc.html`) that are not in Jira or in any module yet. Do not build them until the team plans them.
+6. The design has 6 Fynk Plus subscription screens (`Sub*.html` in `docs/design/sources/`) that are not in Jira or in any module yet. Do not build them until the team plans them.
 
 ## Glossary
 
