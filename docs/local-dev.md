@@ -103,10 +103,10 @@ docker compose logs bank-simulator | grep mtls
 **Integration test of the migration runner** (needs the stack running):
 
 ```sh
-cd services/api
-DATABASE_URL=postgres://fynk:fynk-local-only@localhost:5432/fynk?sslmode=disable \
-  go test -tags integration ./internal/platform/migrate/
+DATABASE_URL=postgres://fynk:fynk-local-only@localhost:5432/fynk?sslmode=disable make test-integration
 ```
+
+CI runs the same test against its own Postgres.
 
 ## 6. Certificates
 
@@ -133,3 +133,4 @@ make dev                    # recreates the databases, the realms and the schema
 | HTTPS on localhost shows another issuer (for example "Avast Web/Mail Shield") | Antivirus HTTPS scanning intercepts TLS on your machine. Use the `docker compose exec` commands above, which stay inside Docker, or turn off HTTPS scanning for localhost |
 | `The generated handlers are missing` while building the API | Run `make generate-go`. `make dev` does it for you |
 | A realm change does not show | Keycloak imports a realm only once. Reset (section 7) |
+| `go test -coverprofile=…` or a tool started with `go run` hangs without output (Windows) | Antivirus behavior checks (for example Avast CyberCapture) can hold a freshly built, unsigned Go tool such as `covdata`. Plain `make test` does not use coverage. CI on Linux measures coverage. To run it locally, exclude your Go build cache (`go env GOCACHE`) from the scan |

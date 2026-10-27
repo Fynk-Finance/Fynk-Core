@@ -110,6 +110,22 @@ Images are pinned to exact versions. A version is taken only once it has been ou
 | golang | 1.27.3-bookworm | Build stage of the API and bank simulator images, same Go as `go.mod` |
 | gcr.io/distroless/static-debian12 | nonroot, pinned by digest | Runtime image: no shell, no package manager, non-root user. The tag moves, so the digest is pinned |
 
+## CI (`.github/workflows/ci.yml`)
+
+Actions are pinned by full commit SHA, because a tag can be moved to other code. Only GitHub's own actions are used. A version is taken once it has been out for at least 7 days. Path filters come from `scripts/ci-changes.mjs` (plain Node, tested), not from a third-party action.
+
+| Action or runner | Version | SHA or note |
+| --- | --- | --- |
+| Runner | `ubuntu-24.04` | Fixed image, not `ubuntu-latest`, so an image change is a deliberate edit |
+| Node.js | 22.20.0 | Same as the minimum in `package.json`. pnpm comes from corepack, as on the developer machines |
+| actions/checkout | v7.0.1 | `3d3c42e5aac5ba805825da76410c181273ba90b1` |
+| actions/setup-node | v7.1.0 | `949feb2413d6458794dcd2491c4babbbce0c15c1` |
+| actions/setup-go | v7.0.0 | `b7ad1dad31e06c5925ef5d2fc7ad053ef454303e` (Go from `services/api/go.mod`) |
+| actions/cache | v6.1.0 | `55cc8345863c7cc4c66a329aec7e433d2d1c52a9` |
+| actions/upload-artifact | v7.0.2 | `cf430e030ddbb5b0abf93d22962f4752f3646cd9` |
+
+Coverage reports stay on GitHub: they are saved as run artifacts and the totals go in the job summary. No outside coverage service and no secret.
+
 ## Added in later M0 steps
 
 These are already decided (M0 prompt). Their exact versions are recorded here when each step adds them.
