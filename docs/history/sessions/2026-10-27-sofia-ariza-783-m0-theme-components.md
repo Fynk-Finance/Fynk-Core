@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: feature/theme-components
 tool: Claude Code
-pr: none
+pr: #15
 status: done
 ---
 
@@ -35,7 +35,7 @@ Same session as #11 to #13 and `feature/theme-dark-mode`. Sofia asked to "review
 * Tests: 18 suites, 361 tests and 100 snapshots pass (50 light, 50 dark). ESLint, `tsc` and Prettier are clean.
 * The 50 light snapshots are byte-identical to `develop`, checked by comparing each entry, so light output did not change.
 * Spot checks of the dark snapshots against the design: card `#13212D` with border `#223746`, text `#E8F1F6`, selected chip `#62C8F0`, field `#182A37`.
-* Pull request: not opened yet.
+* Pull request: #15.
 
 ## Decisions and problems
 
