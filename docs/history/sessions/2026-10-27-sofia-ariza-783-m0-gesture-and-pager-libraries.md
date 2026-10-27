@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: chore/add-gesture-and-pager-libraries
 tool: Claude Code
-pr: none
+pr: #13
 status: done
 ---
 
@@ -27,7 +27,7 @@ Same session as #11 and #12. Sofia asked that "all transitions between screens m
 
 * Tests: 17 suites, 256 tests and 50 snapshots pass. ESLint, `tsc` and Prettier are clean.
 * Nothing uses the new libraries yet except the root wrapper.
-* Pull request: not opened yet.
+* Pull request: #13.
 
 ## Decisions and problems
 
