@@ -41,6 +41,13 @@ test('a Go change runs only the go area', () => {
   assert.deepEqual(areas([ch('M', 'go.work')]), { mobile: false, go: true });
 });
 
+test('a Keycloak realm change runs the go area, where its tests live', () => {
+  assert.deepEqual(areas([ch('M', 'services/keycloak/realms/fynk-realm.json')]), {
+    mobile: false,
+    go: true,
+  });
+});
+
 test('contracts, tooling and CI files run both areas', () => {
   for (const path of [
     'contracts/modules/bank.yaml',

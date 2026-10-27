@@ -66,7 +66,9 @@ Try a user in the Keycloak account console:
 * Fynk: http://localhost:8081/realms/fynk/account
 * Banco Demo: http://localhost:8081/realms/banco-demo/account
 
-The realm files in `services/keycloak/realms/` are **placeholders added by M0**. M1 replaces `fynk-realm.json` and M16 replaces `banco-demo-realm.json` with the full realms. Keycloak imports them only when the realm does not exist yet. After a change, reset the stack (section 7).
+The fynk realm (`services/keycloak/realms/fynk-realm.json`) is M1's real realm, explained in `services/keycloak/README.md`. `banco-demo-realm.json` is still M0's placeholder until M16 replaces it. Keycloak imports a realm only when it does not exist yet. After a change, reset the stack (section 7).
+
+New Fynk accounts: register from the account console (or the app), open the verification link in Mailpit, then choose the password. Keycloak asks for the password after the email is verified.
 
 ## 5. Try it
 

@@ -105,7 +105,7 @@ Images are pinned to exact versions. A version is taken only once it has been ou
 | --- | --- | --- |
 | postgres | 16.15-alpine | Postgres 16, as in the M0 prompt and RDS. One database `fynk` (one schema per module) plus `keycloak` |
 | redis | 7.4.11-alpine | Redis 7 (nonces, rate limits, caches). 7.4.12 was released the same day and is held back |
-| quay.io/keycloak/keycloak | 26.8.1 | Login (decided). `start-dev --import-realm` imports `services/keycloak/realms/*.json`. M1 later builds its own image with the theme from the same version |
+| quay.io/keycloak/keycloak | 26.8.1 | Login (decided). `start-dev --import-realm` imports `services/keycloak/realms/*.json`. Compose builds M1's image `services/keycloak/Dockerfile` from this same version |
 | axllent/mailpit | v1.31.6 | Catches the emails Keycloak sends locally (named in the M1 prompt). v1.32.0 was 4 days old |
 | caddy | 2.11.7-alpine | mTLS egress towards the banks (decided, M14). Uses `tls_trust_pool`, the current syntax |
 | smallstep/step-cli | 0.31.0 | `make certs`: creates the local CA and certificates inside Docker, so nobody installs mkcert or step |
