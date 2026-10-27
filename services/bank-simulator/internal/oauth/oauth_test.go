@@ -48,7 +48,7 @@ func TestPAR_ValidationAndSuccess(t *testing.T) {
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 for missing PKCE, got %d", resp.StatusCode)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// 2. Insecure client_assertion algorithm should fail
 	badJWT := makeFakeJWT("HS256", "fynk", "fynk", time.Now().Add(time.Hour))
@@ -61,7 +61,7 @@ func TestPAR_ValidationAndSuccess(t *testing.T) {
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("expected 401 for insecure HS256 assertion, got %d", resp.StatusCode)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// 3. Valid PS256 assertion and S256 PKCE should succeed
 	goodJWT := makeFakeJWT("PS256", "fynk", "fynk", time.Now().Add(time.Hour))
@@ -71,7 +71,7 @@ func TestPAR_ValidationAndSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("expected 201 Created for valid PAR, got %d", resp.StatusCode)
@@ -130,7 +130,7 @@ func TestOAuthFlow_Complete(t *testing.T) {
 		ConsentID  string `json:"consent_id"`
 	}
 	_ = json.NewDecoder(parResp.Body).Decode(&parRes)
-	parResp.Body.Close()
+	_ = parResp.Body.Close()
 
 	// Step 2: Complete authorization in simulator
 	code, redirect, err := oauthSvc.CompleteAuthorization(parRes.RequestURI, "cliente.demo@bancodemo.local")
@@ -153,7 +153,7 @@ func TestOAuthFlow_Complete(t *testing.T) {
 	if badResp.StatusCode != http.StatusBadRequest {
 		t.Errorf("expected 400 for wrong verifier, got %d", badResp.StatusCode)
 	}
-	badResp.Body.Close()
+	_ = badResp.Body.Close()
 
 	// Step 4: Exchange code with CORRECT verifier
 	goodTokenForm := url.Values{
@@ -169,7 +169,7 @@ func TestOAuthFlow_Complete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer tokenResp.Body.Close()
+	defer func() { _ = tokenResp.Body.Close() }()
 
 	if tokenResp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 OK for token exchange, got %d", tokenResp.StatusCode)
@@ -197,7 +197,7 @@ func TestOAuthFlow_Complete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer rfResp.Body.Close()
+	defer func() { _ = rfResp.Body.Close() }()
 	if rfResp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200 OK for refresh token, got %d", rfResp.StatusCode)
 	}
@@ -210,7 +210,7 @@ func TestOAuthFlow_Complete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer revResp.Body.Close()
+	defer func() { _ = revResp.Body.Close() }()
 	if revResp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200 OK for revoke, got %d", revResp.StatusCode)
 	}
