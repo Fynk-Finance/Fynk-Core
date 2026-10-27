@@ -103,3 +103,14 @@ output "caddy_egress_security_group_id" {
   value       = module.caddy_egress.security_group_id
   description = "Security group for Caddy egress proxy"
 }
+
+# Monitoring Outputs
+output "alerts_topic_arn" {
+  value       = module.monitoring.alerts_topic_arn
+  description = "SNS topic ARN for engineering alerts"
+}
+
+output "dashboard_name" {
+  value       = module.monitoring.dashboard_name
+  description = "CloudWatch dashboard name"
+}

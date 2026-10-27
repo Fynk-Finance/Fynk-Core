@@ -32,3 +32,23 @@ output "target_group_bank_simulator_arn" {
   value       = aws_lb_target_group.bank_simulator.arn
   description = "Target group ARN for bank-simulator"
 }
+
+output "alb_arn_suffix" {
+  value       = aws_lb.main.arn_suffix
+  description = "ALB ARN suffix for CloudWatch alarms"
+}
+
+output "target_group_api_arn_suffix" {
+  value       = aws_lb_target_group.api.arn_suffix
+  description = "Target group API ARN suffix for CloudWatch alarms"
+}
+
+output "target_group_keycloak_arn_suffix" {
+  value       = aws_lb_target_group.keycloak.arn_suffix
+  description = "Target group Keycloak ARN suffix for CloudWatch alarms"
+}
+
+output "target_group_bank_simulator_arn_suffix" {
+  value       = aws_lb_target_group.bank_simulator.arn_suffix
+  description = "Target group Bank Simulator ARN suffix for CloudWatch alarms"
+}
