@@ -11,7 +11,7 @@ Do not invent colors, fonts, spacing, icons or animations. When a screen is miss
 
 1. **The code of each screen, in `docs/design/sources/`.** 36 screens, each in two files with the same markup: `light/<Screen>.html` and `dark/<Screen>.html`. Only the colors differ. This is the real design: exact colors, fonts, sizes, radii, the SVG illustrations, icons and logo, the animations (`@keyframes`) and the transitions. Copy values and SVG paths from here, never guess them.
 2. **The images of each screen, in `docs/design/screens/`.** `light/<Screen>.png` and `dark/<Screen>.png`, 780 by 1688 (the 390 by 844 phone at 2x), to check that the built screen looks the same in both themes.
-3. **The dark value of a color:** `node scripts/design-color-pairs.mjs '#e4f5fc'` pairs every light color with its dark twin across all screens (`--screen Metas` for one screen). Use it when a token is missing in the table below.
+3. **The dark value of a color:** `node scripts/design-color-pairs.mjs '#e4f5fc'` pairs every light color with its dark twin across all screens (`--screen Metas` for one screen). Use it when a token is missing in the table below. It cannot pair Dashboard, DashboardDetalles and Recuperar (one theme has an extra color), so compare those two files by hand.
 
 The `.html` files are static exports. Their event handlers (`onClick=""`, `onPointerDown=""`) are empty, so the behavior is described in this file (see Navigation and gestures) and in the module prompts. To see a screen running with its animations, open the artifact.
 
@@ -89,6 +89,8 @@ Taken from the design code. M0 copies them into `apps/mobile/src/shared/ui/token
 | `color.primaryLight` | `#50C1EB` | same | Avatar, balance card, account cards, tab bar |
 | `color.headerShapeA` | `#3AB3E3` | same | Rounded decorative squares on blue headers |
 | `color.headerShapeB` | `#47B6E2` | same | Rounded decorative squares, tab hover |
+| `color.headerDashboard` | `#2FA8D8` | `#428FAF` | Blue header of the Dashboard and Detalle de cuentas, muted in dark (`#4392B2` on Detalle de cuentas is the same tone, rounded to one value) |
+| `color.pullTab` | `#47B6E2` | `#418EAE` | Tab under the balance card that opens Detalle de cuentas |
 | `color.surfaceBlue` | `#E4F5FC` | `#1A3444` | Icon tiles, soft boxes (as a background) |
 | `color.borderBlue` | `#E4F5FC` | `#223746` | Card and input borders (as a border) |
 | `color.borderBlueStrong` | `#BFE6F6` | `#2B5267` | Selected or pressed chip border |
