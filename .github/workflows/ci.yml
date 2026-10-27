@@ -105,7 +105,7 @@ jobs:
           node -e '
             const t = require("./" + process.argv[1]).total;
             const row = (k) => `| ${k} | ${t[k].pct} % | ${t[k].covered} / ${t[k].total} |`;
-            console.log(["### Mobile coverage (Jest)", "", "| Metric | Covered | Lines |", "| --- | --- | --- |",
+            console.log(["### Mobile coverage (Jest)", "", "| Metric | Percent | Covered / total |", "| --- | --- | --- |",
               ...["lines", "statements", "functions", "branches"].map(row)].join("\n"));
           ' "$f" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
