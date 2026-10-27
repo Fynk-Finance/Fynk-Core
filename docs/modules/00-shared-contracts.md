@@ -2,7 +2,7 @@
 
 Every module builds against the contracts in this file. M0 creates them in code at Gate A, with stub implementations, so all modules can start in parallel. After Gate A a change here needs a pull request reviewed by every module that uses the contract.
 
-Design source for every screen: the artifact "Diseño App Fynk", page "App azul y verde", https://claude.ai/artifact/8Kd485z9voJE5QjuUJodL7. See `docs/design/README.md`.
+Design source for every screen: the team's artifact "Diseño App Fynk (Copy)", page "App azul y verde", https://claude.ai/artifact/DzjgXy5aVtdYQiTzq6gquk. See `docs/design/README.md`.
 
 ## 1. Conventions
 
