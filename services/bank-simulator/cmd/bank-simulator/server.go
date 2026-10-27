@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/api"
+	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/oauth"
 	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/store"
 )
 
@@ -22,6 +23,8 @@ func newBankMux(s *store.BankStore) http.Handler {
 	handler := api.NewHandler(s)
 	handler.RegisterRoutes(mux)
 
+	oauthService := oauth.NewService(s)
+	oauthService.RegisterRoutes(mux)
 	return mux
 }
 
