@@ -1,0 +1,330 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390"><title>App azul y verde · Oscuro · Estadísticas</title></head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;background:#13212d;color:#e8f1f6}
+a{color:#62c8f0}
+.vscroll{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;overflow-x:hidden;overflow-y:auto}
+.vscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.btn{cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.seg{cursor:pointer;transition:background-color .2s ease,color .2s ease}
+.seg:not([aria-pressed="true"]):hover{background-color:rgba(255,255,255,.14) !important}
+.btn:focus-visible,.seg:focus-visible{outline:3px solid #13212d;outline-offset:2px}
+.row{transition:background-color .15s ease}
+.row:hover{background-color:#182a37 !important}
+.st-card{height:calc(563px - 282px * var(--p));box-shadow:0 18px 34px -22px rgba(0,0,0,.55)}
+.st-sum{height:calc(92px * (1 - var(--p)));opacity:calc(1 - var(--p) * 1.7);overflow:hidden}
+@keyframes st-a{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes st-b{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.st-anim-a{animation:st-a .45s cubic-bezier(.22,1,.36,1) both}
+.st-anim-b{animation:st-b .45s cubic-bezier(.22,1,.36,1) both}
+@keyframes st-pulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,.55)}70%,100%{box-shadow:0 0 0 12px rgba(255,255,255,0)}}
+.st-dot{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:999px;background-color:#13212d;border:4px solid #a8e03a;box-sizing:border-box;animation:st-pulse 2s ease-out infinite}
+@keyframes st-shine{0%,62%{transform:translateX(0)}86%,100%{transform:translateX(640px)}}
+.shine{animation:st-shine 8s ease-in-out infinite 1.5s}
+@media (prefers-reduced-motion:reduce){.st-anim-a,.st-anim-b,.st-dot,.shine{animation:none}}
+</style>
+
+<div class="st-root" style="--p: 0; width: 390px; height: 844px; box-sizing: border-box; background-color: #0b1620; position: relative; overflow: hidden">
+
+<div class="vscroll st-scroll" onScroll="" style="position: absolute; inset: 0; box-sizing: border-box; padding: 584px 16px 40px; display: flex; flex-direction: column; gap: 24px">
+
+<section aria-labelledby="st-cat" style="flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; padding: 16px; border-radius: 22px; background-color: #13212d; border: 1px solid #223746; box-shadow: 0 8px 20px -14px rgba(0, 0, 0, 0.25)">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 id="st-cat" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 19px; line-height: 24px">Gastos por categoría</h2>
+<span style="font-size: 12px; line-height: 16px; font-weight: 600; color: #97abb8">Este mes</span>
+</div>
+<div style="display: flex; align-items: center; gap: 16px">
+<div style="position: relative; width: 150px; height: 150px; flex-shrink: 0">
+<svg width="150" height="150" viewBox="0 0 150 150" role="img" aria-label="Gastos por categoría: Hogar 40 %, Comida 18 %, Transporte 12 %, Entretenimiento 9 %, Servicios 8 %, Otros 13 %" style="display: block; transform: rotate(-90deg)">
+<circle cx="75" cy="75" r="56" fill="none" stroke="#182a37" stroke-width="22"></circle>
+
+<circle cx="75" cy="75" r="56" fill="none" stroke="#62c8f0" stroke-width="22" stroke-dasharray="139.25 212.60" stroke-dashoffset="0.00"></circle>
+
+<circle cx="75" cy="75" r="56" fill="none" stroke="#a8e03a" stroke-width="22" stroke-dasharray="61.15 290.71" stroke-dashoffset="-141.45"></circle>
+
+<circle cx="75" cy="75" r="56" fill="none" stroke="#2fa8d8" stroke-width="22" stroke-dasharray="40.03 311.82" stroke-dashoffset="-204.81"></circle>
+
+<circle cx="75" cy="75" r="56" fill="none" stroke="#e8f1f6" stroke-width="22" stroke-dasharray="29.47 322.39" stroke-dashoffset="-247.04"></circle>
+
+<circle cx="75" cy="75" r="56" fill="none" stroke="#86d6f3" stroke-width="22" stroke-dasharray="25.95 325.91" stroke-dashoffset="-278.71"></circle>
+
+<circle cx="75" cy="75" r="56" fill="none" stroke="#c9d6de" stroke-width="22" stroke-dasharray="42.80 309.06" stroke-dashoffset="-306.86"></circle>
+
+</svg>
+<div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px">
+<span style="font-size: 11px; line-height: 14px; color: #97abb8">Total</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 13px; line-height: 17px; letter-spacing: -0.03em">$3.482.400</span>
+</div>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+
+<li style="display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px">
+<span style="width: 10px; height: 10px; border-radius: 4px; background-color: #62c8f0; flex-shrink: 0"></span>
+<span style="flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #bccbd4">Hogar</span>
+<span style="font-weight: 700; white-space: nowrap">40 %</span>
+</li>
+
+<li style="display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px">
+<span style="width: 10px; height: 10px; border-radius: 4px; background-color: #a8e03a; flex-shrink: 0"></span>
+<span style="flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #bccbd4">Comida</span>
+<span style="font-weight: 700; white-space: nowrap">18 %</span>
+</li>
+
+<li style="display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px">
+<span style="width: 10px; height: 10px; border-radius: 4px; background-color: #2fa8d8; flex-shrink: 0"></span>
+<span style="flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #bccbd4">Transporte</span>
+<span style="font-weight: 700; white-space: nowrap">12 %</span>
+</li>
+
+<li style="display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px">
+<span style="width: 10px; height: 10px; border-radius: 4px; background-color: #e8f1f6; flex-shrink: 0"></span>
+<span style="flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #bccbd4">Entretenimiento</span>
+<span style="font-weight: 700; white-space: nowrap">9 %</span>
+</li>
+
+<li style="display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px">
+<span style="width: 10px; height: 10px; border-radius: 4px; background-color: #86d6f3; flex-shrink: 0"></span>
+<span style="flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #bccbd4">Servicios</span>
+<span style="font-weight: 700; white-space: nowrap">8 %</span>
+</li>
+
+<li style="display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px">
+<span style="width: 10px; height: 10px; border-radius: 4px; background-color: #c9d6de; flex-shrink: 0"></span>
+<span style="flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #bccbd4">Otros</span>
+<span style="font-weight: 700; white-space: nowrap">13 %</span>
+</li>
+
+</ul>
+</div>
+<div style="display: flex; flex-direction: column; border-top: 1px solid #22313d; padding-top: 8px">
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-radius: 12px">
+<span style="width: 32px; height: 32px; border-radius: 11px; background-color: #1a3444; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<span style="display: flex; justify-content: space-between; gap: 8px; font-size: 14px; line-height: 18px"><span style="font-weight: 600">Hogar</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">$1.400.000</span></span>
+<span style="height: 6px; border-radius: 999px; background-color: #22313d; overflow: hidden"><span style="display: block; height: 100%; width: 100.0%; border-radius: 999px; background-color: #62c8f0"></span></span>
+</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-radius: 12px">
+<span style="width: 32px; height: 32px; border-radius: 11px; background-color: #223318; color: #b6e45a; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 2v9M4 2v5a3 3 0 0 0 6 0V2M7 11v11M17 2c-2 2-3 5-3 8h3v12"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<span style="display: flex; justify-content: space-between; gap: 8px; font-size: 14px; line-height: 18px"><span style="font-weight: 600">Comida</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">$627.000</span></span>
+<span style="height: 6px; border-radius: 999px; background-color: #22313d; overflow: hidden"><span style="display: block; height: 100%; width: 44.8%; border-radius: 999px; background-color: #a8e03a"></span></span>
+</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-radius: 12px">
+<span style="width: 32px; height: 32px; border-radius: 11px; background-color: #1a3444; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6v6M16 6v6M2 12h20M6 18h12M4 18V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12M7 21v-3M17 21v-3"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<span style="display: flex; justify-content: space-between; gap: 8px; font-size: 14px; line-height: 18px"><span style="font-weight: 600">Transporte</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">$418.000</span></span>
+<span style="height: 6px; border-radius: 999px; background-color: #22313d; overflow: hidden"><span style="display: block; height: 100%; width: 29.9%; border-radius: 999px; background-color: #2fa8d8"></span></span>
+</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-radius: 12px">
+<span style="width: 32px; height: 32px; border-radius: 11px; background-color: #22313d; color: #e8f1f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 9-14 9z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<span style="display: flex; justify-content: space-between; gap: 8px; font-size: 14px; line-height: 18px"><span style="font-weight: 600">Entretenimiento</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">$313.400</span></span>
+<span style="height: 6px; border-radius: 999px; background-color: #22313d; overflow: hidden"><span style="display: block; height: 100%; width: 22.4%; border-radius: 999px; background-color: #e8f1f6"></span></span>
+</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-radius: 12px">
+<span style="width: 32px; height: 32px; border-radius: 11px; background-color: #1a3444; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<span style="display: flex; justify-content: space-between; gap: 8px; font-size: 14px; line-height: 18px"><span style="font-weight: 600">Servicios</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">$278.600</span></span>
+<span style="height: 6px; border-radius: 999px; background-color: #22313d; overflow: hidden"><span style="display: block; height: 100%; width: 19.9%; border-radius: 999px; background-color: #86d6f3"></span></span>
+</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-radius: 12px">
+<span style="width: 32px; height: 32px; border-radius: 11px; background-color: #22313d; color: #97abb8; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<span style="display: flex; justify-content: space-between; gap: 8px; font-size: 14px; line-height: 18px"><span style="font-weight: 600">Otros</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">$445.400</span></span>
+<span style="height: 6px; border-radius: 999px; background-color: #22313d; overflow: hidden"><span style="display: block; height: 100%; width: 31.8%; border-radius: 999px; background-color: #c9d6de"></span></span>
+</span>
+</div>
+
+</div>
+</section>
+
+<section aria-labelledby="st-res" style="flex-shrink: 0; display: flex; flex-direction: column; gap: 8px">
+<h2 id="st-res" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 19px; line-height: 24px">Tus estadísticas</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 18px; background-color: #182a37; min-width: 0">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px; font-weight: 600; color: #97abb8"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#62c8f0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path></svg>Promedio diario</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 19px; line-height: 24px; letter-spacing: -0.02em; color: #e8f1f6; white-space: nowrap">$116.080</span>
+<span style="font-size: 11px; line-height: 15px; color: #97abb8">Últimos 30 días</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 18px; background-color: #2e1a1c; min-width: 0">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px; font-weight: 600; color: #97abb8"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff7d6e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>Gasto más alto</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 19px; line-height: 24px; letter-spacing: -0.02em; color: #e8f1f6; white-space: nowrap">$1.400.000</span>
+<span style="font-size: 11px; line-height: 15px; color: #97abb8">Arriendo · 1 oct</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 18px; background-color: #182a37; min-width: 0">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px; font-weight: 600; color: #97abb8"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#62c8f0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M3 6h18M3 12h18M3 18h12"></path></svg>Movimientos</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 19px; line-height: 24px; letter-spacing: -0.02em; color: #e8f1f6; white-space: nowrap">64</span>
+<span style="font-size: 11px; line-height: 15px; color: #97abb8">12 más que el mes anterior</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 18px; background-color: #223318; min-width: 0">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 16px; font-weight: 600; color: #97abb8"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b6e45a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M20 6 9 17l-5-5"></path></svg>Ahorraste</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 19px; line-height: 24px; letter-spacing: -0.02em; color: #b6e45a; white-space: nowrap">$302.800</span>
+<span style="font-size: 11px; line-height: 15px; color: #97abb8">Frente al mes anterior</span>
+</div>
+
+</div>
+</section>
+
+<section aria-labelledby="st-week" style="flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 22px; background-color: #13212d; border: 1px solid #223746; box-shadow: 0 8px 20px -14px rgba(0, 0, 0, 0.25)">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 id="st-week" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; line-height: 22px">Por día de la semana</h2>
+<span style="font-size: 12px; line-height: 16px; font-weight: 600; color: #97abb8">Promedio</span>
+</div>
+<div role="img" aria-label="Gasto promedio por día: Lun $82.400, Mar $74.100, Mié $69.800, Jue $91.200, Vie $128.600, Sáb $162.300, Dom $97.500" style="display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; height: 132px">
+
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end">
+<span style="font-size: 10px; line-height: 12px; font-weight: 700; color: #71889a">$82k</span>
+<span style="width: 100%; max-width: 32px; height: 44px; border-radius: 10px; background-color: #bfe6f6"></span>
+<span style="font-size: 11px; line-height: 14px; font-weight: 600; color: #97abb8">Lun</span>
+</div>
+
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end">
+<span style="font-size: 10px; line-height: 12px; font-weight: 700; color: #71889a">$74k</span>
+<span style="width: 100%; max-width: 32px; height: 39px; border-radius: 10px; background-color: #bfe6f6"></span>
+<span style="font-size: 11px; line-height: 14px; font-weight: 600; color: #97abb8">Mar</span>
+</div>
+
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end">
+<span style="font-size: 10px; line-height: 12px; font-weight: 700; color: #71889a">$70k</span>
+<span style="width: 100%; max-width: 32px; height: 37px; border-radius: 10px; background-color: #bfe6f6"></span>
+<span style="font-size: 11px; line-height: 14px; font-weight: 600; color: #97abb8">Mié</span>
+</div>
+
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end">
+<span style="font-size: 10px; line-height: 12px; font-weight: 700; color: #71889a">$91k</span>
+<span style="width: 100%; max-width: 32px; height: 48px; border-radius: 10px; background-color: #bfe6f6"></span>
+<span style="font-size: 11px; line-height: 14px; font-weight: 600; color: #97abb8">Jue</span>
+</div>
+
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end">
+<span style="font-size: 10px; line-height: 12px; font-weight: 700; color: #71889a">$129k</span>
+<span style="width: 100%; max-width: 32px; height: 68px; border-radius: 10px; background-color: #bfe6f6"></span>
+<span style="font-size: 11px; line-height: 14px; font-weight: 600; color: #97abb8">Vie</span>
+</div>
+
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end">
+<span style="font-size: 10px; line-height: 12px; font-weight: 700; color: #b6e45a">$162k</span>
+<span style="width: 100%; max-width: 32px; height: 86px; border-radius: 10px; background-color: #a8e03a"></span>
+<span style="font-size: 11px; line-height: 14px; font-weight: 600; color: #97abb8">Sáb</span>
+</div>
+
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end">
+<span style="font-size: 10px; line-height: 12px; font-weight: 700; color: #71889a">$98k</span>
+<span style="width: 100%; max-width: 32px; height: 52px; border-radius: 10px; background-color: #bfe6f6"></span>
+<span style="font-size: 11px; line-height: 14px; font-weight: 600; color: #97abb8">Dom</span>
+</div>
+
+</div>
+<p style="margin: 0; font-size: 13px; line-height: 19px; color: #97abb8">Los <strong style="color: #e8f1f6">sábados</strong> gastas en promedio el doble que entre semana.</p>
+</section>
+
+<section aria-labelledby="st-top" style="flex-shrink: 0; display: flex; flex-direction: column; gap: 8px">
+<h2 id="st-top" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 19px; line-height: 24px">Dónde más gastas</h2>
+<div style="display: flex; flex-direction: column; gap: 8px">
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 16px; background-color: #13212d; border: 1px solid #223746; box-shadow: 0 6px 16px -12px rgba(0, 0, 0, 0.2)">
+<span style="width: 32px; height: 32px; border-radius: 11px; background-color: #1a3444; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px">1</span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 14px; line-height: 19px; font-weight: 600">Supermercado</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">9 compras · Comida</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap">$412.600</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 16px; background-color: #13212d; border: 1px solid #223746; box-shadow: 0 6px 16px -12px rgba(0, 0, 0, 0.2)">
+<span style="width: 32px; height: 32px; border-radius: 11px; background-color: #1a3444; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px">2</span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 14px; line-height: 19px; font-weight: 600">Recargas de transporte</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">6 recargas · Transporte</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap">$240.000</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 16px; background-color: #13212d; border: 1px solid #223746; box-shadow: 0 6px 16px -12px rgba(0, 0, 0, 0.2)">
+<span style="width: 32px; height: 32px; border-radius: 11px; background-color: #1a3444; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px">3</span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 14px; line-height: 19px; font-weight: 600">Restaurantes</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">7 visitas · Comida</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap">$214.400</span>
+</div>
+
+</div>
+</section>
+</div>
+
+<div class="st-card" onWheel="" style="position: absolute; left: 0; top: 0; width: 390px; box-sizing: border-box; background-color: #2fa8d8; border-radius: 0 0 30px 30px; overflow: hidden; z-index: 2; display: flex; flex-direction: column; padding: 16px 0 16px; color: #ffffff">
+<svg width="390" height="563" viewBox="0 0 390 563" aria-hidden="true" style="position: absolute; top: 0; left: 0">
+<rect x="258" y="-96" width="220" height="220" rx="52" fill="#3ab3e3"></rect>
+<rect x="318" y="-36" width="106" height="106" rx="26" fill="#47b6e2"></rect>
+<rect x="-80" y="420" width="170" height="170" rx="40" fill="#279dcc"></rect>
+<g class="shine"><rect x="-150" y="-40" width="56" height="660" fill="#ffffff" fill-opacity=".08" transform="skewX(-18)"></rect></g>
+</svg>
+
+<header style="position: relative; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0">
+<a class="btn" href="Dashboard.html" aria-label="Volver" style="width: 48px; height: 48px; box-sizing: border-box; border-radius: 14px; background-color: rgba(255, 255, 255, 0.2); color: #ffffff; display: flex; align-items: center; justify-content: center; text-decoration: none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></a>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; line-height: 22px">Estadísticas</h1>
+<span aria-hidden="true" style="width: 48px"></span>
+</header>
+
+<div class="st-sum" style="position: relative; flex-shrink: 0; padding: 0 24px">
+<div style="padding-top: 16px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 13px; line-height: 18px; font-weight: 600; opacity: .9">Gastaste en los últimos 30 días</span>
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 30px; line-height: 38px; letter-spacing: -0.03em; white-space: nowrap">$3.482.400</span>
+<span aria-label="Ingresos: $5.580.000" style="margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 4px 8px 4px 8px; border-radius: 14px; background-color: rgba(255, 255, 255, 0.18); white-space: nowrap">
+<span aria-hidden="true" style="width: 24px; height: 24px; border-radius: 9px; background-color: #a8e03a; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17M17 17H7V7"></path></svg></span>
+<span aria-hidden="true" style="display: flex; flex-direction: column; gap: 0"><span style="font-size: 10px; line-height: 12px; font-weight: 700; opacity: .9">Ingresos</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; line-height: 17px; font-weight: 600">$5.580.000</span></span>
+</span>
+</div>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 11px; line-height: 14px; font-weight: 600; opacity: .85; white-space: nowrap">
+<span style="display: inline-flex; align-items: center; gap: 8px"><span style="width: 16px; height: 4px; border-radius: 999px; background-color: #13212d"></span>Este periodo</span>
+<span style="display: inline-flex; align-items: center; gap: 8px"><svg width="18" height="4" viewBox="0 0 18 4" aria-hidden="true"><path d="M2 2h1M8.5 2h1M15 2h1" stroke="#ffffff" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"></path></svg>Periodo anterior</span>
+<span style="margin-left: auto; font-weight: 700; opacity: 1">Balance +$2.097.600</span>
+</span>
+</div>
+</div>
+
+<div class="st-chart st-anim-a" role="img" aria-label="Gasto acumulado en los últimos 30 días: $3.482.400. Ingresos: $5.580.000. 8 % menos que el mes anterior" style="position: relative; flex: 1 1 auto; min-height: 80px; margin: 24px 32px 0 24px">
+<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible">
+<defs><linearGradient id="st-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".32"></stop><stop offset="1" stop-color="#ffffff" stop-opacity="0"></stop></linearGradient></defs>
+<line x1="0" x2="100" y1="20" y2="20" stroke="#ffffff" stroke-opacity=".18" stroke-width="1.5" stroke-dasharray="2 7" stroke-linecap="round" vector-effect="non-scaling-stroke"></line>
+<line x1="0" x2="100" y1="50" y2="50" stroke="#ffffff" stroke-opacity=".18" stroke-width="1.5" stroke-dasharray="2 7" stroke-linecap="round" vector-effect="non-scaling-stroke"></line>
+<line x1="0" x2="100" y1="80" y2="80" stroke="#ffffff" stroke-opacity=".18" stroke-width="1.5" stroke-dasharray="2 7" stroke-linecap="round" vector-effect="non-scaling-stroke"></line>
+<path d="M0.00 92.00 C1.11 91.65 2.22 91.42 3.33 90.96 C4.44 90.51 5.56 89.60 6.67 88.95 C7.78 88.30 8.89 88.21 10.00 87.05 C11.11 85.89 12.22 67.18 13.33 66.43 C14.44 65.68 15.56 65.76 16.67 65.24 C17.78 64.71 18.89 63.74 20.00 62.93 C21.11 62.11 22.22 61.16 23.33 60.33 C24.44 59.50 25.56 58.58 26.67 57.94 C27.78 57.29 28.89 57.02 30.00 56.31 C31.11 55.60 32.22 53.93 33.33 53.27 C34.44 52.60 35.56 52.16 36.67 51.78 C37.78 51.40 38.89 51.28 40.00 50.84 C41.11 50.41 42.22 49.44 43.33 48.73 C44.44 48.02 45.56 47.11 46.67 46.56 C47.78 46.01 48.89 45.59 50.00 45.24 C51.11 44.88 52.22 44.80 53.33 44.35 C54.44 43.90 55.56 42.03 56.67 41.44 C57.78 40.85 58.89 40.76 60.00 40.16 C61.11 39.56 62.22 37.97 63.33 37.11 C64.44 36.26 65.56 35.58 66.67 34.91 C67.78 34.23 68.89 33.66 70.00 33.04 C71.11 32.41 72.22 31.63 73.33 31.16 C74.44 30.68 75.56 30.46 76.67 30.02 C77.78 29.58 78.89 28.86 80.00 28.43 C81.11 28.01 82.22 27.66 83.33 27.36 C84.44 27.06 85.56 26.93 86.67 26.59 C87.78 26.24 88.89 25.60 90.00 25.07 C91.11 24.53 92.22 24.01 93.33 23.37 C94.44 22.73 95.56 21.96 96.67 21.14 C97.78 20.33 98.89 19.31 100.00 18.40 L100 100 L0 100 Z" fill="url(#st-fill)"></path>
+<path d="M0.00 92.00 C1.11 90.80 2.22 89.37 3.33 88.41 C4.44 87.45 5.56 86.66 6.67 86.00 C7.78 85.34 8.89 85.31 10.00 84.32 C11.11 83.34 12.22 73.07 13.33 72.13 C14.44 71.19 15.56 71.18 16.67 70.54 C17.78 69.89 18.89 68.89 20.00 68.08 C21.11 67.27 22.22 66.46 23.33 65.67 C24.44 64.88 25.56 64.04 26.67 63.34 C27.78 62.63 28.89 61.96 30.00 61.39 C31.11 60.82 32.22 60.52 33.33 59.87 C34.44 59.22 35.56 57.81 36.67 57.16 C37.78 56.51 38.89 56.34 40.00 55.64 C41.11 54.95 42.22 53.49 43.33 52.26 C44.44 51.03 45.56 49.23 46.67 48.19 C47.78 47.14 48.89 46.53 50.00 45.64 C51.11 44.76 52.22 43.45 53.33 42.88 C54.44 42.32 55.56 42.25 56.67 41.66 C57.78 41.08 58.89 39.07 60.00 38.55 C61.11 38.03 62.22 37.98 63.33 37.52 C64.44 37.06 65.56 35.94 66.67 35.40 C67.78 34.87 68.89 34.71 70.00 34.12 C71.11 33.53 72.22 31.92 73.33 31.25 C74.44 30.58 75.56 30.26 76.67 29.71 C77.78 29.17 78.89 28.71 80.00 27.97 C81.11 27.23 82.22 26.10 83.33 24.92 C84.44 23.75 85.56 21.82 86.67 20.77 C87.78 19.71 88.89 19.12 90.00 18.21 C91.11 17.30 92.22 15.92 93.33 15.27 C94.44 14.62 95.56 14.35 96.67 13.81 C97.78 13.27 98.89 12.60 100.00 12.00" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="3" stroke-dasharray="0.1 9" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+<path d="M0.00 92.00 C1.11 91.65 2.22 91.42 3.33 90.96 C4.44 90.51 5.56 89.60 6.67 88.95 C7.78 88.30 8.89 88.21 10.00 87.05 C11.11 85.89 12.22 67.18 13.33 66.43 C14.44 65.68 15.56 65.76 16.67 65.24 C17.78 64.71 18.89 63.74 20.00 62.93 C21.11 62.11 22.22 61.16 23.33 60.33 C24.44 59.50 25.56 58.58 26.67 57.94 C27.78 57.29 28.89 57.02 30.00 56.31 C31.11 55.60 32.22 53.93 33.33 53.27 C34.44 52.60 35.56 52.16 36.67 51.78 C37.78 51.40 38.89 51.28 40.00 50.84 C41.11 50.41 42.22 49.44 43.33 48.73 C44.44 48.02 45.56 47.11 46.67 46.56 C47.78 46.01 48.89 45.59 50.00 45.24 C51.11 44.88 52.22 44.80 53.33 44.35 C54.44 43.90 55.56 42.03 56.67 41.44 C57.78 40.85 58.89 40.76 60.00 40.16 C61.11 39.56 62.22 37.97 63.33 37.11 C64.44 36.26 65.56 35.58 66.67 34.91 C67.78 34.23 68.89 33.66 70.00 33.04 C71.11 32.41 72.22 31.63 73.33 31.16 C74.44 30.68 75.56 30.46 76.67 30.02 C77.78 29.58 78.89 28.86 80.00 28.43 C81.11 28.01 82.22 27.66 83.33 27.36 C84.44 27.06 85.56 26.93 86.67 26.59 C87.78 26.24 88.89 25.60 90.00 25.07 C91.11 24.53 92.22 24.01 93.33 23.37 C94.44 22.73 95.56 21.96 96.67 21.14 C97.78 20.33 98.89 19.31 100.00 18.40" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+</svg>
+<span class="st-dot" aria-hidden="true" style="left: 100%; top: 18.399661840853867%"></span>
+<span style="position: absolute; right: 16px; top: 18.399661840853867%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: flex-end; gap: 0; padding: 4px 8px; border-radius: 12px; background-color: #13212d; color: #e8f1f6; box-shadow: 0 10px 20px -12px rgba(0, 0, 0, 0.6); white-space: nowrap">
+<span style="font-size: 10px; line-height: 13px; font-weight: 700; color: #97abb8">Hoy</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; line-height: 17px; font-weight: 600">$129.890</span>
+</span>
+</div>
+<div aria-hidden="true" style="position: relative; flex-shrink: 0; display: flex; justify-content: space-between; margin: 8px 24px 0; font-size: 11px; line-height: 14px; font-weight: 600; opacity: .8">
+<span>28 sep</span><span>5 oct</span><span>12 oct</span><span>19 oct</span><span>Hoy</span>
+</div>
+
+<div role="group" aria-label="Periodo de la gráfica" style="position: relative; flex-shrink: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 16px 16px 0; padding: 4px; border-radius: 16px; background-color: rgba(255, 255, 255, 0.18)">
+
+<button class="seg" type="button" aria-pressed="false" onClick="" style="height: 40px; border: none; border-radius: 12px; background-color: transparent; color: #ffffff; font-family: inherit; font-size: 13px; font-weight: 700">3 días</button>
+
+<button class="seg" type="button" aria-pressed="false" onClick="" style="height: 40px; border: none; border-radius: 12px; background-color: transparent; color: #ffffff; font-family: inherit; font-size: 13px; font-weight: 700">Semana</button>
+
+<button class="seg" type="button" aria-pressed="true" onClick="" style="height: 40px; border: none; border-radius: 12px; background-color: #13212d; color: #62c8f0; font-family: inherit; font-size: 13px; font-weight: 700">Mes</button>
+
+<button class="seg" type="button" aria-pressed="false" onClick="" style="height: 40px; border: none; border-radius: 12px; background-color: transparent; color: #ffffff; font-family: inherit; font-size: 13px; font-weight: 700">Año</button>
+
+</div>
+</div>
+</div>
+</body></html>
