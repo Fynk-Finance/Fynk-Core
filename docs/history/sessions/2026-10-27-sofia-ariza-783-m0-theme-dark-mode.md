@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: feature/theme-dark-mode
 tool: Claude Code
-pr: none
+pr: #14
 status: done
 ---
 
@@ -38,7 +38,7 @@ Same session as #11 to #13. Sofia asked to support the new dark mode with "a def
 
 * Tests: 17 suites, 311 tests and 50 snapshots pass. ESLint, `tsc` and Prettier are clean.
 * Light output is unchanged: the 50 existing snapshots pass untouched.
-* Pull request: not opened yet. It contains #11 (the README token table it tests against) and #13 (AsyncStorage), so it is a draft until both merge.
+* Pull request: #14.
 
 ## Decisions and problems
 
