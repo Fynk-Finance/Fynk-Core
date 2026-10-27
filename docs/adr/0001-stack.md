@@ -51,7 +51,12 @@
 | @types/sql.js | 1.4.11 | Types for sql.js |
 | @react-navigation/native | 7.5.1 | Navigation (decided: React Navigation v7). Root stack, tabs and `fynk://` deep links |
 | @react-navigation/native-stack | 7.21.0 | Native stack for pushed screens and full-screen flows |
-| @react-navigation/bottom-tabs | 7.21.0 | The four main tabs, drawn by the custom `TabBar` of the design |
+| @react-navigation/bottom-tabs | 7.21.0 | The four main tabs, drawn by the custom `TabBar` of the design. Replaced by material top tabs when the tabs get swipe (M0 Step 7.3), then removed |
+| @react-navigation/material-top-tabs | 7.8.1 | The four main tabs placed at the bottom, so they switch by tap and by horizontal swipe (decided 27 Oct 2026). Keeps the custom `TabBar` |
+| react-native-tab-view | 4.3.4 | Peer of material top tabs: the swipeable pages |
+| react-native-pager-view | 9.0.7 | Native pager under react-native-tab-view. Nested horizontal carousels scroll first and hand the swipe to the pager at their edge |
+| react-native-gesture-handler | 3.3.0 | Native gestures inside screens (Dashboard pull tab, account carousel, bottom sheet drag), animated with Reanimated. The root is wrapped in `GestureHandlerRootView`; Jest loads its `jestSetup.js` |
+| @react-native-async-storage/async-storage | 2.2.0 | Plain app storage for the theme preference (Sistema, Claro, Oscuro). It is read before the vault unlocks and holds no personal data. Jest uses the library's own mock |
 | react-native-screens | 4.30.0 | Native screen containers required by React Navigation |
 | react-native-safe-area-context | 5.10.1 | Safe area insets for headers and the tab bar |
 | react-native-svg | 15.16.0 | Icons, logo, illustrations and charts copied from the design SVG |
