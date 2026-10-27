@@ -20,7 +20,7 @@ JESTFLAGS     ?=
 .DEFAULT_GOAL := help
 
 .PHONY: help install lint lint-mobile lint-go format-check test test-mobile test-go test-scripts \
-        test-integration build-go generate generate-contract generate-go generate-ts mock-api dev down migrate certs e2e history
+        test-integration build-go generate generate-contract generate-go generate-ts mock-api dev down migrate certs e2e history design-colors
 
 help: ## List the available targets
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -128,3 +128,6 @@ e2e: ## Run the Maestro flows in apps/mobile/e2e on the connected device or emul
 
 history: ## Join the session logs into docs/history/PROJECT_HISTORY.md
 	node scripts/build-history.mjs
+
+design-colors: ## Pair every light color of the design with its dark value (COLOR=#e4f5fc for one)
+	node scripts/design-color-pairs.mjs $(if $(COLOR),'$(COLOR)')
