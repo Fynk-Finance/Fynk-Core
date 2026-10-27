@@ -1,0 +1,228 @@
+# Pull request CI (M0). Deploy workflows belong to M14 and live in their own files.
+#
+# The workflow always runs, so "CI passed" (the ci-ok job) can be the one required check.
+# Path filters work per job: scripts/ci-changes.mjs decides whether the mobile and Go jobs run,
+# and skipped jobs count as passed. Actions are pinned by commit SHA (docs/adr/0001-stack.md).
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  changes:
+    name: Changed areas
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      mobile: ${{ steps.areas.outputs.mobile }}
+      go: ${{ steps.areas.outputs.go }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: areas
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            node scripts/ci-changes.mjs areas "$BASE" "$HEAD"
+          else
+            node scripts/ci-changes.mjs areas --all
+          fi
+
+  session-log:
+    name: Session log
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require a new file in docs/history/sessions/ (CLAUDE.md, Project history log)
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-changes.mjs session-log "$BASE" "$HEAD"
+
+  repo:
+    name: Format and scripts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-pnpm
+        with:
+          install-args: --filter fynk
+      - run: make format-check
+      - run: make test-scripts
+
+  mobile:
+    name: Mobile (generate, lint, Jest)
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-pnpm
+      - name: Generate the TypeScript API types (redocly lints the contract first)
+        run: make generate-ts
+      - name: ESLint and tsc
+        run: make lint-mobile
+      - name: Jest with coverage
+        run: >-
+          make test-mobile JESTFLAGS="--ci --coverage --coverageReporters=lcov
+          --coverageReporters=json-summary --coverageReporters=text-summary"
+      - name: Coverage summary
+        if: always()
+        run: |
+          f=apps/mobile/coverage/coverage-summary.json
+          [ -f "$f" ] || exit 0
+          # The ${...} below is JavaScript, so single quotes are intended.
+          # shellcheck disable=SC2016
+          node -e '
+            const t = require("./" + process.argv[1]).total;
+            const row = (k) => `| ${k} | ${t[k].pct} % | ${t[k].covered} / ${t[k].total} |`;
+            console.log(["### Mobile coverage (Jest)", "", "| Metric | Covered | Lines |", "| --- | --- | --- |",
+              ...["lines", "statements", "functions", "branches"].map(row)].join("\n"));
+          ' "$f" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: coverage-mobile
+          path: apps/mobile/coverage/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  prebuild:
+    name: Expo prebuild
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-pnpm
+      - name: expo prebuild (native projects only, no pods or Gradle)
+        working-directory: apps/mobile
+        env:
+          CI: '1'
+          EXPO_NO_TELEMETRY: '1'
+        run: pnpm exec expo prebuild --no-install --platform all
+      - name: Both native projects were generated
+        run: |
+          test -f apps/mobile/android/app/build.gradle
+          test -d apps/mobile/ios
+
+  go:
+    name: Go (generate, lint, test, build)
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16.15-alpine
+        # Throwaway database that lives only for this job.
+        env:
+          POSTGRES_USER: fynk
+          POSTGRES_PASSWORD: fynk-ci-only
+          POSTGRES_DB: fynk
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U fynk -d fynk"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      DATABASE_URL: postgres://fynk:fynk-ci-only@localhost:5432/fynk?sslmode=disable
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: services/api/go.mod
+          cache-dependency-path: services/*/go.sum
+      - name: Root tools for the contract (redocly)
+        uses: ./.github/actions/setup-pnpm
+        with:
+          install-args: --filter fynk
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/golangci-lint
+          key: golangci-${{ runner.os }}-${{ github.sha }}
+          restore-keys: golangci-${{ runner.os }}-
+      - name: Generate the Go servers (redocly lints the contract first)
+        run: make generate-go
+      - name: go vet and golangci-lint
+        run: make lint-go
+      - name: go test with race detector and coverage
+        run: make test-go GOTESTFLAGS="-race -covermode=atomic -coverprofile=coverage.out"
+      - name: Migration integration test (real Postgres)
+        run: make test-integration
+      - name: Build both services
+        run: make build-go
+      - name: Build both Docker images
+        run: |
+          docker build --pull -t fynk-api:ci services/api
+          docker build --pull -t fynk-bank-simulator:ci services/bank-simulator
+      - name: Coverage summary
+        if: always()
+        run: |
+          {
+            echo "### Go coverage"
+            echo ""
+            echo "| Module | Statements |"
+            echo "| --- | --- |"
+            for m in services/api services/bank-simulator; do
+              [ -f "$m/coverage.out" ] || continue
+              total=$(cd "$m" && go tool cover -func=coverage.out | awk '/^total:/ {print $3}')
+              echo "| $m | $total |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: coverage-go
+          path: services/*/coverage.out
+          if-no-files-found: ignore
+          retention-days: 14
+
+  ci-ok:
+    name: CI passed
+    if: always()
+    needs: [changes, session-log, repo, mobile, prebuild, go]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Fail when a job failed or was cancelled (skipped is fine)
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          case " $RESULTS " in
+            *" failure "* | *" cancelled "*) exit 1 ;;
+          esac
