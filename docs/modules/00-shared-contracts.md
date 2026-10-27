@@ -186,6 +186,37 @@ export interface AggregateSnapshot {
 }
 ```
 
+### 3.6 Theme and navigation (owned by M0)
+
+Every screen works in light and dark and moves between screens with the same animations and gestures. Modules never pick colors or write navigator options by hand.
+
+```ts
+// @shared/ui
+export type ThemePreference = 'system' | 'light' | 'dark'   // default 'system': follow the phone
+export type ColorScheme = 'light' | 'dark'
+export interface Theme { scheme: ColorScheme, colors: Palette, shadow: Shadows }   // Palette: same keys in both schemes
+export function useTheme(): Theme
+export function useThemedStyles<T>(factory: (theme: Theme) => T): T             // memoized per scheme
+export function useThemePreference(): [ThemePreference, (next: ThemePreference) => void]
+
+// @shared/navigation
+export type ScreenTransition = 'push' | 'modal' | 'sheet' | 'fade' | 'none'
+export type BackGesture = 'default' | 'vertical' | 'off'
+export interface ModuleScreen {
+  name: `${ModuleName}.${string}`
+  component: ComponentType
+  path?: string
+  transition?: ScreenTransition   // default 'push'
+  gesture?: BackGesture           // default: edge swipe for 'push', swipe down for 'modal' and 'sheet'
+}
+```
+
+* The theme preference is stored on the phone in plain app storage (key `ui.themePreference`), outside the vault, so the lock screen is themed before unlock. It is not personal data and it is not backed up.
+* `transition` replaces the earlier `presentation` field. A screen sets `transition` or `gesture` only when its row in the inventory of `docs/design/README.md` says so.
+* Reduce Motion turns every transition into `'fade'` and stops loops. Gate flows (sign in, unlock, onboarding) change with a fade and have no gesture back.
+* Every gesture inside a screen has a button or an accessibility action that does the same.
+* The tabs switch by tap and by horizontal swipe. A horizontal carousel inside a tab scrolls first and hands the swipe to the tabs at its edge.
+
 ## 4. Backend contracts (Go)
 
 ### 4.1 Module registration (owned by M0)
@@ -323,5 +354,10 @@ These values come from the design screens. Unit tests use them as fixtures.
 | Onboarding goals total | 625.000 + 215.000 | `2 metas $840.000/mes` |
 | Goal progress | 3.200.000 of 5.000.000 | `64 %` |
 | Onboarding accounts total | 3.200.000 + 4.600.000 + 600.000 cash | `$8.400.000` |
+| Suggested monthly contribution (Metas) | 800.000 target, 520.000 saved, deadline Dec 2026, today Oct 2026 | `Faltan 2 meses`, `$140.000/mes`, `Te falta $280.000`, `65%` |
+| Share of income to goals (Metas) | 1.309.000 a month of 5.580.000 income | `23 %` (rounded to the nearest whole number) |
+| Spending by category (Estadísticas) | Hogar 1.400.000, Comida 627.000, Transporte 418.000, Entretenimiento 313.400, Servicios 278.600, Otros 445.400 | Total `$3.482.400`; `40 %`, `18 %`, `12 %`, `9 %`, `8 %`, `13 %` |
+| Daily average (Estadísticas) | 3.482.400 over the last 30 days | `$116.080` |
+| Balance of the period (Estadísticas) | 5.580.000 income − 3.482.400 spending | `Balance +$2.097.600` |
 
 The Dashboard mock shows `$12.480.350` next to accounts that add up to `$8.600.000`. That mock is not consistent, so tests use the formula (sum of active balances plus cash), not that number.

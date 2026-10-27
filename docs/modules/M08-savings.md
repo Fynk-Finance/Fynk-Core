@@ -19,7 +19,7 @@ You are building module M8 Savings goals of Fynk. Goals live only in the vault a
 ## Read first
 
 1. `CLAUDE.md` (Architecture rule 6), `docs/modules/00-shared-contracts.md` sections 3 and 7.
-2. Design PNGs `16-config-metas.png` and `16-config-metas-2.png`, `05-dashboard.png` (Planes de ahorro), `08-notificaciones.png` (milestone), `10-recomendaciones.png` and `10-recomendaciones-2.png` (Aporte automático). Read the code of the same screens in `docs/design/source/` first (file map in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs are for checking the result.
+2. Design screens `Metas` (goal list: expand a goal, the "Abonar" sheet with amount chips, the "Nueva meta" extended FAB), `OnbMetas`, `Dashboard` (Planes de ahorro carousel), `Notificaciones` (milestone) and `Recomendaciones` (Aporte automático). "Se descuenta de <cuenta>" under "Abonar" changes: Fynk never moves money, an aporte is a record. Read the code of these screens in `docs/design/sources/light/` and `docs/design/sources/dark/` first (inventory, gestures and transitions in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` are for checking the result. Every screen works in light and dark (colors only from `useTheme()`), and uses the default transition and back gesture of its kind unless the inventory says otherwise.
 3. Jira SCRUM-51, SCRUM-52, SCRUM-53.
 
 ## Stories and criteria

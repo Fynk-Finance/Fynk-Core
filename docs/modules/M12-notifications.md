@@ -19,7 +19,7 @@ You are building module M12 Notifications center of Fynk: the in app inbox and l
 ## Read first
 
 1. `CLAUDE.md` (Architecture rule 4), `docs/modules/00-shared-contracts.md` section 3.4.
-2. Design PNGs `08-notificaciones.png` and `07-mi-cuenta.png` and `07-mi-cuenta-2.png` (Notificaciones row). Read the code of the same screens in `docs/design/source/` first (file map in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs are for checking the result.
+2. Design screens `Notificaciones` and `CfgNotificaciones` (switches and option chips; adds the "Gastos grandes" and "Saldo bajo" local alerts). Read the code of these screens in `docs/design/sources/light/` and `docs/design/sources/dark/` first (inventory, gestures and transitions in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` are for checking the result. Every screen works in light and dark (colors only from `useTheme()`), and uses the default transition and back gesture of its kind unless the inventory says otherwise.
 3. Jira SCRUM-70.
 
 ## Story HU-053 (SCRUM-70), criteria
