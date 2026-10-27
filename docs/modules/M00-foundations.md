@@ -20,7 +20,7 @@ You are building module M0 Foundations of Fynk, a personal finance app for Colom
 1. `CLAUDE.md` (all of it, especially Git workflow and Conflict rules).
 2. `docs/modules/00-shared-contracts.md`. You turn it into code with stub implementations.
 3. `docs/modules/00-phases-and-gates.md`, Phase 0 and the Gate A checklist.
-4. `docs/design/README.md`, the code of every screen in `docs/design/source/` (28 files) and the PNGs in `docs/design/screens/`.
+4. `docs/design/README.md`, the code of every screen in `docs/design/sources/light/` and `docs/design/sources/dark/` (36 screens each) and the PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/`.
 
 ## Story HU-051 (SCRUM-68), criteria
 
@@ -60,7 +60,7 @@ fynk/
 
 ## Technical decisions (do not change without asking)
 
-* **Mobile:** latest stable Expo SDK with development builds (`expo-dev-client`), no Expo Go, because native modules are needed (SQLCipher, Keychain, Argon2). TypeScript strict. React Navigation v7 (native stack plus bottom tabs). TanStack Query for async state. Zustand only for small UI state. pnpm workspace with `node-linker=hoisted` for Metro.
+* **Mobile:** latest stable Expo SDK with development builds (`expo-dev-client`), no Expo Go, because native modules are needed (SQLCipher, Keychain, Argon2). TypeScript strict. React Navigation v7: native stack for pushed screens, and material top tabs placed at the bottom (on `react-native-pager-view`) so the four tabs switch by tap and by swipe. `react-native-gesture-handler` for gestures inside screens. TanStack Query for async state. Zustand only for small UI state. pnpm workspace with `node-linker=hoisted` for Metro.
 * **Mobile quality:** ESLint with `eslint-plugin-boundaries`: a module may import only `@shared/*` and other modules through `@modules/<name>` (their `index.ts`). Prettier. Jest plus React Native Testing Library. Maestro for end to end flows in `apps/mobile/e2e/`.
 * **Backend:** Go (current stable), chi router, oapi-codegen strict server per module (`include-tags`), pgx v5, sqlc for queries, golang-migrate with one migrations table per module, go-redis v9, aws-sdk-go-v2, `log/slog` JSON logs through a redacting handler. golangci-lint with `depguard` rules so `internal/<a>` cannot import `internal/<b>` except `internal/<b>/ports`.
 * **Contract:** Redocly CLI bundles `contracts/openapi.yaml` into `contracts/dist/openapi.json` (gitignored). openapi-typescript plus openapi-fetch on mobile. Prism for the mock API.
@@ -100,10 +100,10 @@ Only for this first step, if `develop` does not exist yet: create `main` with th
 
 ### Step 4. `feature/app-shell-and-design-system`
 
-* Read the code in `docs/design/source/` and the PNGs in `docs/design/screens/` before writing UI.
+* Read the code in `docs/design/sources/` and the PNGs in `docs/design/screens/` (both `light/` and `dark/`) before writing UI.
 * `src/shared/ui/tokens.ts` with the exact values in the tokens table of `docs/design/README.md` (taken from the design code).
 * Load the three design fonts with `expo-font`: Plus Jakarta Sans (400, 500, 600, 700), Space Grotesk (500, 700), IBM Plex Mono (500, 600).
-* Icons and the Fynk logo: copy the SVG paths from the design code into `src/shared/ui/icons/` as `react-native-svg` components (the logo is in `VerdeLogin.dc.html`). Follow the conversion table in `docs/design/README.md` for animations.
+* Icons and the Fynk logo: copy the SVG paths from the design code into `src/shared/ui/icons/` as `react-native-svg` components (the logo is in `Login.html`). Follow the conversion table in `docs/design/README.md` for animations.
 * Components (each with a story file in `src/shared/ui/__catalog__/` and a snapshot test): `Screen`, `HeaderBlue` (rounded bottom header with avatar initials, "Hola," greeting and bell with lime unread dot), `Card`, `AmountText` (monospace, signed colors), `PrimaryButton` (blue), `AccentButton` (lime), `GhostButton`, `TextField` (icon left, light blue background, eye toggle for passwords), `Chip` (filters like "Todas", "Gastos"), `Badge` ("Mensual", "Poco uso", "Hoy", "En 2 días", "Pagado", "Simulado"), `ProgressBar` (lime on light grey), `StepProgress` (5 segments, "Paso 1 de 5", "Omitir"), `ListRow` (icon tile, title, subtitle, trailing amount or chevron), `IconTile`, `SectionHeader` (title plus "Ver todos" link), `Donut`, `LineChart`, `EmptyState`, `ErrorState`, `Skeleton`.
 * Charts with `react-native-gifted-charts` (needs `react-native-svg`).
 * Navigation: `RootNavigator` with an auth stack, an onboarding stack and the main tabs: Dashboard, Billetera, Recomendaciones, Inversión, styled like the design's bottom bar (light blue bar, white active icon with a dot above).
@@ -122,6 +122,32 @@ Only for this first step, if `develop` does not exist yet: create `main` with th
 * `scripts/build-history.mjs` is already in the kit. Add `make history` to run it.
 * Path filters so a mobile only change does not run Go jobs and the other way around.
 * M14 adds the deploy workflow later. Do not create it here.
+
+### Step 7. Dark mode, transitions and gestures
+
+The design of 27 Oct 2026 adds dark mode, gestures and 9 screens (see `docs/design/README.md`). Do it in these branches, in order, each under about 400 lines:
+
+1. `chore/add-gesture-and-pager-libraries`: `react-native-gesture-handler`, `@react-navigation/material-top-tabs`, `react-native-tab-view`, `react-native-pager-view` and `@react-native-async-storage/async-storage`, pinned with `npx expo install`. Wrap the root in `GestureHandlerRootView`. Rows in `docs/adr/0001-stack.md`.
+2. `feature/theme-dark-mode`:
+   * `tokens.ts` exports `palettes.light` and `palettes.dark` with the same keys, from the token table of `docs/design/README.md`, and shadows per scheme.
+   * `ThemeProvider`, `useTheme`, `useThemedStyles` and `useThemePreference` (shared contracts 3.6). Default `system`; the choice is saved under `ui.themePreference`.
+   * `app.json` `"userInterfaceStyle": "automatic"`. Status bar and navigation theme per scheme.
+   * Every component, the `TabBar`, the placeholder and the catalog read `useTheme()`. The catalog has a light and dark switch. Snapshot tests cover both schemes.
+   * An ESLint rule stops modules from importing a raw palette.
+3. `feature/navigation-transitions-and-gestures`:
+   * `ModuleScreen.transition` and `gesture` map to native stack options: `push` slides from the right with the edge swipe, `modal` slides from the bottom with swipe down, `sheet` is a form sheet, plus `fade` and `none`.
+   * Android `predictiveBackGestureEnabled: true`.
+   * Reduce Motion turns transitions into fades. Gate flows fade with no gesture back.
+   * The tabs move to the pager at the bottom with swipe, and the notch follows the swipe.
+4. `feature/gesture-components`: `BottomSheet`, `Fab`, `Toast`, `Switch`, `SegmentedControl`, `Carousel` with `PageDots`, `PullTab`, `Accordion`, `CollapsingHeader`, `SearchField` and a bar chart preset. Durations and easing come from the design CSS. Each has a story and snapshots in both schemes, and every gesture has a button or accessibility action.
+5. `feature/appearance-setting`: the `app.Appearance` screen (Sistema, Claro, Oscuro) in `src/app/settings/`, opened from an "Apariencia" row that M1 adds to Mi cuenta. New screen, needs design review.
+
+Criteria for this step:
+
+* The app follows the phone's appearance, and switches at once when the person picks Claro or Oscuro. The choice survives a restart.
+* Every component and placeholder matches `screens/light/` and `screens/dark/`.
+* A pushed screen goes back with the button and with the edge swipe on iOS and Android. The tabs switch by tap and by swipe.
+* With Reduce Motion on, transitions fade and loops stop.
 
 ## Done when
 
