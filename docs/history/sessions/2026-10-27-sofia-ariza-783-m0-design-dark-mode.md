@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: docs/update-design
 tool: Claude Code
-pr: none
+pr: #11
 status: done
 ---
 
@@ -35,7 +35,7 @@ She chose: defaults with overrides for both the theme and the transitions, docs 
 
 * Tests: `node --test scripts/*.test.mjs`, 26 pass, 0 fail. Prettier is clean on the new script.
 * The 36 inventory rows point to files that exist in all four folders.
-* Pull request: not opened yet.
+* Pull request: #11.
 
 ## Decisions and problems
 
