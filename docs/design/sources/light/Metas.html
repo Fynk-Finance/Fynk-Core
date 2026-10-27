@@ -1,0 +1,241 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390"><title>App azul y verde · Metas de ahorro</title></head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;background:#ffffff;color:#0f2233}
+a{color:#177fa9}
+.vscroll{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;overflow-x:hidden;overflow-y:auto}
+.vscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.btn{cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.goal{transition:border-color .2s ease,box-shadow .2s ease}
+.goal-head{cursor:pointer}
+.goal-head:hover .goal-chev{transform:translateY(1px)}
+.bar-fill{transition:width .6s cubic-bezier(.22,1,.36,1)}
+.chip{cursor:pointer;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
+.chip:hover{border-color:#bfe6f6 !important}
+.abonar{cursor:pointer;transition:background-color .2s ease}
+.abonar:hover{background-color:#93cc26 !important}
+@keyframes mt-shine{0%,62%{transform:translateX(0)}86%,100%{transform:translateX(620px)}}
+.shine{animation:mt-shine 8s ease-in-out infinite 1.5s}
+@keyframes mt-open{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.goal-body{animation:mt-open .28s ease-out both}
+@keyframes fb-scrim{from{opacity:0}to{opacity:1}}
+@keyframes fb-sheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fb-toast{0%{opacity:0;transform:translate(-50%,10px)}12%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,6px)}}
+.fb-scrim{animation:fb-scrim .2s ease-out both}
+.fb-sheet{animation:fb-sheet .38s cubic-bezier(.22,1,.36,1) both}
+.fb-toast{animation:fb-toast 2.6s ease both}
+.fab{cursor:pointer;transition:transform .2s ease,background-color .2s ease}
+.fab:hover{background-color:#279dcc !important;transform:translateY(-2px)}
+.fb-field{transition:border-color .2s ease,background-color .2s ease}
+.fb-field:focus-within{border-color:#2fa8d8 !important;background-color:#ffffff !important}
+.fb-field input,.fb-field select{border:none;outline:none;background:transparent;font-family:inherit;color:#0f2233;flex-grow:1;min-width:0;height:100%;font-size:15px}
+.fb-field input::placeholder{color:#8a9ba6}
+.fb-opt{cursor:pointer;transition:background-color .15s ease}
+.fb-opt:hover{background-color:#f4fbfe !important}
+.fb-save{cursor:pointer;transition:background-color .2s ease}
+.fb-save:hover{background-color:#279dcc !important}
+.btn:focus-visible,.goal-head:focus-visible,.chip:focus-visible,.abonar:focus-visible,.fab:focus-visible,.fb-opt:focus-visible,.fb-save:focus-visible,.fb-dd:focus-visible{outline:3px solid #b5e5f7;outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.shine,.goal-body,.fb-scrim,.fb-sheet,.fb-toast{animation:none}.bar-fill{transition:none}}
+</style>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: #ffffff; position: relative; overflow: hidden">
+<div class="vscroll" style="position: absolute; inset: 0; box-sizing: border-box; padding-bottom: 112px; display: flex; flex-direction: column">
+
+<div style="position: relative; flex-shrink: 0; height: 208px; background-color: #2fa8d8; border-radius: 0 0 28px 28px; overflow: hidden; color: #ffffff">
+<svg width="390" height="208" viewBox="0 0 390 208" aria-hidden="true" style="position: absolute; top: 0; left: 0">
+<rect x="252" y="-86" width="214" height="214" rx="50" fill="#3ab3e3"></rect>
+<rect x="314" y="-30" width="104" height="104" rx="26" fill="#47b6e2"></rect>
+<rect x="-64" y="132" width="150" height="150" rx="36" fill="#279dcc"></rect>
+<path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" transform="translate(300 128) scale(.55)" fill="#d4f294"></path>
+<rect x="336" y="150" width="8" height="8" rx="2" fill="#ffffff" fill-opacity=".8" transform="rotate(18 340 154)"></rect>
+<g class="shine"><rect x="-140" y="-40" width="50" height="300" fill="#ffffff" fill-opacity=".1" transform="skewX(-18)"></rect></g>
+</svg>
+<div style="position: relative; padding: 16px 16px 0">
+<header style="display: flex; align-items: center; justify-content: space-between">
+<a class="btn" href="Dashboard.html" aria-label="Volver al dashboard" style="width: 48px; height: 48px; box-sizing: border-box; border-radius: 14px; background-color: rgba(255, 255, 255, 0.2); color: #ffffff; display: flex; align-items: center; justify-content: center; text-decoration: none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></a>
+<span style="font-size: 13px; line-height: 18px; font-weight: 700; padding: 8px 8px; border-radius: 999px; background-color: rgba(255, 255, 255, 0.2)">5 activas</span>
+</header>
+<h1 style="margin: 16px 0 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px; line-height: 34px; letter-spacing: -0.01em">Metas de ahorro</h1>
+<p style="margin: 4px 0 0; font-size: 14px; line-height: 20px; font-weight: 500; opacity: .92">Cada abono te acerca a lo que quieres.</p>
+</div>
+</div>
+
+<section aria-labelledby="mt-stats" style="position: relative; flex-shrink: 0; margin: -48px 16px 0; padding: 16px; border-radius: 22px; background-color: #ffffff; box-shadow: 0 16px 32px -20px rgba(15, 34, 51, 0.45); border: 1px solid #e4f5fc; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: center; gap: 16px">
+<div style="position: relative; width: 72px; height: 72px; flex-shrink: 0">
+<svg width="74" height="74" viewBox="0 0 74 74" aria-hidden="true" style="display: block; transform: rotate(-90deg)"><circle cx="37" cy="37" r="30" fill="none" stroke="#e4f5fc" stroke-width="10"></circle><circle cx="37" cy="37" r="30" fill="none" stroke="#a8e03a" stroke-width="10" stroke-linecap="round" stroke-dasharray="44.2 188.5"></circle></svg>
+<span style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px">23 %</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<h2 id="mt-stats" style="margin: 0; font-size: 15px; line-height: 20px; font-weight: 700">de tus ingresos va a tus metas</h2>
+<span style="font-size: 12px; line-height: 17px; color: #5e7482"><strong style="font-family: 'IBM Plex Mono', monospace; color: #0f2233">$1.309.000</strong> al mes de <span style="font-family: 'IBM Plex Mono', monospace">$5.580.000</span></span>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding-top: 8px; border-top: 1px solid #edf1f4">
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 11px; line-height: 14px; color: #5e7482">Ahorrado</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 14px; line-height: 19px; white-space: nowrap">$16.340.000</span></div>
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 11px; line-height: 14px; color: #5e7482">Abonado este mes</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 14px; line-height: 19px; white-space: nowrap; color: #4f7a0b">+$940.000</span></div>
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 11px; line-height: 14px; color: #5e7482">Cumplidas</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 14px; line-height: 19px">3</span></div>
+</div>
+</section>
+
+<section aria-labelledby="mt-list" style="flex-shrink: 0; padding: 24px 16px 0; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 id="mt-list" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 26px">Próximas metas</h2>
+<span style="font-size: 12px; line-height: 16px; font-weight: 600; color: #5e7482">Por fecha límite</span>
+</div>
+
+
+<article class="goal" style="border-radius: 12px; background-color: #ffffff; box-shadow: 0 8px 20px -14px rgba(15, 34, 51, 0.25); overflow: hidden">
+<button class="goal-head" type="button" aria-expanded="true" onClick="" style="width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 16px; border: none; background: none; font-family: inherit; color: #0f2233; text-align: left; padding-right: 0px; padding-left: 0px">
+<span style="display: flex; align-items: center; gap: 8px; width: 100%">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #2fa8d8; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Regalos de Navidad</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Celebración · Dic 2026</span></span>
+<svg class="goal-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5e7482" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; transition: transform .25s ease; transform: rotate(180deg)"><path d="m6 9 6 6 6-6"></path></svg>
+</span>
+<span style="display: flex; flex-direction: column; gap: 8px; width: 100%">
+<span role="progressbar" aria-label="Progreso de Regalos de Navidad" aria-valuemin="0" aria-valuemax="100" aria-valuenow="65" style="height: 8px; border-radius: 999px; background-color: #edf1f4; overflow: hidden"><span class="bar-fill" style="display: block; height: 100%; width: 65%; border-radius: 999px; background-color: #a8e03a"></span></span>
+<span style="display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; line-height: 16px"><span><strong style="font-family: 'IBM Plex Mono', monospace; font-size: 13px">$520.000</strong> <span style="color: #5e7482">de $800.000</span></span><span style="display: flex; align-items: center; gap: 8px"><span style="font-size: 11px; line-height: 14px; font-weight: 700; padding: 4px 8px; border-radius: 999px; background-color: #f2fadf; color: #4f7a0b; white-space: nowrap">Faltan 2 meses</span><strong style="color: #4f7a0b">65%</strong></span></span>
+</span>
+</button>
+
+<div class="goal-body" style="padding: 0 16px 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+<div style="padding: 8px 8px; border-radius: 14px; background-color: #f4fbfe; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; line-height: 14px; color: #5e7482">Aporte sugerido</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; line-height: 19px; font-weight: 600">$140.000<span style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 600; color: #5e7482">/mes</span></span></div>
+<div style="padding: 8px 8px; border-radius: 14px; background-color: #f4fbfe; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; line-height: 14px; color: #5e7482">Te falta</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; line-height: 19px; font-weight: 600">$280.000</span></div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 16px; border: 1.5px solid rgba(168, 224, 58, 0.5); background-color: #f8fdee">
+<span style="font-size: 13px; line-height: 18px; font-weight: 700">Abonar a esta meta</span>
+<div role="radiogroup" aria-label="Monto del abono" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+
+<button class="chip" type="button" role="radio" aria-checked="false" onClick="" style="height: 40px; border-radius: 11px; border: 1.5px solid #e4f5fc; background-color: #ffffff; color: #0f2233; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600">$50.000</button>
+
+<button class="chip" type="button" role="radio" aria-checked="true" onClick="" style="height: 40px; border-radius: 11px; border: 1.5px solid #a8e03a; background-color: #a8e03a; color: #ffffff; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600">$100.000</button>
+
+<button class="chip" type="button" role="radio" aria-checked="false" onClick="" style="height: 40px; border-radius: 11px; border: 1.5px solid #e4f5fc; background-color: #ffffff; color: #0f2233; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600">$200.000</button>
+
+</div>
+<div style="display: flex; gap: 8px">
+<label class="fb-field" style="flex-grow: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 48px; box-sizing: border-box; padding: 0 8px; border-radius: 13px; border: 1.5px solid #e4f5fc; background-color: #ffffff"><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: #5e7482">$</span><input type="text" inputmode="numeric" aria-label="Otro monto" placeholder="Otro monto" onInput="" style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600"></label>
+<button class="abonar" type="button" onClick="" style="flex-shrink: 0; height: 48px; padding: 0 16px; border: none; border-radius: 13px; background-color: #a8e03a; color: #ffffff; font-family: inherit; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; white-space: nowrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Abonar</button>
+</div>
+<span style="font-size: 11px; line-height: 15px; color: #5e7482">Se descuenta de Bancolombia · Ahorros</span>
+</div>
+
+
+</div>
+
+</article>
+
+<article class="goal" style="border-radius: 12px; background-color: #ffffff; box-shadow: 0 8px 20px -14px rgba(15, 34, 51, 0.25); overflow: hidden">
+<button class="goal-head" type="button" aria-expanded="false" onClick="" style="width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 16px; border: none; background: none; font-family: inherit; color: #0f2233; text-align: left; padding-right: 0px; padding-left: 0px">
+<span style="display: flex; align-items: center; gap: 8px; width: 100%">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #2fa8d8; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Viaje a Cartagena</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Viaje · Jun 2027</span></span>
+<svg class="goal-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5e7482" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; transition: transform .25s ease; transform: none"><path d="m6 9 6 6 6-6"></path></svg>
+</span>
+<span style="display: flex; flex-direction: column; gap: 8px; width: 100%">
+<span role="progressbar" aria-label="Progreso de Viaje a Cartagena" aria-valuemin="0" aria-valuemax="100" aria-valuenow="64" style="height: 8px; border-radius: 999px; background-color: #edf1f4; overflow: hidden"><span class="bar-fill" style="display: block; height: 100%; width: 64%; border-radius: 999px; background-color: #a8e03a"></span></span>
+<span style="display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; line-height: 16px"><span><strong style="font-family: 'IBM Plex Mono', monospace; font-size: 13px">$3.200.000</strong> <span style="color: #5e7482">de $5.000.000</span></span><span style="display: flex; align-items: center; gap: 8px"><span style="font-size: 11px; line-height: 14px; font-weight: 700; padding: 4px 8px; border-radius: 999px; background-color: #e4f5fc; color: #1f93c2; white-space: nowrap">Faltan 8 meses</span><strong style="color: #4f7a0b">64%</strong></span></span>
+</span>
+</button>
+
+</article>
+
+<article class="goal" style="border-radius: 12px; background-color: #ffffff; box-shadow: 0 8px 20px -14px rgba(15, 34, 51, 0.25); overflow: hidden">
+<button class="goal-head" type="button" aria-expanded="false" onClick="" style="width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 16px; border: none; background: none; font-family: inherit; color: #0f2233; text-align: left; padding-right: 0px; padding-left: 0px">
+<span style="display: flex; align-items: center; gap: 8px; width: 100%">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #2fa8d8; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H4zM2 19h20"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Portátil nuevo</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Tecnología · Ago 2027</span></span>
+<svg class="goal-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5e7482" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; transition: transform .25s ease; transform: none"><path d="m6 9 6 6 6-6"></path></svg>
+</span>
+<span style="display: flex; flex-direction: column; gap: 8px; width: 100%">
+<span role="progressbar" aria-label="Progreso de Portátil nuevo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="30" style="height: 8px; border-radius: 999px; background-color: #edf1f4; overflow: hidden"><span class="bar-fill" style="display: block; height: 100%; width: 30%; border-radius: 999px; background-color: #a8e03a"></span></span>
+<span style="display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; line-height: 16px"><span><strong style="font-family: 'IBM Plex Mono', monospace; font-size: 13px">$1.260.000</strong> <span style="color: #5e7482">de $4.200.000</span></span><span style="display: flex; align-items: center; gap: 8px"><span style="font-size: 11px; line-height: 14px; font-weight: 700; padding: 4px 8px; border-radius: 999px; background-color: #e4f5fc; color: #1f93c2; white-space: nowrap">Faltan 10 meses</span><strong style="color: #4f7a0b">30%</strong></span></span>
+</span>
+</button>
+
+</article>
+
+<article class="goal" style="border-radius: 12px; background-color: #ffffff; box-shadow: 0 8px 20px -14px rgba(15, 34, 51, 0.25); overflow: hidden">
+<button class="goal-head" type="button" aria-expanded="false" onClick="" style="width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 16px; border: none; background: none; font-family: inherit; color: #0f2233; text-align: left; padding-right: 0px; padding-left: 0px">
+<span style="display: flex; align-items: center; gap: 8px; width: 100%">
+<span style="width: 40px; height: 40px; border-radius: 13px; background-color: #2fa8d8; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Fondo de emergencia</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Fondo de emergencia · Dic 2027</span></span>
+<svg class="goal-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5e7482" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; transition: transform .25s ease; transform: none"><path d="m6 9 6 6 6-6"></path></svg>
+</span>
+<span style="display: flex; flex-direction: column; gap: 8px; width: 100%">
+<span role="progressbar" aria-label="Progreso de Fondo de emergencia" aria-valuemin="0" aria-valuemax="100" aria-valuenow="49" style="height: 8px; border-radius: 999px; background-color: #edf1f4; overflow: hidden"><span class="bar-fill" style="display: block; height: 100%; width: 49%; border-radius: 999px; background-color: #a8e03a"></span></span>
+<span style="display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; line-height: 16px"><span><strong style="font-family: 'IBM Plex Mono', monospace; font-size: 13px">$4.860.000</strong> <span style="color: #5e7482">de $10.000.000</span></span><span style="display: flex; align-items: center; gap: 8px"><span style="font-size: 11px; line-height: 14px; font-weight: 700; padding: 4px 8px; border-radius: 999px; background-color: #e4f5fc; color: #1f93c2; white-space: nowrap">Faltan 14 meses</span><strong style="color: #4f7a0b">49%</strong></span></span>
+</span>
+</button>
+
+</article>
+
+
+
+<a href="#" style="align-self: center; font-size: 14px; font-weight: 700; text-decoration: none; padding: 8px 0">Ver todas las metas (5)</a>
+
+</section>
+
+<section aria-labelledby="mt-hist" style="flex-shrink: 0; padding: 24px 16px 0; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 id="mt-hist" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 26px">Metas cumplidas</h2>
+<span style="font-size: 12px; line-height: 16px; font-weight: 600; color: #5e7482">3 metas</span>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 16px; background-color: #f8fdee; border: 1px solid rgba(168, 224, 58, 0.45)">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #a8e03a; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.7V17c0 .6-.5 1-1 1.2C7.9 18.8 7 20.2 7 22M14 14.7V17c0 .6.5 1 1 1.2 1.1.6 2 2 2 3.8M18 2H6v7a6 6 0 0 0 12 0z"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 14px; line-height: 19px; font-weight: 700">Has ahorrado $5.500.000 en metas cumplidas</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Sigue así, vas muy bien.</span></span>
+</div>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+
+<li style="display: flex; gap: 8px">
+<div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 40px">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #f2fadf; color: #4f7a0b; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H4zM2 19h20"></path></svg></span>
+<span style="flex-grow: 1; width: 2px; min-height: 16px; background-color: #e4f5fc"></span>
+</div>
+<div style="flex-grow: 1; min-width: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 2px 0 16px">
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 14px; line-height: 19px; font-weight: 700">Celular nuevo</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Tecnología · Cumplida en ago 2026</span></span>
+<span style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; line-height: 19px; font-weight: 600">$1.800.000</span><span style="font-size: 10px; line-height: 13px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background-color: #a8e03a; color: #ffffff; white-space: nowrap">En 9 meses</span></span>
+</div>
+</li>
+
+<li style="display: flex; gap: 8px">
+<div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 40px">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #f2fadf; color: #4f7a0b; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5zM6 12v5c3 3 9 3 12 0v-5"></path></svg></span>
+<span style="flex-grow: 1; width: 2px; min-height: 16px; background-color: #e4f5fc"></span>
+</div>
+<div style="flex-grow: 1; min-width: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 2px 0 16px">
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 14px; line-height: 19px; font-weight: 700">Curso de inglés</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Educación · Cumplida en may 2026</span></span>
+<span style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; line-height: 19px; font-weight: 600">$1.200.000</span><span style="font-size: 10px; line-height: 13px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background-color: #a8e03a; color: #ffffff; white-space: nowrap">En 6 meses</span></span>
+</div>
+</li>
+
+<li style="display: flex; gap: 8px">
+<div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 40px">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #f2fadf; color: #4f7a0b; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg></span>
+<span style="flex-grow: 1; width: 2px; min-height: 16px; background-color: transparent"></span>
+</div>
+<div style="flex-grow: 1; min-width: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 2px 0 16px">
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 14px; line-height: 19px; font-weight: 700">Vacaciones en Santa Marta</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Viaje · Cumplida en ene 2026</span></span>
+<span style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; line-height: 19px; font-weight: 600">$2.500.000</span><span style="font-size: 10px; line-height: 13px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background-color: #a8e03a; color: #ffffff; white-space: nowrap">En 11 meses</span></span>
+</div>
+</li>
+
+</ol>
+</section>
+
+</div>
+
+<button class="fab" type="button" onClick="" aria-label="Crear nueva meta de ahorro" style="position: absolute; right: 16px; bottom: 24px; height: 64px; padding: 0 16px 0 16px; border: none; border-radius: 20px; background-color: #2fa8d8; color: #ffffff; font-family: inherit; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 14px 26px -12px rgba(31, 127, 168, 0.8); z-index: 3">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Nueva meta
+</button>
+
+
+
+
+</div>
+</body></html>
