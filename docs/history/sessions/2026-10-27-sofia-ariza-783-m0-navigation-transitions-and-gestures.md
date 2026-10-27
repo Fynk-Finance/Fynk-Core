@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: feature/navigation-transitions-and-gestures
 tool: Claude Code
-pr: none
+pr: #29
 status: done
 ---
 
@@ -39,7 +39,7 @@ Same session as #11 to #15. Sofia asked: "All transitions between screens must b
 
 * Tests: 19 suites, 371 tests and 100 snapshots pass. ESLint, `tsc` and Prettier are clean.
 * Not checked on a device in this session: the iOS full-screen swipe, Android predictive back, and nested carousels handing the swipe to the tabs. These need a dev build on a phone.
-* Pull request: not opened yet.
+* Pull request: #29.
 
 ## Decisions and problems
 
