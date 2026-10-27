@@ -19,7 +19,7 @@ You are building module M3 Guided onboarding of Fynk. This module owns the wizar
 ## Read first
 
 1. `CLAUDE.md`, `docs/modules/00-shared-contracts.md` sections 3 and 7.
-2. Design PNGs `12-config-aviso.png` to `19-config-omitir.png` and the change notes in `docs/design/README.md`. Read the code of the same screens in `docs/design/source/` first (file map in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs are for checking the result.
+2. Design screens `OnbIntro`, `OnbCorreo`, `OnbNombre`, `OnbCuentas`, `OnbMetas`, `OnbGastos`, `OnbListo` and `OnbOmitir`, and the change notes in `docs/design/README.md`. The design of 27 Oct 2026 puts Correo as step 1 and Nombre as step 2 (see Screens). Read the code of these screens in `docs/design/sources/light/` and `docs/design/sources/dark/` first (inventory, gestures and transitions in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` are for checking the result. Every screen works in light and dark (colors only from `useTheme()`), and uses the default transition and back gesture of its kind unless the inventory says otherwise.
 3. Jira SCRUM-69.
 
 ## Story HU-052 (SCRUM-69), criteria
@@ -31,6 +31,10 @@ You are building module M3 Guided onboarding of Fynk. This module owns the wizar
 * Al terminar lleva al Dashboard.
 
 ## Screens (match the PNGs exactly)
+
+**Step order:** the design of 27 Oct 2026 shows Correo as "Paso 1 de 5" and Nombre as "Paso 2 de 5", the opposite of the table below and of the Jira criterion ("nombre, verificación de correo, ..."). Confirm the order with the team and update Jira before building steps 1 and 2.
+
+Navigation: "Continuar" moves forward only when the step is valid. The back button and the back gesture return to the previous step. Omitir opens the warning as a modal. Listo has no back gesture, and "Ir a mi dashboard" fades into the tabs.
 
 | Screen | Content | Component used |
 | --- | --- | --- |

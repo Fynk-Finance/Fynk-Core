@@ -131,6 +131,7 @@ Each person reviews the pull requests of their modules (see `.github/CODEOWNERS`
 | Aggregate snapshot for the AI | In transit only, never stored |
 | Audit events | Cloud, append only, hash chained |
 | Nonces, refresh rate limits, caches | Redis |
+| Theme preference (Sistema, Claro, Oscuro) | Phone, plain app storage outside the vault, not backed up |
 | Banco Demo customers and their simulated data | Its own schema `bankdemo` |
 
 If you are about to store something that is not in this table, ask before you do it.
@@ -270,6 +271,8 @@ These rules let 17 modules work in parallel without stepping on each other.
 | Branches | Natural names by task type, created from `develop` |
 | Project history | One log file per session in `docs/history/sessions/`, joined at the end into the project history |
 | Team | Modules assigned on 26 Oct 2026, see Team |
+| Dark mode (27 Oct) | Every screen in light and dark. Follows the phone by default, the person can pick Claro or Oscuro in Mi cuenta › Apariencia |
+| Navigation and gestures (27 Oct) | One default transition and back gesture per kind of screen (push, modal, sheet, tab, flow change), changed only when the design inventory says so. Every gesture has a button. Tabs switch by tap and by swipe |
 
 ## Open items (ask the team, do not decide in code)
 
@@ -279,6 +282,8 @@ These rules let 17 modules work in parallel without stepping on each other.
 4. Audit retention periods (M13).
 5. Offline sessions in Keycloak for long lived mobile logins (M1).
 6. The design has 6 Fynk Plus subscription screens (`Sub*.html` in `docs/design/sources/`) that are not in Jira or in any module yet. Do not build them until the team plans them.
+7. "Privacidad y datos" in the design has a "Mejorar Fynk" switch that shares anonymous usage statistics. That data is not in "Where data lives". Hidden until the team decides.
+8. "Centro de ayuda" in the design offers support by WhatsApp. The team has to decide the channel and who answers it.
 
 ## Glossary
 

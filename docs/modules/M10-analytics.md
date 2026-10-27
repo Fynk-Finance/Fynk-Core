@@ -19,7 +19,7 @@ You are building module M10 of Fynk: every deterministic calculation that the sc
 ## Read first
 
 1. `CLAUDE.md`, `docs/modules/00-shared-contracts.md` sections 2, 3.4, 3.5 and 7.
-2. Design PNGs `05-dashboard.png`, `10-recomendaciones.png` and `10-recomendaciones-2.png` (donut and steps), `11-inversion.png` and `11-inversion-2.png` (line chart style), `16-config-metas.png` and `16-config-metas-2.png` (form style for caps). Read the code of the same screens in `docs/design/source/` first (file map in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs are for checking the result.
+2. Design screens `Estadisticas` (spending by category, stats, weekday bars, top places, the summary card that shrinks on scroll, the period control), `Dashboard`, `Recomendaciones` (donut and steps), `Inversion` (line chart style) and `OnbMetas` (form style for caps). Read the code of these screens in `docs/design/sources/light/` and `docs/design/sources/dark/` first (inventory, gestures and transitions in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` are for checking the result. Every screen works in light and dark (colors only from `useTheme()`), and uses the default transition and back gesture of its kind unless the inventory says otherwise.
 3. Jira SCRUM-35, SCRUM-36, SCRUM-37, SCRUM-60.
 
 ## Stories and criteria
