@@ -113,7 +113,8 @@ Taken from the design code. M0 copies them into `apps/mobile/src/shared/ui/token
 | `color.textPlaceholder` | `#8A9BA6` | `#71889A` | Placeholders, small separators |
 | `color.divider` | `#EDF1F4` | `#22313D` | Progress track, dividers |
 | `color.border` | `#E4ECF0` | `#22313D` | Ghost button and divider lines |
-| `color.trackOff` | `#C9D6DE` | `#344755` | Switch track when off |
+| `color.trackOff` | `#CFDBE3` | `#344755` | Switch track when off |
+| `color.controlBorder` | `#C9D6DE` | same | Empty radio and checkbox ring, "Otros" chart segment |
 | `color.danger` | `#C0392B` | `#FF7D6E` | Warning icon, "Eliminar cuenta" |
 | `color.dangerPressed` | `#A93226` | same | Red button pressed |
 | `color.dangerSoft` | `#FDEAEA` | `#3A1E20` | Warning icon tile |
