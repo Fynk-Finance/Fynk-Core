@@ -36,7 +36,7 @@ func TestPortalDashboardAndBanner(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 OK, got %d", resp.StatusCode)
@@ -78,7 +78,7 @@ func TestPaymentCreatedInPortalAppearsInAPIImmediately(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Redirect expected
 	if resp.StatusCode != http.StatusSeeOther && resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusFound {
@@ -93,7 +93,7 @@ func TestPaymentCreatedInPortalAppearsInAPIImmediately(t *testing.T) {
 	if err != nil {
 		t.Fatalf("API request failed: %v", err)
 	}
-	defer apiResp.Body.Close()
+	defer func() { _ = apiResp.Body.Close() }()
 
 	if apiResp.StatusCode != http.StatusOK {
 		t.Fatalf("API returned %d", apiResp.StatusCode)
@@ -137,7 +137,7 @@ func TestPortalTransferAndCardPayment(t *testing.T) {
 		"amount":       {"200000"},
 	}
 	resp, _ := http.PostForm(ts.URL+"/portal/actions/transfer", trfForm)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// Pay Card from Ahorros
 	cardForm := url.Values{
@@ -146,7 +146,7 @@ func TestPortalTransferAndCardPayment(t *testing.T) {
 		"amount":       {"300000"},
 	}
 	resp2, _ := http.PostForm(ts.URL+"/portal/actions/pay-card", cardForm)
-	resp2.Body.Close()
+	_ = resp2.Body.Close()
 
 	// Verify updated balances in store
 	updated := s.GetCustomer(customerID)
@@ -177,18 +177,18 @@ func TestPortalSubscriptionsAndAdmin(t *testing.T) {
 		"new_amount": {"45900"},
 	}
 	resp, _ := http.PostForm(ts.URL+"/portal/subscriptions/change-price", priceForm)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// Charge subscription immediately
 	chargeForm := url.Values{
 		"sub_id": {subID},
 	}
 	resp2, _ := http.PostForm(ts.URL+"/portal/subscriptions/charge-now", chargeForm)
-	resp2.Body.Close()
+	_ = resp2.Body.Close()
 
 	// Reset via admin
 	resp3, _ := http.PostForm(ts.URL+"/portal/admin/reset", url.Values{})
-	resp3.Body.Close()
+	_ = resp3.Body.Close()
 
 	// Verify reset restored original balance
 	resetCust := s.GetCustomer(customerID)
