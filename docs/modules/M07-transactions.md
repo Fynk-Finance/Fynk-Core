@@ -5,7 +5,7 @@
 | Phase | 2 |
 | Stories | HU-015 SCRUM-29 (3), HU-016 SCRUM-30 (3), HU-017 SCRUM-31 (2), HU-018 SCRUM-32 (5) |
 | Points | 13 |
-| Owner | Sofia Nicolle Ariza |
+| Owner | Sofia Nicolle Ariza (`@sofia-ariza-783`) |
 | Owns | `apps/mobile/src/modules/transactions/` |
 | Depends on | M2 (vault, FTS5), M5 (movements written by sync), M9 (merchant catalog categories, optional at first) |
 | Used by | M6, M8, M9, M10 |

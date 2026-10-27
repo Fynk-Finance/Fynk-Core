@@ -5,7 +5,7 @@
 | Phase | 4 |
 | Stories | HU-049 SCRUM-66 (5) |
 | Points | 5 |
-| Owner | Julián Castiblanco |
+| Owner | Julián Castiblanco (`@JulCR34l`) |
 | Owns | `apps/mobile/src/modules/investment/`, `services/api/internal/market/`, `contracts/modules/market.yaml` |
 | Depends on | M5 (`Products()` port, Caddy route to Alpaca), M6 (`getCdtAccounts()`), M16 (CDT products and the portal) |
 | Used by | Inversión tab |

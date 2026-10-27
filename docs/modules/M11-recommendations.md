@@ -5,7 +5,7 @@
 | Phase | 4 |
 | Stories | HU-024 SCRUM-38 (8), HU-025 SCRUM-39 (5), HU-026 SCRUM-40 (1) |
 | Points | 14 |
-| Owner | Julián Castiblanco |
+| Owner | Julián Castiblanco (`@JulCR34l`) |
 | Owns | `services/api/internal/recommendations/`, `contracts/modules/recommendations.yaml`, `apps/mobile/src/modules/recommendations/` |
 | Depends on | M10 (`buildSnapshot`, `getOpportunities`), M8, M9, M10 actions, M12, M14 (Bedrock access) |
 | Used by | Recomendaciones tab |

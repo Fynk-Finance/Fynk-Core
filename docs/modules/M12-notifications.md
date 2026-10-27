@@ -5,7 +5,7 @@
 | Phase | 2 |
 | Stories | HU-053 SCRUM-70 (3) |
 | Points | 3 |
-| Owner | Karol |
+| Owner | Karol (`@Karol2905`) |
 | Owns | `apps/mobile/src/modules/notifications/` |
 | Depends on | M0, M2 (vault) |
 | Used by | M2, M5, M8, M9, M10, M11 (they call `NotificationsPort`) |

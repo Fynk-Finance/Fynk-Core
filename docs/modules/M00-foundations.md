@@ -5,7 +5,7 @@
 | Phase | 0 (critical path for everyone) |
 | Stories | HU-051 SCRUM-68 (5) |
 | Points | 5 |
-| Owner | Sofia Nicolle Ariza |
+| Owner | Sofia Nicolle Ariza (`@sofia-ariza-783`) |
 | Owns | repository root files, `apps/mobile/src/app`, `apps/mobile/src/shared`, `services/api/cmd`, `services/api/internal/app`, `services/api/internal/platform`, `contracts/openapi.yaml`, `.github/workflows/ci.yml`, `Makefile`, `docker-compose.yml` |
 | Unblocks | every other module |
 

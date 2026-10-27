@@ -7,7 +7,7 @@ Everything a developer needs to start a module with Claude Code. Copy everything
 | `CLAUDE.md` | Rules Claude Code reads in every session: architecture, design source, data, security, Git workflow, conflict rules, decisions |
 | `.claude/settings.json` | Limits for Claude Code: no force push, no push to `develop` or `main`, no merges, no `terraform apply`, asks before touching shared files |
 | `.github/pull_request_template.md` | Checklist for every pull request |
-| `.github/CODEOWNERS` | Folder to owner map. Replace `@owner-mN` with real GitHub users once modules are assigned |
+| `.github/CODEOWNERS` | Folder to owner map, with the GitHub user of each person in CLAUDE.md, Team |
 | `docs/modules/00-phases-and-gates.md` | Order of work, what runs in parallel, gate checklists |
 | `docs/modules/00-shared-contracts.md` | Types, ports, endpoints and reference numbers every module builds on |
 | `docs/modules/M00-...md` to `M16-...md` | One prompt per module, ready to paste into Claude Code |

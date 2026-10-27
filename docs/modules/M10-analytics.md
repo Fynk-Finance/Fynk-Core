@@ -5,7 +5,7 @@
 | Phase | 3 |
 | Stories | HU-021 SCRUM-35 (5), HU-022 SCRUM-36 (5), HU-023 SCRUM-37 (8), HU-043 SCRUM-60 (5) |
 | Points | 23 |
-| Owner | Julián Castiblanco |
+| Owner | Julián Castiblanco (`@JulCR34l`) |
 | Owns | `apps/mobile/src/modules/analytics/` |
 | Depends on | M7 (movements), M8 and M9 (their summaries), M12 (cap alerts) |
 | Used by | M6 (Ingresos and Gastos), M11 (the snapshot), Recomendaciones |

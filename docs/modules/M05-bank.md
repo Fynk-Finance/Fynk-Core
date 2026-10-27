@@ -5,7 +5,7 @@
 | Phase | 1 (Banco Demo), 2 (Bancolombia adapter) |
 | Stories | HU-009 SCRUM-23 (8), HU-010 SCRUM-24 (5), HU-011 SCRUM-25 (3), HU-030 SCRUM-44 (8), HU-031 SCRUM-45 (5) |
 | Points | 29 |
-| Owner | Juan Carlos Leal |
+| Owner | Juan Carlos Leal (`@JuanLeal05`) |
 | Owns | `services/api/internal/bank/`, `contracts/modules/bank.yaml`, `apps/mobile/src/modules/bank/` |
 | Depends on | M1 (session), M2 (vault), M4 (consents), M14 (Caddy egress, KMS keys, certificates), M16 (Banco Demo API) |
 | Used by | M6, M7, M9, M10 (they read what sync writes), M3, M15 |
