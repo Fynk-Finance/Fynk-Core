@@ -43,6 +43,7 @@ She chose: defaults with overrides for both the theme and the transitions, docs 
 * Dashboard, DashboardDetalles and Recuperar have one or two more colors in one theme than in the other, so the script leaves them out and says so.
 * Dashboard · Detalle de cuentas is specified as an in-place expansion of the Dashboard header, not a route. Detalle de cuenta and Configuración · Omitir are modals. Configuración · Listo has no back gesture. Every other screen uses the default of its kind.
 * The onboarding order changed in the design: Correo is now step 1 and Nombre step 2. M3 must follow it.
+* CI failed on this pull request: `tokens.test.ts` on `develop` reads the README color table and expected exactly 24 rows, while the new table has 42 (dark values and new tokens that only reach the code with the theme, #14). The test now checks that every color the code already has keeps the README light value. #14 checks every row in both themes again.
 * Rules the new screens break, written in the inventory: real bank names; "Se descuenta de Bancolombia" in Metas (Fynk never moves money); anonymous usage statistics and Fynk Plus offers in Privacidad; WhatsApp support in Centro de ayuda. The last two wait for the team.
 
 ## Next step

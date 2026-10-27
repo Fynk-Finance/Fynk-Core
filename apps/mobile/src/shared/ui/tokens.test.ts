@@ -15,10 +15,14 @@ function readmeColors(): Record<string, string> {
 }
 
 describe('design tokens', () => {
-  it('has every color of the README table with the same value', () => {
+  // The README table now has the dark mode design (light and dark values, new tokens). The new
+  // tokens arrive in code with the theme (M0 Step 7.2), which checks every row in both themes.
+  // Until then: every color the code already has keeps the README's light value.
+  it('keeps the README light value of every color the code already has', () => {
     const expected = readmeColors();
-    expect(Object.keys(expected).length).toBe(24);
-    for (const [name, value] of Object.entries(expected)) {
+    const inCode = Object.entries(expected).filter(([name]) => name in colors);
+    expect(inCode.length).toBeGreaterThanOrEqual(24);
+    for (const [name, value] of inCode) {
       expect({ name, value: colors[name as keyof typeof colors] }).toEqual({ name, value });
     }
   });
