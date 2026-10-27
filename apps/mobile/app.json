@@ -26,7 +26,8 @@
     "scheme": "fynk",
     "plugins": [
       "expo-font",
-      ["react-native-app-auth", { "redirectUrls": ["co.fynk.app://oauth/callback"] }]
+      ["react-native-app-auth", { "redirectUrls": ["co.fynk.app://oauth/callback"] }],
+      "./plugins/withAppAuthSceneLifecycle"
     ]
   }
 }
