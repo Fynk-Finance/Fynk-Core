@@ -12,6 +12,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -19,6 +20,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/store"
 )
 
 func main() {
@@ -60,29 +63,44 @@ func loadConfig(getenv func(string) string) config {
 }
 
 func run(ctx context.Context, cfg config, logger *slog.Logger) error {
+	var tlsCfg *tls.Config
 	if cfg.CertFile == "" || cfg.KeyFile == "" || cfg.ClientCAFile == "" {
-		return errors.New("BANK_TLS_CERT, BANK_TLS_KEY and BANK_CLIENT_CA are required (run make certs)")
-	}
-	caPEM, err := os.ReadFile(cfg.ClientCAFile)
-	if err != nil {
-		return err
-	}
-	tlsCfg, err := internalTLSConfig(caPEM)
-	if err != nil {
-		return err
-	}
-	public := &http.Server{Addr: cfg.PublicAddr, Handler: healthMux(), ReadHeaderTimeout: 5 * time.Second}
-	internal := &http.Server{
-		Addr:              cfg.InternalAddr,
-		Handler:           logClientCert(logger, healthMux()),
-		TLSConfig:         tlsCfg,
-		ReadHeaderTimeout: 5 * time.Second,
+		if os.Getenv("BANK_DEV_MODE") != "1" {
+			return errors.New("BANK_TLS_CERT, BANK_TLS_KEY and BANK_CLIENT_CA are required (run make certs)")
+		}
+		logger.Warn("BANK_DEV_MODE=1 enabled; mTLS certificates not configured, internal listener disabled")
+	} else {
+		caPEM, err := os.ReadFile(cfg.ClientCAFile)
+		if err != nil {
+			return err
+		}
+		var errTLS error
+		tlsCfg, errTLS = internalTLSConfig(caPEM)
+		if errTLS != nil {
+			return errTLS
+		}
 	}
 
+	bankStore := store.NewBankStore(time.Time{})
+	bankMux := newBankMux(bankStore)
+
+	public := &http.Server{Addr: cfg.PublicAddr, Handler: bankMux, ReadHeaderTimeout: 5 * time.Second}
 	errs := make(chan error, 2)
 	go func() { errs <- public.ListenAndServe() }()
-	go func() { errs <- internal.ListenAndServeTLS(cfg.CertFile, cfg.KeyFile) }()
-	logger.Info("bank simulator placeholder listening", "public", cfg.PublicAddr, "internal_mtls", cfg.InternalAddr)
+
+	var internal *http.Server
+	if tlsCfg != nil {
+		internal = &http.Server{
+			Addr:              cfg.InternalAddr,
+			Handler:           logClientCert(logger, bankMux),
+			TLSConfig:         tlsCfg,
+			ReadHeaderTimeout: 5 * time.Second,
+		}
+		go func() { errs <- internal.ListenAndServeTLS(cfg.CertFile, cfg.KeyFile) }()
+		logger.Info("bank simulator listening", "public", cfg.PublicAddr, "internal_mtls", cfg.InternalAddr)
+	} else {
+		logger.Info("bank simulator listening in dev mode", "public", cfg.PublicAddr, "internal_mtls", "disabled")
+	}
 
 	select {
 	case err := <-errs:
@@ -90,7 +108,10 @@ func run(ctx context.Context, cfg config, logger *slog.Logger) error {
 	case <-ctx.Done():
 		shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		return errors.Join(public.Shutdown(shutdown), internal.Shutdown(shutdown))
+		if internal != nil {
+			return errors.Join(public.Shutdown(shutdown), internal.Shutdown(shutdown))
+		}
+		return public.Shutdown(shutdown)
 	}
 }
 
