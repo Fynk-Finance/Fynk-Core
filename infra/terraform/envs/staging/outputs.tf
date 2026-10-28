@@ -66,6 +66,11 @@ output "rds_security_group_id" {
   description = "RDS security group ID"
 }
 
+output "rds_master_user_secret_arn" {
+  value       = module.rds.master_user_secret_arn
+  description = "RDS master secret ARN in Secrets Manager"
+}
+
 # Redis Outputs
 output "redis_primary_endpoint" {
   value       = module.redis.primary_endpoint_address
@@ -75,6 +80,11 @@ output "redis_primary_endpoint" {
 output "redis_security_group_id" {
   value       = module.redis.security_group_id
   description = "Redis security group ID"
+}
+
+output "redis_auth_token_secret_arn" {
+  value       = module.redis.auth_token_secret_arn
+  description = "Secrets Manager ARN for Redis AUTH token"
 }
 
 # ECS Cluster & Services
