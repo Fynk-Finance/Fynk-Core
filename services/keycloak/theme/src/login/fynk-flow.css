@@ -325,12 +325,112 @@
   color: var(--fk-primary-deep);
 }
 
+/* Live checklist of the new password. */
+.fk-rules {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fk-rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--fk-text-secondary);
+}
+.fk-rule[data-met='true'] {
+  color: var(--fk-text-primary);
+}
+.fk-rule-mark {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-radius: 999px;
+  border: 1.5px solid var(--fk-border-code);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fk-on-primary);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+.fk-rule[data-met='true'] .fk-rule-mark {
+  border-color: var(--fk-primary);
+  background-color: var(--fk-primary);
+}
+.fk-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Success, info and error pages. */
+.fk-status {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: fk-step-in 0.35s ease-out both;
+}
+.fk-status-mark {
+  width: 72px;
+  height: 72px;
+  margin: 8px 0 24px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--fk-accent);
+  /* Lime stays lime in dark; the check keeps the dark ink of the design text on lime. */
+  color: #0f2233;
+}
+.fk-status-mark--error {
+  background-color: var(--fk-danger-surface);
+  border: 1.5px solid var(--fk-danger-border);
+  color: var(--fk-danger);
+}
+.fk-status .fk-card-title {
+  font-size: 26px;
+  line-height: 32px;
+}
+.fk-status-body {
+  margin-top: 8px;
+}
+.fk-status .fk-cta {
+  margin-top: auto;
+  text-decoration: none;
+}
+.fk-status .fk-cta,
+.fk-status .fk-cta:hover {
+  color: var(--fk-on-primary);
+}
+.fk-status-message {
+  margin: 0;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--fk-text-secondary);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fk-step,
+  .fk-status,
   .fk-code-caret,
   .fk-progress-dot,
   .fk-back,
-  .fk-code-box {
+  .fk-code-box,
+  .fk-rule-mark {
     animation: none;
     transition: none;
   }
