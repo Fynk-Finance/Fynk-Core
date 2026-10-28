@@ -1,0 +1,43 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    paths:
+      - 'infra/**'
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    name: Terraform Check, Validate & Plan
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-east-1
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+
+      - name: Terraform Format Check
+        run: |
+          terraform fmt -check infra/terraform
+
+      - name: Terraform Validate (Bootstrap)
+        working-directory: infra/terraform/bootstrap
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Terraform Validate (Staging)
+        working-directory: infra/terraform/envs/staging
+        run: |
+          terraform init -backend=false
+          terraform validate

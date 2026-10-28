@@ -27,11 +27,13 @@ describe('module registry', () => {
     }
   });
 
-  it('runs the sign in, unlock and onboarding gates in that order, all closed for now', () => {
+  // Gates are React hooks (M1's reads the session), so they are only called while rendering:
+  // see AppRoot.test.tsx.
+  it('runs the sign in, unlock and onboarding gates in that order, each with its flow', () => {
     expect(gateOrder).toEqual(['identity', 'vault', 'onboarding']);
     for (const module of gateOrder) {
       expect(moduleRoutes[module].flow).toBeDefined();
-      expect(moduleRoutes[module].useGate?.()).toBe(false);
+      expect(typeof moduleRoutes[module].useGate).toBe('function');
     }
   });
 
