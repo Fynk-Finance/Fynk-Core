@@ -162,7 +162,11 @@ public class ResetCredentialWithCode implements Authenticator {
                 LOG.error("Could not send the reset code");
             }
         }
-        context.challenge(form(context, limits, target).createForm(TEMPLATE));
+        // The cooldown started in this request, so the page shows all of it. Counting what is left
+        // would show 59 when the email took past a second boundary, and a decoy never sends one.
+        context.challenge(form(context, limits, target)
+                .setAttribute("cooldownSeconds", UserLimits.RESEND_COOLDOWN.getSeconds())
+                .createForm(TEMPLATE));
     }
 
     /**
