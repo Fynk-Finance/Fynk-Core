@@ -5,6 +5,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.80"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
   backend "s3" {
     bucket       = "fynk-terraform-state-staging"
@@ -41,5 +45,35 @@ module "endpoints" {
   vpc_id      = module.network.vpc_id
   vpc_cidr    = module.network.vpc_cidr_block
   subnet_ids  = [module.network.primary_private_subnet_id]
+  environment = var.environment
+}
+module "kms" {
+  source = "../../modules/kms"
+
+  environment = var.environment
+}
+
+module "secrets" {
+  source = "../../modules/secrets"
+
+  environment = var.environment
+  kms_key_id  = module.kms.data_key_arn
+}
+
+module "rds" {
+  source = "../../modules/rds"
+
+  vpc_id      = module.network.vpc_id
+  subnet_ids  = module.network.private_subnet_ids
+  kms_key_id  = module.kms.data_key_arn
+  environment = var.environment
+}
+
+module "redis" {
+  source = "../../modules/redis"
+
+  vpc_id      = module.network.vpc_id
+  subnet_ids  = module.network.private_subnet_ids
+  kms_key_id  = module.kms.data_key_arn
   environment = var.environment
 }
