@@ -8,6 +8,7 @@
 //   fynk-email-code.ftl:  &purpose=verify | reset (default verify)
 //                         &error=wrong | new | malformed | many | wait
 //                         &cooldown=42  seconds left before "Reenviar código" (default 0)
+//   login-update-password.ftl: &aia=1  password change started from the app (Cancelar, no steps)
 //   info.ftl:  &kind=reset (end of the password recovery) | generic (default reset)
 //   error.ftl: &link=0 (the client has no base URL)
 import { createGetKcContextMock } from 'keycloakify/login/KcContext';
@@ -107,6 +108,7 @@ export function getDevKcContext(search: string): KcContext {
       pageId: 'login-update-password.ftl',
       overrides: {
         realm,
+        isAppInitiatedAction: params.get('aia') === '1',
         ...(withError && {
           messagesPerField: fieldErrors({
             password: 'Contraseña no válida: no puede ser igual que el correo.',

@@ -324,6 +324,13 @@
 .fk-link--center:hover {
   color: var(--fk-primary-deep);
 }
+/* The same link drawn by a submit button (Cancelar of the password change). */
+button.fk-link--center {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
 
 /* Live checklist of the new password. */
 .fk-rules {

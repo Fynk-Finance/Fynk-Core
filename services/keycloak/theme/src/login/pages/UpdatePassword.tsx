@@ -21,6 +21,13 @@ const t = strings.reset;
 // of the realm policy. Field names and form id are Keycloak's. Keycloak's "close other sessions"
 // checkbox is not drawn: the reset already closes them (see the success page). The page reads
 // nothing from `auth` or `user`.
+//
+// The same template also serves the password change the app starts from Seguridad
+// (`kc_action=UPDATE_PASSWORD`, `isAppInitiatedAction`): no recovery steps or copy, a hidden
+// `logout-sessions=on` (Keycloak's checkbox name) so the other sessions end, and a Cancelar submit
+// (`cancel-aia=true`, Keycloak's cancel of an application initiated action).
+// Keycloak's global message is shown only when it is an error: the "Tienes que cambiar tu
+// contraseña." warning just repeats the title.
 export default function UpdatePassword({ kcContext }: Props) {
   const { url, message, messagesPerField } = kcContext;
   const [password, setPassword] = useState('');
@@ -33,20 +40,23 @@ export default function UpdatePassword({ kcContext }: Props) {
     ? messagesPerField.get('password-confirm')
     : undefined;
   const hasFieldError = passwordError !== undefined || confirmError !== undefined;
-  const globalMessage = message !== undefined && !hasFieldError ? message : undefined;
+  const globalMessage =
+    message !== undefined && message.type === 'error' && !hasFieldError ? message : undefined;
+  const isChange = kcContext.isAppInitiatedAction === true;
+  const c = t.change;
 
   return (
     <FynkLayout
-      documentTitle={t.pageTitle}
-      headerTitle={t.headerTitle}
-      headerSubtitle={t.headerSubtitle}
+      documentTitle={isChange ? c.pageTitle : t.pageTitle}
+      headerTitle={isChange ? c.headerTitle : t.headerTitle}
+      headerSubtitle={isChange ? c.headerSubtitle : t.headerSubtitle}
       flow={{}}
     >
-      <FynkProgress step={3} total={3} label={t.stepLabel(3, 3)} />
+      {!isChange && <FynkProgress step={3} total={3} label={t.stepLabel(3, 3)} />}
       <div className="fk-step">
         <div className="fk-card-intro">
-          <h2 className="fk-card-title">{t.newPasswordTitle}</h2>
-          <p className="fk-card-subtitle">{t.newPasswordSubtitle}</p>
+          <h2 className="fk-card-title">{isChange ? c.title : t.newPasswordTitle}</h2>
+          <p className="fk-card-subtitle">{isChange ? c.subtitle : t.newPasswordSubtitle}</p>
         </div>
 
         {globalMessage !== undefined && (
@@ -88,7 +98,18 @@ export default function UpdatePassword({ kcContext }: Props) {
             error={confirmError !== undefined ? <KcHtml html={confirmError} /> : undefined}
           />
           <div className="fk-spacer" />
+          {isChange && <input type="hidden" name="logout-sessions" value="on" />}
           <FynkButton label={t.savePassword} />
+          {isChange && (
+            <button
+              className="fk-link fk-link--center"
+              type="submit"
+              name="cancel-aia"
+              value="true"
+            >
+              {c.cancel}
+            </button>
+          )}
         </form>
       </div>
     </FynkLayout>
