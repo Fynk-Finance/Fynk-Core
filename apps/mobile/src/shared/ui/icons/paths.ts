@@ -51,6 +51,7 @@ export const icons = {
   // Actions and states (VerdeDetalleCuentas, VerdeOnbOmitir, VerdeConectarBanco)
   check: p('M20 6 9 17l-5-5'),
   plus: p('M12 5v14M5 12h14'),
+  search: p('M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3'), // Movimientos
   close: p('M18 6 6 18M6 6l12 12'),
   trash: p(
     'M3 6h18',

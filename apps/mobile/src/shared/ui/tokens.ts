@@ -11,6 +11,7 @@ export const lightColors = {
   primaryDark: '#1F93C2',
   primaryDeep: '#177FA9',
   primaryLight: '#50C1EB',
+  primaryText: '#1F7FA8',
   headerShapeA: '#3AB3E3',
   headerShapeB: '#47B6E2',
   headerDashboard: '#2FA8D8',
@@ -57,6 +58,10 @@ export const lightColors = {
   onPrimaryOverlay: 'rgba(255, 255, 255, 0.2)', // back button on blue (OnbNombre)
   onPrimarySubtle: 'rgba(255, 255, 255, 0.22)', // income and spending boxes (Dashboard)
   onPrimaryBadge: 'rgba(255, 255, 255, 0.28)', // "Mayor impacto" pill (Recomendaciones)
+  onPrimaryFaint: 'rgba(255, 255, 255, 0.18)', // period control track (Estadisticas)
+  onPrimaryPressed: 'rgba(255, 255, 255, 0.14)', // period option pressed (Estadisticas)
+  onPrimaryDot: 'rgba(255, 255, 255, 0.5)', // inactive page dot (CuentaDetalle)
+  fabShadow: '#1F7FA8', // FAB shadow, rgba(31,127,168,.8) (Dashboard, Metas)
 } as const;
 
 export type PaletteToken = keyof typeof lightColors;
@@ -68,6 +73,7 @@ export const darkColors: Palette = {
   ...lightColors,
   primaryDark: '#62C8F0',
   primaryDeep: '#62C8F0',
+  primaryText: '#62C8F0',
   headerDashboard: '#428FAF',
   pullTab: '#418EAE',
   surfaceBlue: '#1A3444',
@@ -186,6 +192,12 @@ export const size = {
   buttonSecondary: 52,
   iconButton: 48,
   backButton: 44,
+  fab: 64,
+  switchWidth: 48,
+  switchHeight: 28,
+  switchKnob: 22,
+  segment: 40,
+  searchField: 48,
   input: 56,
   chip: 36,
   tabBar: 72,
@@ -237,6 +249,13 @@ export function makeShadows(colors: Palette) {
       shadowOpacity: 0.35,
       shadowRadius: 6,
       elevation: 4,
+    },
+    fab: {
+      shadowColor: colors.fabShadow,
+      shadowOffset: { width: 0, height: 14 },
+      shadowOpacity: 0.8,
+      shadowRadius: 10,
+      elevation: 8,
     },
     ...limeShadows,
   } as const;

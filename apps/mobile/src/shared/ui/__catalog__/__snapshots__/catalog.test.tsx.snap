@@ -6644,6 +6644,1050 @@ exports[`design system catalog EmptyState, ErrorState, Skeleton / Skeleton match
 </View>
 `;
 
+exports[`design system catalog Fab / Extended matches its dark snapshot 1`] = `
+<View
+  style={
+    {
+      "alignItems": "flex-start",
+    }
+  }
+>
+  <View
+    accessibilityLabel="Crear nueva meta de ahorro"
+    accessibilityRole="button"
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": undefined,
+        "disabled": undefined,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    style={
+      [
+        {
+          "alignItems": "center",
+          "borderRadius": 20,
+          "elevation": 8,
+          "height": 64,
+          "justifyContent": "center",
+          "shadowColor": "#1F7FA8",
+          "shadowOffset": {
+            "height": 14,
+            "width": 0,
+          },
+          "shadowOpacity": 0.8,
+          "shadowRadius": 10,
+        },
+        {
+          "flexDirection": "row",
+          "gap": 8,
+          "paddingHorizontal": 16,
+        },
+        {
+          "backgroundColor": "#2FA8D8",
+        },
+        undefined,
+      ]
+    }
+  >
+    <View
+      collapsable={false}
+      jestAnimatedProps={
+        {
+          "value": {},
+        }
+      }
+      jestAnimatedStyle={
+        {
+          "value": {
+            "transform": [
+              {
+                "rotate": "0deg",
+              },
+            ],
+          },
+        }
+      }
+      jestInlineStyle={{}}
+      style={
+        [
+          {
+            "transform": [
+              {
+                "rotate": "0deg",
+              },
+            ],
+          },
+        ]
+      }
+    >
+      <RNSVGSvgView
+        accessibilityElementsHidden={true}
+        accessible={false}
+        align="xMidYMid"
+        bbHeight={24}
+        bbWidth={24}
+        fill="none"
+        focusable={false}
+        height={24}
+        importantForAccessibility="no-hide-descendants"
+        meetOrSlice={0}
+        minX={0}
+        minY={0}
+        stroke="#FFFFFF"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.8}
+        style={
+          [
+            {
+              "backgroundColor": "transparent",
+              "borderWidth": 0,
+            },
+            {
+              "flex": 0,
+              "height": 24,
+              "width": 24,
+            },
+          ]
+        }
+        vbHeight={24}
+        vbWidth={24}
+        width={24}
+      >
+        <RNSVGGroup
+          fill={null}
+          propList={
+            [
+              "fill",
+              "stroke",
+              "strokeWidth",
+              "strokeLinecap",
+              "strokeLinejoin",
+            ]
+          }
+          stroke={
+            {
+              "payload": 4294967295,
+              "type": 0,
+            }
+          }
+          strokeLinecap={1}
+          strokeLinejoin={1}
+          strokeWidth={2.8}
+        >
+          <RNSVGPath
+            d="M12 5v14M5 12h14"
+            fill={null}
+            propList={
+              [
+                "fill",
+                "stroke",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4294967295,
+                "type": 0,
+              }
+            }
+          />
+        </RNSVGGroup>
+      </RNSVGSvgView>
+    </View>
+    <Text
+      style={
+        {
+          "color": "#FFFFFF",
+          "fontFamily": "PlusJakartaSans_700Bold",
+          "fontSize": 15,
+        }
+      }
+    >
+      Nueva meta
+    </Text>
+  </View>
+</View>
+`;
+
+exports[`design system catalog Fab / Extended matches its snapshot 1`] = `
+<View
+  style={
+    {
+      "alignItems": "flex-start",
+    }
+  }
+>
+  <View
+    accessibilityLabel="Crear nueva meta de ahorro"
+    accessibilityRole="button"
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": undefined,
+        "disabled": undefined,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    style={
+      [
+        {
+          "alignItems": "center",
+          "borderRadius": 20,
+          "elevation": 8,
+          "height": 64,
+          "justifyContent": "center",
+          "shadowColor": "#1F7FA8",
+          "shadowOffset": {
+            "height": 14,
+            "width": 0,
+          },
+          "shadowOpacity": 0.8,
+          "shadowRadius": 10,
+        },
+        {
+          "flexDirection": "row",
+          "gap": 8,
+          "paddingHorizontal": 16,
+        },
+        {
+          "backgroundColor": "#2FA8D8",
+        },
+        undefined,
+      ]
+    }
+  >
+    <View
+      collapsable={false}
+      jestAnimatedProps={
+        {
+          "value": {},
+        }
+      }
+      jestAnimatedStyle={
+        {
+          "value": {
+            "transform": [
+              {
+                "rotate": "0deg",
+              },
+            ],
+          },
+        }
+      }
+      jestInlineStyle={{}}
+      style={
+        [
+          {
+            "transform": [
+              {
+                "rotate": "0deg",
+              },
+            ],
+          },
+        ]
+      }
+    >
+      <RNSVGSvgView
+        accessibilityElementsHidden={true}
+        accessible={false}
+        align="xMidYMid"
+        bbHeight={24}
+        bbWidth={24}
+        fill="none"
+        focusable={false}
+        height={24}
+        importantForAccessibility="no-hide-descendants"
+        meetOrSlice={0}
+        minX={0}
+        minY={0}
+        stroke="#FFFFFF"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.8}
+        style={
+          [
+            {
+              "backgroundColor": "transparent",
+              "borderWidth": 0,
+            },
+            {
+              "flex": 0,
+              "height": 24,
+              "width": 24,
+            },
+          ]
+        }
+        vbHeight={24}
+        vbWidth={24}
+        width={24}
+      >
+        <RNSVGGroup
+          fill={null}
+          propList={
+            [
+              "fill",
+              "stroke",
+              "strokeWidth",
+              "strokeLinecap",
+              "strokeLinejoin",
+            ]
+          }
+          stroke={
+            {
+              "payload": 4294967295,
+              "type": 0,
+            }
+          }
+          strokeLinecap={1}
+          strokeLinejoin={1}
+          strokeWidth={2.8}
+        >
+          <RNSVGPath
+            d="M12 5v14M5 12h14"
+            fill={null}
+            propList={
+              [
+                "fill",
+                "stroke",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4294967295,
+                "type": 0,
+              }
+            }
+          />
+        </RNSVGGroup>
+      </RNSVGSvgView>
+    </View>
+    <Text
+      style={
+        {
+          "color": "#FFFFFF",
+          "fontFamily": "PlusJakartaSans_700Bold",
+          "fontSize": 15,
+        }
+      }
+    >
+      Nueva meta
+    </Text>
+  </View>
+</View>
+`;
+
+exports[`design system catalog Fab / Open matches its dark snapshot 1`] = `
+<View
+  accessibilityLabel="Registrar gasto o ingreso"
+  accessibilityRole="button"
+  accessibilityState={
+    {
+      "busy": undefined,
+      "checked": undefined,
+      "disabled": undefined,
+      "expanded": true,
+      "selected": undefined,
+    }
+  }
+  accessibilityValue={
+    {
+      "max": undefined,
+      "min": undefined,
+      "now": undefined,
+      "text": undefined,
+    }
+  }
+  accessible={true}
+  collapsable={false}
+  focusable={true}
+  onBlur={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onResponderGrant={[Function]}
+  onResponderMove={[Function]}
+  onResponderRelease={[Function]}
+  onResponderTerminate={[Function]}
+  onResponderTerminationRequest={[Function]}
+  onStartShouldSetResponder={[Function]}
+  style={
+    [
+      {
+        "alignItems": "center",
+        "borderRadius": 20,
+        "elevation": 8,
+        "height": 64,
+        "justifyContent": "center",
+        "shadowColor": "#1F7FA8",
+        "shadowOffset": {
+          "height": 14,
+          "width": 0,
+        },
+        "shadowOpacity": 0.8,
+        "shadowRadius": 10,
+      },
+      {
+        "width": 64,
+      },
+      {
+        "backgroundColor": "#2FA8D8",
+      },
+      undefined,
+    ]
+  }
+>
+  <View
+    collapsable={false}
+    jestAnimatedProps={
+      {
+        "value": {},
+      }
+    }
+    jestAnimatedStyle={
+      {
+        "value": {
+          "transform": [
+            {
+              "rotate": "45deg",
+            },
+          ],
+        },
+      }
+    }
+    jestInlineStyle={{}}
+    style={
+      [
+        {
+          "transform": [
+            {
+              "rotate": "45deg",
+            },
+          ],
+        },
+      ]
+    }
+  >
+    <RNSVGSvgView
+      accessibilityElementsHidden={true}
+      accessible={false}
+      align="xMidYMid"
+      bbHeight={32}
+      bbWidth={32}
+      fill="none"
+      focusable={false}
+      height={32}
+      importantForAccessibility="no-hide-descendants"
+      meetOrSlice={0}
+      minX={0}
+      minY={0}
+      stroke="#FFFFFF"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2.8}
+      style={
+        [
+          {
+            "backgroundColor": "transparent",
+            "borderWidth": 0,
+          },
+          {
+            "flex": 0,
+            "height": 32,
+            "width": 32,
+          },
+        ]
+      }
+      vbHeight={24}
+      vbWidth={24}
+      width={32}
+    >
+      <RNSVGGroup
+        fill={null}
+        propList={
+          [
+            "fill",
+            "stroke",
+            "strokeWidth",
+            "strokeLinecap",
+            "strokeLinejoin",
+          ]
+        }
+        stroke={
+          {
+            "payload": 4294967295,
+            "type": 0,
+          }
+        }
+        strokeLinecap={1}
+        strokeLinejoin={1}
+        strokeWidth={2.8}
+      >
+        <RNSVGPath
+          d="M12 5v14M5 12h14"
+          fill={null}
+          propList={
+            [
+              "fill",
+              "stroke",
+            ]
+          }
+          stroke={
+            {
+              "payload": 4294967295,
+              "type": 0,
+            }
+          }
+        />
+      </RNSVGGroup>
+    </RNSVGSvgView>
+  </View>
+</View>
+`;
+
+exports[`design system catalog Fab / Open matches its snapshot 1`] = `
+<View
+  accessibilityLabel="Registrar gasto o ingreso"
+  accessibilityRole="button"
+  accessibilityState={
+    {
+      "busy": undefined,
+      "checked": undefined,
+      "disabled": undefined,
+      "expanded": true,
+      "selected": undefined,
+    }
+  }
+  accessibilityValue={
+    {
+      "max": undefined,
+      "min": undefined,
+      "now": undefined,
+      "text": undefined,
+    }
+  }
+  accessible={true}
+  collapsable={false}
+  focusable={true}
+  onBlur={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onResponderGrant={[Function]}
+  onResponderMove={[Function]}
+  onResponderRelease={[Function]}
+  onResponderTerminate={[Function]}
+  onResponderTerminationRequest={[Function]}
+  onStartShouldSetResponder={[Function]}
+  style={
+    [
+      {
+        "alignItems": "center",
+        "borderRadius": 20,
+        "elevation": 8,
+        "height": 64,
+        "justifyContent": "center",
+        "shadowColor": "#1F7FA8",
+        "shadowOffset": {
+          "height": 14,
+          "width": 0,
+        },
+        "shadowOpacity": 0.8,
+        "shadowRadius": 10,
+      },
+      {
+        "width": 64,
+      },
+      {
+        "backgroundColor": "#2FA8D8",
+      },
+      undefined,
+    ]
+  }
+>
+  <View
+    collapsable={false}
+    jestAnimatedProps={
+      {
+        "value": {},
+      }
+    }
+    jestAnimatedStyle={
+      {
+        "value": {
+          "transform": [
+            {
+              "rotate": "45deg",
+            },
+          ],
+        },
+      }
+    }
+    jestInlineStyle={{}}
+    style={
+      [
+        {
+          "transform": [
+            {
+              "rotate": "45deg",
+            },
+          ],
+        },
+      ]
+    }
+  >
+    <RNSVGSvgView
+      accessibilityElementsHidden={true}
+      accessible={false}
+      align="xMidYMid"
+      bbHeight={32}
+      bbWidth={32}
+      fill="none"
+      focusable={false}
+      height={32}
+      importantForAccessibility="no-hide-descendants"
+      meetOrSlice={0}
+      minX={0}
+      minY={0}
+      stroke="#FFFFFF"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2.8}
+      style={
+        [
+          {
+            "backgroundColor": "transparent",
+            "borderWidth": 0,
+          },
+          {
+            "flex": 0,
+            "height": 32,
+            "width": 32,
+          },
+        ]
+      }
+      vbHeight={24}
+      vbWidth={24}
+      width={32}
+    >
+      <RNSVGGroup
+        fill={null}
+        propList={
+          [
+            "fill",
+            "stroke",
+            "strokeWidth",
+            "strokeLinecap",
+            "strokeLinejoin",
+          ]
+        }
+        stroke={
+          {
+            "payload": 4294967295,
+            "type": 0,
+          }
+        }
+        strokeLinecap={1}
+        strokeLinejoin={1}
+        strokeWidth={2.8}
+      >
+        <RNSVGPath
+          d="M12 5v14M5 12h14"
+          fill={null}
+          propList={
+            [
+              "fill",
+              "stroke",
+            ]
+          }
+          stroke={
+            {
+              "payload": 4294967295,
+              "type": 0,
+            }
+          }
+        />
+      </RNSVGGroup>
+    </RNSVGSvgView>
+  </View>
+</View>
+`;
+
+exports[`design system catalog Fab / Round matches its dark snapshot 1`] = `
+<View
+  accessibilityLabel="Registrar gasto o ingreso"
+  accessibilityRole="button"
+  accessibilityState={
+    {
+      "busy": undefined,
+      "checked": undefined,
+      "disabled": undefined,
+      "expanded": undefined,
+      "selected": undefined,
+    }
+  }
+  accessibilityValue={
+    {
+      "max": undefined,
+      "min": undefined,
+      "now": undefined,
+      "text": undefined,
+    }
+  }
+  accessible={true}
+  collapsable={false}
+  focusable={true}
+  onBlur={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onResponderGrant={[Function]}
+  onResponderMove={[Function]}
+  onResponderRelease={[Function]}
+  onResponderTerminate={[Function]}
+  onResponderTerminationRequest={[Function]}
+  onStartShouldSetResponder={[Function]}
+  style={
+    [
+      {
+        "alignItems": "center",
+        "borderRadius": 20,
+        "elevation": 8,
+        "height": 64,
+        "justifyContent": "center",
+        "shadowColor": "#1F7FA8",
+        "shadowOffset": {
+          "height": 14,
+          "width": 0,
+        },
+        "shadowOpacity": 0.8,
+        "shadowRadius": 10,
+      },
+      {
+        "width": 64,
+      },
+      {
+        "backgroundColor": "#2FA8D8",
+      },
+      undefined,
+    ]
+  }
+>
+  <View
+    collapsable={false}
+    jestAnimatedProps={
+      {
+        "value": {},
+      }
+    }
+    jestAnimatedStyle={
+      {
+        "value": {
+          "transform": [
+            {
+              "rotate": "0deg",
+            },
+          ],
+        },
+      }
+    }
+    jestInlineStyle={{}}
+    style={
+      [
+        {
+          "transform": [
+            {
+              "rotate": "0deg",
+            },
+          ],
+        },
+      ]
+    }
+  >
+    <RNSVGSvgView
+      accessibilityElementsHidden={true}
+      accessible={false}
+      align="xMidYMid"
+      bbHeight={32}
+      bbWidth={32}
+      fill="none"
+      focusable={false}
+      height={32}
+      importantForAccessibility="no-hide-descendants"
+      meetOrSlice={0}
+      minX={0}
+      minY={0}
+      stroke="#FFFFFF"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2.8}
+      style={
+        [
+          {
+            "backgroundColor": "transparent",
+            "borderWidth": 0,
+          },
+          {
+            "flex": 0,
+            "height": 32,
+            "width": 32,
+          },
+        ]
+      }
+      vbHeight={24}
+      vbWidth={24}
+      width={32}
+    >
+      <RNSVGGroup
+        fill={null}
+        propList={
+          [
+            "fill",
+            "stroke",
+            "strokeWidth",
+            "strokeLinecap",
+            "strokeLinejoin",
+          ]
+        }
+        stroke={
+          {
+            "payload": 4294967295,
+            "type": 0,
+          }
+        }
+        strokeLinecap={1}
+        strokeLinejoin={1}
+        strokeWidth={2.8}
+      >
+        <RNSVGPath
+          d="M12 5v14M5 12h14"
+          fill={null}
+          propList={
+            [
+              "fill",
+              "stroke",
+            ]
+          }
+          stroke={
+            {
+              "payload": 4294967295,
+              "type": 0,
+            }
+          }
+        />
+      </RNSVGGroup>
+    </RNSVGSvgView>
+  </View>
+</View>
+`;
+
+exports[`design system catalog Fab / Round matches its snapshot 1`] = `
+<View
+  accessibilityLabel="Registrar gasto o ingreso"
+  accessibilityRole="button"
+  accessibilityState={
+    {
+      "busy": undefined,
+      "checked": undefined,
+      "disabled": undefined,
+      "expanded": undefined,
+      "selected": undefined,
+    }
+  }
+  accessibilityValue={
+    {
+      "max": undefined,
+      "min": undefined,
+      "now": undefined,
+      "text": undefined,
+    }
+  }
+  accessible={true}
+  collapsable={false}
+  focusable={true}
+  onBlur={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onResponderGrant={[Function]}
+  onResponderMove={[Function]}
+  onResponderRelease={[Function]}
+  onResponderTerminate={[Function]}
+  onResponderTerminationRequest={[Function]}
+  onStartShouldSetResponder={[Function]}
+  style={
+    [
+      {
+        "alignItems": "center",
+        "borderRadius": 20,
+        "elevation": 8,
+        "height": 64,
+        "justifyContent": "center",
+        "shadowColor": "#1F7FA8",
+        "shadowOffset": {
+          "height": 14,
+          "width": 0,
+        },
+        "shadowOpacity": 0.8,
+        "shadowRadius": 10,
+      },
+      {
+        "width": 64,
+      },
+      {
+        "backgroundColor": "#2FA8D8",
+      },
+      undefined,
+    ]
+  }
+>
+  <View
+    collapsable={false}
+    jestAnimatedProps={
+      {
+        "value": {},
+      }
+    }
+    jestAnimatedStyle={
+      {
+        "value": {
+          "transform": [
+            {
+              "rotate": "0deg",
+            },
+          ],
+        },
+      }
+    }
+    jestInlineStyle={{}}
+    style={
+      [
+        {
+          "transform": [
+            {
+              "rotate": "0deg",
+            },
+          ],
+        },
+      ]
+    }
+  >
+    <RNSVGSvgView
+      accessibilityElementsHidden={true}
+      accessible={false}
+      align="xMidYMid"
+      bbHeight={32}
+      bbWidth={32}
+      fill="none"
+      focusable={false}
+      height={32}
+      importantForAccessibility="no-hide-descendants"
+      meetOrSlice={0}
+      minX={0}
+      minY={0}
+      stroke="#FFFFFF"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2.8}
+      style={
+        [
+          {
+            "backgroundColor": "transparent",
+            "borderWidth": 0,
+          },
+          {
+            "flex": 0,
+            "height": 32,
+            "width": 32,
+          },
+        ]
+      }
+      vbHeight={24}
+      vbWidth={24}
+      width={32}
+    >
+      <RNSVGGroup
+        fill={null}
+        propList={
+          [
+            "fill",
+            "stroke",
+            "strokeWidth",
+            "strokeLinecap",
+            "strokeLinejoin",
+          ]
+        }
+        stroke={
+          {
+            "payload": 4294967295,
+            "type": 0,
+          }
+        }
+        strokeLinecap={1}
+        strokeLinejoin={1}
+        strokeWidth={2.8}
+      >
+        <RNSVGPath
+          d="M12 5v14M5 12h14"
+          fill={null}
+          propList={
+            [
+              "fill",
+              "stroke",
+            ]
+          }
+          stroke={
+            {
+              "payload": 4294967295,
+              "type": 0,
+            }
+          }
+        />
+      </RNSVGGroup>
+    </RNSVGSvgView>
+  </View>
+</View>
+`;
+
 exports[`design system catalog HeaderBlue / BilleteraTitle matches its dark snapshot 1`] = `
 <View
   style={
@@ -13424,6 +14468,620 @@ exports[`design system catalog ListRow / Subscription matches its snapshot 1`] =
 </View>
 `;
 
+exports[`design system catalog PageDots / FourAccounts matches its dark snapshot 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#2FA8D8",
+      "padding": 16,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "flexDirection": "row",
+        "gap": 8,
+        "justifyContent": "center",
+      }
+    }
+  >
+    <View
+      accessibilityLabel="Ver Banco Demo"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": true,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      hitSlop={10}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+    >
+      <View
+        collapsable={false}
+        jestAnimatedProps={
+          {
+            "value": {},
+          }
+        }
+        jestAnimatedStyle={
+          {
+            "value": {
+              "backgroundColor": "rgba(19, 33, 45, 1)",
+              "width": 22,
+            },
+          }
+        }
+        jestInlineStyle={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+          ]
+        }
+        style={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+            {
+              "backgroundColor": "rgba(19, 33, 45, 1)",
+              "width": 22,
+            },
+          ]
+        }
+      />
+    </View>
+    <View
+      accessibilityLabel="Ver Billetera Demo"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": false,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      hitSlop={10}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+    >
+      <View
+        collapsable={false}
+        jestAnimatedProps={
+          {
+            "value": {},
+          }
+        }
+        jestAnimatedStyle={
+          {
+            "value": {
+              "backgroundColor": "rgba(255, 255, 255, 0.502)",
+              "width": 7,
+            },
+          }
+        }
+        jestInlineStyle={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+          ]
+        }
+        style={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.502)",
+              "width": 7,
+            },
+          ]
+        }
+      />
+    </View>
+    <View
+      accessibilityLabel="Ver Banco Demo Crédito"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": false,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      hitSlop={10}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+    >
+      <View
+        collapsable={false}
+        jestAnimatedProps={
+          {
+            "value": {},
+          }
+        }
+        jestAnimatedStyle={
+          {
+            "value": {
+              "backgroundColor": "rgba(255, 255, 255, 0.502)",
+              "width": 7,
+            },
+          }
+        }
+        jestInlineStyle={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+          ]
+        }
+        style={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.502)",
+              "width": 7,
+            },
+          ]
+        }
+      />
+    </View>
+    <View
+      accessibilityLabel="Ver Efectivo"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": false,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      hitSlop={10}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+    >
+      <View
+        collapsable={false}
+        jestAnimatedProps={
+          {
+            "value": {},
+          }
+        }
+        jestAnimatedStyle={
+          {
+            "value": {
+              "backgroundColor": "rgba(255, 255, 255, 0.502)",
+              "width": 7,
+            },
+          }
+        }
+        jestInlineStyle={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+          ]
+        }
+        style={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.502)",
+              "width": 7,
+            },
+          ]
+        }
+      />
+    </View>
+  </View>
+</View>
+`;
+
+exports[`design system catalog PageDots / FourAccounts matches its snapshot 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#2FA8D8",
+      "padding": 16,
+    }
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "flexDirection": "row",
+        "gap": 8,
+        "justifyContent": "center",
+      }
+    }
+  >
+    <View
+      accessibilityLabel="Ver Banco Demo"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": true,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      hitSlop={10}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+    >
+      <View
+        collapsable={false}
+        jestAnimatedProps={
+          {
+            "value": {},
+          }
+        }
+        jestAnimatedStyle={
+          {
+            "value": {
+              "backgroundColor": "rgba(255, 255, 255, 1)",
+              "width": 22,
+            },
+          }
+        }
+        jestInlineStyle={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+          ]
+        }
+        style={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+            {
+              "backgroundColor": "rgba(255, 255, 255, 1)",
+              "width": 22,
+            },
+          ]
+        }
+      />
+    </View>
+    <View
+      accessibilityLabel="Ver Billetera Demo"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": false,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      hitSlop={10}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+    >
+      <View
+        collapsable={false}
+        jestAnimatedProps={
+          {
+            "value": {},
+          }
+        }
+        jestAnimatedStyle={
+          {
+            "value": {
+              "backgroundColor": "rgba(255, 255, 255, 0.502)",
+              "width": 7,
+            },
+          }
+        }
+        jestInlineStyle={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+          ]
+        }
+        style={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.502)",
+              "width": 7,
+            },
+          ]
+        }
+      />
+    </View>
+    <View
+      accessibilityLabel="Ver Banco Demo Crédito"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": false,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      hitSlop={10}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+    >
+      <View
+        collapsable={false}
+        jestAnimatedProps={
+          {
+            "value": {},
+          }
+        }
+        jestAnimatedStyle={
+          {
+            "value": {
+              "backgroundColor": "rgba(255, 255, 255, 0.502)",
+              "width": 7,
+            },
+          }
+        }
+        jestInlineStyle={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+          ]
+        }
+        style={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.502)",
+              "width": 7,
+            },
+          ]
+        }
+      />
+    </View>
+    <View
+      accessibilityLabel="Ver Efectivo"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": undefined,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": false,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      hitSlop={10}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+    >
+      <View
+        collapsable={false}
+        jestAnimatedProps={
+          {
+            "value": {},
+          }
+        }
+        jestAnimatedStyle={
+          {
+            "value": {
+              "backgroundColor": "rgba(255, 255, 255, 0.502)",
+              "width": 7,
+            },
+          }
+        }
+        jestInlineStyle={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+          ]
+        }
+        style={
+          [
+            {
+              "borderRadius": 999,
+              "height": 7,
+            },
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.502)",
+              "width": 7,
+            },
+          ]
+        }
+      />
+    </View>
+  </View>
+</View>
+`;
+
 exports[`design system catalog ProgressBar / Empty matches its dark snapshot 1`] = `
 <View
   accessibilityRole="progressbar"
@@ -14580,6 +16238,464 @@ exports[`design system catalog Screen / WithHeaderAndTabBar matches its snapshot
 </View>
 `;
 
+exports[`design system catalog SearchField / Empty matches its dark snapshot 1`] = `
+<View
+  style={
+    [
+      {
+        "alignItems": "center",
+        "backgroundColor": "#182A37",
+        "borderColor": "#223746",
+        "borderRadius": 16,
+        "borderWidth": 1.5,
+        "flexDirection": "row",
+        "gap": 8,
+        "height": 48,
+        "paddingHorizontal": 16,
+      },
+      null,
+    ]
+  }
+>
+  <RNSVGSvgView
+    accessibilityElementsHidden={true}
+    accessible={false}
+    align="xMidYMid"
+    bbHeight={16}
+    bbWidth={16}
+    fill="none"
+    focusable={false}
+    height={16}
+    importantForAccessibility="no-hide-descendants"
+    meetOrSlice={0}
+    minX={0}
+    minY={0}
+    stroke="#62C8F0"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={2}
+    style={
+      [
+        {
+          "backgroundColor": "transparent",
+          "borderWidth": 0,
+        },
+        {
+          "flex": 0,
+          "height": 16,
+          "width": 16,
+        },
+      ]
+    }
+    vbHeight={24}
+    vbWidth={24}
+    width={16}
+  >
+    <RNSVGGroup
+      fill={null}
+      propList={
+        [
+          "fill",
+          "stroke",
+          "strokeWidth",
+          "strokeLinecap",
+          "strokeLinejoin",
+        ]
+      }
+      stroke={
+        {
+          "payload": 4284664048,
+          "type": 0,
+        }
+      }
+      strokeLinecap={1}
+      strokeLinejoin={1}
+      strokeWidth={2}
+    >
+      <RNSVGPath
+        d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"
+        fill={null}
+        propList={
+          [
+            "fill",
+            "stroke",
+          ]
+        }
+        stroke={
+          {
+            "payload": 4284664048,
+            "type": 0,
+          }
+        }
+      />
+    </RNSVGGroup>
+  </RNSVGSvgView>
+  <TextInput
+    accessibilityLabel="Buscar por nombre"
+    onBlur={[Function]}
+    onFocus={[Function]}
+    placeholder="Buscar por nombre"
+    placeholderTextColor="#71889A"
+    returnKeyType="search"
+    selectionColor="#2FA8D8"
+    style={
+      {
+        "color": "#E8F1F6",
+        "flex": 1,
+        "fontFamily": "PlusJakartaSans_400Regular",
+        "fontSize": 15,
+        "height": "100%",
+        "padding": 0,
+      }
+    }
+  />
+</View>
+`;
+
+exports[`design system catalog SearchField / Empty matches its snapshot 1`] = `
+<View
+  style={
+    [
+      {
+        "alignItems": "center",
+        "backgroundColor": "#F4FBFE",
+        "borderColor": "#E4F5FC",
+        "borderRadius": 16,
+        "borderWidth": 1.5,
+        "flexDirection": "row",
+        "gap": 8,
+        "height": 48,
+        "paddingHorizontal": 16,
+      },
+      null,
+    ]
+  }
+>
+  <RNSVGSvgView
+    accessibilityElementsHidden={true}
+    accessible={false}
+    align="xMidYMid"
+    bbHeight={16}
+    bbWidth={16}
+    fill="none"
+    focusable={false}
+    height={16}
+    importantForAccessibility="no-hide-descendants"
+    meetOrSlice={0}
+    minX={0}
+    minY={0}
+    stroke="#1F93C2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={2}
+    style={
+      [
+        {
+          "backgroundColor": "transparent",
+          "borderWidth": 0,
+        },
+        {
+          "flex": 0,
+          "height": 16,
+          "width": 16,
+        },
+      ]
+    }
+    vbHeight={24}
+    vbWidth={24}
+    width={16}
+  >
+    <RNSVGGroup
+      fill={null}
+      propList={
+        [
+          "fill",
+          "stroke",
+          "strokeWidth",
+          "strokeLinecap",
+          "strokeLinejoin",
+        ]
+      }
+      stroke={
+        {
+          "payload": 4280259522,
+          "type": 0,
+        }
+      }
+      strokeLinecap={1}
+      strokeLinejoin={1}
+      strokeWidth={2}
+    >
+      <RNSVGPath
+        d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"
+        fill={null}
+        propList={
+          [
+            "fill",
+            "stroke",
+          ]
+        }
+        stroke={
+          {
+            "payload": 4280259522,
+            "type": 0,
+          }
+        }
+      />
+    </RNSVGGroup>
+  </RNSVGSvgView>
+  <TextInput
+    accessibilityLabel="Buscar por nombre"
+    onBlur={[Function]}
+    onFocus={[Function]}
+    placeholder="Buscar por nombre"
+    placeholderTextColor="#8A9BA6"
+    returnKeyType="search"
+    selectionColor="#2FA8D8"
+    style={
+      {
+        "color": "#0F2233",
+        "flex": 1,
+        "fontFamily": "PlusJakartaSans_400Regular",
+        "fontSize": 15,
+        "height": "100%",
+        "padding": 0,
+      }
+    }
+  />
+</View>
+`;
+
+exports[`design system catalog SearchField / WithText matches its dark snapshot 1`] = `
+<View
+  style={
+    [
+      {
+        "alignItems": "center",
+        "backgroundColor": "#182A37",
+        "borderColor": "#223746",
+        "borderRadius": 16,
+        "borderWidth": 1.5,
+        "flexDirection": "row",
+        "gap": 8,
+        "height": 48,
+        "paddingHorizontal": 16,
+      },
+      null,
+    ]
+  }
+>
+  <RNSVGSvgView
+    accessibilityElementsHidden={true}
+    accessible={false}
+    align="xMidYMid"
+    bbHeight={16}
+    bbWidth={16}
+    fill="none"
+    focusable={false}
+    height={16}
+    importantForAccessibility="no-hide-descendants"
+    meetOrSlice={0}
+    minX={0}
+    minY={0}
+    stroke="#62C8F0"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={2}
+    style={
+      [
+        {
+          "backgroundColor": "transparent",
+          "borderWidth": 0,
+        },
+        {
+          "flex": 0,
+          "height": 16,
+          "width": 16,
+        },
+      ]
+    }
+    vbHeight={24}
+    vbWidth={24}
+    width={16}
+  >
+    <RNSVGGroup
+      fill={null}
+      propList={
+        [
+          "fill",
+          "stroke",
+          "strokeWidth",
+          "strokeLinecap",
+          "strokeLinejoin",
+        ]
+      }
+      stroke={
+        {
+          "payload": 4284664048,
+          "type": 0,
+        }
+      }
+      strokeLinecap={1}
+      strokeLinejoin={1}
+      strokeWidth={2}
+    >
+      <RNSVGPath
+        d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"
+        fill={null}
+        propList={
+          [
+            "fill",
+            "stroke",
+          ]
+        }
+        stroke={
+          {
+            "payload": 4284664048,
+            "type": 0,
+          }
+        }
+      />
+    </RNSVGGroup>
+  </RNSVGSvgView>
+  <TextInput
+    accessibilityLabel="Buscar por nombre"
+    defaultValue="Café"
+    onBlur={[Function]}
+    onFocus={[Function]}
+    placeholder="Buscar por nombre"
+    placeholderTextColor="#71889A"
+    returnKeyType="search"
+    selectionColor="#2FA8D8"
+    style={
+      {
+        "color": "#E8F1F6",
+        "flex": 1,
+        "fontFamily": "PlusJakartaSans_400Regular",
+        "fontSize": 15,
+        "height": "100%",
+        "padding": 0,
+      }
+    }
+  />
+</View>
+`;
+
+exports[`design system catalog SearchField / WithText matches its snapshot 1`] = `
+<View
+  style={
+    [
+      {
+        "alignItems": "center",
+        "backgroundColor": "#F4FBFE",
+        "borderColor": "#E4F5FC",
+        "borderRadius": 16,
+        "borderWidth": 1.5,
+        "flexDirection": "row",
+        "gap": 8,
+        "height": 48,
+        "paddingHorizontal": 16,
+      },
+      null,
+    ]
+  }
+>
+  <RNSVGSvgView
+    accessibilityElementsHidden={true}
+    accessible={false}
+    align="xMidYMid"
+    bbHeight={16}
+    bbWidth={16}
+    fill="none"
+    focusable={false}
+    height={16}
+    importantForAccessibility="no-hide-descendants"
+    meetOrSlice={0}
+    minX={0}
+    minY={0}
+    stroke="#1F93C2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={2}
+    style={
+      [
+        {
+          "backgroundColor": "transparent",
+          "borderWidth": 0,
+        },
+        {
+          "flex": 0,
+          "height": 16,
+          "width": 16,
+        },
+      ]
+    }
+    vbHeight={24}
+    vbWidth={24}
+    width={16}
+  >
+    <RNSVGGroup
+      fill={null}
+      propList={
+        [
+          "fill",
+          "stroke",
+          "strokeWidth",
+          "strokeLinecap",
+          "strokeLinejoin",
+        ]
+      }
+      stroke={
+        {
+          "payload": 4280259522,
+          "type": 0,
+        }
+      }
+      strokeLinecap={1}
+      strokeLinejoin={1}
+      strokeWidth={2}
+    >
+      <RNSVGPath
+        d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"
+        fill={null}
+        propList={
+          [
+            "fill",
+            "stroke",
+          ]
+        }
+        stroke={
+          {
+            "payload": 4280259522,
+            "type": 0,
+          }
+        }
+      />
+    </RNSVGGroup>
+  </RNSVGSvgView>
+  <TextInput
+    accessibilityLabel="Buscar por nombre"
+    defaultValue="Café"
+    onBlur={[Function]}
+    onFocus={[Function]}
+    placeholder="Buscar por nombre"
+    placeholderTextColor="#8A9BA6"
+    returnKeyType="search"
+    selectionColor="#2FA8D8"
+    style={
+      {
+        "color": "#0F2233",
+        "flex": 1,
+        "fontFamily": "PlusJakartaSans_400Regular",
+        "fontSize": 15,
+        "height": "100%",
+        "padding": 0,
+      }
+    }
+  />
+</View>
+`;
+
 exports[`design system catalog SectionHeader / WithAction matches its dark snapshot 1`] = `
 <View
   style={
@@ -14859,6 +16975,558 @@ exports[`design system catalog SectionHeader / WithMeta matches its snapshot 1`]
   >
     4 activas · $112.600/mes
   </Text>
+</View>
+`;
+
+exports[`design system catalog SegmentedControl / Period matches its dark snapshot 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#2FA8D8",
+      "padding": 16,
+    }
+  }
+>
+  <View
+    accessibilityLabel="Periodo de la gráfica"
+    accessibilityRole="radiogroup"
+    style={
+      {
+        "backgroundColor": "rgba(255, 255, 255, 0.18)",
+        "borderRadius": 16,
+        "flexDirection": "row",
+        "gap": 4,
+        "padding": 4,
+      }
+    }
+  >
+    <View
+      accessibilityLabel="3 días"
+      accessibilityRole="radio"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": true,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": true,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "borderRadius": 12,
+            "flex": 1,
+            "height": 40,
+            "justifyContent": "center",
+          },
+          {
+            "backgroundColor": "#13212D",
+          },
+        ]
+      }
+    >
+      <Text
+        numberOfLines={1}
+        style={
+          [
+            {
+              "fontFamily": "PlusJakartaSans_700Bold",
+              "fontSize": 13,
+            },
+            {
+              "color": "#62C8F0",
+            },
+          ]
+        }
+      >
+        3 días
+      </Text>
+    </View>
+    <View
+      accessibilityLabel="Semana"
+      accessibilityRole="radio"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": false,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": false,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "borderRadius": 12,
+            "flex": 1,
+            "height": 40,
+            "justifyContent": "center",
+          },
+          null,
+        ]
+      }
+    >
+      <Text
+        numberOfLines={1}
+        style={
+          [
+            {
+              "fontFamily": "PlusJakartaSans_700Bold",
+              "fontSize": 13,
+            },
+            {
+              "color": "#FFFFFF",
+            },
+          ]
+        }
+      >
+        Semana
+      </Text>
+    </View>
+    <View
+      accessibilityLabel="Mes"
+      accessibilityRole="radio"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": false,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": false,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "borderRadius": 12,
+            "flex": 1,
+            "height": 40,
+            "justifyContent": "center",
+          },
+          null,
+        ]
+      }
+    >
+      <Text
+        numberOfLines={1}
+        style={
+          [
+            {
+              "fontFamily": "PlusJakartaSans_700Bold",
+              "fontSize": 13,
+            },
+            {
+              "color": "#FFFFFF",
+            },
+          ]
+        }
+      >
+        Mes
+      </Text>
+    </View>
+    <View
+      accessibilityLabel="Año"
+      accessibilityRole="radio"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": false,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": false,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "borderRadius": 12,
+            "flex": 1,
+            "height": 40,
+            "justifyContent": "center",
+          },
+          null,
+        ]
+      }
+    >
+      <Text
+        numberOfLines={1}
+        style={
+          [
+            {
+              "fontFamily": "PlusJakartaSans_700Bold",
+              "fontSize": 13,
+            },
+            {
+              "color": "#FFFFFF",
+            },
+          ]
+        }
+      >
+        Año
+      </Text>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`design system catalog SegmentedControl / Period matches its snapshot 1`] = `
+<View
+  style={
+    {
+      "backgroundColor": "#2FA8D8",
+      "padding": 16,
+    }
+  }
+>
+  <View
+    accessibilityLabel="Periodo de la gráfica"
+    accessibilityRole="radiogroup"
+    style={
+      {
+        "backgroundColor": "rgba(255, 255, 255, 0.18)",
+        "borderRadius": 16,
+        "flexDirection": "row",
+        "gap": 4,
+        "padding": 4,
+      }
+    }
+  >
+    <View
+      accessibilityLabel="3 días"
+      accessibilityRole="radio"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": true,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": true,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "borderRadius": 12,
+            "flex": 1,
+            "height": 40,
+            "justifyContent": "center",
+          },
+          {
+            "backgroundColor": "#FFFFFF",
+          },
+        ]
+      }
+    >
+      <Text
+        numberOfLines={1}
+        style={
+          [
+            {
+              "fontFamily": "PlusJakartaSans_700Bold",
+              "fontSize": 13,
+            },
+            {
+              "color": "#1F7FA8",
+            },
+          ]
+        }
+      >
+        3 días
+      </Text>
+    </View>
+    <View
+      accessibilityLabel="Semana"
+      accessibilityRole="radio"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": false,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": false,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "borderRadius": 12,
+            "flex": 1,
+            "height": 40,
+            "justifyContent": "center",
+          },
+          null,
+        ]
+      }
+    >
+      <Text
+        numberOfLines={1}
+        style={
+          [
+            {
+              "fontFamily": "PlusJakartaSans_700Bold",
+              "fontSize": 13,
+            },
+            {
+              "color": "#FFFFFF",
+            },
+          ]
+        }
+      >
+        Semana
+      </Text>
+    </View>
+    <View
+      accessibilityLabel="Mes"
+      accessibilityRole="radio"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": false,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": false,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "borderRadius": 12,
+            "flex": 1,
+            "height": 40,
+            "justifyContent": "center",
+          },
+          null,
+        ]
+      }
+    >
+      <Text
+        numberOfLines={1}
+        style={
+          [
+            {
+              "fontFamily": "PlusJakartaSans_700Bold",
+              "fontSize": 13,
+            },
+            {
+              "color": "#FFFFFF",
+            },
+          ]
+        }
+      >
+        Mes
+      </Text>
+    </View>
+    <View
+      accessibilityLabel="Año"
+      accessibilityRole="radio"
+      accessibilityState={
+        {
+          "busy": undefined,
+          "checked": false,
+          "disabled": undefined,
+          "expanded": undefined,
+          "selected": false,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "borderRadius": 12,
+            "flex": 1,
+            "height": 40,
+            "justifyContent": "center",
+          },
+          null,
+        ]
+      }
+    >
+      <Text
+        numberOfLines={1}
+        style={
+          [
+            {
+              "fontFamily": "PlusJakartaSans_700Bold",
+              "fontSize": 13,
+            },
+            {
+              "color": "#FFFFFF",
+            },
+          ]
+        }
+      >
+        Año
+      </Text>
+    </View>
+  </View>
 </View>
 `;
 
@@ -16432,6 +19100,598 @@ exports[`design system catalog StepProgress / Step3 matches its snapshot 1`] = `
           }
         }
         testID="step-segment-5"
+      />
+    </View>
+  </View>
+</View>
+`;
+
+exports[`design system catalog Switch / OnAndOff matches its dark snapshot 1`] = `
+<View
+  style={
+    {
+      "flexDirection": "row",
+      "gap": 16,
+    }
+  }
+>
+  <View
+    accessibilityLabel="Recordatorio de pagos"
+    accessibilityRole="switch"
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": true,
+        "disabled": false,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    hitSlop={8}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+  >
+    <View
+      collapsable={false}
+      jestAnimatedProps={
+        {
+          "value": {},
+        }
+      }
+      jestAnimatedStyle={
+        {
+          "value": {
+            "backgroundColor": "rgba(47, 168, 216, 1)",
+          },
+        }
+      }
+      jestInlineStyle={
+        [
+          {
+            "borderRadius": 999,
+            "height": 28,
+            "width": 48,
+          },
+          null,
+        ]
+      }
+      style={
+        [
+          {
+            "borderRadius": 999,
+            "height": 28,
+            "width": 48,
+          },
+          null,
+          {
+            "backgroundColor": "rgba(47, 168, 216, 1)",
+          },
+        ]
+      }
+    >
+      <View
+        collapsable={false}
+        jestAnimatedProps={
+          {
+            "value": {},
+          }
+        }
+        jestAnimatedStyle={
+          {
+            "value": {
+              "transform": [
+                {
+                  "translateX": 20,
+                },
+              ],
+            },
+          }
+        }
+        jestInlineStyle={
+          [
+            {
+              "backgroundColor": "#13212D",
+              "borderRadius": 999,
+              "elevation": 2,
+              "height": 22,
+              "left": 3,
+              "position": "absolute",
+              "shadowColor": "#000000",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.25,
+              "shadowRadius": 3,
+              "top": 3,
+              "width": 22,
+            },
+          ]
+        }
+        style={
+          [
+            {
+              "backgroundColor": "#13212D",
+              "borderRadius": 999,
+              "elevation": 2,
+              "height": 22,
+              "left": 3,
+              "position": "absolute",
+              "shadowColor": "#000000",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.25,
+              "shadowRadius": 3,
+              "top": 3,
+              "width": 22,
+            },
+            {
+              "transform": [
+                {
+                  "translateX": 20,
+                },
+              ],
+            },
+          ]
+        }
+      />
+    </View>
+  </View>
+  <View
+    accessibilityLabel="Saldo bajo"
+    accessibilityRole="switch"
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": false,
+        "disabled": false,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    hitSlop={8}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+  >
+    <View
+      collapsable={false}
+      jestAnimatedProps={
+        {
+          "value": {},
+        }
+      }
+      jestAnimatedStyle={
+        {
+          "value": {
+            "backgroundColor": "rgba(52, 71, 85, 1)",
+          },
+        }
+      }
+      jestInlineStyle={
+        [
+          {
+            "borderRadius": 999,
+            "height": 28,
+            "width": 48,
+          },
+          null,
+        ]
+      }
+      style={
+        [
+          {
+            "borderRadius": 999,
+            "height": 28,
+            "width": 48,
+          },
+          null,
+          {
+            "backgroundColor": "rgba(52, 71, 85, 1)",
+          },
+        ]
+      }
+    >
+      <View
+        collapsable={false}
+        jestAnimatedProps={
+          {
+            "value": {},
+          }
+        }
+        jestAnimatedStyle={
+          {
+            "value": {
+              "transform": [
+                {
+                  "translateX": 0,
+                },
+              ],
+            },
+          }
+        }
+        jestInlineStyle={
+          [
+            {
+              "backgroundColor": "#13212D",
+              "borderRadius": 999,
+              "elevation": 2,
+              "height": 22,
+              "left": 3,
+              "position": "absolute",
+              "shadowColor": "#000000",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.25,
+              "shadowRadius": 3,
+              "top": 3,
+              "width": 22,
+            },
+          ]
+        }
+        style={
+          [
+            {
+              "backgroundColor": "#13212D",
+              "borderRadius": 999,
+              "elevation": 2,
+              "height": 22,
+              "left": 3,
+              "position": "absolute",
+              "shadowColor": "#000000",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.25,
+              "shadowRadius": 3,
+              "top": 3,
+              "width": 22,
+            },
+            {
+              "transform": [
+                {
+                  "translateX": 0,
+                },
+              ],
+            },
+          ]
+        }
+      />
+    </View>
+  </View>
+</View>
+`;
+
+exports[`design system catalog Switch / OnAndOff matches its snapshot 1`] = `
+<View
+  style={
+    {
+      "flexDirection": "row",
+      "gap": 16,
+    }
+  }
+>
+  <View
+    accessibilityLabel="Recordatorio de pagos"
+    accessibilityRole="switch"
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": true,
+        "disabled": false,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    hitSlop={8}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+  >
+    <View
+      collapsable={false}
+      jestAnimatedProps={
+        {
+          "value": {},
+        }
+      }
+      jestAnimatedStyle={
+        {
+          "value": {
+            "backgroundColor": "rgba(47, 168, 216, 1)",
+          },
+        }
+      }
+      jestInlineStyle={
+        [
+          {
+            "borderRadius": 999,
+            "height": 28,
+            "width": 48,
+          },
+          null,
+        ]
+      }
+      style={
+        [
+          {
+            "borderRadius": 999,
+            "height": 28,
+            "width": 48,
+          },
+          null,
+          {
+            "backgroundColor": "rgba(47, 168, 216, 1)",
+          },
+        ]
+      }
+    >
+      <View
+        collapsable={false}
+        jestAnimatedProps={
+          {
+            "value": {},
+          }
+        }
+        jestAnimatedStyle={
+          {
+            "value": {
+              "transform": [
+                {
+                  "translateX": 20,
+                },
+              ],
+            },
+          }
+        }
+        jestInlineStyle={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderRadius": 999,
+              "elevation": 2,
+              "height": 22,
+              "left": 3,
+              "position": "absolute",
+              "shadowColor": "#0F2233",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.25,
+              "shadowRadius": 3,
+              "top": 3,
+              "width": 22,
+            },
+          ]
+        }
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderRadius": 999,
+              "elevation": 2,
+              "height": 22,
+              "left": 3,
+              "position": "absolute",
+              "shadowColor": "#0F2233",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.25,
+              "shadowRadius": 3,
+              "top": 3,
+              "width": 22,
+            },
+            {
+              "transform": [
+                {
+                  "translateX": 20,
+                },
+              ],
+            },
+          ]
+        }
+      />
+    </View>
+  </View>
+  <View
+    accessibilityLabel="Saldo bajo"
+    accessibilityRole="switch"
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": false,
+        "disabled": false,
+        "expanded": undefined,
+        "selected": undefined,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    hitSlop={8}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+  >
+    <View
+      collapsable={false}
+      jestAnimatedProps={
+        {
+          "value": {},
+        }
+      }
+      jestAnimatedStyle={
+        {
+          "value": {
+            "backgroundColor": "rgba(207, 219, 227, 1)",
+          },
+        }
+      }
+      jestInlineStyle={
+        [
+          {
+            "borderRadius": 999,
+            "height": 28,
+            "width": 48,
+          },
+          null,
+        ]
+      }
+      style={
+        [
+          {
+            "borderRadius": 999,
+            "height": 28,
+            "width": 48,
+          },
+          null,
+          {
+            "backgroundColor": "rgba(207, 219, 227, 1)",
+          },
+        ]
+      }
+    >
+      <View
+        collapsable={false}
+        jestAnimatedProps={
+          {
+            "value": {},
+          }
+        }
+        jestAnimatedStyle={
+          {
+            "value": {
+              "transform": [
+                {
+                  "translateX": 0,
+                },
+              ],
+            },
+          }
+        }
+        jestInlineStyle={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderRadius": 999,
+              "elevation": 2,
+              "height": 22,
+              "left": 3,
+              "position": "absolute",
+              "shadowColor": "#0F2233",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.25,
+              "shadowRadius": 3,
+              "top": 3,
+              "width": 22,
+            },
+          ]
+        }
+        style={
+          [
+            {
+              "backgroundColor": "#FFFFFF",
+              "borderRadius": 999,
+              "elevation": 2,
+              "height": 22,
+              "left": 3,
+              "position": "absolute",
+              "shadowColor": "#0F2233",
+              "shadowOffset": {
+                "height": 2,
+                "width": 0,
+              },
+              "shadowOpacity": 0.25,
+              "shadowRadius": 3,
+              "top": 3,
+              "width": 22,
+            },
+            {
+              "transform": [
+                {
+                  "translateX": 0,
+                },
+              ],
+            },
+          ]
+        }
       />
     </View>
   </View>

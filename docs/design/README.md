@@ -62,7 +62,8 @@ Several screens can be used with buttons and with gestures. **Every gesture has 
 | `touch-action:none`, `cursor:grab`, `onPointerDown/Move/Up` | A pan gesture with `react-native-gesture-handler`, animated with Reanimated |
 | `.hscroll` with `scroll-snap-type:x mandatory` | Horizontal `ScrollView` or `FlatList` with `snapToInterval` (or the shared `Carousel`) |
 | A CSS variable driven by scroll (`--p` in Estadísticas) | `useAnimatedScrollHandler` plus interpolated styles |
-| `fb-scrim`, `fb-sheet`, `fb-toast` | The shared `BottomSheet` and `Toast` |
+| `fb-scrim`, `fb-sheet`, `fb-toast` | A screen shown as a sheet uses `transition: 'sheet'` (native bottom sheet). The export shows the in-screen sheets and the toast only closed, so their open layout and colors are missing: export them open before building a shared `BottomSheet` or `Toast` |
+| `.sw`, `.seg`, `.fab`, `.dot`, search `.field` | The shared `Switch`, `SegmentedControl`, `Fab`, `PageDots` and `SearchField` |
 | `@media (prefers-reduced-motion:reduce)` | `AccessibilityInfo.isReduceMotionEnabled()` turns animations off |
 | `display: flex` layout, `gap`, `padding` | The same values in React Native styles (flexbox works the same, column is the default direction) |
 | Google Fonts links | The same families loaded with `expo-font` (see tokens) |
@@ -87,6 +88,7 @@ Taken from the design code. M0 copies them into `apps/mobile/src/shared/ui/token
 | `color.primaryDark` | `#1F93C2` | `#62C8F0` | Input icons, icon strokes on tiles |
 | `color.primaryDeep` | `#177FA9` | `#62C8F0` | Blue links ("¿Olvidaste tu contraseña?"), positive amounts |
 | `color.primaryLight` | `#50C1EB` | same | Avatar, balance card, account cards, tab bar |
+| `color.primaryText` | `#1F7FA8` | `#62C8F0` | Text of the selected option on blue (Estadísticas period) |
 | `color.headerShapeA` | `#3AB3E3` | same | Rounded decorative squares on blue headers |
 | `color.headerShapeB` | `#47B6E2` | same | Rounded decorative squares, tab hover |
 | `color.headerDashboard` | `#2FA8D8` | `#428FAF` | Blue header of the Dashboard and Detalle de cuentas, muted in dark (`#4392B2` on Detalle de cuentas is the same tone, rounded to one value) |
