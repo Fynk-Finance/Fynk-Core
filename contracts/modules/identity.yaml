@@ -1,7 +1,5 @@
 # Contract of the identity module, owned by M1 (see CODEOWNERS).
 # Only M1 edits this file. Shared parts come from ../openapi.yaml.
-# The health path below is M0's example so generation works from day one.
-# Replace it with the real endpoints of docs/modules/00-shared-contracts.md, section 5.
 openapi: 3.1.0
 info:
   title: Fynk API · Identity
@@ -10,22 +8,265 @@ tags:
   - name: identity
     description: "Profile and linked devices (M1). Login and passwords are Keycloak's."
 paths:
-  /identity/health:
-    get:
+  /devices:
+    post:
       tags: [identity]
-      operationId: identityHealth
-      summary: Example health path of the identity module
-      description: Public. Answers while the module is a stub. Removed when the module adds real endpoints.
-      security: []
+      operationId: registerDevice
+      summary: Register the calling phone
+      description: |
+        The first device of a user is active. Later ones are pending until an active device approves them (M2).
+        Registering the same public key, or repeating the same Idempotency-Key, returns the device already registered.
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentityDeviceRegistration'
+            example:
+              name: iPhone de Camila
+              platform: ios
+              publicKey: AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=
       responses:
-        '200':
-          description: The module is mounted.
+        '201':
+          description: The device was registered.
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ModuleHealth'
+                $ref: '#/components/schemas/IdentityDevice'
               example:
-                module: identity
-                status: stub
+                id: 3f8b2a54-6a1e-4c58-9d3b-7a1f0c2e9b11
+                name: iPhone de Camila
+                platform: ios
+                status: active
+                current: false
+                createdAt: '2026-10-27T14:03:11Z'
+                lastSeenAt: '2026-10-27T14:03:11Z'
+        '200':
+          description: The same key or Idempotency-Key had already registered this device.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityDevice'
+        '400':
+          description: A field is invalid. The detail names the field, never its value. Code `invalid_device`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/invalid_device
+                title: Invalid device
+                status: 400
+                detail: The field publicKey is invalid.
+                code: invalid_device
+        '409':
+          description: The public key belongs to a removed device. The phone must make a new key pair. Code `device_key_removed`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/device_key_removed
+                title: Device key removed
+                status: 409
+                detail: This device was removed. Create a new key pair and register again.
+                code: device_key_removed
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
+    get:
+      tags: [identity]
+      operationId: listDevices
+      summary: List the linked devices
+      description: Active and pending devices, the most recently seen first. `current` is true for the device in X-Device-Id.
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: The devices.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityDeviceList'
+              example:
+                items:
+                  - id: 3f8b2a54-6a1e-4c58-9d3b-7a1f0c2e9b11
+                    name: iPhone de Camila
+                    platform: ios
+                    status: active
+                    current: true
+                    createdAt: '2026-10-27T14:03:11Z'
+                    lastSeenAt: '2026-10-27T14:20:45Z'
+                  - id: 9c1d7e02-52b4-4f0a-8e6d-1b3a5c7d9e22
+                    name: Pixel de Camila
+                    platform: android
+                    status: pending
+                    current: false
+                    createdAt: '2026-10-27T14:10:00Z'
+                    lastSeenAt: '2026-10-27T14:10:00Z'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /devices/current:
+    get:
+      tags: [identity]
+      operationId: getCurrentDevice
+      summary: Get the calling device
+      description: The app calls it on every start to learn whether this device was removed. It updates the last seen time.
+      parameters:
+        - name: X-Device-Id
+          in: header
+          required: true
+          description: Id of the calling device, registered through POST /devices.
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        '200':
+          description: The device.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityDevice'
+              example:
+                id: 3f8b2a54-6a1e-4c58-9d3b-7a1f0c2e9b11
+                name: iPhone de Camila
+                platform: ios
+                status: active
+                current: true
+                createdAt: '2026-10-27T14:03:11Z'
+                lastSeenAt: '2026-10-27T14:20:45Z'
+        '404':
+          description: The device does not exist. Code `device_not_found`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/device_not_found
+                title: Device not found
+                status: 404
+                code: device_not_found
+        '410':
+          description: The device was removed. Code `device_removed`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/device_removed
+                title: Device removed
+                status: 410
+                code: device_removed
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /devices/sign-out-others:
+    post:
+      tags: [identity]
+      operationId: signOutOtherDevices
+      summary: Remove every device except the calling one
+      parameters:
+        - name: X-Device-Id
+          in: header
+          required: true
+          description: Id of the calling device. It stays linked.
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        '204':
+          description: The other devices were removed.
+        '404':
+          description: The calling device does not exist. Code `device_not_found`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+        '410':
+          description: The calling device was removed. Code `device_removed`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /devices/{deviceId}:
+    delete:
+      tags: [identity]
+      operationId: removeDevice
+      summary: Remove a device
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: The device was removed (also when it already was).
+        '404':
+          description: The device does not exist or belongs to another user. Code `device_not_found`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/device_not_found
+                title: Device not found
+                status: 404
+                code: device_not_found
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+components:
+  schemas:
+    IdentityDeviceRegistration:
+      type: object
+      required: [name, platform, publicKey]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Name the person sees in the list of devices.
+        platform:
+          type: string
+          enum: [ios, android]
+        publicKey:
+          type: string
+          description: X25519 public key, 32 bytes in standard base64 with padding.
+          examples: [AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=]
+    IdentityDevice:
+      type: object
+      required: [id, name, platform, status, current, createdAt, lastSeenAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        platform:
+          type: string
+          enum: [ios, android]
+        status:
+          type: string
+          enum: [active, pending]
+        current:
+          type: boolean
+          description: True when this is the device in the X-Device-Id header of the call.
+        createdAt:
+          type: string
+          format: date-time
+        lastSeenAt:
+          type: string
+          format: date-time
+    IdentityDeviceList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdentityDevice'
