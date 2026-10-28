@@ -6,7 +6,8 @@
 //   onPrimary "Mayor impacto" (on blue cards)
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, fonts, radius } from '../tokens';
+import { useTheme } from '../theme';
+import { fonts, radius, type Palette } from '../tokens';
 
 export type BadgeTone = 'neutral' | 'info' | 'accent' | 'success' | 'onPrimary';
 
@@ -18,16 +19,23 @@ export interface BadgeProps {
   testID?: string;
 }
 
-const TONES: Record<BadgeTone, { bg: string; fg: string }> = {
-  neutral: { bg: colors.divider, fg: colors.textSecondary },
-  info: { bg: colors.surfaceBlue, fg: colors.primaryDark },
-  accent: { bg: colors.accent, fg: colors.white },
-  success: { bg: colors.accentTint, fg: colors.link },
-  onPrimary: { bg: colors.onPrimaryBadge, fg: colors.white },
-};
+function toneColors(colors: Palette, tone: BadgeTone): { bg: string; fg: string } {
+  switch (tone) {
+    case 'neutral':
+      return { bg: colors.divider, fg: colors.textSecondary };
+    case 'info':
+      return { bg: colors.surfaceBlue, fg: colors.primaryDark };
+    case 'accent':
+      return { bg: colors.accent, fg: colors.onPrimary };
+    case 'success':
+      return { bg: colors.accentTint, fg: colors.link };
+    case 'onPrimary':
+      return { bg: colors.onPrimaryBadge, fg: colors.onPrimary };
+  }
+}
 
 export function Badge({ label, tone = 'neutral', size = 'md', testID }: BadgeProps) {
-  const t = TONES[tone];
+  const t = toneColors(useTheme().colors, tone);
   return (
     <View
       style={[styles.pill, size === 'sm' ? styles.sm : styles.md, { backgroundColor: t.bg }]}

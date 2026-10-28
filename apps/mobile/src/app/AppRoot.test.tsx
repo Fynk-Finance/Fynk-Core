@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { AppRoot } from './AppRoot';
 import { notchLeft } from './navigation/TabBar';
@@ -51,6 +51,19 @@ describe('AppRoot', () => {
       screen.getByText('La construye el módulo M9 · Gastos recurrentes y suscripciones.'),
     ).toBeTruthy();
   });
+
+  it('switches tabs with a horizontal swipe', async () => {
+    await render(<AppRoot />);
+
+    // A swipe ends with the pager settling on a page, as the native pager reports it.
+    const [pager] = screen.root!.queryAll((node) => node.type === 'RNCViewPager');
+    await act(async () => {
+      fireEvent(pager!, 'pageSelected', { nativeEvent: { position: 2 } });
+    });
+
+    expect(screen.getByRole('tab', { name: 'Recomendaciones' })).toBeSelected();
+    expect(screen.getByRole('tab', { name: 'Dashboard' })).not.toBeSelected();
+  });
 });
 
 describe('notchLeft', () => {
@@ -60,5 +73,9 @@ describe('notchLeft', () => {
     expect(notchLeft(390, 4, 1)).toBeCloseTo(114.75, 1);
     expect(notchLeft(390, 4, 2)).toBeCloseTo(209.25, 1);
     expect(notchLeft(390, 4, 3)).toBeCloseTo(303.75, 1);
+  });
+
+  it('moves the notch halfway while the page is halfway through a swipe', () => {
+    expect(notchLeft(390, 4, 1.5)).toBeCloseTo((114.75 + 209.25) / 2, 1);
   });
 });

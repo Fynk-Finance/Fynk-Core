@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import { uiStrings } from '../strings.es-CO';
-import { colors } from '../tokens';
+import { lightColors as colors } from '../tokens';
 import { AmountText } from './AmountText';
 import { initialsOf } from './Avatar';
 import { GhostButton, PrimaryButton } from './Button';

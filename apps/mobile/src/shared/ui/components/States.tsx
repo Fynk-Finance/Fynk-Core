@@ -15,7 +15,8 @@ import Animated, {
 
 import type { IconName } from '../icons';
 import { uiStrings } from '../strings.es-CO';
-import { colors, radius } from '../tokens';
+import { useThemedStyles, type Theme } from '../theme';
+import { radius } from '../tokens';
 import { AppText } from './AppText';
 import { GhostButton, PrimaryButton } from './Button';
 import { IconTile } from './IconTile';
@@ -35,6 +36,7 @@ export function EmptyState({
   actionLabel,
   onAction,
 }: EmptyStateProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.state}>
       <IconTile icon={icon} tone="soft" size={72} />
@@ -64,6 +66,7 @@ export function ErrorState({
   message = uiStrings.errorMessage,
   onRetry,
 }: ErrorStateProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.state} accessibilityLiveRegion="polite">
       <IconTile icon="warning" tone="danger" size={72} />
@@ -92,6 +95,7 @@ export function Skeleton({
   height = 16,
   radius: r = radius.tileSm,
 }: SkeletonProps) {
+  const styles = useThemedStyles(createStyles);
   const reduceMotion = useReducedMotion();
   const opacity = useSharedValue(1);
   useEffect(() => {
@@ -113,8 +117,9 @@ export function Skeleton({
   );
 }
 
-const styles = StyleSheet.create({
-  state: { alignItems: 'center', gap: 10, paddingVertical: 32, paddingHorizontal: 12 },
-  action: { marginTop: 8 },
-  skeleton: { backgroundColor: colors.divider },
-});
+const createStyles = ({ colors }: Theme) =>
+  StyleSheet.create({
+    state: { alignItems: 'center', gap: 10, paddingVertical: 32, paddingHorizontal: 12 },
+    action: { marginTop: 8 },
+    skeleton: { backgroundColor: colors.divider },
+  });

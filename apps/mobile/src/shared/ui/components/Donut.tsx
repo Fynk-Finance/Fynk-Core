@@ -5,7 +5,8 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
-import { colors, type ColorToken } from '../tokens';
+import { useTheme } from '../theme';
+import type { ColorToken } from '../tokens';
 
 export interface DonutSegment {
   value: number;
@@ -57,6 +58,7 @@ export function Donut({
   accessibilityLabel,
   children,
 }: DonutProps) {
+  const { colors } = useTheme();
   const r = radius ?? size / 2 - strokeWidth;
   const c = size / 2;
   const circumference = 2 * Math.PI * r;
