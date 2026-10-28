@@ -5,8 +5,12 @@ import Template from 'keycloakify/login/Template';
 import type { KcContext } from './KcContext';
 import { useI18n } from './i18n';
 import EmailCode from './pages/EmailCode';
+import ErrorPage from './pages/Error';
+import Info from './pages/Info';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ResetPassword from './pages/ResetPassword';
+import UpdatePassword from './pages/UpdatePassword';
 
 const UserProfileFormFields = lazy(() => import('keycloakify/login/UserProfileFormFields'));
 
@@ -26,6 +30,14 @@ export default function KcPage(props: { kcContext: KcContext }) {
             return <Register kcContext={kcContext} i18n={i18n} />;
           case 'fynk-email-code.ftl':
             return <EmailCode kcContext={kcContext} />;
+          case 'login-reset-password.ftl':
+            return <ResetPassword kcContext={kcContext} i18n={i18n} />;
+          case 'login-update-password.ftl':
+            return <UpdatePassword kcContext={kcContext} i18n={i18n} />;
+          case 'info.ftl':
+            return <Info kcContext={kcContext} i18n={i18n} />;
+          case 'error.ftl':
+            return <ErrorPage kcContext={kcContext} />;
           default:
             return (
               <DefaultPage

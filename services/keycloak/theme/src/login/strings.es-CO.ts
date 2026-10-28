@@ -107,6 +107,23 @@ export const strings = {
       'Verificar tu correo nos permite ayudarte a recuperar tu cuenta y avisarte de movimientos importantes. Revisa también tu carpeta de spam.',
     verifySubmit: 'Verificar correo',
   },
+  // Info and error pages. New copy, needs design review.
+  info: {
+    pageTitle: 'Información',
+    headerTitle: 'Un aviso de Fynk',
+    headerSubtitle: 'Esto es lo que pasó.',
+    title: 'Información',
+    backToApp: 'Volver a Fynk',
+    continue: 'Continuar',
+  },
+  error: {
+    pageTitle: 'Algo salió mal',
+    headerTitle: 'Algo salió mal',
+    headerSubtitle: 'No pudimos completar lo que pediste.',
+    title: 'No pudimos continuar',
+    backToApp: 'Volver a Fynk',
+    closeHint: 'Cierra esta ventana y vuelve a la app de Fynk.',
+  },
   showPassword: 'Mostrar contraseña',
   hidePassword: 'Ocultar contraseña',
 } as const;
