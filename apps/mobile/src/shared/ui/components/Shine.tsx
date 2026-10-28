@@ -15,7 +15,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { colors, motion } from '../tokens';
+import { useThemedStyles, type Theme } from '../theme';
+import { motion } from '../tokens';
 
 export interface ShineProps {
   /** How far the light travels, the width of the card plus its own width. */
@@ -26,6 +27,7 @@ export interface ShineProps {
 }
 
 export function Shine({ distance, height, width = 46, opacity = 0.18 }: ShineProps) {
+  const styles = useThemedStyles(createStyles);
   const reduceMotion = useReducedMotion();
   const x = useSharedValue(0);
 
@@ -60,6 +62,7 @@ export function Shine({ distance, height, width = 46, opacity = 0.18 }: ShinePro
   );
 }
 
-const styles = StyleSheet.create({
-  light: { position: 'absolute', top: -40, backgroundColor: colors.white },
-});
+const createStyles = ({ colors }: Theme) =>
+  StyleSheet.create({
+    light: { position: 'absolute', top: -40, backgroundColor: colors.onPrimary },
+  });

@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, fonts } from '../tokens';
+import { useTheme } from '../theme';
+import { fonts } from '../tokens';
 
 export interface AvatarProps {
   name: string;
@@ -24,6 +25,7 @@ export function initialsOf(name: string): string {
 }
 
 export function Avatar({ name, size = 38, tone = 'primary' }: AvatarProps) {
+  const { colors } = useTheme();
   const light = tone === 'light';
   return (
     <View
@@ -34,7 +36,7 @@ export function Avatar({ name, size = 38, tone = 'primary' }: AvatarProps) {
         {
           width: size,
           height: size,
-          backgroundColor: light ? colors.white : colors.primaryLight,
+          backgroundColor: light ? colors.onPrimary : colors.primaryLight,
         },
       ]}
     >
@@ -43,7 +45,7 @@ export function Avatar({ name, size = 38, tone = 'primary' }: AvatarProps) {
           styles.initials,
           {
             fontSize: INITIALS_SIZE[size] ?? Math.round(size * 0.38),
-            color: light ? colors.primary : colors.white,
+            color: light ? colors.primary : colors.onPrimary,
           },
         ]}
       >

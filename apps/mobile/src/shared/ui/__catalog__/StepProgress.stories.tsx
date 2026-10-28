@@ -1,23 +1,19 @@
-import { View } from 'react-native';
-
 import { StepProgress } from '../components/StepProgress';
-import { colors } from '../tokens';
+import { OnColor } from './OnColor';
 import type { StoryGroup } from './types';
-
-const onBlue = { backgroundColor: colors.primary, padding: 20 };
 
 export default {
   title: 'StepProgress',
   stories: {
     Step1: () => (
-      <View style={onBlue}>
+      <OnColor padding={20}>
         <StepProgress step={1} onBack={() => {}} onSkip={() => {}} />
-      </View>
+      </OnColor>
     ),
     Step3: () => (
-      <View style={onBlue}>
+      <OnColor padding={20}>
         <StepProgress step={3} onBack={() => {}} onSkip={() => {}} />
-      </View>
+      </OnColor>
     ),
   },
 } satisfies StoryGroup;

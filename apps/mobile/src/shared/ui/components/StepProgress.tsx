@@ -13,7 +13,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { uiStrings } from '../strings.es-CO';
-import { colors, fonts, radius, size } from '../tokens';
+import { useThemedStyles, type Theme } from '../theme';
+import { fonts, radius, size } from '../tokens';
 import { AppText } from './AppText';
 import { BackButton } from './BackButton';
 
@@ -26,6 +27,7 @@ export interface StepProgressProps {
 }
 
 function CurrentSegment() {
+  const styles = useThemedStyles(createStyles);
   const reduceMotion = useReducedMotion();
   const scale = useSharedValue(reduceMotion ? 1 : 0);
   useEffect(() => {
@@ -42,12 +44,13 @@ function CurrentSegment() {
 }
 
 export function StepProgress({ step, total = 5, onBack, onSkip }: StepProgressProps) {
+  const styles = useThemedStyles(createStyles);
   const current = Math.min(total, Math.max(1, Math.round(step)));
   return (
     <View>
       <View style={styles.header}>
         {onBack ? <BackButton onPress={onBack} /> : <View style={styles.side} />}
-        <AppText variant="smallStrong" color="white" style={styles.stepLabel}>
+        <AppText variant="smallStrong" color="onPrimary" style={styles.stepLabel}>
           {uiStrings.step(current, total)}
         </AppText>
         {onSkip ? (
@@ -56,7 +59,7 @@ export function StepProgress({ step, total = 5, onBack, onSkip }: StepProgressPr
             accessibilityRole="button"
             style={({ pressed }) => [styles.skip, pressed ? styles.pressed : null]}
           >
-            <AppText variant="label" color="white" style={styles.skipText}>
+            <AppText variant="label" color="onPrimary" style={styles.skipText}>
               {uiStrings.skip}
             </AppText>
           </Pressable>
@@ -82,27 +85,28 @@ export function StepProgress({ step, total = 5, onBack, onSkip }: StepProgressPr
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    height: size.backButton,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  side: { width: size.backButton },
-  // "Paso 1 de 5": 13 px bold, letter-spacing .02em. "Omitir": 14 px bold.
-  stepLabel: { fontFamily: fonts.body.bold, letterSpacing: 0.26 },
-  skip: { minWidth: 44, height: 44, alignItems: 'flex-end', justifyContent: 'center' },
-  skipText: { fontFamily: fonts.body.bold },
-  pressed: { opacity: 0.7 },
-  segments: { flexDirection: 'row', gap: 6, marginTop: 16 },
-  segment: {
-    flex: 1,
-    height: 6,
-    borderRadius: radius.pill,
-    backgroundColor: colors.onPrimaryTrack,
-    overflow: 'hidden',
-  },
-  fill: { backgroundColor: colors.accent, borderRadius: radius.pill },
-  fromLeft: { transformOrigin: 'left' },
-});
+const createStyles = ({ colors }: Theme) =>
+  StyleSheet.create({
+    header: {
+      height: size.backButton,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    side: { width: size.backButton },
+    // "Paso 1 de 5": 13 px bold, letter-spacing .02em. "Omitir": 14 px bold.
+    stepLabel: { fontFamily: fonts.body.bold, letterSpacing: 0.26 },
+    skip: { minWidth: 44, height: 44, alignItems: 'flex-end', justifyContent: 'center' },
+    skipText: { fontFamily: fonts.body.bold },
+    pressed: { opacity: 0.7 },
+    segments: { flexDirection: 'row', gap: 6, marginTop: 16 },
+    segment: {
+      flex: 1,
+      height: 6,
+      borderRadius: radius.pill,
+      backgroundColor: colors.onPrimaryTrack,
+      overflow: 'hidden',
+    },
+    fill: { backgroundColor: colors.accent, borderRadius: radius.pill },
+    fromLeft: { transformOrigin: 'left' },
+  });

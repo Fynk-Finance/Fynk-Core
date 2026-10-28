@@ -1,6 +1,7 @@
 import { Text, type TextProps, type TextStyle } from 'react-native';
 
-import { colors, fonts, type ColorToken } from '../tokens';
+import { useTheme } from '../theme';
+import { fonts, type ColorToken } from '../tokens';
 
 // Text styles found in the design code. Modules pick a variant instead of setting fonts.
 export const textVariants = {
@@ -42,6 +43,7 @@ export function AppText({
   style,
   ...rest
 }: AppTextProps) {
+  const { colors } = useTheme();
   return (
     <Text
       {...rest}
