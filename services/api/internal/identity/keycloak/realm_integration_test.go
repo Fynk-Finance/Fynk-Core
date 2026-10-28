@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -564,7 +565,15 @@ func TestIntegrationUnknownEmailLooksTheSameInTheReset(t *testing.T) {
 	if code != "" || !strings.Contains(messageSummary(t, decoyWrong), "no es correcto") {
 		t.Fatal("a 6-digit code for an email without an account must be refused like a wrong code")
 	}
-	if d := shapeDiff(codePageShape(t, realWrong, known), codePageShape(t, decoyWrong, unknown)); len(d) > 0 {
+	// These pages show the seconds left of each browser's own cooldown, and the two resets above
+	// started a moment apart, so the count is checked on its own and left out of the comparison.
+	realShape, decoyShape := codePageShape(t, realWrong, known), codePageShape(t, decoyWrong, unknown)
+	for _, shape := range []map[string]string{realShape, decoyShape} {
+		if n, err := strconv.Atoi(shape[".cooldownSeconds"]); err != nil || n < 1 || n > 60 {
+			t.Fatalf("a wrong code page shows a cooldown of %q seconds, want 1 to 60", shape[".cooldownSeconds"])
+		}
+	}
+	if d := shapeDiff(clockFree(realShape), clockFree(decoyShape)); len(d) > 0 {
 		t.Fatalf("the wrong code pages differ:\n%s", strings.Join(d, "\n"))
 	}
 
