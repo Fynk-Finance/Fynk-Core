@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { colors } from '@shared/ui';
+import { useTheme } from '@shared/ui';
 
 import type { SessionService } from '../application/sessionService';
 import { InicioScreen } from './InicioScreen';
@@ -12,13 +12,17 @@ import { useSessionState } from './useSessionState';
 export function createIdentityFlow(session: SessionService) {
   return function IdentityFlow() {
     const state = useSessionState(session);
+    const { colors } = useTheme();
     useEffect(() => {
       void session.restore();
     }, []);
 
     if (state.status === 'restoring') {
       return (
-        <View style={styles.loading} testID="identity.restoring">
+        <View
+          style={[styles.loading, { backgroundColor: colors.background }]}
+          testID="identity.restoring"
+        >
           <ActivityIndicator
             color={colors.primary}
             accessibilityLabel={identityStrings.restoring}
@@ -41,6 +45,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
   },
 });
