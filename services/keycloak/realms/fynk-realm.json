@@ -2,6 +2,7 @@
   "realm": "fynk",
   "displayName": "Fynk",
   "loginTheme": "fynk",
+  "emailTheme": "fynk",
   "enabled": true,
   "sslRequired": "external",
 

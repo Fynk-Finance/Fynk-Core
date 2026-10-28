@@ -1305,3 +1305,86 @@ func lockedOut(t *testing.T, userID string) bool {
 	adminJSON(t, http.MethodGet, "/admin/realms/fynk/attack-detection/brute-force/users/"+userID, nil, &status)
 	return status.Disabled
 }
+
+// --- Code emails ----------------------------------------------------------------------------
+
+// mail is an email as Mailpit stores it.
+type mail struct{ Subject, HTML, Text string }
+
+// waitForMail returns the newest email sent to the address once it has a text body.
+func waitForMail(t *testing.T, to string) mail {
+	t.Helper()
+	deadline := time.Now().Add(20 * time.Second)
+	for time.Now().Before(deadline) {
+		var list struct {
+			Messages []struct{ ID string }
+		}
+		getJSON(t, env.mailpit+"/api/v1/search?limit=1&query="+url.QueryEscape("to:"+to), &list)
+		if len(list.Messages) > 0 {
+			var m mail
+			getJSON(t, env.mailpit+"/api/v1/message/"+list.Messages[0].ID, &m)
+			if m.Text != "" {
+				return m
+			}
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	t.Fatal("no email arrived")
+	return mail{}
+}
+
+// assertCodeEmail checks the Fynk email theme: the Spanish subject, the code and the expiry in both
+// bodies, the wordmark in the HTML, and no links or images (the code is the only way in).
+func assertCodeEmail(t *testing.T, m mail, wantSubject, wantHeading string) {
+	t.Helper()
+	if m.Subject != wantSubject {
+		t.Fatalf("subject = %q, want %q", m.Subject, wantSubject)
+	}
+	digits := regexp.MustCompile(`\b\d{6}\b`)
+	for name, body := range map[string]string{"HTML": m.HTML, "Text": m.Text} {
+		if !digits.MatchString(body) {
+			t.Fatalf("the %s body has no 6-digit code", name)
+		}
+		lower := strings.ToLower(body)
+		for _, banned := range []string{"http://", "https://", "<a ", "<img"} {
+			if strings.Contains(lower, banned) {
+				t.Fatalf("the %s body contains %q", name, banned)
+			}
+		}
+		if !strings.Contains(body, "El código vence en 10 minutos.") {
+			t.Fatalf("the %s body has no expiry sentence", name)
+		}
+		if !strings.Contains(body, wantHeading) {
+			t.Fatalf("the %s body has no heading %q", name, wantHeading)
+		}
+		if !strings.Contains(body, "Nadie de Fynk te pedirá este código.") {
+			t.Fatalf("the %s body has no warning footer", name)
+		}
+	}
+	if !strings.Contains(m.HTML, ">Fynk</div>") {
+		t.Fatal("the HTML body has no Fynk wordmark")
+	}
+	if digits.FindString(m.HTML) != digits.FindString(m.Text) {
+		t.Fatal("the HTML and Text bodies carry different codes")
+	}
+}
+
+// The code emails use the Fynk email theme: Spanish, table layout, no links and no images.
+func TestIntegrationCodeEmailsUseTheFynkEmailTheme(t *testing.T) {
+	// Verify email: an unverified user logs in.
+	verifyTo := newEmail("emailtheme-verify")
+	createUser(t, verifyTo, goodPassword, false)
+	b := newBrowser(t)
+	if code, _ := b.submitLogin(t, verifyTo, goodPassword); code != "" {
+		t.Fatal("an unverified user received an authorization code")
+	}
+	assertCodeEmail(t, waitForMail(t, verifyTo),
+		"Tu código para verificar el correo en Fynk", "Verifica tu correo")
+
+	// Password reset.
+	resetTo := newEmail("emailtheme-reset")
+	createUser(t, resetTo, goodPassword, true)
+	startReset(t, newBrowser(t), resetTo)
+	assertCodeEmail(t, waitForMail(t, resetTo),
+		"Tu código para restablecer la contraseña en Fynk", "Recupera tu contraseña")
+}
