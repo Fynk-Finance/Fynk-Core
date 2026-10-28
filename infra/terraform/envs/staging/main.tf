@@ -47,6 +47,7 @@ module "endpoints" {
   subnet_ids  = [module.network.primary_private_subnet_id]
   environment = var.environment
 }
+
 module "kms" {
   source = "../../modules/kms"
 
@@ -227,4 +228,29 @@ module "ecs_bank_simulator" {
     { name = "BANK_PUBLIC_ADDR", value = ":8443" },
     { name = "BANK_INTERNAL_ADDR", value = ":9443" }
   ]
+}
+# Caddy Egress Proxy on EC2 (Public subnet, Elastic IP, SSM only)
+module "caddy_egress" {
+  source = "../../modules/caddy-egress"
+
+  vpc_id                = module.network.vpc_id
+  subnet_id             = module.network.primary_public_subnet_id
+  api_security_group_id = module.ecs_api.security_group_id
+  mtls_cert_secret_arn  = module.secrets.mtls_client_cert_secret_arn
+  mtls_key_secret_arn   = module.secrets.mtls_client_key_secret_arn
+  environment           = var.environment
+}
+
+# Monitoring & Alarms (CloudWatch Alarms, Dashboard, SNS Alerts)
+module "monitoring" {
+  source = "../../modules/monitoring"
+
+  environment                            = var.environment
+  alb_arn_suffix                         = module.alb.alb_arn_suffix
+  target_group_api_arn_suffix            = module.alb.target_group_api_arn_suffix
+  target_group_keycloak_arn_suffix       = module.alb.target_group_keycloak_arn_suffix
+  target_group_bank_simulator_arn_suffix = module.alb.target_group_bank_simulator_arn_suffix
+  rds_instance_id                        = module.rds.instance_id
+  caddy_instance_id                      = module.caddy_egress.instance_id
+  api_log_group_name                     = module.ecs_api.log_group_name
 }
