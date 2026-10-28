@@ -1,0 +1,71 @@
+/*
+ * Design tokens of the Fynk login pages. Names follow apps/mobile/src/shared/ui/tokens.ts.
+ * Light values come from docs/design/sources/light/Login.html and Registro.html, dark values from
+ * the same files in docs/design/sources/dark/. Keycloak pages follow the browser theme (no toggle).
+ */
+:root {
+  color-scheme: light dark;
+
+  /* Blue header: `background-color` of the frame div (Login.html). Dark uses the token `canvas`. */
+  --fk-header-bg: #2fa8d8;
+  /* Decorative squares of the header (Login.html svg rect fills; dark draws them at opacity .4). */
+  --fk-header-shape-a: #3ab3e3;
+  --fk-header-shape-b: #47b6e2;
+  --fk-header-shape-c: #279dcc;
+  --fk-header-shape-opacity: 1;
+  --fk-on-primary: #ffffff;
+
+  --fk-primary: #2fa8d8;
+  --fk-primary-dark: #1f93c2; /* field icons */
+  --fk-primary-deep: #177fa9; /* "Olvidaste tu contraseña", terms links */
+  --fk-accent: #a8e03a; /* lime band */
+  --fk-accent-pressed: #93cc26; /* .cta:hover */
+  --fk-link-strong: #5a8a0c; /* a { color } */
+  --fk-link-hover: #4a7409; /* a:hover */
+
+  --fk-background: #ffffff; /* body and card */
+  --fk-text-primary: #0f2233;
+  --fk-text-secondary: #5e7482;
+  --fk-text-placeholder: #8a9ba6;
+  --fk-surface-blue: #e4f5fc; /* .eye:hover */
+  --fk-border-blue: #e4f5fc; /* field border */
+  --fk-surface-blue-soft: #f4fbfe; /* field background */
+  --fk-border: #e4ecf0;
+  --fk-focus-ring: #b5e5f7;
+
+  --fk-shadow-band: rgba(15, 34, 51, 0.35);
+  --fk-shadow-card: rgba(15, 34, 51, 0.45);
+
+  /* Not drawn in Login/Registro: values of the danger tokens in tokens.ts (CfgSeguridad.html). */
+  --fk-danger: #c0392b;
+  --fk-danger-surface: #fff5f5;
+  --fk-danger-border: #f3c7c7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fk-header-bg: #0b1620;
+    --fk-header-shape-opacity: 0.4;
+
+    --fk-primary-dark: #62c8f0;
+    --fk-primary-deep: #62c8f0;
+    --fk-link-strong: #b6e45a;
+    --fk-link-hover: #b6e45a;
+
+    --fk-background: #13212d;
+    --fk-text-primary: #e8f1f6;
+    --fk-text-secondary: #97abb8;
+    --fk-text-placeholder: #71889a;
+    --fk-surface-blue: #1a3444;
+    --fk-border-blue: #223746;
+    --fk-surface-blue-soft: #182a37;
+    --fk-border: #22313d;
+
+    --fk-shadow-band: rgba(0, 0, 0, 0.35);
+    --fk-shadow-card: rgba(0, 0, 0, 0.45);
+
+    --fk-danger: #ff7d6e;
+    --fk-danger-surface: #2e1a1c;
+    --fk-danger-border: #5a2a2a;
+  }
+}
