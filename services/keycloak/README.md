@@ -16,12 +16,12 @@ The file is written by hand and only holds what differs from Keycloak's defaults
 
 | Setting | Value | Why |
 | --- | --- | --- |
-| Login | Email as username, one account per email, verified email required (by a 6-digit code), reset by email | HU-001, HU-005 |
+| Login | Email as username, one account per email, verified email required (by a 6-digit code), reset by a 6-digit code | HU-001, HU-005 |
 | Password policy | `length(8) and regexPattern(.*[A-Za-z].*) and digits(1) and notEmail` | HU-050, HU-001 |
 | Brute force | Locked 15 minutes after 5 failures, never permanently | HU-050 |
 | Tokens | Signed with PS256 from the `fynk-ps256` key, access token 5 minutes, refresh tokens rotate (`revokeRefreshToken`, reuse 0) | HU-050, HU-002 |
 | Sessions | 30 days idle, 90 days max, **no `offline_access`** | Team decision on open item 5 |
-| Email codes and links | The verification code and the reset link expire in 10 minutes (`actionTokenGeneratedByUserLifespan`) | HU-050, HU-005 |
+| Email codes | The verification code and the reset code expire in 10 minutes (`actionTokenGeneratedByUserLifespan`) | HU-050, HU-005 |
 | Registration | Custom flow `fynk registration`: email, password and the terms checkbox, then the email code. The acceptance date is stored in the user attribute `terms_and_conditions` | HU-001 |
 | User profile | Email, optional first and last name, nothing else. Users cannot add attributes (`ADMIN_VIEW`), so no cédula can be stored | HU-001, CLAUDE.md rule 10 |
 | Events | Login, errors, registration, verification, reset and logout kept 90 days in the Keycloak database for M13. Admin events without representations, because those contain emails. No `jboss-logging` listener, because it writes the email to the logs | HU-050, HU-002 |
@@ -43,11 +43,16 @@ Clients:
 
 ## Email codes (`extensions/email-code`)
 
-Keycloak only sends links. The design asks for a 6-digit code at sign-up and at password recovery, so this Java extension adds a required action, `fynk-verify-email-code`. The Dockerfile builds it with Maven, runs its unit tests and puts the jar in `providers/`.
+Keycloak only sends links. The design asks for a 6-digit code at sign-up and at password recovery, so this Java extension adds a required action, `fynk-verify-email-code` (sign-up, and login of an unverified email), and an authenticator, `fynk-reset-credential-code` (password recovery). The Dockerfile builds it with Maven, runs its unit tests and puts the jar in `providers/`.
 
 * The code is random (`SecureRandom`), stored only as a salted SHA-256 hash in the browser's authentication session, and compared in constant time. It lives 10 minutes and allows 5 attempts.
 * Per user: a new code at most every 60 s, and at most 10 wrong codes in 12 hours. Wrong codes do not count toward the brute-force lock, so nobody can lock someone else's login with them.
 * The code, the address and the user name never reach the logs or the stored events (`SEND_VERIFY_EMAIL`, `VERIFY_EMAIL`, errors `invalid_code`, `expired_code`, `email_send_failed`).
+* **Password recovery** is the custom flow `fynk reset credentials` (`resetCredentialsFlow`): `reset-credentials-choose-user`, `fynk-reset-credential-code`, `reset-password`. Keycloak's link authenticator `reset-credential-email` is used nowhere.
+  * **No account enumeration.** An email without an account (or a disabled one) gets a decoy: the same page, messages, cooldown and wrong-code budget (keyed by `decoy-` plus a SHA-256 of the realm and the lowercased address), a code note stored like a real one, no email sent, and every code refused, even a lucky guess. The one difference left is time: sending the SMTP message makes the real path slower, as in Keycloak's own link flow. A failed send is not shown either.
+  * A right code marks the email as verified (owning the mailbox proves it, which is how an account somebody pre-registered is taken back), ends every other session of the user (back-channel logout, offline sessions and other authentication sessions; Keycloak's `AuthenticatorUtil.logoutOtherSessions` only accepts a required action or action token context, so its steps are repeated with public APIs), and then asks for the new password.
+  * The flow ends on Keycloak's info page ("account updated") after the new password. The person is not logged in and no authorization code is issued; they sign in again from the app.
+  * Events: `SEND_RESET_PASSWORD` and the errors `invalid_code` and `expired_code`, without the address, the user name or the code.
 * Pages and emails: `fynk-email-code.ftl` (login and email) and `messages_*.properties` under `src/main/resources/theme-resources/`. They work with Keycloak's default theme until the Fynk theme overrides them.
 
 ```sh
@@ -95,6 +100,6 @@ The integration tests drive the real flows over HTTP:
 * the code page on login for an unverified email, wrong codes, 5 attempts, the 60 s resend cooldown
 * PKCE login and PS256 tokens
 * refresh token rotation
-* password reset by email
+* password reset by the code: wrong code, policy, info page, other sessions ended, unknown email looks the same, unverified email becomes verified
 * brute-force lock
 * stored events

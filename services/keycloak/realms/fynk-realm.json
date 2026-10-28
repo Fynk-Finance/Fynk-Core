@@ -101,6 +101,7 @@
   ],
 
   "registrationFlow": "fynk registration",
+  "resetCredentialsFlow": "fynk reset credentials",
   "authenticationFlows": [
     {
       "alias": "fynk registration",
@@ -145,6 +146,36 @@
           "authenticator": "registration-terms-and-conditions",
           "requirement": "REQUIRED",
           "priority": 70,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "fynk reset credentials",
+      "description": "Password recovery with a 6-digit email code (HU-005): choose the user, check the code, set the password",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "reset-credentials-choose-user",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "fynk-reset-credential-code",
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "reset-password",
+          "requirement": "REQUIRED",
+          "priority": 30,
           "autheticatorFlow": false,
           "userSetupAllowed": false
         }

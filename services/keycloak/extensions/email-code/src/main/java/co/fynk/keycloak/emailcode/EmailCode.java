@@ -57,6 +57,14 @@ public final class EmailCode {
     }
 
     public static Check verify(String note, String input, Instant now) {
+        return verify(note, input, now, true);
+    }
+
+    /**
+     * @param acceptMatch false for a decoy code: a matching input is counted as a wrong one, so
+     *                    even a lucky guess of the random code never succeeds
+     */
+    public static Check verify(String note, String input, Instant now, boolean acceptMatch) {
         Parsed p = Parsed.parse(note);
         if (p == null) {
             return new Check(Outcome.INVALID_NOTE, 0, null);
@@ -71,7 +79,7 @@ public final class EmailCode {
         if (p.attempts >= MAX_ATTEMPTS) {
             return new Check(Outcome.EXHAUSTED, 0, null);
         }
-        if (MessageDigest.isEqual(hash(p.salt, code), p.hash)) {
+        if (MessageDigest.isEqual(hash(p.salt, code), p.hash) && acceptMatch) {
             return new Check(Outcome.OK, MAX_ATTEMPTS - p.attempts, null);
         }
         int attempts = p.attempts + 1;

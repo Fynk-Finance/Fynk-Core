@@ -447,31 +447,121 @@ func TestIntegrationBancoDemoRealmWorksInTheSharedImage(t *testing.T) {
 	}
 }
 
-// HU-005: the reset link arrives by email, expires in 10 minutes, and sets a new password.
-func TestIntegrationPasswordResetByEmail(t *testing.T) {
+// HU-005: password recovery with the 6-digit code. The wrong code is refused, the right one
+// leads to the new password (policy applies), an info page ends the flow without logging in, the
+// new password works, the old one does not, and the other sessions of the user are ended.
+func TestIntegrationPasswordResetWithTheCode(t *testing.T) {
 	email := newEmail("reset")
 	createUser(t, email, goodPassword, true)
-	b := newBrowser(t)
-	p := newPKCE()
-	loginHTML := b.loginPage(p, nil)
-	m := regexp.MustCompile(`href="([^"]*login-actions/reset-credentials[^"]*)"`).FindStringSubmatch(loginHTML)
-	if m == nil {
-		t.Fatal("the login page has no forgot password link")
-	}
-	_, resetPage := b.follow(absolute(html.UnescapeString(m[1])))
-	b.submit(formAction(t, resetPage, "kc-reset-password-form"), url.Values{"username": {email}})
+	old := login(t, newBrowser(t), email, goodPassword)
 
-	link := waitForLink(t, email)
-	assertLinkLifespan(t, link)
-	_, updatePage := b.follow(link)
-	code, _ := b.submit(formAction(t, updatePage, "kc-passwd-update-form"),
-		url.Values{"password-new": {"nueva-clave-2"}, "password-confirm": {"nueva-clave-2"}})
-	if code == "" {
-		t.Fatal("after the reset the login should continue to the app")
+	b := newBrowser(t)
+	page := startReset(t, b, email)
+	assertCodePage(t, page)
+	if !strings.Contains(page, "Restablece tu contraseña") {
+		t.Fatal("the code page does not have the reset title")
 	}
-	exchange(t, code, p)
+	mailed := waitForCode(t, email)
+
+	code, page := b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {wrongVariant(mailed)}, "verify": {""}})
+	if code != "" {
+		t.Fatal("a wrong code gave an authorization code")
+	}
+	assertCodePage(t, page)
+	if !strings.Contains(page, "no es correcto") {
+		t.Fatal("the code page shows no error for a wrong code")
+	}
+
+	code, page = b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {mailed}, "verify": {""}})
+	if code != "" {
+		t.Fatal("the reset gave an authorization code before the new password")
+	}
+	if !strings.Contains(page, `id="kc-passwd-update-form"`) {
+		t.Fatal("after the right code the page should ask for the new password")
+	}
+	code, page = b.submit(formAction(t, page, "kc-passwd-update-form"),
+		url.Values{"password-new": {"abcdefgh"}, "password-confirm": {"abcdefgh"}})
+	if code != "" || !strings.Contains(page, `id="kc-passwd-update-form"`) {
+		t.Fatal("a password that breaks the policy should be refused on the same page")
+	}
+	code, page = b.submit(formAction(t, page, "kc-passwd-update-form"),
+		url.Values{"password-new": {"nueva-clave-2"}, "password-confirm": {"nueva-clave-2"}})
+	if code != "" {
+		t.Fatal("the reset must end on an info page, not log the person in")
+	}
+	if strings.Contains(page, `id="kc-passwd-update-form"`) || !strings.Contains(page, `id="kc-info-message"`) {
+		t.Fatalf("expected the info page after the new password, got:\n%s", page)
+	}
+
 	if again := login(t, newBrowser(t), email, "nueva-clave-2"); again.AccessToken == "" {
 		t.Fatal("the new password does not work")
+	}
+	_, loginPage := newBrowser(t).submitLogin(t, email, goodPassword)
+	if !strings.Contains(loginPage, `id="kc-form-login"`) {
+		t.Fatal("the old password should be refused")
+	}
+	reuse := postToken(t, url.Values{"grant_type": {"refresh_token"}, "client_id": {clientID}, "refresh_token": {old.RefreshToken}})
+	if reuse.Error != "invalid_grant" {
+		t.Fatalf("the refresh token of the old session: error = %q, want invalid_grant", reuse.Error)
+	}
+}
+
+// HU-005: an email without an account gets the same page as one with an account, no email is
+// sent, and no code (not even a lucky guess) is accepted.
+func TestIntegrationUnknownEmailLooksTheSameInTheReset(t *testing.T) {
+	known := newEmail("known")
+	createUser(t, known, goodPassword, true)
+	unknown := newEmail("nobody")
+
+	realBrowser, decoyBrowser := newBrowser(t), newBrowser(t)
+	realPage := startReset(t, realBrowser, known)
+	decoyPage := startReset(t, decoyBrowser, unknown)
+	assertCodePage(t, decoyPage)
+	if a, b := sameShape(realPage, known), sameShape(decoyPage, unknown); a != b {
+		t.Fatalf("the code pages differ:\n--- known\n%s\n--- unknown\n%s", a, b)
+	}
+
+	mailed := waitForCode(t, known)
+	_, realWrong := realBrowser.submit(formAction(t, realPage, "kc-email-code-form"), url.Values{"code": {wrongVariant(mailed)}, "verify": {""}})
+	code, decoyWrong := decoyBrowser.submit(formAction(t, decoyPage, "kc-email-code-form"), url.Values{"code": {"123456"}, "verify": {""}})
+	if code != "" || !strings.Contains(decoyWrong, "no es correcto") {
+		t.Fatal("a 6-digit code for an email without an account must be refused like a wrong code")
+	}
+	if a, b := sameShape(realWrong, known), sameShape(decoyWrong, unknown); a != b {
+		t.Fatalf("the wrong code pages differ:\n--- known\n%s\n--- unknown\n%s", a, b)
+	}
+
+	time.Sleep(time.Second)
+	if n := countMessages(t, unknown); n != 0 {
+		t.Fatalf("%d emails were sent to an address without an account", n)
+	}
+}
+
+// HU-005: whoever owns the mailbox can take back an account whose email was never verified (for
+// example one somebody else registered with this address). The reset verifies the email.
+func TestIntegrationResetVerifiesAnUnverifiedEmail(t *testing.T) {
+	email := newEmail("unverified")
+	id := createUser(t, email, goodPassword, false).id
+
+	b := newBrowser(t)
+	page := startReset(t, b, email)
+	assertCodePage(t, page)
+	mailed := waitForCode(t, email)
+	_, page = b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {mailed}, "verify": {""}})
+	_, page = b.submit(formAction(t, page, "kc-passwd-update-form"),
+		url.Values{"password-new": {"nueva-clave-2"}, "password-confirm": {"nueva-clave-2"}})
+	if !strings.Contains(page, `id="kc-info-message"`) {
+		t.Fatal("expected the info page after the new password")
+	}
+
+	// login() needs an authorization code at once: no verification code page in between.
+	if tok := login(t, newBrowser(t), email, "nueva-clave-2"); tok.AccessToken == "" {
+		t.Fatal("the new password does not log in")
+	}
+	var u kcUser
+	adminJSON(t, http.MethodGet, "/admin/realms/fynk/users/"+id, nil, &u)
+	if !u.EmailVerified {
+		t.Fatal("the admin API shows the email as not verified after the reset")
 	}
 }
 
@@ -736,50 +826,43 @@ func audienceHas(aud any, want string) bool {
 	return false
 }
 
-// assertLinkLifespan checks the action token inside an emailed link lasts 10 minutes.
-func assertLinkLifespan(t *testing.T, link string) {
+// startReset opens the forgot password page from the login page, submits the email and returns
+// the page Keycloak shows next.
+func startReset(t *testing.T, b *browser, email string) string {
 	t.Helper()
-	u, err := url.Parse(link)
-	if err != nil {
-		t.Fatal(err)
+	loginHTML := b.loginPage(newPKCE(), nil)
+	m := regexp.MustCompile(`href="([^"]*login-actions/reset-credentials[^"]*)"`).FindStringSubmatch(loginHTML)
+	if m == nil {
+		t.Fatal("the login page has no forgot password link")
 	}
-	_, claims := decodeJWT(t, u.Query().Get("key"))
-	exp, _ := claims["exp"].(float64)
-	start, ok := claims["iat"].(float64)
-	if !ok {
-		start = float64(time.Now().Unix())
+	_, resetPage := b.follow(absolute(html.UnescapeString(m[1])))
+	code, page := b.submit(formAction(t, resetPage, "kc-reset-password-form"), url.Values{"username": {email}})
+	if code != "" {
+		t.Fatal("the reset gave an authorization code")
 	}
-	if d := exp - start; d < 590 || d > 600 {
-		t.Fatalf("the link lasts %v s, want 600", d)
-	}
+	return page
 }
 
-// waitForLink returns the Keycloak link of the newest email sent to the address.
-func waitForLink(t *testing.T, to string) string {
+// submitLogin posts a username and password to a fresh login page.
+func (b *browser) submitLogin(t *testing.T, email, password string) (code, page string) {
 	t.Helper()
-	linkRe := regexp.MustCompile(`https?://[^\s"<>]+/login-actions/action-token\?[^\s"<>]+`)
-	deadline := time.Now().Add(20 * time.Second)
-	for time.Now().Before(deadline) {
-		var list struct {
-			Messages []struct {
-				ID string
-				To []struct{ Address string }
-			}
-		}
-		getJSON(t, env.mailpit+"/api/v1/messages", &list)
-		for _, m := range list.Messages {
-			if len(m.To) == 1 && m.To[0].Address == to {
-				var msg struct{ Text string }
-				getJSON(t, env.mailpit+"/api/v1/message/"+m.ID, &msg)
-				if link := linkRe.FindString(msg.Text); link != "" {
-					return html.UnescapeString(link)
-				}
-			}
-		}
-		time.Sleep(500 * time.Millisecond)
-	}
-	t.Fatal("no email with a Keycloak link arrived")
-	return ""
+	return b.submit(formAction(t, b.loginPage(newPKCE(), nil), "kc-form-login"), url.Values{"username": {email}, "password": {password}})
+}
+
+var (
+	attrURL     = regexp.MustCompile(`(action|href)="[^"]*"`)
+	hiddenInput = regexp.MustCompile(`<input[^>]*type="hidden"[^>]*>`)
+	tabID       = regexp.MustCompile(`tab_id=[A-Za-z0-9_-]+`)
+)
+
+// sameShape removes what changes from one session to the next (URLs with tab ids and session
+// codes, hidden inputs) and the typed email, so two pages can be compared.
+func sameShape(page, typedEmail string) string {
+	page = strings.ReplaceAll(page, typedEmail, "EMAIL")
+	page = strings.ReplaceAll(page, html.EscapeString(typedEmail), "EMAIL")
+	page = attrURL.ReplaceAllString(page, `$1="URL"`)
+	page = tabID.ReplaceAllString(page, "tab_id=T")
+	return hiddenInput.ReplaceAllString(page, "")
 }
 
 // assertCodePage fails unless the page is the email code page.

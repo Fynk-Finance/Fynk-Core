@@ -1,6 +1,10 @@
 <#import "template.ftl" as layout>
 <#import "field.ftl" as field>
 <#import "buttons.ftl" as buttons>
+<#-- Password recovery must look the same for an email with an account and one without. The layout
+     shows the "attempted username" block only when the flow has a user, which would tell them
+     apart. Hiding the authentication context removes that block for both. -->
+<#if purpose == "reset"><#global auth = {}></#if>
 <@layout.registrationLayout displayMessage=true; section>
 <!-- template: fynk-email-code.ftl -->
     <#if section = "header">
@@ -28,5 +32,8 @@
                 <@buttons.button id="kc-email-code-resend" name="resend" label="fynkEmailCodeResendButton" type="secondary" />
             </@buttons.actionGroup>
         </form>
+        <#if purpose == "reset">
+            <p id="kc-email-code-change"><a id="kc-email-code-change-link" href="${url.loginRestartFlowUrl}">${msg("fynkEmailCodeChangeEmail")}</a></p>
+        </#if>
     </#if>
 </@layout.registrationLayout>
