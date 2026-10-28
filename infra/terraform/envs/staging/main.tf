@@ -47,7 +47,6 @@ module "endpoints" {
   subnet_ids  = [module.network.primary_private_subnet_id]
   environment = var.environment
 }
-
 module "kms" {
   source = "../../modules/kms"
 

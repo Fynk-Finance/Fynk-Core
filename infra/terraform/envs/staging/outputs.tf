@@ -23,6 +23,11 @@ output "primary_public_subnet_id" {
   description = "Primary public subnet ID"
 }
 
+output "endpoint_security_group_id" {
+  value       = module.endpoints.security_group_id
+  description = "Security group for interface endpoints"
+}
+
 # ALB Outputs
 output "alb_dns_name" {
   value       = module.alb.alb_dns_name
