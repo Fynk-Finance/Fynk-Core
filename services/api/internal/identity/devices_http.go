@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/devices"
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/http"
@@ -27,10 +29,15 @@ type deviceService interface {
 	RemoveOthers(ctx context.Context, userID, currentDeviceID string) ([]string, error)
 }
 
-// server implements the generated httpapi.StrictServerInterface.
-// Revoking the Keycloak sessions that Remove and RemoveOthers return comes with the session
-// revoker wiring; for now the ids are dropped.
-type server struct{ devices deviceService }
+// server implements the generated httpapi.StrictServerInterface. The admin and cache may be
+// nil: the profile then answers 503 and nothing is cached. Revoking the Keycloak sessions that
+// Remove and RemoveOthers return comes with the session revoker wiring; for now the ids are dropped.
+type server struct {
+	devices deviceService
+	admin   profileAdmin
+	cache   *redis.Client
+	log     *slog.Logger
+}
 
 var _ httpapi.StrictServerInterface = server{}
 

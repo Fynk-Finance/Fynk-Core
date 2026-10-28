@@ -69,12 +69,18 @@ func (f *fakeService) RemoveOthers(_ context.Context, _, cur string) ([]string, 
 	return nil, f.err
 }
 
-func serve(t *testing.T, f *fakeService) http.Handler {
+func serve(t *testing.T, f *fakeService) http.Handler { return serveWith(t, f, nil) }
+
+// serveWith builds the module over fakes; tweak changes the module before it is mounted.
+func serveWith(t *testing.T, f *fakeService, tweak func(*mod)) http.Handler {
 	t.Helper()
 	auth.Install(auth.DevVerifier{Env: config.EnvLocal})
 	t.Cleanup(func() { auth.Install(nil) })
 	m := New(module.Deps{}).(mod)
 	m.devices = f
+	if tweak != nil {
+		tweak(&m)
+	}
 	r := chi.NewRouter()
 	r.Route("/v1", m.Routes)
 	return r
@@ -293,9 +299,13 @@ func TestDevicesRequireAToken(t *testing.T) {
 	wantProblem(t, rec, 401, "unauthorized")
 }
 
-func TestMeStaysAStub(t *testing.T) {
+func TestMeRequiresAToken(t *testing.T) {
 	h := serve(t, &fakeService{})
-	wantProblem(t, do(h, "GET", "/v1/me", "", nil), 501, "not_implemented")
+	for _, method := range []string{"GET", "PATCH"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(method, "/v1/me", nil))
+		wantProblem(t, rec, 401, "unauthorized")
+	}
 }
 
 func TestNewDoesNotTouchTheDatabase(t *testing.T) {

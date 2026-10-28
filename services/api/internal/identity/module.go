@@ -7,6 +7,7 @@ import (
 
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/devices"
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/http"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/kcadmin"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/migrations"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/postgres"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
@@ -14,14 +15,14 @@ import (
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/problem"
 )
 
-// New returns the identity module. The devices endpoints are real; /me still answers 501
-// until the profile lands.
+// New returns the identity module: the profile and the devices endpoints are real.
 func New(d module.Deps) module.Module {
 	return mod{
-		Stub: module.Stub{ModuleName: "identity", Prefixes: []string{"/me"}},
+		Stub: module.Stub{ModuleName: "identity"},
 		deps: d,
 		// The pool is only used when a request arrives, so a nil DB is fine at construction.
 		devices: devices.NewService(postgres.New(d.DB), d.Clock, d.Audit, nil),
+		admin:   kcadmin.New(d.Config, nil),
 	}
 }
 
@@ -29,11 +30,13 @@ type mod struct {
 	module.Stub
 	deps    module.Deps
 	devices deviceService
+	admin   profileAdmin
 }
 
-// Routes mounts the server generated from the contract behind auth.Require, then the 501 stub routes.
+// Routes mounts the server generated from the contract behind auth.Require.
 func (m mod) Routes(r chi.Router) {
-	strict := httpapi.NewStrictHandlerWithOptions(server{devices: m.devices}, nil, httpapi.StrictHTTPServerOptions{
+	srv := server{devices: m.devices, admin: m.admin, cache: m.deps.Redis, log: m.deps.Log}
+	strict := httpapi.NewStrictHandlerWithOptions(srv, nil, httpapi.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  problem.RequestError,
 		ResponseErrorHandlerFunc: problem.ResponseErrorHandler(m.deps.Log),
 	})
@@ -44,7 +47,6 @@ func (m mod) Routes(r chi.Router) {
 			ErrorHandlerFunc: problem.RequestError,
 		})
 	})
-	m.Stub.Routes(r)
 }
 
 // Migrations implements module.Module: the identity schema.
