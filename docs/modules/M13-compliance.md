@@ -19,7 +19,7 @@ You are building module M13 of Fynk: the append only audit trail, the data treat
 ## Read first
 
 1. `CLAUDE.md` (Regulatory guardrails, Security rules), `docs/modules/00-shared-contracts.md` sections 4.3 and 5.
-2. Design PNGs `03-crear-cuenta.png` (terms checkbox) and `07-mi-cuenta.png` and `07-mi-cuenta-2.png` (Privacidad y datos, Centro de ayuda, Eliminar cuenta). Read the code of the same screens in `docs/design/source/` first (file map in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs are for checking the result.
+2. Design screens `Registro` (terms checkbox), `CfgPrivacidad`, `CfgAyuda` and `CfgEliminar`. Fynk Plus mentions stay hidden, and "Mejorar Fynk" (anonymous statistics) and WhatsApp support wait for the team (CLAUDE.md, open items). Read the code of these screens in `docs/design/sources/light/` and `docs/design/sources/dark/` first (inventory, gestures and transitions in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` are for checking the result. Every screen works in light and dark (colors only from `useTheme()`), and uses the default transition and back gesture of its kind unless the inventory says otherwise.
 3. Jira SCRUM-41, SCRUM-42, SCRUM-43.
 
 ## Stories and criteria

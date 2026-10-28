@@ -241,3 +241,17 @@ module "caddy_egress" {
   mtls_key_secret_arn   = module.secrets.mtls_client_key_secret_arn
   environment           = var.environment
 }
+
+# Monitoring & Alarms (CloudWatch Alarms, Dashboard, SNS Alerts)
+module "monitoring" {
+  source = "../../modules/monitoring"
+
+  environment                            = var.environment
+  alb_arn_suffix                         = module.alb.alb_arn_suffix
+  target_group_api_arn_suffix            = module.alb.target_group_api_arn_suffix
+  target_group_keycloak_arn_suffix       = module.alb.target_group_keycloak_arn_suffix
+  target_group_bank_simulator_arn_suffix = module.alb.target_group_bank_simulator_arn_suffix
+  rds_instance_id                        = module.rds.instance_id
+  caddy_instance_id                      = module.caddy_egress.instance_id
+  api_log_group_name                     = module.ecs_api.log_group_name
+}

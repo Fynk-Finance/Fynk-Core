@@ -6,15 +6,37 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
+
+	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/api"
+	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/oauth"
+	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/portal"
+	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/store"
 )
 
-func healthMux() http.Handler {
+func newBankMux(s *store.BankStore) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"status":"ok","simulated":true}`))
 	})
+
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/portal", http.StatusSeeOther)
+	})
+
+	handler := api.NewHandler(s)
+	handler.RegisterRoutes(mux)
+
+	oauthService := oauth.NewService(s)
+	oauthService.RegisterRoutes(mux)
+	portalHandler := portal.NewHandler(s)
+	portalHandler.RegisterRoutes(mux)
 	return mux
+}
+
+func healthMux() http.Handler {
+	return newBankMux(store.NewBankStore(time.Time{}))
 }
 
 // internalTLSConfig requires a client certificate signed by the CA in caPEM.
