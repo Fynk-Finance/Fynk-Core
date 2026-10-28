@@ -27,6 +27,8 @@ type realm struct {
 	InternationalizationEnabled         bool
 	SupportedLocales                    []string
 	DefaultLocale                       string
+	LoginTheme                          string
+	EmailTheme                          string
 	BruteForceProtected                 bool
 	PermanentLockout                    bool
 	FailureFactor                       int
@@ -103,6 +105,7 @@ type client struct {
 	ServiceAccountsEnabled    bool
 	ConsentRequired           bool
 	Secret                    string
+	BaseURL                   string
 	RedirectURIs              []string
 	WebOrigins                []string
 	Attributes                map[string]string
@@ -515,6 +518,23 @@ func TestSpanishIsTheOnlyLocale(t *testing.T) {
 	r, _ := loadRealm(t)
 	if !r.InternationalizationEnabled || !slices.Equal(r.SupportedLocales, []string{"es"}) || r.DefaultLocale != "es" {
 		t.Fatalf("locales = %v, default %q", r.SupportedLocales, r.DefaultLocale)
+	}
+}
+
+// The login pages are the Keycloakify theme `fynk` (services/keycloak/theme), built into the image
+// by the Dockerfile. The email theme is not built yet: the emails stay the extension's own.
+// fynk-mobile has no base URL because Keycloak rejects a custom-scheme one; the theme takes the
+// way back to the app from the login session instead (theme/src/login/appReturnUrl.ts).
+func TestLoginUsesTheFynkTheme(t *testing.T) {
+	r, _ := loadRealm(t)
+	if r.LoginTheme != "fynk" {
+		t.Fatalf("loginTheme = %q, want fynk", r.LoginTheme)
+	}
+	if r.EmailTheme != "" {
+		t.Fatalf("emailTheme = %q: the email theme is not built yet", r.EmailTheme)
+	}
+	if got := clientByID(t, r, "fynk-mobile").BaseURL; got != "" {
+		t.Fatalf("fynk-mobile baseUrl = %q: Keycloak rejects custom-scheme base URLs", got)
 	}
 }
 

@@ -249,23 +249,23 @@ func TestIntegrationEmailMustBeVerifiedBeforeTokens(t *testing.T) {
 	b := newBrowser(t)
 	p := newPKCE()
 	page := b.loginPage(p, nil)
-	code, page := b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {goodPassword}})
+	code, page := b.submit(formAction(t, page, "login.ftl"), url.Values{"username": {email}, "password": {goodPassword}})
 	if code != "" {
 		t.Fatal("an unverified user received an authorization code")
 	}
 	assertCodePage(t, page)
 	mailed := waitForCode(t, email)
 
-	code, page = b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {wrongVariant(mailed)}, "verify": {""}})
+	code, page = b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {wrongVariant(mailed)}, "verify": {""}})
 	if code != "" {
 		t.Fatal("a wrong code gave an authorization code")
 	}
 	assertCodePage(t, page)
-	if !strings.Contains(page, "no es correcto") {
+	if !strings.Contains(messageSummary(t, page), "no es correcto") {
 		t.Fatal("the code page shows no error for a wrong code")
 	}
 
-	code, _ = b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {mailed}, "verify": {""}})
+	code, _ = b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {mailed}, "verify": {""}})
 	if code == "" {
 		t.Fatal("after the right code the login should continue to the app")
 	}
@@ -287,18 +287,25 @@ func TestIntegrationRegistrationAsksForThePasswordThenTheCode(t *testing.T) {
 	b := newBrowser(t)
 	p := newPKCE()
 	page := b.loginPage(p, url.Values{"prompt": {"create"}})
-	for _, field := range []string{`name="termsAccepted"`, `name="password"`, `name="password-confirm"`} {
-		if !strings.Contains(page, field) {
-			t.Fatalf("the registration form has no %s", field)
+	// The form is drawn in the browser by the theme, so the server sends what it is drawn from: the
+	// terms checkbox and the password pair follow termsAcceptanceRequired and passwordRequired, and
+	// the other fields are the user profile attributes.
+	reg := kcContextOf(t, page)
+	if pageID(t, page) != "register.ftl" || reg["termsAcceptanceRequired"] != true || reg["passwordRequired"] != true {
+		t.Fatalf("the registration page does not ask for the terms and the password: %v %v", reg["termsAcceptanceRequired"], reg["passwordRequired"])
+	}
+	for name := range profileAttributes(t, reg) {
+		if regexp.MustCompile(`(?i)c[eé]dula|document|identification`).MatchString(name) {
+			t.Fatalf("the registration form has the field %q", name)
 		}
 	}
-	if regexp.MustCompile(`(?i)c[eé]dula|name="[^"]*(document|cedula|identification)[^"]*"`).MatchString(page) {
-		t.Fatal("the registration form has a cédula or document field")
+	if regexp.MustCompile(`(?i)c[eé]dula`).MatchString(string(mustJSON(t, reg["profile"]))) {
+		t.Fatal("the registration profile mentions a cédula")
 	}
 	email := newEmail("register")
 	form := url.Values{"email": {email}, "password": {goodPassword}, "password-confirm": {goodPassword}}
 
-	_, page = b.submit(formAction(t, page, "kc-register-form"), form)
+	_, page = b.submit(formAction(t, page, "register.ftl"), form)
 	if findUser(t, email) != nil {
 		t.Fatal("a user was created without accepting the terms")
 	}
@@ -307,14 +314,14 @@ func TestIntegrationRegistrationAsksForThePasswordThenTheCode(t *testing.T) {
 	form.Set("cedula", "1234567890")
 	form.Set("password", "abcdefgh")
 	form.Set("password-confirm", "abcdefgh")
-	code, page := b.submit(formAction(t, page, "kc-register-form"), form)
+	code, page := b.submit(formAction(t, page, "register.ftl"), form)
 	if code != "" || findUser(t, email) != nil {
 		t.Fatal("abcdefgh (no digit) was accepted as the first password")
 	}
 
 	form.Set("password", goodPassword)
 	form.Set("password-confirm", goodPassword)
-	code, page = b.submit(formAction(t, page, "kc-register-form"), form)
+	code, page = b.submit(formAction(t, page, "register.ftl"), form)
 	if code != "" {
 		t.Fatal("registration must wait for the email code")
 	}
@@ -337,7 +344,7 @@ func TestIntegrationRegistrationAsksForThePasswordThenTheCode(t *testing.T) {
 		}
 	}
 
-	code, _ = b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {waitForCode(t, email)}, "verify": {""}})
+	code, _ = b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {waitForCode(t, email)}, "verify": {""}})
 	if code == "" {
 		t.Fatal("after the password and the code the sign-up should reach the app")
 	}
@@ -357,24 +364,24 @@ func TestIntegrationFiveWrongCodesKillTheCode(t *testing.T) {
 	createUser(t, email, goodPassword, false)
 	b := newBrowser(t)
 	page := b.loginPage(newPKCE(), nil)
-	_, page = b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {goodPassword}})
+	_, page = b.submit(formAction(t, page, "login.ftl"), url.Values{"username": {email}, "password": {goodPassword}})
 	assertCodePage(t, page)
 	mailed := waitForCode(t, email)
 
 	for i := 1; i <= 5; i++ {
 		var code string
-		code, page = b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {wrongVariant(mailed)}, "verify": {""}})
+		code, page = b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {wrongVariant(mailed)}, "verify": {""}})
 		if code != "" {
 			t.Fatalf("wrong code %d gave an authorization code", i)
 		}
 		assertCodePage(t, page)
 	}
-	code, page := b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {mailed}, "verify": {""}})
+	code, page := b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {mailed}, "verify": {""}})
 	if code != "" {
 		t.Fatal("the right code worked after 5 wrong ones")
 	}
 	assertCodePage(t, page)
-	if !strings.Contains(page, "Pide uno nuevo") {
+	if !strings.Contains(messageSummary(t, page), "Pide uno nuevo") {
 		t.Fatal("the page does not ask for a new code")
 	}
 }
@@ -385,16 +392,16 @@ func TestIntegrationResendInsideTheCooldownIsRefused(t *testing.T) {
 	createUser(t, email, goodPassword, false)
 	b := newBrowser(t)
 	page := b.loginPage(newPKCE(), nil)
-	_, page = b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {goodPassword}})
+	_, page = b.submit(formAction(t, page, "login.ftl"), url.Values{"username": {email}, "password": {goodPassword}})
 	assertCodePage(t, page)
 	waitForCode(t, email)
 
-	code, page := b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"resend": {""}})
+	code, page := b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"resend": {""}})
 	if code != "" {
 		t.Fatal("resend gave an authorization code")
 	}
 	assertCodePage(t, page)
-	if !strings.Contains(page, "Espera") {
+	if !strings.Contains(messageSummary(t, page), "Espera") {
 		t.Fatal("the page shows no wait notice")
 	}
 	time.Sleep(2 * time.Second)
@@ -409,9 +416,9 @@ func TestIntegrationCodeEventsHoldNeitherTheCodeNorTheAddress(t *testing.T) {
 	id := createUser(t, email, goodPassword, false).id
 	b := newBrowser(t)
 	page := b.loginPage(newPKCE(), nil)
-	_, page = b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {goodPassword}})
+	_, page = b.submit(formAction(t, page, "login.ftl"), url.Values{"username": {email}, "password": {goodPassword}})
 	mailed := waitForCode(t, email)
-	if code, _ := b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {mailed}, "verify": {""}}); code == "" {
+	if code, _ := b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {mailed}, "verify": {""}}); code == "" {
 		t.Fatal("verification failed")
 	}
 	for _, typ := range []string{"SEND_VERIFY_EMAIL", "VERIFY_EMAIL"} {
@@ -442,8 +449,10 @@ func TestIntegrationBancoDemoRealmWorksInTheSharedImage(t *testing.T) {
 		"client_id": {"bank-portal"}, "redirect_uri": {"http://localhost:8082/callback"},
 		"response_type": {"code"}, "scope": {"openid"},
 	}.Encode())
-	if !strings.Contains(page, `id="kc-form-login"`) {
-		t.Fatal("the Banco Demo login page did not render")
+	// The realm banco-demo sets no login theme: it keeps Keycloak's own, server rendered page, and the
+	// fynk theme (which draws pages in the browser from an embedded kcContext) must not leak into it.
+	if !strings.Contains(page, `id="kc-form-login"`) || strings.Contains(page, "const kcContext") {
+		t.Fatal("the Banco Demo login page did not render with Keycloak's own theme")
 	}
 }
 
@@ -458,46 +467,44 @@ func TestIntegrationPasswordResetWithTheCode(t *testing.T) {
 	b := newBrowser(t)
 	page := startReset(t, b, email)
 	assertCodePage(t, page)
-	if !strings.Contains(page, "Restablece tu contraseña") {
+	if kcContextOf(t, page)["purpose"] != "reset" {
 		t.Fatal("the code page does not have the reset title")
 	}
 	mailed := waitForCode(t, email)
 
-	code, page := b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {wrongVariant(mailed)}, "verify": {""}})
+	code, page := b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {wrongVariant(mailed)}, "verify": {""}})
 	if code != "" {
 		t.Fatal("a wrong code gave an authorization code")
 	}
 	assertCodePage(t, page)
-	if !strings.Contains(page, "no es correcto") {
+	if !strings.Contains(messageSummary(t, page), "no es correcto") {
 		t.Fatal("the code page shows no error for a wrong code")
 	}
 
-	code, page = b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {mailed}, "verify": {""}})
+	code, page = b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {mailed}, "verify": {""}})
 	if code != "" {
 		t.Fatal("the reset gave an authorization code before the new password")
 	}
-	if !strings.Contains(page, `id="kc-passwd-update-form"`) {
+	if pageID(t, page) != "login-update-password.ftl" {
 		t.Fatal("after the right code the page should ask for the new password")
 	}
-	code, page = b.submit(formAction(t, page, "kc-passwd-update-form"),
+	code, page = b.submit(formAction(t, page, "login-update-password.ftl"),
 		url.Values{"password-new": {"abcdefgh"}, "password-confirm": {"abcdefgh"}})
-	if code != "" || !strings.Contains(page, `id="kc-passwd-update-form"`) {
+	if code != "" || pageID(t, page) != "login-update-password.ftl" {
 		t.Fatal("a password that breaks the policy should be refused on the same page")
 	}
-	code, page = b.submit(formAction(t, page, "kc-passwd-update-form"),
+	code, page = b.submit(formAction(t, page, "login-update-password.ftl"),
 		url.Values{"password-new": {"nueva-clave-2"}, "password-confirm": {"nueva-clave-2"}})
 	if code != "" {
 		t.Fatal("the reset must end on an info page, not log the person in")
 	}
-	if strings.Contains(page, `id="kc-passwd-update-form"`) || !strings.Contains(page, `id="kc-info-message"`) {
-		t.Fatalf("expected the info page after the new password, got:\n%s", page)
-	}
+	assertResetSuccessPage(t, page)
 
 	if again := login(t, newBrowser(t), email, "nueva-clave-2"); again.AccessToken == "" {
 		t.Fatal("the new password does not work")
 	}
 	_, loginPage := newBrowser(t).submitLogin(t, email, goodPassword)
-	if !strings.Contains(loginPage, `id="kc-form-login"`) {
+	if pageID(t, loginPage) != "login.ftl" {
 		t.Fatal("the old password should be refused")
 	}
 	reuse := postToken(t, url.Values{"grant_type": {"refresh_token"}, "client_id": {clientID}, "refresh_token": {old.RefreshToken}})
@@ -517,18 +524,48 @@ func TestIntegrationUnknownEmailLooksTheSameInTheReset(t *testing.T) {
 	realPage := startReset(t, realBrowser, known)
 	decoyPage := startReset(t, decoyBrowser, unknown)
 	assertCodePage(t, decoyPage)
-	if a, b := sameShape(realPage, known), sameShape(decoyPage, unknown); a != b {
-		t.Fatalf("the code pages differ:\n--- known\n%s\n--- unknown\n%s", a, b)
+	// The theme draws the page in the browser, so the server sends the data model instead of the
+	// markup. It is compared whole, key by key, after taking out only what changes from one session
+	// to the next (see codePageShape). A second request for the same address inside the cooldown
+	// gets the "wait" notice, for a real account and for a decoy alike.
+	real2 := startReset(t, newBrowser(t), known)
+	real3 := startReset(t, newBrowser(t), known)
+	decoy2 := startReset(t, newBrowser(t), unknown)
+	// Proof that the normalization takes out nothing but session values: the same account asked
+	// twice in the same state gives the same data. And the first page and the waiting page of the
+	// same account only differ in the notice and the cooldown.
+	if d := shapeDiff(clockFree(codePageShape(t, real2, known)), clockFree(codePageShape(t, real3, known))); len(d) > 0 {
+		t.Fatalf("two requests for the same account differ beyond the session values (normalize more):\n%s", strings.Join(d, "\n"))
+	}
+	onlyNotice := func(k string) bool { return strings.HasPrefix(k, ".message") || k == ".cooldownSeconds" }
+	if d := shapeDiffExcept(codePageShape(t, realPage, known), codePageShape(t, real2, known), onlyNotice); len(d) > 0 {
+		t.Fatalf("the first and the waiting page of one account differ in more than the notice:\n%s", strings.Join(d, "\n"))
+	}
+	if d := shapeDiff(codePageShape(t, realPage, known), codePageShape(t, decoyPage, unknown)); len(d) > 0 {
+		t.Fatalf("the code pages of a known and an unknown email differ (account enumeration):\n%s", strings.Join(d, "\n"))
+	}
+	if d := shapeDiff(clockFree(codePageShape(t, real2, known)), clockFree(codePageShape(t, decoy2, unknown))); len(d) > 0 {
+		t.Fatalf("the waiting pages of a known and an unknown email differ (account enumeration):\n%s", strings.Join(d, "\n"))
+	}
+	if outsideContext(realPage, known) != outsideContext(decoyPage, unknown) {
+		t.Fatal("the HTML around the data model differs between a known and an unknown email")
+	}
+	for _, kc := range []map[string]any{kcContextOf(t, realPage), kcContextOf(t, decoyPage)} {
+		for _, key := range []string{"auth", "user"} {
+			if _, ok := kc[key]; ok {
+				t.Fatalf("the code page's data model carries %q: it tells an account from none", key)
+			}
+		}
 	}
 
 	mailed := waitForCode(t, known)
-	_, realWrong := realBrowser.submit(formAction(t, realPage, "kc-email-code-form"), url.Values{"code": {wrongVariant(mailed)}, "verify": {""}})
-	code, decoyWrong := decoyBrowser.submit(formAction(t, decoyPage, "kc-email-code-form"), url.Values{"code": {"123456"}, "verify": {""}})
-	if code != "" || !strings.Contains(decoyWrong, "no es correcto") {
+	_, realWrong := realBrowser.submit(formAction(t, realPage, "fynk-email-code.ftl"), url.Values{"code": {wrongVariant(mailed)}, "verify": {""}})
+	code, decoyWrong := decoyBrowser.submit(formAction(t, decoyPage, "fynk-email-code.ftl"), url.Values{"code": {"123456"}, "verify": {""}})
+	if code != "" || !strings.Contains(messageSummary(t, decoyWrong), "no es correcto") {
 		t.Fatal("a 6-digit code for an email without an account must be refused like a wrong code")
 	}
-	if a, b := sameShape(realWrong, known), sameShape(decoyWrong, unknown); a != b {
-		t.Fatalf("the wrong code pages differ:\n--- known\n%s\n--- unknown\n%s", a, b)
+	if d := shapeDiff(codePageShape(t, realWrong, known), codePageShape(t, decoyWrong, unknown)); len(d) > 0 {
+		t.Fatalf("the wrong code pages differ:\n%s", strings.Join(d, "\n"))
 	}
 
 	time.Sleep(time.Second)
@@ -547,12 +584,10 @@ func TestIntegrationResetVerifiesAnUnverifiedEmail(t *testing.T) {
 	page := startReset(t, b, email)
 	assertCodePage(t, page)
 	mailed := waitForCode(t, email)
-	_, page = b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {mailed}, "verify": {""}})
-	_, page = b.submit(formAction(t, page, "kc-passwd-update-form"),
+	_, page = b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {mailed}, "verify": {""}})
+	_, page = b.submit(formAction(t, page, "login-update-password.ftl"),
 		url.Values{"password-new": {"nueva-clave-2"}, "password-confirm": {"nueva-clave-2"}})
-	if !strings.Contains(page, `id="kc-info-message"`) {
-		t.Fatal("expected the info page after the new password")
-	}
+	assertResetSuccessPage(t, page)
 
 	// login() needs an authorization code at once: no verification code page in between.
 	if tok := login(t, newBrowser(t), email, "nueva-clave-2"); tok.AccessToken == "" {
@@ -578,7 +613,7 @@ func TestIntegrationBruteForceLocksAfter5Failures(t *testing.T) {
 		// Keycloak's quick login check locks for a minute when failures come under 1 s apart.
 		time.Sleep(1100 * time.Millisecond)
 		var code string
-		code, page = b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {"wrong-pass-1"}})
+		code, page = b.submit(formAction(t, page, "login.ftl"), url.Values{"username": {email}, "password": {"wrong-pass-1"}})
 		if code != "" {
 			t.Fatal("a wrong password gave a code")
 		}
@@ -586,7 +621,7 @@ func TestIntegrationBruteForceLocksAfter5Failures(t *testing.T) {
 	if !lockedOut(t, id) {
 		t.Fatal("not locked after 5 failures")
 	}
-	if code, _ := b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {goodPassword}}); code != "" {
+	if code, _ := b.submit(formAction(t, page, "login.ftl"), url.Values{"username": {email}, "password": {goodPassword}}); code != "" {
 		t.Fatal("a locked user signed in")
 	}
 }
@@ -612,9 +647,9 @@ func TestIntegrationAuthenticationEventsAreStored(t *testing.T) {
 	createUser(t, email, goodPassword, true)
 	b := newBrowser(t)
 	page := b.loginPage(newPKCE(), nil)
-	_, page = b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {"wrong-pass-1"}})
+	_, page = b.submit(formAction(t, page, "login.ftl"), url.Values{"username": {email}, "password": {"wrong-pass-1"}})
 	time.Sleep(1100 * time.Millisecond)
-	if code, _ := b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {goodPassword}}); code == "" {
+	if code, _ := b.submit(formAction(t, page, "login.ftl"), url.Values{"username": {email}, "password": {goodPassword}}); code == "" {
 		t.Fatal("login failed")
 	}
 	for _, typ := range []string{"LOGIN", "LOGIN_ERROR"} {
@@ -729,20 +764,160 @@ func (b *browser) read(resp *http.Response) (code, page string) {
 	return "", string(body)
 }
 
-var formTag = regexp.MustCompile(`<form[^>]*>`)
-var actionAttr = regexp.MustCompile(`action="([^"]+)"`)
-
-func formAction(t *testing.T, page, id string) string {
+// formAction returns the URL the form of a page posts to. The fynk theme draws every page in the
+// browser (Keycloakify), so there is no <form> in the HTML Keycloak sends: the page embeds the
+// FreeMarker data model as kcContext, with the URLs the theme puts in its forms. pageID is the page
+// the caller expects to be on, so a flow that ended up somewhere else fails here.
+func formAction(t *testing.T, page, pageID string) string {
 	t.Helper()
-	for _, tag := range formTag.FindAllString(page, -1) {
-		if strings.Contains(tag, `id="`+id+`"`) {
-			if m := actionAttr.FindStringSubmatch(tag); m != nil {
-				return absolute(html.UnescapeString(m[1]))
+	kc := kcContextOf(t, page)
+	if got := pagePageID(kc); got != pageID {
+		t.Fatalf("expected page %s, got %q", pageID, got)
+	}
+	key := "loginAction"
+	if pageID == "register.ftl" {
+		key = "registrationAction"
+	}
+	u, _ := kc["url"].(map[string]any)
+	action, _ := u[key].(string)
+	if action == "" {
+		t.Fatalf("page %s has no url.%s", pageID, key)
+	}
+	return absolute(action)
+}
+
+// kcContextOf returns the data model Keycloakify embeds in the page. It is a JavaScript object
+// literal, not JSON: it has /* comments */, trailing commas, and functions (messagesPerField).
+// toJSON turns it into JSON (functions become null).
+func kcContextOf(t *testing.T, page string) map[string]any {
+	t.Helper()
+	const start = "const kcContext = "
+	i := strings.Index(page, start)
+	end := strings.Index(page, "\nkcContext.keycloakifyVersion")
+	if i < 0 || end < i {
+		t.Fatalf("the page has no kcContext (not rendered by the theme?): %.200s", page)
+	}
+	literal := strings.TrimSpace(page[i+len(start) : end])
+	literal = strings.TrimSuffix(literal, ";")
+	var kc map[string]any
+	if err := json.Unmarshal([]byte(toJSON(literal)), &kc); err != nil {
+		t.Fatalf("kcContext is not readable: %v", err)
+	}
+	// Keycloakify sets the final page id in a statement after the literal ("login.ftl"); the
+	// literal holds the short one.
+	if m := regexp.MustCompile(`kcContext\.pageId = "([^"]+)";`).FindStringSubmatch(page); m != nil {
+		kc["pageId"] = m[1]
+	}
+	return kc
+}
+
+// toJSON turns the object literal Keycloakify writes into JSON: comments are dropped, trailing
+// commas too, and a function(...) {...} value becomes null. Strings (double or single quoted) are
+// copied as they are.
+func toJSON(src string) string {
+	var out strings.Builder
+	for i := 0; i < len(src); {
+		c := src[i]
+		switch {
+		case c == '"' || c == '\'':
+			j := i + 1
+			for j < len(src) && src[j] != c {
+				if src[j] == '\\' {
+					j++
+				}
+				j++
+			}
+			out.WriteString(src[i : j+1])
+			i = j + 1
+		case strings.HasPrefix(src[i:], "/*"):
+			end := strings.Index(src[i+2:], "*/")
+			if end < 0 {
+				return out.String()
+			}
+			i += end + 4
+		case strings.HasPrefix(src[i:], "function"):
+			depth, j := 0, strings.Index(src[i:], "{")+i
+			for ; j < len(src); j++ {
+				switch src[j] {
+				case '"', '\'':
+					q := src[j]
+					for j++; j < len(src) && src[j] != q; j++ {
+						if src[j] == '\\' {
+							j++
+						}
+					}
+				case '{':
+					depth++
+				case '}':
+					depth--
+				}
+				if depth == 0 {
+					break
+				}
+			}
+			out.WriteString("null")
+			i = j + 1
+		case c == '}' || c == ']':
+			s := strings.TrimRight(out.String(), " \t\r\n")
+			s = strings.TrimSuffix(s, ",")
+			out.Reset()
+			out.WriteString(s)
+			out.WriteByte(c)
+			i++
+		default:
+			out.WriteByte(c)
+			i++
+		}
+	}
+	return out.String()
+}
+
+func pagePageID(kc map[string]any) string {
+	id, _ := kc["pageId"].(string)
+	return id
+}
+
+// pageID returns the page the theme renders (login.ftl, register.ftl, fynk-email-code.ftl, ...).
+func pageID(t *testing.T, page string) string {
+	t.Helper()
+	return pagePageID(kcContextOf(t, page))
+}
+
+// messageSummary returns the message Keycloak shows above the form (an error, a warning or a
+// notice), or "" when there is none.
+func messageSummary(t *testing.T, page string) string {
+	t.Helper()
+	m, _ := kcContextOf(t, page)["message"].(map[string]any)
+	s, _ := m["summary"].(string)
+	return s
+}
+
+func mustJSON(t *testing.T, v any) []byte {
+	t.Helper()
+	raw, err := json.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw
+}
+
+// profileAttributes returns the user profile attributes of a registration page by name.
+func profileAttributes(t *testing.T, kc map[string]any) map[string]bool {
+	t.Helper()
+	names := map[string]bool{}
+	profile, _ := kc["profile"].(map[string]any)
+	list, _ := profile["attributes"].([]any)
+	for _, a := range list {
+		if m, ok := a.(map[string]any); ok {
+			if name, ok := m["name"].(string); ok {
+				names[name] = true
 			}
 		}
 	}
-	t.Fatalf("form %q not found on the page", id)
-	return ""
+	if len(names) == 0 {
+		t.Fatal("the registration page lists no profile attributes")
+	}
+	return names
 }
 
 func absolute(u string) string {
@@ -791,7 +966,7 @@ func login(t *testing.T, b *browser, email, password string) tokenResponse {
 	t.Helper()
 	p := newPKCE()
 	page := b.loginPage(p, nil)
-	code, _ := b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {password}})
+	code, _ := b.submit(formAction(t, page, "login.ftl"), url.Values{"username": {email}, "password": {password}})
 	if code == "" {
 		t.Fatal("login did not reach the app")
 	}
@@ -831,12 +1006,13 @@ func audienceHas(aud any, want string) bool {
 func startReset(t *testing.T, b *browser, email string) string {
 	t.Helper()
 	loginHTML := b.loginPage(newPKCE(), nil)
-	m := regexp.MustCompile(`href="([^"]*login-actions/reset-credentials[^"]*)"`).FindStringSubmatch(loginHTML)
-	if m == nil {
-		t.Fatal("the login page has no forgot password link")
+	link, _ := kcContextOf(t, loginHTML)["url"].(map[string]any)
+	resetURL, _ := link["loginResetCredentialsUrl"].(string)
+	if !strings.Contains(resetURL, "login-actions/reset-credentials") {
+		t.Fatalf("the login page has no forgot password link: %q", resetURL)
 	}
-	_, resetPage := b.follow(absolute(html.UnescapeString(m[1])))
-	code, page := b.submit(formAction(t, resetPage, "kc-reset-password-form"), url.Values{"username": {email}})
+	_, resetPage := b.follow(absolute(resetURL))
+	code, page := b.submit(formAction(t, resetPage, "login-reset-password.ftl"), url.Values{"username": {email}})
 	if code != "" {
 		t.Fatal("the reset gave an authorization code")
 	}
@@ -846,29 +1022,137 @@ func startReset(t *testing.T, b *browser, email string) string {
 // submitLogin posts a username and password to a fresh login page.
 func (b *browser) submitLogin(t *testing.T, email, password string) (code, page string) {
 	t.Helper()
-	return b.submit(formAction(t, b.loginPage(newPKCE(), nil), "kc-form-login"), url.Values{"username": {email}, "password": {password}})
+	return b.submit(formAction(t, b.loginPage(newPKCE(), nil), "login.ftl"), url.Values{"username": {email}, "password": {password}})
 }
 
-var (
-	attrURL     = regexp.MustCompile(`(action|href)="[^"]*"`)
-	hiddenInput = regexp.MustCompile(`<input[^>]*type="hidden"[^>]*>`)
-	tabID       = regexp.MustCompile(`tab_id=[A-Za-z0-9_-]+`)
-)
+var perSessionParam = regexp.MustCompile(`(session_code|execution|tab_id|client_data|code)=[A-Za-z0-9_.%-]*`)
 
-// sameShape removes what changes from one session to the next (URLs with tab ids and session
-// codes, hidden inputs) and the typed email, so two pages can be compared.
-func sameShape(page, typedEmail string) string {
-	page = strings.ReplaceAll(page, typedEmail, "EMAIL")
-	page = strings.ReplaceAll(page, html.EscapeString(typedEmail), "EMAIL")
-	page = attrURL.ReplaceAllString(page, `$1="URL"`)
-	page = tabID.ReplaceAllString(page, "tab_id=T")
-	return hiddenInput.ReplaceAllString(page, "")
+// perSessionKeys are the contexts' own keys that hold a value of the browser session: they differ
+// between two requests for the very same account.
+var perSessionKeys = map[string]bool{"authenticationSession": true}
+
+// codePageShape flattens the data model embedded in a code page into path -> value, after taking
+// out what changes from one session to the next: the typed email, the session parameters inside
+// URLs (session_code, execution, tab_id, client_data) and the authenticationSession bean (ids of
+// the browser session). Nothing else is removed, so whatever still differs is information.
+func codePageShape(t *testing.T, page, typedEmail string) map[string]string {
+	t.Helper()
+	out := map[string]string{}
+	flatten("", kcContextOf(t, page), typedEmail, out)
+	return out
+}
+
+func flatten(path string, v any, typedEmail string, out map[string]string) {
+	switch x := v.(type) {
+	case map[string]any:
+		for k, child := range x {
+			if path == "" && perSessionKeys[k] {
+				continue
+			}
+			flatten(path+"."+k, child, typedEmail, out)
+		}
+	case []any:
+		for i, child := range x {
+			flatten(fmt.Sprintf("%s[%d]", path, i), child, typedEmail, out)
+		}
+	case string:
+		for _, form := range []string{typedEmail, url.QueryEscape(typedEmail), html.EscapeString(typedEmail)} {
+			x = strings.ReplaceAll(x, form, "EMAIL")
+		}
+		out[path] = perSessionParam.ReplaceAllString(x, "$1=S")
+	default:
+		out[path] = fmt.Sprint(x)
+	}
+}
+
+var digitRun = regexp.MustCompile(`\d+`)
+
+// clockFree turns the seconds of the cooldown into N: they count down with the time that passes
+// between two requests, so they are not information about the account.
+func clockFree(shape map[string]string) map[string]string {
+	for _, k := range []string{".cooldownSeconds", ".message.summary"} {
+		if v, ok := shape[k]; ok {
+			shape[k] = digitRun.ReplaceAllString(v, "N")
+		}
+	}
+	return shape
+}
+
+func shapeDiff(a, b map[string]string) []string {
+	return shapeDiffExcept(a, b, func(string) bool { return false })
+}
+
+// shapeDiffExcept lists the paths where two code pages differ (path and both values), leaving out
+// the paths for which skip is true.
+func shapeDiffExcept(a, b map[string]string, skip func(string) bool) []string {
+	var diffs []string
+	for k, va := range a {
+		if skip(k) {
+			continue
+		}
+		if vb, ok := b[k]; !ok {
+			diffs = append(diffs, fmt.Sprintf("%s: only in the first (%q)", k, va))
+		} else if va != vb {
+			diffs = append(diffs, fmt.Sprintf("%s: %q != %q", k, va, vb))
+		}
+	}
+	for k, vb := range b {
+		if skip(k) {
+			continue
+		}
+		if _, ok := a[k]; !ok {
+			diffs = append(diffs, fmt.Sprintf("%s: only in the second (%q)", k, vb))
+		}
+	}
+	slices.Sort(diffs)
+	return diffs
+}
+
+// outsideContext is the page without its embedded kcContext statements and with the session
+// parameters taken out: what the browser receives besides the data model.
+func outsideContext(page, typedEmail string) string {
+	i := strings.Index(page, "const kcContext = ")
+	end := strings.Index(page, "\nkcContext.keycloakifyVersion")
+	if i >= 0 && end > i {
+		page = page[:i] + page[end:]
+	}
+	for _, form := range []string{typedEmail, url.QueryEscape(typedEmail), html.EscapeString(typedEmail)} {
+		page = strings.ReplaceAll(page, form, "EMAIL")
+	}
+	return perSessionParam.ReplaceAllString(page, "$1=S")
+}
+
+// assertResetSuccessPage fails unless the page is the info page that ends a password reset.
+func assertResetSuccessPage(t *testing.T, page string) {
+	t.Helper()
+	if id := pageID(t, page); id != "info.ftl" {
+		t.Fatalf("expected the info page after the new password, got %q", id)
+	}
+	if msg := messageSummary(t, page); !strings.Contains(msg, "actualizado") {
+		t.Fatalf("the info page does not confirm the new password: %q", msg)
+	}
+	// The theme's "Ir a iniciar sesión" link is built from the client_data of the session URLs
+	// (theme/src/login/appReturnUrl.ts): it must still carry the redirect URI of the app.
+	u, _ := kcContextOf(t, page)["url"].(map[string]any)
+	restart, _ := u["loginRestartFlowUrl"].(string)
+	parsed, err := url.Parse(restart)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(parsed.Query().Get("client_data"))
+	if err != nil {
+		t.Fatalf("the info page has no readable client_data: %v", err)
+	}
+	var data struct{ RU string }
+	if err := json.Unmarshal(raw, &data); err != nil || data.RU != redirectURI {
+		t.Fatalf("client_data redirect = %q (%v), want %q", data.RU, err, redirectURI)
+	}
 }
 
 // assertCodePage fails unless the page is the email code page.
 func assertCodePage(t *testing.T, page string) {
 	t.Helper()
-	if !strings.Contains(page, `id="kc-email-code-form"`) {
+	if pageID(t, page) != "fynk-email-code.ftl" {
 		t.Fatal("expected the email code page")
 	}
 }
