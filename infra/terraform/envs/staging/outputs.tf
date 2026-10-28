@@ -27,7 +27,6 @@ output "endpoint_security_group_id" {
   value       = module.endpoints.security_group_id
   description = "Security group for interface endpoints"
 }
-
 # KMS Outputs
 output "kms_data_key_arn" {
   value       = module.kms.data_key_arn
