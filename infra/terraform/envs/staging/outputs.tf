@@ -27,6 +27,18 @@ output "endpoint_security_group_id" {
   value       = module.endpoints.security_group_id
   description = "Security group for interface endpoints"
 }
+
+# ALB Outputs
+output "alb_dns_name" {
+  value       = module.alb.alb_dns_name
+  description = "ALB DNS name"
+}
+
+output "alb_security_group_id" {
+  value       = module.alb.security_group_id
+  description = "ALB security group ID"
+}
+
 # KMS Outputs
 output "kms_data_key_arn" {
   value       = module.kms.data_key_arn
@@ -73,4 +85,25 @@ output "redis_security_group_id" {
 output "redis_auth_token_secret_arn" {
   value       = module.redis.auth_token_secret_arn
   description = "Secrets Manager ARN for Redis AUTH token"
+}
+
+# ECS Cluster & Services
+output "ecs_cluster_id" {
+  value       = aws_ecs_cluster.main.id
+  description = "ECS cluster ID"
+}
+
+output "ecs_api_service_name" {
+  value       = module.ecs_api.service_name
+  description = "fynk-api ECS service name"
+}
+
+output "ecs_keycloak_service_name" {
+  value       = module.ecs_keycloak.service_name
+  description = "keycloak ECS service name"
+}
+
+output "ecs_bank_simulator_service_name" {
+  value       = module.ecs_bank_simulator.service_name
+  description = "bank-simulator ECS service name"
 }
