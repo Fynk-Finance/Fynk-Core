@@ -115,11 +115,13 @@ func (v *Verifier) Verify(ctx context.Context, accessToken, deviceID string) (au
 
 	u := auth.User{ID: c.Subject, EmailVerified: c.EmailVerified, SessionID: c.SessionID}
 	if deviceID != "" && v.cfg.Devices != nil {
+		// The token is valid even when the device can't be checked. Failing here would answer
+		// 401 and sign the person out over a database error, so the device is just not trusted.
 		ok, err := v.cfg.Devices.Usable(ctx, u.ID, deviceID)
 		if err != nil {
-			return auth.User{}, fmt.Errorf("check device: %w", err)
+			v.cfg.Log.WarnContext(ctx, "identity: could not check the device, it is not trusted")
 		}
-		if ok {
+		if err == nil && ok {
 			u.DeviceID = deviceID
 		}
 	}
