@@ -10,6 +10,7 @@ import { createDeviceKeyStore } from './adapters/keychain/deviceKeyStore';
 import { createKeychainTokenStore } from './adapters/keychain/keychainTokenStore';
 import { createAppAuthOidc } from './adapters/oidc/appAuthOidc';
 import { createOidcConfig } from './adapters/oidc/config';
+import { createProfileApi } from './adapters/profileApi';
 import { systemClock } from './adapters/systemClock';
 import { createApiHooks } from './application/apiHooks';
 import { createDeviceService, type DeviceService } from './application/deviceService';
@@ -17,9 +18,12 @@ import { syncDeviceWithSession } from './application/deviceSessionSync';
 import { createDevSession, shouldUseDevAuth } from './application/devSession';
 import { createSessionService, type SessionState } from './application/sessionService';
 import { createIdentityFlow } from './ui/IdentityFlow';
+import { createMiCuentaScreen } from './ui/MiCuentaScreen';
+import { SECURITY_ROUTE } from './ui/miCuentaRows';
 import { useSessionState } from './ui/useSessionState';
 
 export type { SessionState };
+export { MiCuentaHeader, type MiCuentaHeaderProps } from './ui/MiCuentaHeader';
 
 // Development builds can skip Keycloak with EXPO_PUBLIC_DEV_AUTH=dev-token (apps/mobile/.env.example).
 const useDevAuth = shouldUseDevAuth(process.env.EXPO_PUBLIC_DEV_AUTH, __DEV__);
@@ -69,10 +73,19 @@ export const routes: ModuleRoutes = {
   useGate: () => useSession().status !== 'signedIn',
   screens: [
     {
-      // M1 branch 6 replaces it with Mi cuenta and the linked devices.
+      // Mi cuenta, pushed with the default transition (inventory row 7).
       name: 'identity.Account',
-      component: createPlaceholderScreen({ title: 'Mi cuenta', owner: 'M1 · Identidad' }),
+      component: createMiCuentaScreen({
+        profile: createProfileApi(),
+        signOut: () => session.signOut(),
+      }),
       path: 'cuenta',
+    },
+    {
+      // The next M1 branch replaces it with Seguridad (change password, linked devices).
+      name: SECURITY_ROUTE,
+      component: createPlaceholderScreen({ title: 'Seguridad', owner: 'M1 · Identidad' }),
+      path: 'cuenta/seguridad',
     },
   ],
 };

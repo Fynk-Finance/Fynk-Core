@@ -1,6 +1,7 @@
 // Ports of the identity module. Adapters implement them with react-native-app-auth and
 // react-native-keychain; tests use fakes.
 import type { DevicePlatform, DeviceRecord } from '../domain/device';
+import type { Profile } from '../domain/profile';
 import type { TokenSet } from '../domain/session';
 
 export type AuthMode = 'signIn' | 'signUp';
@@ -40,6 +41,12 @@ export interface TokenStorePort {
   load(): Promise<TokenSet | null>;
   save(tokens: TokenSet): Promise<void>;
   clear(): Promise<void>;
+}
+
+/** The person's profile in Keycloak, read through the API (`GET /me`). */
+export interface ProfilePort {
+  /** Throws an ApiError: `profile_not_found` (404) when the account is gone, 503 when the profile service is down. */
+  getProfile(): Promise<Profile>;
 }
 
 /** Where this install's device key pair and device id live: Keychain or Keystore. */
