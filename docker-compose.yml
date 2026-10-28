@@ -16,6 +16,8 @@ x-api-env: &api-env
   KEYCLOAK_AUDIENCE: fynk-api
   # Keycloak as the API reaches it inside Docker (JWKS, admin API).
   KEYCLOAK_URL: http://keycloak:8080
+  # Secret of the fynk-admin client, for the Keycloak admin API (M1). Same variable Keycloak reads.
+  FYNK_ADMIN_CLIENT_SECRET: ${FYNK_ADMIN_CLIENT_SECRET:?missing in .env, copy it from .env.example}
 
 services:
   postgres:

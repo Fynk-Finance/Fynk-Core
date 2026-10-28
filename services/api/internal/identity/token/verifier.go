@@ -92,6 +92,7 @@ type claims struct {
 	jwt.RegisteredClaims
 	Type          string `json:"typ"` // "Bearer" for access tokens, "ID" and "Refresh" for the others
 	EmailVerified bool   `json:"email_verified"`
+	SessionID     string `json:"sid"` // optional
 }
 
 // Verify implements auth.Verifier. Every rejection wraps auth.ErrInvalidToken; the token
@@ -112,7 +113,7 @@ func (v *Verifier) Verify(ctx context.Context, accessToken, deviceID string) (au
 		return auth.User{}, fmt.Errorf("%w: not an access token", auth.ErrInvalidToken)
 	}
 
-	u := auth.User{ID: c.Subject, EmailVerified: c.EmailVerified}
+	u := auth.User{ID: c.Subject, EmailVerified: c.EmailVerified, SessionID: c.SessionID}
 	if deviceID != "" && v.cfg.Devices != nil {
 		ok, err := v.cfg.Devices.Usable(ctx, u.ID, deviceID)
 		if err != nil {
