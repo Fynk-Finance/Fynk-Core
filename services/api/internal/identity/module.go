@@ -2,10 +2,12 @@ package identity
 
 import (
 	"context"
+	"io/fs"
 
 	"github.com/go-chi/chi/v5"
 
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/http"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/migrations"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/module"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/problem"
 )
@@ -36,6 +38,9 @@ func (s stub) Routes(r chi.Router) {
 	})
 	s.Stub.Routes(r)
 }
+
+// Migrations implements module.Module: the identity schema.
+func (stub) Migrations() fs.FS { return migrations.FS }
 
 // server implements the generated httpapi.StrictServerInterface.
 type server struct{}
