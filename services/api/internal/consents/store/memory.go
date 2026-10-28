@@ -111,6 +111,47 @@ func (m *Memory) ExpireDue(_ context.Context, now time.Time) ([]domain.Consent, 
 	return out, nil
 }
 
+// MarkRevoked implements service.Store.
+func (m *Memory) MarkRevoked(_ context.Context, c domain.Consent) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if st := m.rows[c.ID].Status; st != domain.StatusActive && st != domain.StatusPending {
+		return domain.ErrNotRevocable
+	}
+	m.rows[c.ID] = c
+	return nil
+}
+
+// SaveNotice implements service.Store.
+func (m *Memory) SaveNotice(_ context.Context, c domain.Consent) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	row := m.rows[c.ID]
+	row.ProviderNotifiedAt, row.NextNotifyAt, row.NotifyAttempts = c.ProviderNotifiedAt, c.NextNotifyAt, c.NotifyAttempts
+	m.rows[c.ID] = row
+	return nil
+}
+
+// ClaimNotices implements service.Store.
+func (m *Memory) ClaimNotices(_ context.Context, now, lease time.Time, limit int) ([]domain.Consent, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []domain.Consent
+	for id, c := range m.rows {
+		if len(out) == limit {
+			break
+		}
+		if c.Status == domain.StatusRevoked && c.ProviderNotifiedAt == nil && c.NextNotifyAt != nil &&
+			!c.NextNotifyAt.After(now) && now.Before(c.RevokedAt.Add(domain.NotifyFor)) {
+			l := lease
+			c.NextNotifyAt = &l
+			m.rows[id] = c
+			out = append(out, c)
+		}
+	}
+	return out, nil
+}
+
 // Edit changes a stored row directly, to build states the API cannot produce.
 func (m *Memory) Edit(id string, fn func(*domain.Consent)) {
 	m.mu.Lock()

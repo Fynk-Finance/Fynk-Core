@@ -37,16 +37,6 @@ const (
 	Locale   = "es-CO"
 )
 
-var allScopes = []Scope{ScopeBalances, ScopeTransactions, ScopeAccountDetails}
-
-// providerScopes is what each provider of M5's GET /providers supports. It moves behind
-// bank/ports when M5 exposes its provider list.
-var providerScopes = map[string][]Scope{
-	"banco-demo":     allScopes,
-	"billetera-demo": allScopes,
-	"bancolombia":    allScopes,
-}
-
 // Text is one published version of the consent text.
 type Text struct {
 	Version     string
@@ -87,6 +77,10 @@ type Consent struct {
 	ExpiresAt         *time.Time
 	RevokedAt         *time.Time
 	RevokedReason     string
+	// Notice of a revocation to the entity (HU-008, "notificar al proveedor").
+	ProviderNotifiedAt *time.Time
+	NextNotifyAt       *time.Time
+	NotifyAttempts     int
 }
 
 // Request is what the app sends when the user ticks the checkbox and continues.
@@ -106,12 +100,13 @@ type Request struct {
 var uuidPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
 // NewPending checks that r is exactly what Conectar banco showed with text, and returns the
-// pending consent with its acceptance evidence.
-func NewPending(id string, r Request, text Text, now time.Time) (Consent, error) {
+// pending consent with its acceptance evidence. supported is what the provider offers (M5's
+// provider list); nil means the provider is unknown or not offered.
+func NewPending(id string, r Request, supported []Scope, text Text, now time.Time) (Consent, error) {
 	if !uuidPattern.MatchString(r.DeviceID) {
 		return Consent{}, ErrDeviceRequired
 	}
-	if err := checkScopes(r.Provider, r.Scopes); err != nil {
+	if err := checkScopes(supported, r.Scopes); err != nil {
 		return Consent{}, err
 	}
 	if r.Purpose != Purpose {
@@ -151,9 +146,8 @@ func NewPending(id string, r Request, text Text, now time.Time) (Consent, error)
 }
 
 // checkScopes accepts a non-empty subset, without repeats, of what the provider supports.
-func checkScopes(provider string, scopes []Scope) error {
-	supported, ok := providerScopes[provider]
-	if !ok {
+func checkScopes(supported, scopes []Scope) error {
+	if supported == nil {
 		return ErrUnsupportedProvider
 	}
 	if len(scopes) == 0 {
@@ -215,3 +209,55 @@ func (c Consent) StatusAt(now time.Time) Status {
 
 // ActiveAt reports whether Fynk may receive data under this consent at now.
 func (c Consent) ActiveAt(now time.Time) bool { return c.StatusAt(now) == StatusActive }
+
+// Revocation reasons stored in revoked_reason.
+const (
+	ReasonUserRequest = "user_request"
+)
+
+// How long and how often Fynk tries to tell the entity about a revocation (M4 prompt).
+const (
+	NotifyRetryEvery = 10 * time.Minute
+	NotifyFor        = 24 * time.Hour
+)
+
+// Revoke ends an active or pending consent at now. It takes effect in Fynk at once; an
+// active one also has the entity to notify, first right away and then by the retry job, so
+// the first retry is due after NotifyRetryEvery.
+func (c Consent) Revoke(reason string, now time.Time) (Consent, error) {
+	switch c.StatusAt(now) {
+	case StatusRevoked:
+		return Consent{}, ErrAlreadyRevoked
+	case StatusActive, StatusPending:
+	default:
+		return Consent{}, ErrNotRevocable
+	}
+	c.Status = StatusRevoked
+	c.RevokedAt = &now
+	c.RevokedReason = reason
+	if c.ProviderConsentID != "" {
+		next := now.Add(NotifyRetryEvery)
+		c.NextNotifyAt = &next
+	}
+	return c, nil
+}
+
+// NoticeFailed schedules the next try to notify the entity, or none once the 24 hours pass.
+func (c Consent) NoticeFailed(now time.Time) Consent {
+	c.NotifyAttempts++
+	next := now.Add(NotifyRetryEvery)
+	if c.RevokedAt == nil || !next.Before(c.RevokedAt.Add(NotifyFor)) {
+		c.NextNotifyAt = nil
+		return c
+	}
+	c.NextNotifyAt = &next
+	return c
+}
+
+// Notified records that the entity confirmed the revocation.
+func (c Consent) Notified(now time.Time) Consent {
+	c.NotifyAttempts++
+	c.ProviderNotifiedAt = &now
+	c.NextNotifyAt = nil
+	return c
+}

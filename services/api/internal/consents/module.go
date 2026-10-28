@@ -21,14 +21,19 @@ import (
 // expiryEvery is how often the job marks consents whose term ended (M4 prompt: daily).
 const expiryEvery = 24 * time.Hour
 
-// New returns the consents module. With a database it also starts the daily expiry job,
-// which runs as long as the process. cmd/migrate builds the modules without a database,
-// so it never starts the job.
+// noticeEvery is how often the job looks for revocation notices that are due. Each notice is
+// retried every 10 minutes (domain.NotifyRetryEvery); checking each minute keeps that on time.
+const noticeEvery = time.Minute
+
+// New returns the consents module. With a database it also starts the daily expiry job and the
+// revocation notice job, which run as long as the process. cmd/migrate builds the modules
+// without a database, so it never starts them.
 func New(d module.Deps) module.Module {
 	m := consentsModule{deps: d}
 	if d.DB != nil {
-		m.svc = service.New(store.New(d.DB), d.Clock, d.Audit, d.Log)
+		m.svc = service.New(store.New(d.DB), d.Clock, d.Audit, d.Log, service.BankRevoker{})
 		go m.svc.RunExpiry(context.Background(), expiryEvery)
+		go m.svc.RunNotify(context.Background(), noticeEvery)
 	}
 	return m
 }
