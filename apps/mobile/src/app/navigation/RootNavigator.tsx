@@ -5,9 +5,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import type { ModuleName } from '@shared/domain/types';
+import { APPEARANCE_ROUTE } from '@shared/navigation';
 import { CatalogScreen } from '@shared/ui/__catalog__/CatalogScreen';
 
 import { collectScreens, gateOrder, moduleRoutes } from '../registry';
+import { AppearanceScreen } from '../settings/AppearanceScreen';
 import { MainTabs } from './MainTabs';
 import { flowOptions, screenOptionsFor } from './screenOptions';
 
@@ -48,6 +50,7 @@ export function RootNavigator() {
               options={screenOptionsFor(s, { reduceMotion })}
             />
           ))}
+          <Stack.Screen name={APPEARANCE_ROUTE} component={AppearanceScreen} />
           {__DEV__ ? <Stack.Screen name="DevCatalog" component={CatalogScreen} /> : null}
         </>
       )}
