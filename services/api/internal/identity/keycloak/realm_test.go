@@ -52,6 +52,7 @@ type realm struct {
 	RegistrationFlow                    string
 	AuthenticationFlows                 []flow
 	RequiredActions                     []requiredAction
+	AuthenticatorConfig                 []authenticatorConfig
 	Components                          map[string][]component
 	Clients                             []client
 	Users                               []user
@@ -64,14 +65,23 @@ type flow struct {
 }
 
 type execution struct {
-	Authenticator string
-	Requirement   string
-	FlowAlias     string
+	Authenticator       string
+	AuthenticatorConfig string
+	Requirement         string
+	FlowAlias           string
+}
+
+type authenticatorConfig struct {
+	Alias  string
+	Config map[string]string
 }
 
 type requiredAction struct {
-	Alias   string
-	Enabled bool
+	Alias         string
+	ProviderID    string
+	Enabled       bool
+	DefaultAction bool
+	Priority      int
 }
 
 type component struct {
@@ -237,17 +247,18 @@ func TestSessionsLast30DaysIdleWithoutOfflineAccess(t *testing.T) {
 	}
 }
 
-// HU-050 and HU-005: verification and password reset links expire after 10 minutes.
-func TestEmailLinksExpireIn10Minutes(t *testing.T) {
+// HU-050 and HU-005: the email codes (verification and password reset) expire after 10 minutes.
+// The code extension reads the realm-wide action token lifespan.
+func TestEmailCodesExpireIn10Minutes(t *testing.T) {
 	r, _ := loadRealm(t)
-	// No per-action overrides: the realm-wide values apply to every email link.
+	// No per-action overrides: the realm-wide values apply to every email code.
 	if r.ActionTokenGeneratedByUserLifespan != 600 || r.ActionTokenGeneratedByAdminLifespan != 600 {
 		t.Fatalf("action token lifespans = %d (user), %d (admin), want 600",
 			r.ActionTokenGeneratedByUserLifespan, r.ActionTokenGeneratedByAdminLifespan)
 	}
 	for k := range r.Attributes {
 		if strings.HasPrefix(k, "actionTokenGeneratedBy") {
-			t.Fatalf("attribute %s overrides the 10 minute link lifespan", k)
+			t.Fatalf("attribute %s overrides the 10 minute code lifespan", k)
 		}
 	}
 }
@@ -283,14 +294,61 @@ func TestTermsAreRequiredOnTheRegistrationForm(t *testing.T) {
 }
 
 // Listing requiredActions replaces Keycloak's defaults instead of adding to them. Without
-// VERIFY_EMAIL an unverified user gets tokens; without UPDATE_PASSWORD the reset link fails.
-func TestRequiredActionsKeepVerifyEmailAndUpdatePassword(t *testing.T) {
+// UPDATE_PASSWORD the reset flow fails, and without the code action an unverified user gets tokens.
+func TestRequiredActionsKeepTheCodeActionAndUpdatePassword(t *testing.T) {
 	r, _ := loadRealm(t)
-	for _, alias := range []string{"VERIFY_EMAIL", "UPDATE_PASSWORD", "UPDATE_PROFILE", "VERIFY_PROFILE"} {
+	for _, alias := range []string{"fynk-verify-email-code", "UPDATE_PASSWORD", "UPDATE_PROFILE", "VERIFY_PROFILE"} {
 		if !requiredActionEnabled(r, alias) {
 			t.Fatalf("required action %s must be listed and enabled", alias)
 		}
 	}
+}
+
+// The email is verified with a 6 digit code (extension fynk-email-code), not with Keycloak's link.
+// A disabled required action is never triggered nor executed, so VERIFY_EMAIL stays listed but off.
+func TestEmailIsVerifiedWithTheCodeActionNotTheLink(t *testing.T) {
+	r, _ := loadRealm(t)
+	var link, code requiredAction
+	for _, a := range r.RequiredActions {
+		switch a.Alias {
+		case "VERIFY_EMAIL":
+			link = a
+		case "fynk-verify-email-code":
+			code = a
+		}
+	}
+	if link.Alias == "" || link.Enabled {
+		t.Fatalf("VERIFY_EMAIL must be listed and disabled, got %+v", link)
+	}
+	if code.ProviderID != "fynk-verify-email-code" || !code.Enabled || code.DefaultAction {
+		t.Fatalf("fynk-verify-email-code must be enabled and not a default action, got %+v", code)
+	}
+	if code.Priority != link.Priority {
+		t.Fatalf("the code action priority = %d, want %d (the one VERIFY_EMAIL had)", code.Priority, link.Priority)
+	}
+	if !r.VerifyEmail {
+		t.Fatal("verifyEmail must stay on, it is what triggers the code action")
+	}
+}
+
+// With verifyEmail on, Keycloak hides the password on the registration form unless this is set.
+// The password is chosen at registration and the code only proves the email.
+func TestRegistrationAsksForThePasswordBeforeTheCode(t *testing.T) {
+	r, _ := loadRealm(t)
+	top := flowByAlias(t, r, r.RegistrationFlow)
+	form := flowByAlias(t, r, top.AuthenticationExecutions[0].FlowAlias)
+	for _, e := range form.AuthenticationExecutions {
+		if e.Authenticator != "registration-password-action" {
+			continue
+		}
+		for _, c := range r.AuthenticatorConfig {
+			if c.Alias == e.AuthenticatorConfig && c.Config["always_set_password_on_register_form"] == "true" {
+				return
+			}
+		}
+		t.Fatalf("registration-password-action config %q must set always_set_password_on_register_form to true", e.AuthenticatorConfig)
+	}
+	t.Fatal("registration-password-action is missing from the registration form")
 }
 
 func requiredActionEnabled(r realm, alias string) bool {

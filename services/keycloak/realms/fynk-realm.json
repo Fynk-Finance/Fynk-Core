@@ -85,7 +85,8 @@
   "requiredActions": [
     { "alias": "TERMS_AND_CONDITIONS", "name": "Terms and Conditions", "providerId": "TERMS_AND_CONDITIONS", "enabled": true, "defaultAction": false, "priority": 20, "config": {} },
     { "alias": "UPDATE_PROFILE", "name": "Update Profile", "providerId": "UPDATE_PROFILE", "enabled": true, "defaultAction": false, "priority": 40, "config": {} },
-    { "alias": "VERIFY_EMAIL", "name": "Verify Email", "providerId": "VERIFY_EMAIL", "enabled": true, "defaultAction": false, "priority": 50, "config": {} },
+    { "alias": "VERIFY_EMAIL", "name": "Verify Email", "providerId": "VERIFY_EMAIL", "enabled": false, "defaultAction": false, "priority": 50, "config": {} },
+    { "alias": "fynk-verify-email-code", "name": "Verify email with a code", "providerId": "fynk-verify-email-code", "enabled": true, "defaultAction": false, "priority": 50, "config": {} },
     { "alias": "CONFIGURE_TOTP", "name": "Configure OTP", "providerId": "CONFIGURE_TOTP", "enabled": true, "defaultAction": false, "priority": 54, "config": {} },
     { "alias": "UPDATE_PASSWORD", "name": "Update Password", "providerId": "UPDATE_PASSWORD", "enabled": true, "defaultAction": false, "priority": 57, "config": {} },
     { "alias": "delete_account", "name": "Delete Account", "providerId": "delete_account", "enabled": false, "defaultAction": false, "priority": 60, "config": {} },
@@ -134,6 +135,7 @@
         },
         {
           "authenticator": "registration-password-action",
+          "authenticatorConfig": "fynk registration password",
           "requirement": "REQUIRED",
           "priority": 50,
           "autheticatorFlow": false,
@@ -147,6 +149,13 @@
           "userSetupAllowed": false
         }
       ]
+    }
+  ],
+
+  "authenticatorConfig": [
+    {
+      "alias": "fynk registration password",
+      "config": { "always_set_password_on_register_form": "true" }
     }
   ],
 
