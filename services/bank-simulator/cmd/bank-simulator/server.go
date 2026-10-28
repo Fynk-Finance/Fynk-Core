@@ -10,6 +10,7 @@ import (
 
 	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/api"
 	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/oauth"
+	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/portal"
 	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/store"
 )
 
@@ -20,11 +21,17 @@ func newBankMux(s *store.BankStore) http.Handler {
 		_, _ = w.Write([]byte(`{"status":"ok","simulated":true}`))
 	})
 
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/portal", http.StatusSeeOther)
+	})
+
 	handler := api.NewHandler(s)
 	handler.RegisterRoutes(mux)
 
 	oauthService := oauth.NewService(s)
 	oauthService.RegisterRoutes(mux)
+	portalHandler := portal.NewHandler(s)
+	portalHandler.RegisterRoutes(mux)
 	return mux
 }
 
