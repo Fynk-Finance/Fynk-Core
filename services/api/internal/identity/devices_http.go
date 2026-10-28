@@ -29,11 +29,11 @@ type deviceService interface {
 	RemoveOthers(ctx context.Context, userID, currentDeviceID string) ([]string, error)
 }
 
-// server implements the generated httpapi.StrictServerInterface. The admin and cache may be
-// nil: the profile then answers 503 and nothing is cached. Revoking the Keycloak sessions that
-// Remove and RemoveOthers return comes with the session revoker wiring; for now the ids are dropped.
+// server implements the generated httpapi.StrictServerInterface. The revoker, admin and
+// cache may be nil: sessions are then not revoked, the profile answers 503 and nothing is cached.
 type server struct {
 	devices deviceService
+	revoker sessionRevoker
 	admin   profileAdmin
 	cache   *redis.Client
 	log     *slog.Logger
@@ -174,13 +174,14 @@ func (s server) RemoveDevice(ctx context.Context, req httpapi.RemoveDeviceReques
 	if !ok {
 		return nil, errNoUser
 	}
-	_, err := s.devices.Remove(ctx, user.ID, req.DeviceId.String())
+	sid, err := s.devices.Remove(ctx, user.ID, req.DeviceId.String())
 	switch {
 	case errors.Is(err, devices.ErrNotFound):
 		return httpapi.RemoveDevice404ApplicationProblemPlusJSONResponse(notFound()), nil
 	case err != nil:
 		return nil, err
 	}
+	s.revoke(ctx, sid)
 	return httpapi.RemoveDevice204Response{}, nil
 }
 
@@ -189,7 +190,7 @@ func (s server) SignOutOtherDevices(ctx context.Context, req httpapi.SignOutOthe
 	if !ok {
 		return nil, errNoUser
 	}
-	_, err := s.devices.RemoveOthers(ctx, user.ID, req.Params.XDeviceId)
+	sids, err := s.devices.RemoveOthers(ctx, user.ID, req.Params.XDeviceId)
 	switch {
 	case errors.Is(err, devices.ErrNotFound):
 		return httpapi.SignOutOtherDevices404ApplicationProblemPlusJSONResponse(notFound()), nil
@@ -198,5 +199,29 @@ func (s server) SignOutOtherDevices(ctx context.Context, req httpapi.SignOutOthe
 	case err != nil:
 		return nil, err
 	}
+	s.revoke(ctx, sids...)
 	return httpapi.SignOutOtherDevices204Response{}, nil
+}
+
+// sessionRevoker ends Keycloak sessions.
+type sessionRevoker interface {
+	DeleteSession(ctx context.Context, sid string) error
+}
+
+// revoke ends the Keycloak sessions of removed devices. It is best effort: a failure is
+// logged without ids and the device removal still succeeds. The device is already removed,
+// so a client that hangs up must not cancel the revocation; each call has its own timeout.
+func (s server) revoke(ctx context.Context, sessionIDs ...string) {
+	if s.revoker == nil {
+		return
+	}
+	ctx = context.WithoutCancel(ctx)
+	for _, sid := range sessionIDs {
+		if sid == "" {
+			continue
+		}
+		if err := s.revoker.DeleteSession(ctx, sid); err != nil && s.log != nil {
+			s.log.WarnContext(ctx, "identity: could not end the session of a removed device")
+		}
+	}
 }

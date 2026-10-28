@@ -1,10 +1,13 @@
 package identity
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -40,6 +43,8 @@ type fakeService struct {
 	list        []devices.Device
 	err         error
 	registered  int
+	sid         string
+	sids        []string
 }
 
 func dev(id string, st devices.Status) devices.Device {
@@ -63,10 +68,10 @@ func (f *fakeService) Current(_ context.Context, _ auth.User, id string) (device
 	}
 	return dev(devA, devices.StatusActive), nil
 }
-func (f *fakeService) Remove(context.Context, string, string) (string, error) { return "", f.err }
+func (f *fakeService) Remove(context.Context, string, string) (string, error) { return f.sid, f.err }
 func (f *fakeService) RemoveOthers(_ context.Context, _, cur string) ([]string, error) {
 	f.gotOthers = cur
-	return nil, f.err
+	return f.sids, f.err
 }
 
 func serve(t *testing.T, f *fakeService) http.Handler { return serveWith(t, f, nil) }
@@ -311,5 +316,84 @@ func TestMeRequiresAToken(t *testing.T) {
 func TestNewDoesNotTouchTheDatabase(t *testing.T) {
 	if New(module.Deps{}) == nil {
 		t.Fatal("nil module")
+	}
+}
+
+// --- session revocation --------------------------------------------------------------------
+
+type fakeRevoker struct {
+	got      []string
+	err      error
+	canceled bool
+}
+
+func (f *fakeRevoker) DeleteSession(ctx context.Context, sid string) error {
+	f.got = append(f.got, sid)
+	f.canceled = f.canceled || ctx.Err() != nil
+	return f.err
+}
+
+func serveRevoking(t *testing.T, f *fakeService, r sessionRevoker, buf *bytes.Buffer) http.Handler {
+	t.Helper()
+	return serveWith(t, f, func(m *mod) {
+		m.revoker = r
+		m.deps.Log = slog.New(slog.NewTextHandler(buf, nil))
+	})
+}
+
+func TestRemoveRevokesTheDeviceSession(t *testing.T) {
+	r := &fakeRevoker{}
+	h := serveRevoking(t, &fakeService{sid: "sess-1"}, r, &bytes.Buffer{})
+	if rec := do(h, "DELETE", "/v1/devices/"+devB, "", nil); rec.Code != 204 {
+		t.Fatalf("status %d", rec.Code)
+	}
+	if len(r.got) != 1 || r.got[0] != "sess-1" {
+		t.Fatalf("revoked %v", r.got)
+	}
+	// No session on the device: nothing to revoke.
+	r.got = nil
+	h = serveRevoking(t, &fakeService{}, r, &bytes.Buffer{})
+	do(h, "DELETE", "/v1/devices/"+devB, "", nil)
+	if len(r.got) != 0 {
+		t.Fatalf("revoked %v for a device without a session", r.got)
+	}
+}
+
+func TestSignOutOthersRevokesEverySession(t *testing.T) {
+	r := &fakeRevoker{}
+	h := serveRevoking(t, &fakeService{sids: []string{"s-a", "", "s-b"}}, r, &bytes.Buffer{})
+	rec := do(h, "POST", "/v1/devices/sign-out-others", "", map[string]string{"X-Device-Id": devA})
+	if rec.Code != 204 || strings.Join(r.got, ",") != "s-a,s-b" {
+		t.Fatalf("status %d revoked %v", rec.Code, r.got)
+	}
+}
+
+func TestRevokerFailureStillGives204AndLogsNoIds(t *testing.T) {
+	var buf bytes.Buffer
+	r := &fakeRevoker{err: errors.New("boom sess-1")}
+	h := serveRevoking(t, &fakeService{sid: "sess-1", sids: []string{"sess-1", "sess-2"}}, r, &buf)
+	if rec := do(h, "DELETE", "/v1/devices/"+devB, "", nil); rec.Code != 204 {
+		t.Fatalf("remove: status %d", rec.Code)
+	}
+	rec := do(h, "POST", "/v1/devices/sign-out-others", "", map[string]string{"X-Device-Id": devA})
+	if rec.Code != 204 || len(r.got) != 3 {
+		t.Fatalf("sign out: status %d revoked %v", rec.Code, r.got)
+	}
+	if buf.Len() == 0 || strings.Contains(buf.String(), "sess-") || strings.Contains(buf.String(), "boom") {
+		t.Fatalf("log %q", buf.String())
+	}
+}
+
+func TestRevocationOutlivesAClientThatHangsUp(t *testing.T) {
+	r := &fakeRevoker{}
+	h := serveRevoking(t, &fakeService{sid: "sess-1"}, r, &bytes.Buffer{})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	req := httptest.NewRequest("DELETE", "/v1/devices/"+devB, nil).WithContext(ctx)
+	req.Header.Set("Authorization", "Bearer "+auth.DevToken)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != 204 || len(r.got) != 1 || r.canceled {
+		t.Fatalf("status %d revoked %v canceled %v", rec.Code, r.got, r.canceled)
 	}
 }
