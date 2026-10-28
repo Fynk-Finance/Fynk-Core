@@ -200,6 +200,17 @@ Git cannot have a branch named `develop` and also branches named `develop/...`, 
 * At least 1 approval from the module owner in CODEOWNERS, plus the owner of any shared file touched. CI must be green.
 * Squash merge, then delete the branch.
 * Keep pull requests under about 400 changed lines (generated files do not count). Split bigger work into several branches.
+* **Dependent work goes in a stack.** Use GitHub's stacked pull requests with the `gh stack` extension (`gh extension install github/gh-stack`) when:
+  * a branch needs another branch that is not merged yet;
+  * big work is split into several branches.
+
+  Rules for a stack:
+  * Never open a pull request on `develop` that also carries another open branch's commits.
+  * The bottom pull request targets `develop`. Each one above targets the branch below it and shows only its own commits.
+  * Every pull request in the stack keeps its own template, session log, review and CI. The rules of `develop` apply to each one.
+  * Merge bottom-up. Merging a pull request also merges the ones below it, and GitHub then rebases and retargets the rest.
+  * A stack is a straight line. Put a pull request under another only when the top one really depends on it, because the one above cannot merge first.
+  * Start each body with the chain, for example `Stacked PR (stack #81: #74 → #76 → #79)`.
 
 ### Steps Claude Code follows for every task
 
@@ -221,7 +232,19 @@ git push -u origin feature/<short-description>
 gh pr create --base develop --fill   # then complete the template
 ```
 
-Claude Code never pushes to `develop` or `main`, never force pushes (only `git push --force-with-lease` on its own branch after a rebase), never merges pull requests, never runs `terraform apply` or `destroy`, and never edits a file outside the module without asking. These limits are also enforced in `.claude/settings.json`.
+When the task needs a branch that is not merged yet, stack on it instead of branching from `develop`:
+
+```
+gh stack init --base develop <branch below>    # or gh stack checkout <stack> for an existing stack
+gh stack add feature/<short-description>
+# tests, code, checks, commits and session log as above
+gh stack rebase                                # after a branch below changes or merges
+gh stack submit --auto --open                  # pushes and opens the pull request on top of the stack
+gh pr edit <number> --body-file <file>         # then complete the template
+gh stack link <bottom PR> ... <top PR> --base develop   # turns open pull requests into a stack
+```
+
+Claude Code never pushes to `develop` or `main`, never force pushes (only `git push --force-with-lease` on its own branch after a rebase), never merges pull requests (neither `gh pr merge` nor `gh stack merge`), never runs `terraform apply` or `destroy`, and never edits a file outside the module without asking. These limits are also enforced in `.claude/settings.json`.
 
 ## Project history log
 
@@ -275,6 +298,7 @@ These rules let 17 modules work in parallel without stepping on each other.
 | Navigation and gestures (27 Oct) | One default transition and back gesture per kind of screen (push, modal, sheet, tab, flow change), changed only when the design inventory says so. Every gesture has a button. Tabs switch by tap and by swipe |
 | Email codes (27 Oct) | Email verification at sign up and password reset use a 6 digit code sent by email, as in the design, instead of Keycloak's links. A Keycloak extension in `services/keycloak/extensions/email-code` does it: 10 minutes, 5 attempts per code, a new code every 60 s, 10 wrong codes in 12 h per user. See `docs/adr/0007-email-codes.md` |
 | Offline sessions (27 Oct) | No `offline_access`. The app keeps a normal refresh session (30 days idle, 90 days max) |
+| Stacked pull requests (28 Oct) | Dependent pull requests are chained as a GitHub stack with `gh stack`, merged bottom-up. See Git workflow › Pull requests |
 
 ## Open items (ask the team, do not decide in code)
 
