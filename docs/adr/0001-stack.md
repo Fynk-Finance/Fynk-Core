@@ -118,6 +118,27 @@ Images are pinned to exact versions. A version is taken only once it has been ou
 | golang | 1.27.3-bookworm | Build stage of the API and bank simulator images, same Go as `go.mod` |
 | gcr.io/distroless/static-debian12 | nonroot, pinned by digest | Runtime image: no shell, no package manager, non-root user. The tag moves, so the digest is pinned |
 
+## Keycloak theme (`services/keycloak/theme`)
+
+The theme is its own pnpm project, outside the root workspace (`pnpm-workspace.yaml` only lists `apps/*`), with its own `pnpm-lock.yaml`. Install it with `pnpm install --ignore-workspace` from that folder. It builds a Keycloak theme JAR with `keycloakify build`, which needs a JDK and Maven (Keycloakify runs `mvn package`). Versions were taken once they had been out for at least 14 days.
+
+| Library | Version | Why |
+| --- | --- | --- |
+| keycloakify | 11.16.1 | Builds the `fynk` login theme as a Keycloak JAR (`keycloakVersionTargets` covers Keycloak 26.8.1 only). 11.16.2 to 11.16.4 were less than 14 days old |
+| react | 19.3.0 | Theme pages are React components, rendered by Keycloak with the context Keycloakify injects |
+| react-dom | 19.3.0 | React renderer, same version as react |
+| @types/react | 19.3.0 | React types matching React 19.3 |
+| @types/react-dom | 19.3.0 | React DOM types |
+| vite | 8.3.4 | Bundler Keycloakify's plugin runs on. 8.3.5 was too new |
+| @vitejs/plugin-react | 6.1.2 | React support for Vite 8 |
+| typescript | 6.0.3 | Same as the mobile app. TypeScript 7 has not been tried with Keycloakify |
+| prettier | 3.9.10 | Same as the workspace root, with the same `.prettierrc` values |
+| @fontsource/plus-jakarta-sans | 5.3.0 | Body font, served from the JAR. No Google Fonts or any CDN at runtime |
+| @fontsource/space-grotesk | 5.3.0 | Heading font, served from the JAR |
+| @fontsource/ibm-plex-mono | 5.3.0 | Money font, served from the JAR |
+
+The email theme is not built yet. Keycloakify 11 needs a separate email builder for it, which a later pull request adds.
+
 ## CI (`.github/workflows/ci.yml`)
 
 Actions are pinned by full commit SHA, because a tag can be moved to other code. Only GitHub's own actions are used. A version is taken once it has been out for at least 7 days. Path filters come from `scripts/ci-changes.mjs` (plain Node, tested), not from a third-party action.
