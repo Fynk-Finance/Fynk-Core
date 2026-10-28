@@ -2,10 +2,12 @@ package consents
 
 import (
 	"context"
+	"io/fs"
 
 	"github.com/go-chi/chi/v5"
 
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/http"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/migrations"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/module"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/problem"
 )
@@ -23,6 +25,10 @@ type stub struct {
 	module.Stub
 	deps module.Deps
 }
+
+// Migrations implements module.Module: the consents schema, already real while the routes
+// are still stubs.
+func (stub) Migrations() fs.FS { return migrations.FS }
 
 // Routes mounts the server generated from the contract, then the 501 stub routes.
 func (s stub) Routes(r chi.Router) {
