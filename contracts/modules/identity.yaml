@@ -8,6 +8,103 @@ tags:
   - name: identity
     description: "Profile and linked devices (M1). Login and passwords are Keycloak's."
 paths:
+  /me:
+    get:
+      tags: [identity]
+      operationId: getProfile
+      summary: Get the profile of the signed-in person
+      description: |
+        Read from Keycloak and cached for 5 minutes. The email is masked: the app already knows it from the sign-in.
+      responses:
+        '200':
+          description: The profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityProfile'
+              example:
+                id: 5b0f6c1e-3d2a-4f7b-9a41-2c8e7d6b5a10
+                email: ca•••@correo.com
+                firstName: Camila
+                lastName: Rojas
+                emailVerified: true
+                createdAt: '2026-10-20T15:30:00Z'
+                passwordUpdatedAt: '2026-10-20T15:32:10Z'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '404':
+          description: The token is valid but the account no longer exists in Keycloak. The app signs out. Code `profile_not_found`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/profile_not_found
+                title: Profile not found
+                status: 404
+                code: profile_not_found
+        '503':
+          description: The profile service (Keycloak admin API) is not reachable. Retry later. Code `identity_admin_unavailable`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/identity_admin_unavailable
+                title: Profile service unavailable
+                status: 503
+                code: identity_admin_unavailable
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+    patch:
+      tags: [identity]
+      operationId: updateProfile
+      summary: Change the first and last name
+      description: Writes the names to Keycloak. At least one of them is required. The email is not editable here.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentityProfileUpdate'
+            example:
+              firstName: Camila
+              lastName: Rojas
+      responses:
+        '200':
+          description: The updated profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityProfile'
+        '400':
+          description: A name is invalid. The detail names the field, never its value. Code `invalid_profile`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/invalid_profile
+                title: Invalid profile
+                status: 400
+                detail: The field firstName is invalid.
+                code: invalid_profile
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '404':
+          description: The account no longer exists in Keycloak. Code `profile_not_found`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+        '503':
+          description: The profile service (Keycloak admin API) is not reachable. Code `identity_admin_unavailable`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
   /devices:
     post:
       tags: [identity]
@@ -222,6 +319,43 @@ paths:
           $ref: '../openapi.yaml#/components/responses/Problem'
 components:
   schemas:
+    IdentityProfile:
+      type: object
+      required: [id, email, emailVerified, createdAt]
+      properties:
+        id:
+          type: string
+          description: The Keycloak subject of the person.
+        email:
+          type: string
+          description: The email, masked (`ca•••@correo.com`). The full address never leaves Keycloak through this API.
+        firstName:
+          type: string
+        lastName:
+          type: string
+        emailVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        passwordUpdatedAt:
+          type: string
+          format: date-time
+          description: When the password was last set. Absent when unknown.
+    IdentityProfileUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Letters, spaces, apostrophes, hyphens and periods.
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Letters, spaces, apostrophes, hyphens and periods.
     IdentityDeviceRegistration:
       type: object
       required: [name, platform, publicKey]
