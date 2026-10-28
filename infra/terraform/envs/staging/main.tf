@@ -229,6 +229,7 @@ module "ecs_bank_simulator" {
     { name = "BANK_INTERNAL_ADDR", value = ":9443" }
   ]
 }
+
 # Caddy Egress Proxy on EC2 (Public subnet, Elastic IP, SSM only)
 module "caddy_egress" {
   source = "../../modules/caddy-egress"
@@ -253,4 +254,11 @@ module "monitoring" {
   rds_instance_id                        = module.rds.instance_id
   caddy_instance_id                      = module.caddy_egress.instance_id
   api_log_group_name                     = module.ecs_api.log_group_name
+}
+
+# GitHub Actions OIDC Deploy Role (No static AWS keys per HU-034)
+module "github_oidc" {
+  source = "../../modules/github-oidc"
+
+  environment = var.environment
 }

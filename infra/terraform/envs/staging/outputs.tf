@@ -104,6 +104,7 @@ output "ecs_bank_simulator_service_name" {
   value       = module.ecs_bank_simulator.service_name
   description = "bank-simulator ECS service name"
 }
+
 # Caddy Egress Outputs
 output "caddy_egress_public_ip" {
   value       = module.caddy_egress.public_ip
@@ -124,4 +125,10 @@ output "alerts_topic_arn" {
 output "dashboard_name" {
   value       = module.monitoring.dashboard_name
   description = "CloudWatch dashboard name"
+}
+
+# CI/CD Outputs
+output "github_deploy_role_arn" {
+  value       = module.github_oidc.role_arn
+  description = "IAM Role ARN for GitHub Actions deployment workflows"
 }

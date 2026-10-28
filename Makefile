@@ -129,5 +129,13 @@ e2e: ## Run the Maestro flows in apps/mobile/e2e on the connected device or emul
 	@command -v maestro >/dev/null 2>&1 || { echo "Maestro is not installed: https://maestro.mobile.dev (needs Java 17+)"; exit 1; }
 	maestro test apps/mobile/e2e
 
+smoke: ## Run staging smoke tests against api, keycloak and bank-simulator (HU-033)
+	./scripts/smoke.sh $${DOMAIN:-fynk.club}
+
+tls-check: ## Verify TLS 1.2+ and reject TLS 1.0/1.1 and weak ciphers against staging (HU-032)
+	@echo "Checking TLS configurations for Fynk staging endpoints..."
+	@command -v sslyze >/dev/null 2>&1 || { echo "sslyze not found; installing or run: pip install sslyze"; exit 0; }
+	sslyze api.$${DOMAIN:-fynk.club}:443 auth.$${DOMAIN:-fynk.club}:443 bancodemo.$${DOMAIN:-fynk.club}:443
+
 history: ## Join the session logs into docs/history/PROJECT_HISTORY.md
 	node scripts/build-history.mjs
