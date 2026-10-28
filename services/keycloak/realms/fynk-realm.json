@@ -1,23 +1,201 @@
 {
   "realm": "fynk",
-  "displayName": "Fynk (local placeholder by M0, M1 replaces it)",
+  "displayName": "Fynk",
   "enabled": true,
+  "sslRequired": "external",
+
   "loginWithEmailAllowed": true,
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,
   "duplicateEmailsAllowed": false,
+  "editUsernameAllowed": false,
   "verifyEmail": true,
   "resetPasswordAllowed": true,
+  "rememberMe": false,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["es"],
+  "defaultLocale": "es",
+
   "bruteForceProtected": true,
+  "permanentLockout": false,
   "failureFactor": 5,
+  "waitIncrementSeconds": 900,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+
+  "passwordPolicy": "length(8) and regexPattern(.*[A-Za-z].*) and digits(1) and notEmail",
+
   "defaultSignatureAlgorithm": "PS256",
   "accessTokenLifespan": 300,
-  "smtpServer": {
-    "host": "mailpit",
-    "port": "1025",
-    "from": "no-reply@fynk.local",
-    "fromDisplayName": "Fynk (local)"
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "ssoSessionIdleTimeout": 2592000,
+  "ssoSessionMaxLifespan": 7776000,
+  "actionTokenGeneratedByUserLifespan": 600,
+  "actionTokenGeneratedByAdminLifespan": 600,
+
+  "eventsEnabled": true,
+  "eventsExpiration": 7776000,
+  "eventsListeners": [],
+  "enabledEventTypes": [
+    "LOGIN",
+    "LOGIN_ERROR",
+    "REGISTER",
+    "REGISTER_ERROR",
+    "LOGOUT",
+    "LOGOUT_ERROR",
+    "CODE_TO_TOKEN",
+    "CODE_TO_TOKEN_ERROR",
+    "REFRESH_TOKEN_ERROR",
+    "SEND_VERIFY_EMAIL",
+    "SEND_VERIFY_EMAIL_ERROR",
+    "VERIFY_EMAIL",
+    "VERIFY_EMAIL_ERROR",
+    "SEND_RESET_PASSWORD",
+    "SEND_RESET_PASSWORD_ERROR",
+    "RESET_PASSWORD",
+    "RESET_PASSWORD_ERROR",
+    "UPDATE_PASSWORD",
+    "UPDATE_PASSWORD_ERROR",
+    "UPDATE_CREDENTIAL",
+    "UPDATE_CREDENTIAL_ERROR",
+    "EXECUTE_ACTIONS",
+    "EXECUTE_ACTION_TOKEN",
+    "EXECUTE_ACTION_TOKEN_ERROR"
+  ],
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": false,
+  "attributes": {
+    "adminEventsExpiration": "7776000"
   },
+
+  "smtpServer": {
+    "host": "${FYNK_SMTP_HOST:mailpit}",
+    "port": "${FYNK_SMTP_PORT:1025}",
+    "from": "${FYNK_SMTP_FROM:no-reply@fynk.local}",
+    "fromDisplayName": "Fynk",
+    "auth": "${FYNK_SMTP_AUTH:false}",
+    "starttls": "${FYNK_SMTP_STARTTLS:false}",
+    "user": "${FYNK_SMTP_USER:}",
+    "password": "${FYNK_SMTP_PASSWORD}"
+  },
+
+  "requiredActions": [
+    { "alias": "TERMS_AND_CONDITIONS", "name": "Terms and Conditions", "providerId": "TERMS_AND_CONDITIONS", "enabled": true, "defaultAction": false, "priority": 20, "config": {} },
+    { "alias": "UPDATE_PROFILE", "name": "Update Profile", "providerId": "UPDATE_PROFILE", "enabled": true, "defaultAction": false, "priority": 40, "config": {} },
+    { "alias": "VERIFY_EMAIL", "name": "Verify Email", "providerId": "VERIFY_EMAIL", "enabled": true, "defaultAction": false, "priority": 50, "config": {} },
+    { "alias": "CONFIGURE_TOTP", "name": "Configure OTP", "providerId": "CONFIGURE_TOTP", "enabled": true, "defaultAction": false, "priority": 54, "config": {} },
+    { "alias": "UPDATE_PASSWORD", "name": "Update Password", "providerId": "UPDATE_PASSWORD", "enabled": true, "defaultAction": false, "priority": 57, "config": {} },
+    { "alias": "delete_account", "name": "Delete Account", "providerId": "delete_account", "enabled": false, "defaultAction": false, "priority": 60, "config": {} },
+    { "alias": "UPDATE_EMAIL", "name": "Update Email", "providerId": "UPDATE_EMAIL", "enabled": false, "defaultAction": false, "priority": 70, "config": {} },
+    { "alias": "webauthn-register", "name": "Webauthn Register", "providerId": "webauthn-register", "enabled": true, "defaultAction": false, "priority": 80, "config": {} },
+    { "alias": "webauthn-register-passwordless", "name": "Webauthn Register Passwordless", "providerId": "webauthn-register-passwordless", "enabled": true, "defaultAction": false, "priority": 90, "config": {} },
+    { "alias": "VERIFY_PROFILE", "name": "Verify Profile", "providerId": "VERIFY_PROFILE", "enabled": true, "defaultAction": false, "priority": 100, "config": {} },
+    { "alias": "delete_credential", "name": "Delete Credential", "providerId": "delete_credential", "enabled": true, "defaultAction": false, "priority": 110, "config": {} },
+    { "alias": "idp_link", "name": "Linking Identity Provider", "providerId": "idp_link", "enabled": true, "defaultAction": false, "priority": 120, "config": {} },
+    { "alias": "CONFIGURE_RECOVERY_AUTHN_CODES", "name": "Recovery Authentication Codes", "providerId": "CONFIGURE_RECOVERY_AUTHN_CODES", "enabled": true, "defaultAction": false, "priority": 130, "config": {} },
+    { "alias": "update_user_locale", "name": "Update User Locale", "providerId": "update_user_locale", "enabled": true, "defaultAction": false, "priority": 1000, "config": {} }
+  ],
+
+  "registrationFlow": "fynk registration",
+  "authenticationFlows": [
+    {
+      "alias": "fynk registration",
+      "description": "Registration with email, password and the terms checkbox (HU-001)",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "registration-page-form",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": true,
+          "flowAlias": "fynk registration form",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "fynk registration form",
+      "description": "Creates the user, checks the password policy and records the terms acceptance",
+      "providerId": "form-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "registration-user-creation",
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "registration-password-action",
+          "requirement": "REQUIRED",
+          "priority": 50,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "registration-terms-and-conditions",
+          "requirement": "REQUIRED",
+          "priority": 70,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    }
+  ],
+
+  "components": {
+    "org.keycloak.keys.KeyProvider": [
+      {
+        "name": "fynk-ps256",
+        "providerId": "rsa-generated",
+        "subComponents": {},
+        "config": {
+          "priority": ["200"],
+          "algorithm": ["PS256"],
+          "keySize": ["2048"],
+          "active": ["true"],
+          "enabled": ["true"]
+        }
+      },
+      {
+        "name": "fynk-rsa-oaep",
+        "providerId": "rsa-enc-generated",
+        "subComponents": {},
+        "config": { "priority": ["100"], "algorithm": ["RSA-OAEP"], "keySize": ["2048"] }
+      },
+      {
+        "name": "fynk-hs512",
+        "providerId": "hmac-generated",
+        "subComponents": {},
+        "config": { "priority": ["100"], "algorithm": ["HS512"] }
+      },
+      {
+        "name": "fynk-aes",
+        "providerId": "aes-generated",
+        "subComponents": {},
+        "config": { "priority": ["100"] }
+      }
+    ],
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"unmanagedAttributePolicy\":\"ADMIN_VIEW\",\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false}],\"groups\":[]}"
+          ]
+        }
+      }
+    ]
+  },
+
   "clients": [
     {
       "clientId": "fynk-mobile",
@@ -28,11 +206,19 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
-      "redirectUris": ["fynk://oauth/callback"],
+      "consentRequired": false,
+      "frontchannelLogout": false,
+      "redirectUris": ["co.fynk.app://oauth/callback"],
       "webOrigins": [],
       "attributes": {
-        "pkce.code.challenge.method": "S256"
+        "pkce.code.challenge.method": "S256",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "client.session.idle.timeout": "2592000",
+        "client.session.max.lifespan": "7776000"
       },
+      "defaultClientScopes": ["basic", "acr", "roles", "profile", "email"],
+      "optionalClientScopes": [],
       "protocolMappers": [
         {
           "name": "fynk-api-audience",
@@ -41,22 +227,48 @@
           "config": {
             "included.client.audience": "fynk-api",
             "access.token.claim": "true",
-            "id.token.claim": "false"
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
           }
         }
       ]
     },
     {
       "clientId": "fynk-api",
-      "name": "Fynk API (token audience)",
+      "name": "Fynk API (access token audience)",
       "enabled": true,
       "bearerOnly": true,
       "publicClient": false,
       "standardFlowEnabled": false,
-      "directAccessGrantsEnabled": false
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "fynk-admin",
+      "name": "Fynk API (Keycloak admin access)",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${FYNK_ADMIN_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [],
+      "webOrigins": []
     }
   ],
+
   "users": [
+    {
+      "username": "service-account-fynk-admin",
+      "enabled": true,
+      "serviceAccountClientId": "fynk-admin",
+      "clientRoles": {
+        "realm-management": ["view-users", "manage-users"]
+      }
+    },
     {
       "username": "demo@fynk.local",
       "email": "demo@fynk.local",

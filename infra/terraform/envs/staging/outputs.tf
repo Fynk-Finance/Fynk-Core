@@ -23,6 +23,10 @@ output "primary_public_subnet_id" {
   description = "Primary public subnet ID"
 }
 
+output "endpoint_security_group_id" {
+  value       = module.endpoints.security_group_id
+  description = "Security group for interface endpoints"
+}
 # ALB Outputs
 output "alb_dns_name" {
   value       = module.alb.alb_dns_name
@@ -61,6 +65,10 @@ output "rds_security_group_id" {
   description = "RDS security group ID"
 }
 
+output "rds_master_user_secret_arn" {
+  value       = module.rds.master_user_secret_arn
+  description = "RDS master secret ARN in Secrets Manager"
+}
 # Redis Outputs
 output "redis_primary_endpoint" {
   value       = module.redis.primary_endpoint_address
@@ -72,6 +80,10 @@ output "redis_security_group_id" {
   description = "Redis security group ID"
 }
 
+output "redis_auth_token_secret_arn" {
+  value       = module.redis.auth_token_secret_arn
+  description = "Secrets Manager ARN for Redis AUTH token"
+}
 # ECS Cluster & Services
 output "ecs_cluster_id" {
   value       = aws_ecs_cluster.main.id

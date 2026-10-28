@@ -1,6 +1,6 @@
 {
   "realm": "banco-demo",
-  "displayName": "Banco Demo, banco simulado (local placeholder by M0, M16 replaces it)",
+  "displayName": "Banco Demo (Simulado)",
   "enabled": true,
   "loginWithEmailAllowed": true,
   "registrationAllowed": true,
@@ -9,12 +9,80 @@
   "resetPasswordAllowed": true,
   "bruteForceProtected": true,
   "defaultSignatureAlgorithm": "PS256",
+  "accessTokenLifespan": 300,
   "smtpServer": {
     "host": "mailpit",
     "port": "1025",
     "from": "no-reply@bancodemo.local",
     "fromDisplayName": "Banco Demo (simulado)"
   },
+  "roles": {
+    "realm": [
+      {
+        "name": "customer",
+        "description": "Standard Banco Demo banking customer"
+      },
+      {
+        "name": "demo-admin",
+        "description": "Banco Demo simulator administrator"
+      }
+    ]
+  },
+  "clientScopes": [
+    {
+      "name": "accounts",
+      "description": "Consultar saldos y datos de cuentas",
+      "protocol": "openid-connect"
+    },
+    {
+      "name": "transactions",
+      "description": "Consultar movimientos de los ultimos 12 meses",
+      "protocol": "openid-connect"
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "fynk",
+      "name": "Fynk app",
+      "description": "Fynk Open Finance client application",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-jwt",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "consentRequired": true,
+      "redirectUris": [
+        "fynk://bank/callback",
+        "https://localhost:8443/*",
+        "http://localhost:8080/*"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "require.pushed.authorization.requests": "true",
+        "token.endpoint.auth.signing.alg": "PS256"
+      },
+      "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "email"],
+      "optionalClientScopes": ["accounts", "transactions"]
+    },
+    {
+      "clientId": "bank-portal",
+      "name": "Banco Demo Web Portal",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8082/*",
+        "https://bancodemo.fynk.local/*"
+      ],
+      "webOrigins": ["http://localhost:8082"]
+    }
+  ],
   "users": [
     {
       "username": "cliente.demo@bancodemo.local",
@@ -29,7 +97,24 @@
           "value": "${BANCO_DEMO_USER_PASSWORD}",
           "temporary": false
         }
-      ]
+      ],
+      "realmRoles": ["customer"]
+    },
+    {
+      "username": "admin.demo@bancodemo.local",
+      "email": "admin.demo@bancodemo.local",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Admin",
+      "lastName": "Demo",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${BANCO_DEMO_ADMIN_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["demo-admin", "customer"]
     }
   ]
 }

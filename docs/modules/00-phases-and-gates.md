@@ -31,7 +31,8 @@ Runs in parallel. M0 is the critical path. The other two only need the repositor
 **Gate A checklist**
 
 * [ ] `git clone` plus `make dev` starts the whole stack locally in under 10 minutes.
-* [ ] The app opens on Android and iOS with the 4 tabs and placeholder screens built from the design system.
+* [ ] The app opens on Android and iOS with the 4 tabs and placeholder screens built from the design system, in light and dark (following the phone or the Apariencia choice).
+* [ ] The tabs switch by tap and by swipe, pushed screens go back with the button and the edge swipe on both platforms, and Reduce Motion turns transitions into fades.
 * [ ] `make generate`, `make lint` and `make test` pass in CI on a pull request to `develop`.
 * [ ] Staging answers `GET https://api.<domain>/healthz` and Keycloak shows its themed login at `https://auth.<domain>`.
 * [ ] The Banco Demo returns 12 months of movements for a seeded user through Caddy with mTLS.
