@@ -36,6 +36,8 @@ M1's branch 2 in `docs/modules/M01-identity.md`: "Theme project `services/keyclo
 * **React 19 and Vite 8.** Keycloakify's starter still uses React 18 and Vite 5. The typecheck and the jar build pass with the newer versions.
 * **Generated files out of git.** The subagent had committed `kc.gen.tsx`. Claude Code moved it out of git, following the rule that generated code is not committed.
 
+* **Added later the same session:** `@types/node` 22.20.5. Building the image from a clean checkout showed that the theme's build script (`postBuild.ts`, in a later PR) needs Node types. Locally they only resolved from a parent folder.
+
 ## Problems
 
 * **Email theme.** Keycloakify 11 doesn't build the email theme from this scaffold, so it comes later.
