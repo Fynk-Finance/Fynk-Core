@@ -104,7 +104,6 @@ output "ecs_bank_simulator_service_name" {
   value       = module.ecs_bank_simulator.service_name
   description = "bank-simulator ECS service name"
 }
-
 # Caddy Egress Outputs
 output "caddy_egress_public_ip" {
   value       = module.caddy_egress.public_ip
