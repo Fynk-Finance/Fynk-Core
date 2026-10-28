@@ -1,3 +1,5 @@
-# Only the realm files go into the image.
+# Only the realm files and the email code extension sources go into the image.
 *
 !realms/*-realm.json
+!extensions/email-code/pom.xml
+!extensions/email-code/src/**
