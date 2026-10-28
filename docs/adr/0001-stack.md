@@ -129,6 +129,7 @@ The theme is its own pnpm project, outside the root workspace (`pnpm-workspace.y
 | react-dom | 19.3.0 | React renderer, same version as react |
 | @types/react | 19.3.0 | React types matching React 19.3 |
 | @types/react-dom | 19.3.0 | React DOM types |
+| @types/node | 22.20.5 | Node types for the theme's build script (`postBuild.ts` edits the generated pages). Same major as the Node the image builds with |
 | vite | 8.3.4 | Bundler Keycloakify's plugin runs on. 8.3.5 was too new |
 | @vitejs/plugin-react | 6.1.2 | React support for Vite 8 |
 | typescript | 6.0.3 | Same as the mobile app. TypeScript 7 has not been tried with Keycloakify |
