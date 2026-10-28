@@ -26,14 +26,16 @@ func TestRunNeedsConfig(t *testing.T) {
 	}
 }
 
-func TestRunSkipsEveryModuleWithoutMigrations(t *testing.T) {
-	// No module has SQL yet, so no database connection is attempted.
+func TestRunSkipsModulesWithoutMigrations(t *testing.T) {
+	// Only identity has SQL so far (its error shows it was the first schema tried). The other
+	// modules are skipped without a connection. Update this when a second module gets SQL.
 	vars := env(map[string]string{
 		"APP_ENV": "local", "DATABASE_URL": "postgres://unused", "REDIS_URL": "redis://unused",
 	})
 	for _, cmd := range []string{"up", "status"} {
-		if err := run(context.Background(), []string{cmd}, vars, quiet); err != nil {
-			t.Errorf("%s: %v", cmd, err)
+		err := run(context.Background(), []string{cmd}, vars, quiet)
+		if err == nil || !strings.Contains(err.Error(), "identity:") {
+			t.Errorf("%s: err = %v, want a connection error from identity", cmd, err)
 		}
 	}
 }
