@@ -514,6 +514,89 @@ func TestIntegrationPasswordResetWithTheCode(t *testing.T) {
 	}
 }
 
+// HU-050: the app's "Cambiar contraseña" opens the authorization endpoint with
+// kc_action=UPDATE_PASSWORD, an application initiated action. Keycloak shows the update password
+// page flagged isAppInitiatedAction (the theme draws the change variant), the hidden
+// logout-sessions field ends the other sessions, and the person lands back in the app with a code.
+func TestIntegrationAppInitiatedPasswordChange(t *testing.T) {
+	email := newEmail("aia")
+	createUser(t, email, goodPassword, true)
+	earlier := login(t, newBrowser(t), email, goodPassword)
+
+	b := newBrowser(t)
+	login(t, b, email, goodPassword)
+	p := newPKCE()
+	page := b.startPasswordChange(t, p, email)
+	if kcContextOf(t, page)["isAppInitiatedAction"] != true {
+		t.Fatal("the update password page is not flagged isAppInitiatedAction")
+	}
+
+	code, page := b.submit(formAction(t, page, "login-update-password.ftl"), url.Values{
+		"password-new": {"nueva-clave-2"}, "password-confirm": {"nueva-clave-2"}, "logout-sessions": {"on"},
+	})
+	if code == "" {
+		t.Fatalf("the password change did not return to the app, page %q", pagePageID(kcContextOf(t, page)))
+	}
+	if tok := exchange(t, code, p); tok.RefreshToken == "" {
+		t.Fatal("the code of the password change gave no refresh token")
+	}
+
+	if again := login(t, newBrowser(t), email, "nueva-clave-2"); again.AccessToken == "" {
+		t.Fatal("the new password does not work")
+	}
+	_, loginPage := newBrowser(t).submitLogin(t, email, goodPassword)
+	if pageID(t, loginPage) != "login.ftl" {
+		t.Fatal("the old password should be refused")
+	}
+	gone := postToken(t, url.Values{"grant_type": {"refresh_token"}, "client_id": {clientID}, "refresh_token": {earlier.RefreshToken}})
+	if gone.Error != "invalid_grant" {
+		t.Fatalf("the refresh token of the other session: error = %q, want invalid_grant", gone.Error)
+	}
+}
+
+// Cancelar on the change page submits cancel-aia=true: Keycloak returns to the app without
+// changing the password.
+func TestIntegrationAppInitiatedPasswordChangeCanBeCancelled(t *testing.T) {
+	email := newEmail("aia-cancel")
+	createUser(t, email, goodPassword, true)
+	b := newBrowser(t)
+	login(t, b, email, goodPassword)
+	page := b.startPasswordChange(t, newPKCE(), email)
+
+	resp, err := b.c.PostForm(formAction(t, page, "login-update-password.ftl"), url.Values{"cancel-aia": {"true"}})
+	if err != nil {
+		t.Fatalf("POST: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	loc, err := url.Parse(resp.Header.Get("Location"))
+	if err != nil || !strings.HasPrefix(loc.String(), redirectURI) {
+		t.Fatalf("cancelling should return to the app, status %d", resp.StatusCode)
+	}
+	q := loc.Query()
+	if q.Get("kc_action_status") != "cancelled" || q.Get("error") != "" || q.Get("code") == "" {
+		t.Fatalf("cancel answer: kc_action_status = %q, error = %q, has code = %v", q.Get("kc_action_status"), q.Get("error"), q.Get("code") != "")
+	}
+
+	if again := login(t, newBrowser(t), email, goodPassword); again.AccessToken == "" {
+		t.Fatal("the old password should still work after cancelling")
+	}
+}
+
+// startPasswordChange opens the authorization endpoint with kc_action=UPDATE_PASSWORD in a browser
+// that is already logged in and returns the update password page. Keycloak asks for the password
+// again when the last login is older than its max age, so a login page is answered once.
+func (b *browser) startPasswordChange(t *testing.T, p pkce, email string) string {
+	t.Helper()
+	code, page := b.follow(env.keycloak + "/realms/fynk/protocol/openid-connect/auth?" + authQuery(p, url.Values{"kc_action": {"UPDATE_PASSWORD"}}).Encode())
+	if code == "" && pageID(t, page) == "login.ftl" {
+		code, page = b.submit(formAction(t, page, "login.ftl"), url.Values{"username": {email}, "password": {goodPassword}})
+	}
+	if code != "" || pageID(t, page) != "login-update-password.ftl" {
+		t.Fatal("kc_action=UPDATE_PASSWORD should show the update password page")
+	}
+	return page
+}
+
 // HU-005: an email without an account gets the same page as one with an account, no email is
 // sent, and no code (not even a lucky guess) is accepted.
 func TestIntegrationUnknownEmailLooksTheSameInTheReset(t *testing.T) {

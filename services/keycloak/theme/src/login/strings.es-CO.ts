@@ -77,6 +77,16 @@ export const strings = {
     ruleLetter: 'Una letra',
     ruleNumber: 'Un número',
     savePassword: 'Guardar contraseña',
+    // Password change started from the app (Seguridad › Cambiar contraseña). New screen without a
+    // design, needs design review.
+    change: {
+      pageTitle: 'Cambiar contraseña',
+      headerTitle: 'Cambiar contraseña',
+      headerSubtitle: 'Protege tu cuenta con una contraseña nueva.',
+      title: 'Elige tu nueva contraseña',
+      subtitle: 'Cerraremos la sesión en tus otros dispositivos.',
+      cancel: 'Cancelar',
+    },
     // Step 4
     doneHeaderTitle: '¡Todo listo!',
     doneHeaderSubtitle: 'Tu acceso quedó recuperado.',
