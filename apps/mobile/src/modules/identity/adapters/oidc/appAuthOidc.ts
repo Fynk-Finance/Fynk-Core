@@ -14,7 +14,10 @@ import type { OidcConfig } from './config';
 type Fetch = (input: string, init: RequestInit) => Promise<Response>;
 
 // iOS AppAuth codes: -3 user cancelled the flow, -5 network error.
-const CANCELLED = /cancel|general error -3\b/i;
+// OAuth access_denied is Keycloak's answer to a cancelled login. The login theme sends the same
+// answer to come back to the app after a password reset, so it is a cancel, not a failure.
+// Both platforms put it in the error code.
+const CANCELLED = /cancel|general error -3\b|\baccess_denied\b/i;
 const NETWORK =
   /network|offline|timed out|internet|unable to resolve|connection|general error -5\b/i;
 
