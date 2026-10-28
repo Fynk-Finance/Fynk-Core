@@ -5,7 +5,6 @@ package keycloak
 import (
 	"context"
 	"errors"
-	"html"
 	"net/http"
 	"net/url"
 	"testing"
@@ -31,20 +30,11 @@ func acceptTerms(t *testing.T, email string) tokenResponse {
 	b := newBrowser(t)
 	p := newPKCE()
 	page := b.loginPage(p, nil)
-	code, termsPage := b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {goodPassword}})
+	code, termsPage := b.submit(formAction(t, page, "login.ftl"), url.Values{"username": {email}, "password": {goodPassword}})
 	if code != "" {
 		t.Fatal("the terms action did not appear")
 	}
-	var action string
-	for _, tag := range formTag.FindAllString(termsPage, -1) {
-		if m := actionAttr.FindStringSubmatch(tag); m != nil {
-			action = absolute(html.UnescapeString(m[1]))
-		}
-	}
-	if action == "" {
-		t.Fatal("no form on the terms page")
-	}
-	code, _ = b.submit(action, url.Values{"accept": {"Accept"}})
+	code, _ = b.submit(formAction(t, termsPage, "terms.ftl"), url.Values{"accept": {"Accept"}})
 	if code == "" {
 		t.Fatal("accepting the terms did not finish the sign-in")
 	}
