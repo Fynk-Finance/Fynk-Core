@@ -1,6 +1,6 @@
 // Public API of the identity module. Other modules import only from this file.
 import { configureApiHooks } from '@shared/api';
-import { createPlaceholderScreen, type ModuleRoutes } from '@shared/navigation';
+import type { ModuleRoutes } from '@shared/navigation';
 import { wipe } from '@modules/vault';
 
 import { createDevicesApi } from './adapters/api/devicesApi';
@@ -16,9 +16,14 @@ import { createApiHooks } from './application/apiHooks';
 import { createDeviceService, type DeviceService } from './application/deviceService';
 import { syncDeviceWithSession } from './application/deviceSessionSync';
 import { createDevSession, shouldUseDevAuth } from './application/devSession';
-import { createSessionService, type SessionState } from './application/sessionService';
+import {
+  createSessionService,
+  type ChangePasswordResult,
+  type SessionState,
+} from './application/sessionService';
 import { createIdentityFlow } from './ui/IdentityFlow';
 import { createMiCuentaScreen } from './ui/MiCuentaScreen';
+import { createSecurityScreen } from './ui/SecurityScreen';
 import { SECURITY_ROUTE } from './ui/miCuentaRows';
 import { useSessionState } from './ui/useSessionState';
 
@@ -35,12 +40,14 @@ const session = useDevAuth
       clock: systemClock,
     });
 
+const devicesApi = createDevicesApi();
+
 // The dev session has no real account, so it registers no device.
 const device: DeviceService | null = useDevAuth
   ? null
   : createDeviceService({
       store: createDeviceKeyStore(),
-      api: createDevicesApi(),
+      api: devicesApi,
       keys: createKeyPairGenerator(),
       random: expoRandom,
       info: createExpoDeviceInfo(),
@@ -66,6 +73,28 @@ export const signIn = () => session.signIn();
 export const signUp = () => session.signUp();
 export const signOut = () => session.signOut();
 
+/**
+ * Keycloak's change password page. A new Keycloak session replaces the app's one, so the device
+ * is checked again afterwards: the API moves its stored session id to the new session.
+ */
+const changePassword = async (): Promise<ChangePasswordResult> => {
+  const result = await session.changePassword();
+  if (session.getState().status === 'signedIn') await device?.sync().catch(() => undefined);
+  return result;
+};
+
+// Seguridad (change password and linked devices), pushed with the default transition
+// (inventory row 16). Exported as LinkedDevicesScreen, the name the M1 prompt lists.
+export const LinkedDevicesScreen = createSecurityScreen({
+  profile: createProfileApi(),
+  devices: devicesApi,
+  clock: systemClock,
+  changePassword,
+  deviceId,
+  sync: async () => device?.sync(),
+  signOut: () => session.signOut(),
+});
+
 export const routes: ModuleRoutes = {
   module: 'identity',
   flow: createIdentityFlow(session),
@@ -82,9 +111,8 @@ export const routes: ModuleRoutes = {
       path: 'cuenta',
     },
     {
-      // The next M1 branch replaces it with Seguridad (change password, linked devices).
       name: SECURITY_ROUTE,
-      component: createPlaceholderScreen({ title: 'Seguridad', owner: 'M1 · Identidad' }),
+      component: LinkedDevicesScreen,
       path: 'cuenta/seguridad',
     },
   ],

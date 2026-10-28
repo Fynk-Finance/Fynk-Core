@@ -44,4 +44,45 @@ export const identityStrings = {
       confirm: 'Cerrar sesión',
     },
   },
+  // CfgSeguridad.html (Seguridad)
+  security: {
+    title: 'Seguridad',
+    subtitle: 'Protege tu cuenta y controla dónde está abierta.',
+    back: 'Volver a Mi cuenta',
+    password: 'Contraseña',
+    changePassword: 'Cambiar contraseña',
+    changePasswordHint: 'Abre la página de Fynk en el navegador para elegir una contraseña nueva',
+    passwordUpdated: 'Actualizada',
+    devices: 'Dispositivos activos',
+    thisDevice: 'Este dispositivo',
+    activeNow: 'Activo ahora',
+    close: 'Cerrar',
+    closeAll: 'Cerrar todas las demás sesiones',
+    footer: 'Si no reconoces un dispositivo, ciérralo y cambia tu contraseña.',
+    // Not in the design: new, needs design review.
+    pending: 'Pendiente',
+    pendingHint: 'Este dispositivo espera aprobación',
+    closeDevice: (name: string) => `Cerrar la sesión de ${name}`,
+    loadFailed: 'No pudimos cargar tus dispositivos. Intenta de nuevo.',
+    changeFailed: {
+      title: 'No pudimos cambiar tu contraseña',
+      message: 'Intenta de nuevo en unos minutos.',
+    },
+    actionFailed: {
+      title: 'No pudimos cerrar la sesión',
+      message: 'Revisa tu conexión e intenta de nuevo.',
+    },
+    confirmClose: {
+      title: (name: string) => `¿Cerrar la sesión de ${name}?`,
+      message: 'Ese dispositivo dejará de tener acceso a tu cuenta.',
+      cancel: 'Cancelar',
+      confirm: 'Cerrar sesión',
+    },
+    confirmCloseAll: {
+      title: '¿Cerrar las demás sesiones?',
+      message: 'Todos los dispositivos, menos este, dejarán de tener acceso a tu cuenta.',
+      cancel: 'Cancelar',
+      confirm: 'Cerrar todas',
+    },
+  },
 } as const;
