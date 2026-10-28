@@ -14,6 +14,7 @@ export function createProfileApi(): ProfilePort {
         lastName: me.lastName,
         emailVerified: me.emailVerified,
         createdAt: me.createdAt,
+        ...(me.passwordUpdatedAt !== undefined && { passwordUpdatedAt: me.passwordUpdatedAt }),
       };
     },
   };

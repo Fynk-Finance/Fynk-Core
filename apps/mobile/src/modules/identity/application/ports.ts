@@ -1,10 +1,14 @@
 // Ports of the identity module. Adapters implement them with react-native-app-auth and
 // react-native-keychain; tests use fakes.
 import type { DevicePlatform, DeviceRecord } from '../domain/device';
+import type { LinkedDeviceItem } from '../domain/deviceList';
 import type { Profile } from '../domain/profile';
 import type { TokenSet } from '../domain/session';
 
 export type AuthMode = 'signIn' | 'signUp';
+
+/** What Keycloak said about the action it ran (`kc_action_status`). */
+export type ActionStatus = 'success' | 'cancelled' | 'error' | 'unknown';
 
 /**
  * Why a call to Keycloak failed:
@@ -31,6 +35,12 @@ export function isOidcError(e: unknown, kind?: OidcErrorKind): e is OidcError {
 /** Keycloak through OpenID Connect: Authorization Code with PKCE in the system browser. */
 export interface OidcPort {
   authorize(mode: AuthMode): Promise<TokenSet>;
+  /**
+   * Opens Keycloak's "Cambiar contraseña" page (`kc_action=UPDATE_PASSWORD`). Keycloak asks for
+   * the login first and answers with new tokens (a new Keycloak session) whatever the status.
+   * Throws OidcError when the browser was closed or Keycloak could not be reached.
+   */
+  changePassword(): Promise<{ tokens: TokenSet; actionStatus: ActionStatus }>;
   refresh(current: TokenSet): Promise<TokenSet>;
   /** Ends the Keycloak session of these tokens. */
   endSession(tokens: TokenSet): Promise<void>;
@@ -121,4 +131,14 @@ export function isDevicesError(e: unknown, kind?: DevicesErrorKind): e is Device
 export interface DevicesApiPort {
   register(body: DeviceRegistration, idempotencyKey: string): Promise<LinkedDevice>;
   current(deviceId: string): Promise<LinkedDevice>;
+}
+
+/** GET /devices, DELETE /devices/{id} and POST /devices/sign-out-others. All throw DevicesError. */
+export interface LinkedDevicesApiPort {
+  /** Active and pending devices. `deviceId` marks which one is this phone. */
+  list(deviceId: string | null): Promise<LinkedDeviceItem[]>;
+  /** A device that is already gone counts as removed. */
+  remove(id: string): Promise<void>;
+  /** Removes every device except `deviceId`. */
+  signOutOthers(deviceId: string): Promise<void>;
 }

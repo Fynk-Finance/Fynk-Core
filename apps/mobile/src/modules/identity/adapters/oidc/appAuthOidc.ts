@@ -1,10 +1,16 @@
 // OidcPort with react-native-app-auth: Authorization Code with PKCE (S256) in the system
 // browser, never a webview. The refresh token is sent only in request bodies.
-import { authorize, refresh, type AuthConfiguration } from 'react-native-app-auth';
+import {
+  authorize,
+  refresh,
+  type AuthConfiguration,
+  type AuthorizeResult,
+} from 'react-native-app-auth';
 
 import type { TokenSet } from '../../domain/session';
 import {
   OidcError,
+  type ActionStatus,
   type AuthMode,
   type OidcErrorKind,
   type OidcPort,
@@ -32,6 +38,20 @@ export function classifyAppAuthError(e: unknown): OidcErrorKind {
 
 const toOidcError = (e: unknown) => new OidcError(classifyAppAuthError(e));
 
+const ACTION_STATUSES: readonly ActionStatus[] = ['success', 'cancelled', 'error'];
+
+/** Keycloak's answer to a `kc_action`, from the redirect's `kc_action_status`. */
+function toActionStatus(raw: string | undefined): ActionStatus {
+  return ACTION_STATUSES.find((s) => s === raw) ?? 'unknown';
+}
+
+const toTokenSet = (result: AuthorizeResult): TokenSet => ({
+  accessToken: result.accessToken,
+  accessTokenExpiresAt: result.accessTokenExpirationDate,
+  refreshToken: result.refreshToken,
+  idToken: result.idToken,
+});
+
 export function createAppAuthOidc(config: OidcConfig, fetchFn: Fetch = fetch): OidcPort {
   const base: AuthConfiguration = {
     issuer: config.issuer,
@@ -56,11 +76,23 @@ export function createAppAuthOidc(config: OidcConfig, fetchFn: Fetch = fetch): O
           : undefined;
       try {
         const result = await authorize({ ...base, additionalParameters });
+        return toTokenSet(result);
+      } catch (e) {
+        throw toOidcError(e);
+      }
+    },
+
+    async changePassword() {
+      // kc_action=UPDATE_PASSWORD makes Keycloak show "Cambiar contraseña" after the login. The
+      // library's type lists only the standard parameters.
+      const additionalParameters = {
+        kc_action: 'UPDATE_PASSWORD',
+      } as unknown as AuthConfiguration['additionalParameters'];
+      try {
+        const result = await authorize({ ...base, additionalParameters });
         return {
-          accessToken: result.accessToken,
-          accessTokenExpiresAt: result.accessTokenExpirationDate,
-          refreshToken: result.refreshToken,
-          idToken: result.idToken,
+          tokens: toTokenSet(result),
+          actionStatus: toActionStatus(result.authorizeAdditionalParameters?.kc_action_status),
         };
       } catch (e) {
         throw toOidcError(e);

@@ -94,3 +94,86 @@ describe('current', () => {
     expect(await kindOf(missing.api.current('d'))).toBe('notFound');
   });
 });
+
+describe('list', () => {
+  const pending = {
+    ...device,
+    id: 'dev-2',
+    name: 'iPhone',
+    platform: 'ios',
+    status: 'pending',
+    current: false,
+  };
+
+  it('returns the items with current and lastSeenAt and sends the device id', async () => {
+    const { api, seen } = setup(() => json(200, { items: [device, pending] }));
+    const items = await api.list('dev-1');
+    expect(items).toEqual([
+      {
+        id: 'dev-1',
+        name: 'Pixel 8',
+        platform: 'android',
+        status: 'active',
+        current: true,
+        lastSeenAt: '2026-10-27T14:03:11Z',
+      },
+      {
+        id: 'dev-2',
+        name: 'iPhone',
+        platform: 'ios',
+        status: 'pending',
+        current: false,
+        lastSeenAt: '2026-10-27T14:03:11Z',
+      },
+    ]);
+    expect(seen[0]!.method).toBe('GET');
+    expect(seen[0]!.url).toBe('https://api.test/v1/devices');
+    expect(seen[0]!.headers.get('X-Device-Id')).toBe('dev-1');
+  });
+
+  it('works without a device id and maps a failed connection to network', async () => {
+    const ok = setup(() => json(200, { items: [] }));
+    expect(await ok.api.list(null)).toEqual([]);
+    expect(ok.seen[0]!.headers.get('X-Device-Id')).toBeNull();
+    const down = setup(() => {
+      throw new TypeError('offline');
+    });
+    expect(await kindOf(down.api.list(null))).toBe('network');
+  });
+});
+
+describe('remove', () => {
+  it('deletes the device by id', async () => {
+    const { api, seen } = setup(() => new Response(null, { status: 204 }));
+    await api.remove('dev-2');
+    expect(seen[0]!.method).toBe('DELETE');
+    expect(seen[0]!.url).toBe('https://api.test/v1/devices/dev-2');
+  });
+
+  it('counts a 404 device_not_found as already removed', async () => {
+    const { api } = setup(() => problem(404, 'device_not_found'));
+    await expect(api.remove('dev-2')).resolves.toBeUndefined();
+  });
+
+  it('throws for other problems', async () => {
+    const { api } = setup(() => problem(500, 'internal'));
+    expect(await kindOf(api.remove('dev-2'))).toBe('other');
+  });
+});
+
+describe('signOutOthers', () => {
+  it('posts with the calling device id', async () => {
+    const { api, seen } = setup(() => new Response(null, { status: 204 }));
+    await api.signOutOthers('dev-1');
+    expect(seen[0]!.method).toBe('POST');
+    expect(seen[0]!.url).toBe('https://api.test/v1/devices/sign-out-others');
+    expect(seen[0]!.headers.get('X-Device-Id')).toBe('dev-1');
+  });
+
+  it('maps 410 to removed and 404 to notFound', async () => {
+    const gone = setup(() => problem(410, 'device_removed'));
+    expect(await kindOf(gone.api.signOutOthers('d'))).toBe('removed');
+    const missing = setup(() => problem(404, 'device_not_found'));
+    expect(await kindOf(missing.api.signOutOthers('d'))).toBe('notFound');
+  });
+});

@@ -17,6 +17,7 @@ const stored: TokenSet = {
 function signedInSession() {
   const oidc: OidcPort = {
     authorize: jest.fn(),
+    changePassword: jest.fn(),
     refresh: jest.fn(async () => ({
       ...stored,
       accessToken: 'new-access',
