@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390"><title>App azul y verde · Oscuro · Suscripción · Pago pendiente</title></head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;background:#13212d;color:#e8f1f6}
+a{color:#62c8f0}
+.vscroll{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;overflow-x:hidden;overflow-y:auto}
+.vscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.btn{cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.cta{cursor:pointer;transition:background-color .2s ease}
+.cta:hover{background-color:#279dcc !important}
+.cta-lime:hover{background-color:#93cc26 !important}
+.cta:hover .cta-arrow{transform:translateX(4px)}
+.cta-arrow{transition:transform .25s ease}
+.opt{cursor:pointer;transition:border-color .2s ease,background-color .2s ease}
+.opt:hover{border-color:#2b5267 !important}
+.btn:focus-visible,.cta:focus-visible,.link:focus-visible,.opt:focus-visible{outline:3px solid #b5e5f7;outline-offset:2px}
+@keyframes sb-shine{0%,62%{transform:translateX(0)}86%,100%{transform:translateX(620px)}}
+.shine{animation:sb-shine 8s ease-in-out infinite 1.5s}
+@keyframes sb-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes sb-float2{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+@keyframes sb-tw{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+@keyframes sb-spin{to{transform:rotate(360deg)}}
+@keyframes sb-rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes sb-pop{0%{transform:scale(0) rotate(-14deg)}60%{transform:scale(1.12) rotate(3deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes sb-burst{0%{opacity:0;transform:translate(0,0) scale(.2)}15%{opacity:1}70%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(var(--sc)) rotate(var(--r))}}
+@keyframes sb-sheet{from{transform:translateY(105%)}to{transform:translateY(0)}}
+@keyframes sb-pulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.18);opacity:0}}
+.fl1{animation:sb-float 5s ease-in-out infinite}
+.fl2{animation:sb-float2 6s ease-in-out infinite .6s}
+.fl3{animation:sb-float 4.4s ease-in-out infinite 1.2s}
+.tw{transform-box:fill-box;transform-origin:center;animation:sb-tw 2.6s ease-in-out infinite}
+.spin{transform-box:fill-box;transform-origin:center;animation:sb-spin 40s linear infinite}
+.spin-fast{transform-origin:center;animation:sb-spin 1.1s linear infinite}
+.rise{animation:sb-rise .5s ease-out both .1s}
+.pop{animation:sb-pop .6s cubic-bezier(.34,1.56,.64,1) both .1s}
+.bit{position:absolute;left:50%;top:50%;width:var(--s);height:var(--s);margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);animation:sb-burst var(--du) cubic-bezier(.15,.7,.3,1) both var(--d)}
+.sheet-up{animation:sb-sheet .55s cubic-bezier(.22,1,.36,1) both .9s}
+.pulse{transform-origin:center;animation:sb-pulse 2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.shine,.fl1,.fl2,.fl3,.tw,.spin,.spin-fast,.rise,.pop,.sheet-up,.pulse{animation:none}.bit{display:none}}
+</style>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: #0b1620; position: relative; overflow: hidden">
+<svg width="390" height="320" viewBox="0 0 390 320" aria-hidden="true" style="position: absolute; top: 0; left: 0">
+<rect x="250" y="-70" width="190" height="190" rx="44" fill="#1a3444"></rect>
+<rect x="-60" y="150" width="140" height="140" rx="34" fill="#182a37"></rect>
+</svg>
+<div class="rise" style="position: relative; height: 844px; box-sizing: border-box; padding: 16px 24px 32px; display: flex; flex-direction: column">
+
+<div data-dc-group="" style="box-sizing: border-box; display: flex; flex-direction: row; gap: normal; align-items: center; justify-content: space-between; padding-top: 48px"><span style="width: 72px; height: 72px; border-radius: 22px; background-color: #1a3444; color: #62c8f0; display: flex; align-items: center; justify-content: center"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2"></path></svg></span><a class="btn" href="Dashboard.html" aria-label="Cerrar" style="width: 48px; height: 48px; box-sizing: border-box; border-radius: 14px; color: #62c8f0; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 24px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true" style="width: 32px; height: 32px"><path d="M18 6 6 18M6 6l12 12"></path></svg></a></div>
+<h1 role="status" style="margin: 24px 0 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; line-height: 32px; letter-spacing: -0.01em">Tu pago está en verificación</h1>
+<p style="margin: 8px 0 0; font-size: 15px; line-height: 22px; color: #97abb8">Algunos pagos pueden tardar hasta 30 minutos en confirmarse. Te avisaremos apenas esté listo.</p>
+<section aria-label="Detalle del pago" style="margin-top: 16px; border-radius: 18px; background-color: #13212d; border: 1px solid #223746; box-shadow: 0 8px 20px -14px rgba(0, 0, 0, 0.25); padding: 8px 16px">
+<div style="display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid #22313d; font-size: 14px; line-height: 19px"><span style="color: #97abb8">Plan</span><span style="font-weight: 600; text-align: right">Fynk Plus · Anual</span></div><div style="display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid #22313d; font-size: 14px; line-height: 19px"><span style="color: #97abb8">Monto</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; text-align: right">$149.000</span></div><div style="display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid #22313d; font-size: 14px; line-height: 19px"><span style="color: #97abb8">Método</span><span style="font-weight: 600; text-align: right">PSE · Bancolombia</span></div><div style="display: flex; justify-content: space-between; gap: 8px; padding: 8px 0;  font-size: 14px; line-height: 19px"><span style="color: #97abb8">Referencia</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; text-align: right">FYK-8F3K-2610</span></div>
+</section>
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; line-height: 22px; margin-top: 16px">Mientras tanto</h2>
+<ol style="list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px"><li style="display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 20px"><span style="width: 24px; height: 24px; border-radius: 7px; background-color: #1a3444; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 700">1</span>Puedes seguir usando Fynk con normalidad.</li><li style="display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 20px"><span style="width: 24px; height: 24px; border-radius: 7px; background-color: rgb(228, 245, 252); color: rgb(31, 147, 194); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 700">2</span>No intentes pagar otra vez.</li><li style="display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 20px"><span style="width: 24px; height: 24px; border-radius: 7px; background-color: #1a3444; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 700">3</span>Si en 24 horas no se confirma, el dinero vuelve a tu cuenta.</li></ol>
+
+<a class="cta" href="Dashboard.html" style="margin-top: auto; box-sizing: border-box; text-decoration: none; height: 56px; width: 100%; border: none; border-radius: 16px; font-family: inherit; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; background-color: #2fa8d8; color: #ffffff">Ir al dashboard</a>
+<a class="btn" href="#" style="margin-top: 8px; box-sizing: border-box; text-decoration: none; height: 56px; width: 100%; border-radius: 16px; border: 1.5px solid #22313d; background-color: #13212d; color: #97abb8; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0">Contactar soporte</a>
+</div>
+</div>
+</body></html>
