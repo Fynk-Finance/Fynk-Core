@@ -1,5 +1,23 @@
-# Only the realm files and the email code extension sources go into the image.
+# Only the realm files, the email code extension sources and the theme sources go into the image.
 *
 !realms/*-realm.json
 !extensions/email-code/pom.xml
 !extensions/email-code/src/**
+!theme/
+!theme/package.json
+!theme/pnpm-lock.yaml
+!theme/.npmrc
+!theme/index.html
+!theme/tsconfig.json
+!theme/vite.config.ts
+!theme/postBuild.ts
+!theme/src/**
+!theme/public/**
+
+# Never the machine's own installs or builds.
+**/node_modules
+theme/dist
+theme/dist_keycloak
+theme/build_keycloak
+theme/src/kc.gen.tsx
+theme/public/keycloakify-dev-resources

@@ -1,6 +1,7 @@
 {
   "realm": "fynk",
   "displayName": "Fynk",
+  "loginTheme": "fynk",
   "enabled": true,
   "sslRequired": "external",
 
