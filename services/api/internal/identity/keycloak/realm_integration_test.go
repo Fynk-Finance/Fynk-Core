@@ -1,7 +1,7 @@
 //go:build integration
 
-// Behavior of the fynk realm on a real Keycloak 26.8.1 (the version of docker-compose.yml),
-// started with testcontainers next to a Mailpit that catches its emails. Needs Docker:
+// Behavior of the fynk realm on a real Keycloak 26.8.1 built from services/keycloak/Dockerfile
+// (with the email code extension), started with testcontainers next to a Mailpit that catches its emails. Needs Docker:
 //
 //	go test -tags integration -count=1 ./internal/identity/keycloak/...
 package keycloak
@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -32,10 +33,9 @@ import (
 )
 
 const (
-	keycloakImage = "quay.io/keycloak/keycloak:26.8.1"
-	mailpitImage  = "axllent/mailpit:v1.31.6"
-	clientID      = "fynk-mobile"
-	redirectURI   = "co.fynk.app://oauth/callback"
+	mailpitImage = "axllent/mailpit:v1.31.6"
+	clientID     = "fynk-mobile"
+	redirectURI  = "co.fynk.app://oauth/callback"
 	// Fake values that only live inside the throwaway containers.
 	adminUser     = "admin"
 	adminPassword = "integration-only-admin"
@@ -60,10 +60,12 @@ func TestMain(m *testing.M) {
 }
 
 func startStack(ctx context.Context) (func(), error) {
-	realmPath, err := filepath.Abs(realmFile)
-	if err != nil {
-		return nil, err
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		return nil, fmt.Errorf("cannot locate the test file")
 	}
+	// services/api/internal/identity/keycloak -> services/keycloak
+	kcContext := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "keycloak")
 	nw, err := network.New(ctx)
 	if err != nil {
 		return nil, err
@@ -76,7 +78,17 @@ func startStack(ctx context.Context) (func(), error) {
 	if err != nil {
 		return nil, err
 	}
-	kc, err := testcontainers.Run(ctx, keycloakImage,
+	// The image of the repo: the realms are baked in and the extension is built into it. The
+	// build (Maven tests included) runs once per test run. start-dev replaces the optimized
+	// start of the image so that plain HTTP works.
+	kc, err := testcontainers.Run(ctx, "",
+		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+			Context:    kcContext,
+			Dockerfile: "Dockerfile",
+			Repo:       "fynk-keycloak-it",
+			Tag:        "test",
+			KeepImage:  true,
+		}),
 		network.WithNetwork([]string{"keycloak"}, nw),
 		testcontainers.WithCmd("start-dev", "--import-realm"),
 		testcontainers.WithEnv(map[string]string{
@@ -84,11 +96,8 @@ func startStack(ctx context.Context) (func(), error) {
 			"KC_BOOTSTRAP_ADMIN_PASSWORD": adminPassword,
 			"FYNK_DEMO_USER_PASSWORD":     "Demo-test-1",
 			"FYNK_ADMIN_CLIENT_SECRET":    "integration-only-secret",
-		}),
-		testcontainers.WithFiles(testcontainers.ContainerFile{
-			HostFilePath:      realmPath,
-			ContainerFilePath: "/opt/keycloak/data/import/fynk-realm.json",
-			FileMode:          0o644,
+			"BANCO_DEMO_ADMIN_PASSWORD":   "Banco-admin-test-1",
+			"BANCO_DEMO_USER_PASSWORD":    "Banco-user-test-1",
 		}),
 		testcontainers.WithExposedPorts("8080/tcp"),
 		testcontainers.WithWaitStrategy(wait.ForHTTP("/realms/fynk/.well-known/openid-configuration").
@@ -232,63 +241,84 @@ func TestIntegrationRefreshTokensRotate(t *testing.T) {
 	}
 }
 
-// HU-001 and HU-050: an unverified email gets no tokens; the emailed link (10 minutes)
-// verifies it and the login continues.
+// HU-001 and HU-050: an unverified email gets no tokens. The login shows the code page, a wrong
+// code is refused, and the code from the email verifies the address and continues the login.
 func TestIntegrationEmailMustBeVerifiedBeforeTokens(t *testing.T) {
 	email := newEmail("verify")
-	createUser(t, email, goodPassword, false)
+	id := createUser(t, email, goodPassword, false).id
 	b := newBrowser(t)
 	p := newPKCE()
 	page := b.loginPage(p, nil)
-	code, body := b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {goodPassword}})
+	code, page := b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {goodPassword}})
 	if code != "" {
 		t.Fatal("an unverified user received an authorization code")
 	}
-	if !strings.Contains(body, "login-actions") {
-		t.Fatal("expected the verify email page")
+	assertCodePage(t, page)
+	mailed := waitForCode(t, email)
+
+	code, page = b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {wrongVariant(mailed)}, "verify": {""}})
+	if code != "" {
+		t.Fatal("a wrong code gave an authorization code")
+	}
+	assertCodePage(t, page)
+	if !strings.Contains(page, "no es correcto") {
+		t.Fatal("the code page shows no error for a wrong code")
 	}
 
-	link := waitForLink(t, email)
-	assertLinkLifespan(t, link)
-	code, _ = b.follow(link)
+	code, _ = b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {mailed}, "verify": {""}})
 	if code == "" {
-		t.Fatal("after verifying, the login should continue to the app")
+		t.Fatal("after the right code the login should continue to the app")
 	}
 	tok := exchange(t, code, p)
 	if _, claims := decodeJWT(t, tok.AccessToken); claims["email_verified"] != true {
-		t.Fatal("email_verified should be true")
+		t.Fatal("email_verified should be true in the access token")
+	}
+	var u kcUser
+	adminJSON(t, http.MethodGet, "/admin/realms/fynk/users/"+id, nil, &u)
+	if !u.EmailVerified {
+		t.Fatal("the admin API shows the email as not verified")
 	}
 }
 
-// HU-001: sign-up asks for the email and the terms only. The password is chosen after the
-// email link is opened (Keycloak 26 default, against account pre-hijacking), under the same
-// policy. The creation date and the terms acceptance are recorded; a cédula is never stored.
-func TestIntegrationRegistrationVerifiesTheEmailBeforeThePassword(t *testing.T) {
+// HU-001: sign-up asks for the email, the password and the terms (no cédula). The password
+// policy applies, then the emailed code verifies the address before any token is issued. The
+// creation date and the terms acceptance are recorded.
+func TestIntegrationRegistrationAsksForThePasswordThenTheCode(t *testing.T) {
 	b := newBrowser(t)
 	p := newPKCE()
 	page := b.loginPage(p, url.Values{"prompt": {"create"}})
-	if !strings.Contains(page, `name="termsAccepted"`) {
-		t.Fatal("the registration form has no terms checkbox")
+	for _, field := range []string{`name="termsAccepted"`, `name="password"`, `name="password-confirm"`} {
+		if !strings.Contains(page, field) {
+			t.Fatalf("the registration form has no %s", field)
+		}
 	}
-	if strings.Contains(page, `name="password"`) {
-		t.Fatal("the password is chosen after the email is verified, not on the registration form")
-	}
-	if regexp.MustCompile(`(?i)c[eé]dula`).MatchString(page) {
-		t.Fatal("the registration form mentions a cédula")
+	if regexp.MustCompile(`(?i)c[eé]dula|name="[^"]*(document|cedula|identification)[^"]*"`).MatchString(page) {
+		t.Fatal("the registration form has a cédula or document field")
 	}
 	email := newEmail("register")
-	form := url.Values{"email": {email}}
+	form := url.Values{"email": {email}, "password": {goodPassword}, "password-confirm": {goodPassword}}
 
-	_, again := b.submit(formAction(t, page, "kc-register-form"), form)
+	_, page = b.submit(formAction(t, page, "kc-register-form"), form)
 	if findUser(t, email) != nil {
 		t.Fatal("a user was created without accepting the terms")
 	}
 
 	form.Set("termsAccepted", "on")
 	form.Set("cedula", "1234567890")
-	if code, _ := b.submit(formAction(t, again, "kc-register-form"), form); code != "" {
-		t.Fatal("registration must wait for the email verification")
+	form.Set("password", "abcdefgh")
+	form.Set("password-confirm", "abcdefgh")
+	code, page := b.submit(formAction(t, page, "kc-register-form"), form)
+	if code != "" || findUser(t, email) != nil {
+		t.Fatal("abcdefgh (no digit) was accepted as the first password")
 	}
+
+	form.Set("password", goodPassword)
+	form.Set("password-confirm", goodPassword)
+	code, page = b.submit(formAction(t, page, "kc-register-form"), form)
+	if code != "" {
+		t.Fatal("registration must wait for the email code")
+	}
+	assertCodePage(t, page)
 	found := findUser(t, email)
 	if found == nil {
 		t.Fatal("the user was not created")
@@ -307,22 +337,113 @@ func TestIntegrationRegistrationVerifiesTheEmailBeforeThePassword(t *testing.T) 
 		}
 	}
 
-	link := waitForLink(t, email)
-	assertLinkLifespan(t, link)
-	_, setPassword := b.follow(link)
-	code, setPassword := b.submit(formAction(t, setPassword, "kc-passwd-update-form"),
-		url.Values{"password-new": {"abcdefgh"}, "password-confirm": {"abcdefgh"}})
-	if code != "" {
-		t.Fatal("abcdefgh (no digit) was accepted as the first password")
-	}
-	code, _ = b.submit(formAction(t, setPassword, "kc-passwd-update-form"),
-		url.Values{"password-new": {goodPassword}, "password-confirm": {goodPassword}})
+	code, _ = b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {waitForCode(t, email)}, "verify": {""}})
 	if code == "" {
-		t.Fatal("after the email and a valid password the sign-up should reach the app")
+		t.Fatal("after the password and the code the sign-up should reach the app")
 	}
 	exchange(t, code, p)
+	adminJSON(t, http.MethodGet, "/admin/realms/fynk/users/"+found.ID, nil, &u)
+	if !u.EmailVerified {
+		t.Fatal("the email should be verified after the code")
+	}
 	if again := login(t, newBrowser(t), email, goodPassword); again.AccessToken == "" {
 		t.Fatal("the new account cannot sign in")
+	}
+}
+
+// HU-050: 5 wrong codes kill the code; the right one is then refused until a new one is asked.
+func TestIntegrationFiveWrongCodesKillTheCode(t *testing.T) {
+	email := newEmail("killcode")
+	createUser(t, email, goodPassword, false)
+	b := newBrowser(t)
+	page := b.loginPage(newPKCE(), nil)
+	_, page = b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {goodPassword}})
+	assertCodePage(t, page)
+	mailed := waitForCode(t, email)
+
+	for i := 1; i <= 5; i++ {
+		var code string
+		code, page = b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {wrongVariant(mailed)}, "verify": {""}})
+		if code != "" {
+			t.Fatalf("wrong code %d gave an authorization code", i)
+		}
+		assertCodePage(t, page)
+	}
+	code, page := b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {mailed}, "verify": {""}})
+	if code != "" {
+		t.Fatal("the right code worked after 5 wrong ones")
+	}
+	assertCodePage(t, page)
+	if !strings.Contains(page, "Pide uno nuevo") {
+		t.Fatal("the page does not ask for a new code")
+	}
+}
+
+// HU-050: a second code cannot be asked within 60 seconds of the first.
+func TestIntegrationResendInsideTheCooldownIsRefused(t *testing.T) {
+	email := newEmail("cooldown")
+	createUser(t, email, goodPassword, false)
+	b := newBrowser(t)
+	page := b.loginPage(newPKCE(), nil)
+	_, page = b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {goodPassword}})
+	assertCodePage(t, page)
+	waitForCode(t, email)
+
+	code, page := b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"resend": {""}})
+	if code != "" {
+		t.Fatal("resend gave an authorization code")
+	}
+	assertCodePage(t, page)
+	if !strings.Contains(page, "Espera") {
+		t.Fatal("the page shows no wait notice")
+	}
+	time.Sleep(2 * time.Second)
+	if n := countMessages(t, email); n != 1 {
+		t.Fatalf("%d emails sent to the address, want 1", n)
+	}
+}
+
+// HU-050 and M13: the send and verify events are stored, with no code and no address.
+func TestIntegrationCodeEventsHoldNeitherTheCodeNorTheAddress(t *testing.T) {
+	email := newEmail("codeevents")
+	id := createUser(t, email, goodPassword, false).id
+	b := newBrowser(t)
+	page := b.loginPage(newPKCE(), nil)
+	_, page = b.submit(formAction(t, page, "kc-form-login"), url.Values{"username": {email}, "password": {goodPassword}})
+	mailed := waitForCode(t, email)
+	if code, _ := b.submit(formAction(t, page, "kc-email-code-form"), url.Values{"code": {mailed}, "verify": {""}}); code == "" {
+		t.Fatal("verification failed")
+	}
+	for _, typ := range []string{"SEND_VERIFY_EMAIL", "VERIFY_EMAIL"} {
+		var events []map[string]any
+		adminJSON(t, http.MethodGet, "/admin/realms/fynk/events?user="+id+"&type="+typ, nil, &events)
+		if len(events) == 0 {
+			t.Fatalf("no %s event stored", typ)
+		}
+		raw, _ := json.Marshal(events)
+		if strings.Contains(string(raw), mailed) {
+			t.Fatalf("a %s event contains the code", typ)
+		}
+		if strings.Contains(strings.ToLower(string(raw)), strings.ToLower(email)) {
+			t.Fatalf("a %s event contains the email address", typ)
+		}
+	}
+}
+
+// The Banco Demo realm (M16) ships in the same image and still starts.
+func TestIntegrationBancoDemoRealmWorksInTheSharedImage(t *testing.T) {
+	var cfg struct{ Issuer string }
+	getJSON(t, env.keycloak+"/realms/banco-demo/.well-known/openid-configuration", &cfg)
+	if !strings.HasSuffix(cfg.Issuer, "/realms/banco-demo") {
+		t.Fatalf("issuer = %q", cfg.Issuer)
+	}
+	b := newBrowser(t)
+	_, page := b.follow(env.keycloak + "/realms/banco-demo/protocol/openid-connect/auth?" + url.Values{
+		"client_id": {"bank-portal"}, "redirect_uri": {"http://localhost:8082/callback"},
+		"response_type": {"code"}, "scope": {"openid"},
+	}.Encode())
+	if !strings.Contains(page, `id="kc-form-login"`) {
+		t.Fatal("the Banco Demo login page did not render")
 	}
 }
 
@@ -659,6 +780,55 @@ func waitForLink(t *testing.T, to string) string {
 	}
 	t.Fatal("no email with a Keycloak link arrived")
 	return ""
+}
+
+// assertCodePage fails unless the page is the email code page.
+func assertCodePage(t *testing.T, page string) {
+	t.Helper()
+	if !strings.Contains(page, `id="kc-email-code-form"`) {
+		t.Fatal("expected the email code page")
+	}
+}
+
+// wrongVariant returns a code that differs from the given one in the last digit.
+func wrongVariant(code string) string {
+	last := code[len(code)-1]
+	return code[:len(code)-1] + string('0'+(last-'0'+1)%10)
+}
+
+var codeLine = regexp.MustCompile(`(?m)^\s*(\d{6})\s*$`)
+
+// waitForCode returns the 6-digit code in the newest email sent to the address.
+func waitForCode(t *testing.T, to string) string {
+	t.Helper()
+	deadline := time.Now().Add(20 * time.Second)
+	for time.Now().Before(deadline) {
+		var list struct {
+			Messages []struct{ ID string }
+		}
+		// Mailpit lists the newest message first.
+		getJSON(t, env.mailpit+"/api/v1/search?limit=1&query="+url.QueryEscape("to:"+to), &list)
+		if len(list.Messages) > 0 {
+			var msg struct{ Text string }
+			getJSON(t, env.mailpit+"/api/v1/message/"+list.Messages[0].ID, &msg)
+			if m := codeLine.FindStringSubmatch(msg.Text); m != nil {
+				return m[1]
+			}
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	t.Fatal("no email with a code arrived")
+	return ""
+}
+
+// countMessages returns how many emails Mailpit holds for the address.
+func countMessages(t *testing.T, to string) int {
+	t.Helper()
+	var list struct {
+		MessagesCount int `json:"messages_count"`
+	}
+	getJSON(t, env.mailpit+"/api/v1/search?limit=1&query="+url.QueryEscape("to:"+to), &list)
+	return list.MessagesCount
 }
 
 func getJSON(t *testing.T, u string, dst any) {
