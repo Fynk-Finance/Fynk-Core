@@ -50,6 +50,7 @@ type realm struct {
 	Attributes                          map[string]string
 	SMTPServer                          map[string]string
 	RegistrationFlow                    string
+	ResetCredentialsFlow                string
 	AuthenticationFlows                 []flow
 	RequiredActions                     []requiredAction
 	AuthenticatorConfig                 []authenticatorConfig
@@ -69,6 +70,7 @@ type execution struct {
 	AuthenticatorConfig string
 	Requirement         string
 	FlowAlias           string
+	Priority            int
 }
 
 type authenticatorConfig struct {
@@ -349,6 +351,43 @@ func TestRegistrationAsksForThePasswordBeforeTheCode(t *testing.T) {
 		t.Fatalf("registration-password-action config %q must set always_set_password_on_register_form to true", e.AuthenticatorConfig)
 	}
 	t.Fatal("registration-password-action is missing from the registration form")
+}
+
+// Password recovery uses the 6-digit code (extension fynk-email-code), never Keycloak's link.
+// The code step sits between choosing the user and setting the password, and there is no OTP step.
+func TestPasswordResetUsesTheCodeNotTheLink(t *testing.T) {
+	r, _ := loadRealm(t)
+	if !r.ResetPasswordAllowed {
+		t.Fatal("resetPasswordAllowed must stay on")
+	}
+	if r.ResetCredentialsFlow != "fynk reset credentials" {
+		t.Fatalf("resetCredentialsFlow = %q, want fynk reset credentials", r.ResetCredentialsFlow)
+	}
+	f := flowByAlias(t, r, r.ResetCredentialsFlow)
+	if !f.TopLevel {
+		t.Fatal("the reset flow must be top level")
+	}
+	want := []string{"reset-credentials-choose-user", "fynk-reset-credential-code", "reset-password"}
+	var got []string
+	for i, e := range f.AuthenticationExecutions {
+		if e.Requirement != "REQUIRED" {
+			t.Fatalf("execution %s is %s, want REQUIRED", e.Authenticator, e.Requirement)
+		}
+		if i > 0 && e.Priority <= f.AuthenticationExecutions[i-1].Priority {
+			t.Fatalf("priorities must increase: %+v", f.AuthenticationExecutions)
+		}
+		got = append(got, e.Authenticator)
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("reset executions = %v, want %v", got, want)
+	}
+	for _, fl := range r.AuthenticationFlows {
+		for _, e := range fl.AuthenticationExecutions {
+			if e.Authenticator == "reset-credential-email" {
+				t.Fatalf("flow %q uses the link authenticator reset-credential-email", fl.Alias)
+			}
+		}
+	}
 }
 
 func requiredActionEnabled(r realm, alias string) bool {
