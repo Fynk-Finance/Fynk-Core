@@ -29,7 +29,21 @@ it('maps GET /me to the profile, keeping the email masked as it comes', async ()
     lastName: 'Rojas',
     emailVerified: true,
     createdAt: '2026-10-20T15:30:00Z',
+    passwordUpdatedAt: '2026-10-20T15:32:10Z',
   });
+});
+
+it('leaves passwordUpdatedAt out when the API does not send it', async () => {
+  jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+    json(200, {
+      id: 'sub-1',
+      email: 'ca•••@correo.com',
+      emailVerified: true,
+      createdAt: '2026-10-20T15:30:00Z',
+    }),
+  );
+  const profile = await createProfileApi().getProfile();
+  expect('passwordUpdatedAt' in profile).toBe(false);
 });
 
 it('throws the problem code of a failed call', async () => {

@@ -10,6 +10,8 @@ export interface Profile {
   lastName?: string;
   emailVerified: boolean;
   createdAt: IsoDateTime;
+  /** When the password was last set. Absent when the API does not know. */
+  passwordUpdatedAt?: IsoDateTime;
 }
 
 const MONTHS = [
