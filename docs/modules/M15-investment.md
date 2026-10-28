@@ -19,7 +19,7 @@ You are building module M15 of Fynk: the Inversión tab. It informs, it never ad
 ## Read first
 
 1. `CLAUDE.md` (Architecture rule 8, Regulatory guardrails).
-2. Design PNG `11-inversion.png` and `11-inversion-2.png` (lower part) and the change notes in `docs/design/README.md`. Read the code of the same screens in `docs/design/source/` first (file map in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs are for checking the result.
+2. Design screen `Inversion` (lower part) and the change notes in `docs/design/README.md`. Read the code of these screens in `docs/design/sources/light/` and `docs/design/sources/dark/` first (inventory, gestures and transitions in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` are for checking the result. Every screen works in light and dark (colors only from `useTheme()`), and uses the default transition and back gesture of its kind unless the inventory says otherwise.
 3. Jira SCRUM-66.
 
 ## Story HU-049 (SCRUM-66), criteria

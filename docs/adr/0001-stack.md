@@ -94,6 +94,8 @@ Install scripts denied in `pnpm-workspace.yaml` (`allowBuilds`): `@parcel/watche
 | golangci-lint (run with `go run …@v2.15.0`) | v2.15.0 | Linters, including `depguard`, which blocks `internal/<a>` from importing `internal/<b>` except `internal/<b>/ports` |
 | github.com/golang-migrate/migrate/v4 | v4.20.1 | Per-module Postgres migrations (decided). `internal/platform/migrate` runs each module in its own schema with its own `<schema>_migrations` table, through the `pgx/v5` driver and the `iofs` source, so modules embed their SQL |
 | github.com/jackc/pgx/v5/stdlib | v5.11.0 (part of pgx) | `database/sql` adapter that golang-migrate needs. The API itself keeps using `pgxpool` |
+| github.com/golang-jwt/jwt/v5 | v5.3.1 | Added for M1. Parses and checks Keycloak access tokens: `WithValidMethods(["PS256"])` rejects every other algorithm before a key is looked up, plus issuer, audience, expiry and leeway checks. The JWKS cache is M1's own code. Marked `// indirect` until M1's verifier imports it |
+| github.com/testcontainers/testcontainers-go | v0.44.0 | Added for M1. Starts real containers (Keycloak, later Postgres and Redis) from Go integration tests (`-tags integration`), the same way on Windows with Docker Desktop and in CI. Test-only. Marked `// indirect` until M1's tests import it |
 
 The bank simulator placeholder (`services/bank-simulator`, M16) uses only the Go standard library.
 
@@ -105,7 +107,7 @@ Images are pinned to exact versions. A version is taken only once it has been ou
 | --- | --- | --- |
 | postgres | 16.15-alpine | Postgres 16, as in the M0 prompt and RDS. One database `fynk` (one schema per module) plus `keycloak` |
 | redis | 7.4.11-alpine | Redis 7 (nonces, rate limits, caches). 7.4.12 was released the same day and is held back |
-| quay.io/keycloak/keycloak | 26.8.1 | Login (decided). `start-dev --import-realm` imports `services/keycloak/realms/*.json`. M1 later builds its own image with the theme from the same version |
+| quay.io/keycloak/keycloak | 26.8.1 | Login (decided). `start-dev --import-realm` imports `services/keycloak/realms/*.json`. Compose builds M1's image `services/keycloak/Dockerfile` from this same version |
 | axllent/mailpit | v1.31.6 | Catches the emails Keycloak sends locally (named in the M1 prompt). v1.32.0 was 4 days old |
 | caddy | 2.11.7-alpine | mTLS egress towards the banks (decided, M14). Uses `tls_trust_pool`, the current syntax |
 | smallstep/step-cli | 0.31.0 | `make certs`: creates the local CA and certificates inside Docker, so nobody installs mkcert or step |

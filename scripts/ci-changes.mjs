@@ -28,7 +28,15 @@ const SHARED = [
 
 export const AREAS = {
   mobile: ['apps/', ...SHARED],
-  go: ['services/api/', 'services/bank-simulator/', 'go.work', 'go.work.sum', ...SHARED],
+  // services/keycloak/: the realm tests live in services/api/internal/identity/keycloak.
+  go: [
+    'services/api/',
+    'services/bank-simulator/',
+    'services/keycloak/',
+    'go.work',
+    'go.work.sum',
+    ...SHARED,
+  ],
 };
 
 const SESSION_LOG = /^docs\/history\/sessions\/[^/]+\.md$/;

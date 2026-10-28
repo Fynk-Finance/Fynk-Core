@@ -25,6 +25,10 @@ type Config struct {
 	RedisURL         string
 	KeycloakIssuer   string
 	KeycloakAudience string
+	// KeycloakURL is Keycloak as the API reaches it, for the JWKS and the admin API. Inside
+	// Docker it differs from the issuer host (http://keycloak:8080 vs http://localhost:8081).
+	KeycloakURL   string
+	KeycloakRealm string
 }
 
 // IsLocal reports whether the API runs on a developer machine.
@@ -40,9 +44,14 @@ func Load(getenv func(string) string) (Config, error) {
 		RedisURL:         getenv("REDIS_URL"),
 		KeycloakIssuer:   getenv("KEYCLOAK_ISSUER"),
 		KeycloakAudience: getenv("KEYCLOAK_AUDIENCE"),
+		KeycloakURL:      getenv("KEYCLOAK_URL"),
+		KeycloakRealm:    getenv("KEYCLOAK_REALM"),
 	}
 	if c.Port == "" {
 		c.Port = "8080"
+	}
+	if c.KeycloakRealm == "" {
+		c.KeycloakRealm = "fynk"
 	}
 
 	var errs []error
