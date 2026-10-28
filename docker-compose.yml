@@ -14,6 +14,8 @@ x-api-env: &api-env
   REDIS_URL: redis://redis:6379/0
   KEYCLOAK_ISSUER: http://localhost:8081/realms/fynk
   KEYCLOAK_AUDIENCE: fynk-api
+  # Keycloak as the API reaches it inside Docker (JWKS, admin API).
+  KEYCLOAK_URL: http://keycloak:8080
 
 services:
   postgres:
@@ -42,10 +44,12 @@ services:
       timeout: 3s
       retries: 30
 
+  # M1's image (services/keycloak/Dockerfile, Keycloak 26.8.1), the same one staging runs.
   # Realms fynk (M1) and banco-demo (M16) are imported from services/keycloak/realms/ on the
-  # first start. After changing a realm file, reset with `docker compose down -v`.
+  # first start. After changing a realm file, reset (services/keycloak/README.md).
   keycloak:
-    image: quay.io/keycloak/keycloak:26.8.1
+    build: ./services/keycloak
+    image: fynk-keycloak:local
     command: ['start-dev', '--import-realm']
     environment:
       KC_DB: postgres
@@ -62,6 +66,8 @@ services:
       # Read by the ${...} placeholders of the realm files.
       FYNK_DEMO_USER_PASSWORD: ${FYNK_DEMO_USER_PASSWORD:?missing in .env}
       BANCO_DEMO_USER_PASSWORD: ${BANCO_DEMO_USER_PASSWORD:?missing in .env}
+      # Secret of the fynk-admin client the API uses (M1). SMTP defaults to Mailpit in the realm.
+      FYNK_ADMIN_CLIENT_SECRET: ${FYNK_ADMIN_CLIENT_SECRET:?missing in .env, copy it from .env.example}
     ports:
       - '8081:8080'
     volumes:

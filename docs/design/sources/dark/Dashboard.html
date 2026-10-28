@@ -1,0 +1,343 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390"><title>App azul y verde · Oscuro · Dashboard</title></head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;background:#13212d;color:#e8f1f6}
+a{color:#b6e45a}a:hover{color:#b6e45a}
+.hscroll{scrollbar-width:none;-ms-overflow-style:none;scroll-snap-type:x mandatory;overflow-x:auto;overflow-y:hidden}
+.hscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.vscroll{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;overflow-x:hidden;overflow-y:auto}
+.vscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.plan{scroll-snap-align:start}
+.btn{cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn:focus-visible,.nav-item:focus-visible{outline:3px solid #dcf5a8;outline-offset:2px}
+.tab:hover .tab-shape{fill:#47b6e2}
+.tab-shape{transition:fill .2s ease}
+.tab-chev{transition:transform .25s ease}
+.tab{cursor:pointer}
+.row{transition:background-color .15s ease}
+.row:hover{background-color:#182a37 !important}
+.nav-item{cursor:pointer;transition:color .2s ease}
+.nav-item:not([aria-current]):hover{color:#ffffff !important}
+@keyframes db-shine{0%,62%{transform:translateX(0)}86%,100%{transform:translateX(520px)}}
+.shine{animation:db-shine 7s ease-in-out infinite 1.5s}
+.more-mov{transition:background-color .2s ease}
+.more-mov:hover{background-color:#1a3444 !important}
+.more-mov:focus-visible{outline:3px solid #b5e5f7;outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.shine{animation:none}}
+@keyframes fb-scrim{from{opacity:0}to{opacity:1}}
+@keyframes fb-pop{from{opacity:0;transform:translateY(12px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes fb-sheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fb-toast{0%{opacity:0;transform:translate(-50%,10px)}12%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,6px)}}
+.fb-scrim{animation:fb-scrim .2s ease-out both}
+.fb-act{animation:fb-pop .25s cubic-bezier(.34,1.56,.64,1) both}
+.fb-sheet{animation:fb-sheet .38s cubic-bezier(.22,1,.36,1) both}
+.fb-toast{animation:fb-toast 2.2s ease both}
+.fab{cursor:pointer;transition:transform .25s cubic-bezier(.34,1.56,.64,1),background-color .2s ease}
+.fab:hover{background-color:#279dcc !important}
+.fab-ic{transition:transform .25s ease}
+.fb-act-btn{cursor:pointer}
+.fb-act-btn:hover .fb-pill{background-color:#182a37 !important}
+.fb-seg{cursor:pointer;transition:background-color .2s ease,color .2s ease}
+.fb-field{transition:border-color .2s ease,background-color .2s ease}
+.fb-field:focus-within{border-color:#2fa8d8 !important;background-color:#13212d !important}
+.fb-field input,.fb-field select{border:none;outline:none;background:transparent;font-family:inherit;color:#e8f1f6;flex-grow:1;min-width:0;height:100%;font-size:15px}
+.fb-field input::placeholder{color:#71889a}
+.fb-opt{cursor:pointer;transition:background-color .15s ease}
+.fb-opt:hover{background-color:#182a37 !important}
+.fb-save{cursor:pointer;transition:background-color .2s ease}
+.fb-save:hover{background-color:#279dcc !important}
+.fab:focus-visible,.fb-act-btn:focus-visible,.fb-seg:focus-visible,.fb-opt:focus-visible,.fb-save:focus-visible,.fb-x:focus-visible,.fb-dd:focus-visible{outline:3px solid #b5e5f7;outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.fb-scrim,.fb-act,.fb-sheet,.fb-toast{animation:none}.fab,.fab-ic{transition:none}}
+
+</style>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: #0b1620; position: relative; overflow: hidden">
+<div class="vscroll" style="position: relative; height: 844px; box-sizing: border-box; padding: 16px 16px 168px; display: flex; flex-direction: column; gap: 24px; background-color: #13212d; padding-bottom: 32px">
+
+<header style="display: flex; align-items: center; justify-content: space-between; z-index: 1; flex-shrink: 0">
+<a class="btn" href="DetalleCuentas.html" aria-label="Mi cuenta: Laura Gómez" style="display: flex; align-items: center; gap: 8px; padding: 4px 16px 4px 4px; border: 1px solid #E4F5FC00; border-radius: 999px; color: #ffffff; text-decoration: none; background-color: #F0F0F000">
+<span style="width: 40px; height: 40px; border-radius: 999px; background-color: #50c1eb; color: #ffffff; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15px">LG</span>
+<span style="display: flex; flex-direction: column; align-items: flex-start; gap: 1px">
+<span style="font-size: 12px; line-height: 14px; color: #ffffff">Hola,</span>
+<span style="font-size: 15px; line-height: 18px; font-weight: 600">Laura Gómez</span>
+</span>
+</a>
+<div style="display: flex; align-items: center; gap: 2px">
+<a class="btn" href="Estadisticas.html" aria-label="Estadísticas" style="width: 48px; height: 48px; box-sizing: border-box; border-radius: 16px; color: #ffffff; display: flex; align-items: center; justify-content: center">
+<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="11" width="4.5" height="9.5" rx="1.5"></rect><rect x="9.75" y="3.5" width="4.5" height="17" rx="1.5"></rect><rect x="16" y="14" width="4.5" height="6.5" rx="1.5"></rect></svg>
+</a>
+<a class="btn" href="Notificaciones.html" aria-label="Notificaciones" style="width: 48px; height: 48px; box-sizing: border-box; border-radius: 16px; color: #ffffff; display: flex; align-items: center; justify-content: center; position: relative">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+<span style="position: absolute; top: 8px; right: 8px; width: 9px; height: 9px; border-radius: 999px; background-color: #a8e03a; border: 2px solid #2fa8d8"></span>
+</a>
+</div>
+</header>
+
+<div style="box-sizing: border-box; display: grid; flex-direction: column; gap: 8px; padding: 16px; background-color: #428FAF; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); position: absolute; left: 0px; top: 0px; width: 390px; height: 309px; z-index: 0; transition: height .25s ease; border-top-left-radius: 0px; border-bottom-right-radius: 24px; border-bottom-left-radius: 24px"></div><section style="display: flex; flex-direction: column; align-items: center; position: relative; flex-shrink: 0">
+<div style="width: 100%; height: 206px; box-sizing: border-box; border-radius: 24px; background-color: #55C2EA; position: relative; overflow: hidden; padding: 24px 24px 16px; display: flex; flex-direction: column; justify-content: space-between; color: #ffffff; box-shadow: 0 16px 32px -18px rgba(80, 193, 235, 0.9)">
+<svg width="350" height="206" viewBox="0 0 350 206" aria-hidden="true" style="position: absolute; top: 0; left: 0">
+<rect x="208" y="-78" width="190" height="190" rx="40" fill="#6bccef"></rect>
+<rect x="268" y="-30" width="110" height="110" rx="26" fill="#86d6f3"></rect>
+<rect x="-46" y="150" width="120" height="120" rx="28" fill="#47b6e2"></rect>
+<g class="shine"><rect x="-120" y="-40" width="46" height="300" fill="#ffffff" fill-opacity=".18" transform="skewX(-18)"></rect></g>
+</svg>
+<div style="position: relative; display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; line-height: 18px; font-weight: 500; opacity: 0.92">Balance total</span>
+<span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-weight: 600; font-size: 34px; line-height: 40px; letter-spacing: -0.02em">$12.480.350</span>
+<span style="font-size: 12px; line-height: 16px; opacity: 0.9">COP · 4 cuentas conectadas</span>
+</div>
+<div style="position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<div style="background-color: #1F93C266; border-radius: 14px; padding: 8px 8px; display: flex; align-items: center; gap: 8px">
+<span style="width: 32px; height: 32px; border-radius: 9px; background-color: #e8f1f6; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: #a8e03a"><path d="M7 17 17 7"></path><path d="M8 7h9v9"></path></svg></span>
+<span style="display: flex; flex-direction: column"><span style="font-size: 11px; line-height: 14px; opacity: 0.92">Ingresos</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; line-height: 17px; font-weight: 600">$5.200.000</span></span>
+</div>
+<div style="background-color: #1F93C267; border-radius: 14px; padding: 8px 8px; display: flex; align-items: center; gap: 8px">
+<span style="width: 32px; height: 32px; border-radius: 9px; background-color: #e8f1f6; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 7 7 17" stroke="#2fa8d8"></path><path d="M16 17H7V8"></path></svg></span>
+<span style="display: flex; flex-direction: column"><span style="font-size: 11px; line-height: 14px; opacity: 0.92">Gastos</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; line-height: 17px; font-weight: 600">$2.310.400</span></span>
+</div>
+</div>
+</div><a class="tab btn" href="DashboardDetalles.html" draggable="false" aria-label="Ver detalle de cuentas" onPointerDown="" onPointerMove="" onPointerUp="" onPointerCancel="" style="touch-action: none; user-select: none; -webkit-user-drag: none; margin-top: 8px; position: relative; width: 148px; height: 24px; padding: 0; border: none; background: none; display: block">
+<svg width="148" height="26" viewBox="0 0 74 13" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; top: 0; left: 0; display: block; fill: #418DAC"><path class="tab-shape" d="M0 0C15 0 22 3.5 28 8.8 31.5 11.8 34.5 13 37 13s5.5-1.2 9-4.2C52 3.5 59 0 74 0Z" fill="#418EAE"></path></svg>
+<svg class="tab-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: absolute; left: 67px; top: 4px; transform: none"><path d="m6 9 6 6 6-6"></path></svg>
+</a>
+
+
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 16px; justify-content: center; align-items: center; z-index: 1; flex-shrink: 0">
+<div style="display: flex; align-items: baseline; justify-content: space-between; width: 100%">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 26px">Planes de ahorro</h2>
+<a href="Metas.html" style="font-size: 13px; font-weight: 600; text-decoration: none">Ver todos</a>
+</div>
+<div class="hscroll" style="display: flex; gap: 8px; margin: 0 -16px -8px; padding: 2px 16px 16px; align-self: stretch; box-sizing: border-box">
+<article class="plan" style="flex-shrink: 0; width: 206px; box-sizing: border-box; border-radius: 18px; background-color: #13212d; color: #e8f1f6; padding: 16px; display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden; height: 112px; border: 1px solid rgba(168, 224, 58, 0.3); box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.22)">
+<svg width="76" height="76" viewBox="0 0 76 76" aria-hidden="true" style="position: absolute; top: -24px; right: -24px"><rect x="0" y="0" width="76" height="76" rx="20" fill="#a8e03a" fill-opacity=".14"></rect></svg>
+<div data-dc-group="" style="box-sizing: border-box; display: flex; flex-direction: row; gap: 8px; justify-content: space-between; align-items: center"><span style="position: relative; width: 32px; height: 32px; border-radius: 10px; background-color: #a8e03a; color: #ffffff; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg></span><span style="position: relative; font-size: 14px; line-height: 18px; font-weight: 600">Viaje a Cartagena</span></div>
+
+<div style="height: 6px; border-radius: 999px; background-color: #22313d; overflow: hidden"><div style="width: 64%; height: 6px; border-radius: 999px; background-color: #a8e03a"></div></div>
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600">$3.200.000</span><span style="font-size: 11px; font-weight: 700; color: #b6e45a">64%</span></div>
+</article><article class="plan" style="flex-shrink: 0; width: 206px; box-sizing: border-box; border-radius: 18px; background-color: #13212d; color: #e8f1f6; padding: 16px; display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden; height: 112px; border: 1px solid rgba(168, 224, 58, 0.3); box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.22)">
+<svg width="76" height="76" viewBox="0 0 76 76" aria-hidden="true" style="position: absolute; top: -24px; right: -24px"><rect x="0" y="0" width="76" height="76" rx="20" fill="#a8e03a" fill-opacity=".14"></rect></svg>
+<div data-dc-group="" style="box-sizing: border-box; display: flex; flex-direction: row; gap: 8px; justify-content: space-between; align-items: center"><span style="position: relative; width: 32px; height: 32px; border-radius: 10px; background-color: #a8e03a; color: #ffffff; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg></span><span style="position: relative; font-size: 14px; line-height: 18px; font-weight: 600; text-align: right">Fondo de Emergencia</span></div>
+
+<div style="height: 6px; border-radius: 999px; background-color: #22313d; overflow: hidden"><div style="width: 64%; height: 6px; border-radius: 999px; background-color: #a8e03a"></div></div>
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600">$3.200.000</span><span style="font-size: 11px; font-weight: 700; color: #b6e45a">64%</span></div>
+</article>
+
+
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; z-index: 1; flex-shrink: 0">
+<div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 26px">Movimientos</h2>
+<a href="Movimientos.html" style="font-size: 13px; font-weight: 600; text-decoration: none">Ver todo</a>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7 7 7-7"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Salario</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Cuenta de ahorros · 22 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #62c8f0">+$5.200.000</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Supermercado</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Tarjeta débito · 21 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$184.300</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2V5zM2 9v1c0 1.1.9 2 2 2h1"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Aporte a Viaje a Cartagena</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Plan de ahorro · 20 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$300.000</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Restaurante</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Tarjeta de crédito · 19 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$72.000</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v12H4zM8 20h8M12 16v4"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Suscripción streaming</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Tarjeta de crédito · 18 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$38.900</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6v6M16 6v6M2 12h20M6 18h12M4 18V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12M7 21v-3M17 21v-3"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Transporte</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Tarjeta débito · 18 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$12.500</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Farmacia</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Tarjeta débito · 17 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$46.200</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7 7 7-7"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Transferencia recibida</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Daviplata · 16 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #62c8f0">+$120.000</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Café</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Efectivo · 16 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$9.800</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6v6M16 6v6M2 12h20M6 18h12M4 18V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12M7 21v-3M17 21v-3"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Recarga transporte</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Daviplata · 15 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$40.000</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Tienda de ropa</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Tarjeta de crédito · 14 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$159.900</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v12H4zM8 20h8M12 16v4"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Cine</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Tarjeta débito · 13 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$34.000</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Almuerzo</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Efectivo · 12 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$18.000</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6v6M16 6v6M2 12h20M6 18h12M4 18V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12M7 21v-3M17 21v-3"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Taxi</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Efectivo · 12 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$22.000</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; margin: 0 -8px; border-radius: 14px; background-color: #13212d">
+<span style="width: 48px; height: 48px; border-radius: 14px; background-color: #182a37; border: 1px solid #223746; box-sizing: border-box; color: #62c8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v12H4zM8 20h8M12 16v4"></path></svg>
+</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">Internet hogar</span>
+<span style="font-size: 12px; line-height: 16px; color: #97abb8">Cuenta de ahorros · 11 sep</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap; color: #e8f1f6">−$89.900</span>
+</div>
+
+</div>
+
+<a class="more-mov" href="Movimientos.html" style="margin-top: 8px; height: 48px; box-sizing: border-box; border-radius: 15px; border: 1.5px solid #223746; background-color: #182a37; color: #62c8f0; font-size: 14px; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px">Ver más movimientos<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+
+</section>
+</div>
+
+<nav aria-label="Navegación principal" style="position: absolute; left: 0; bottom: 0; width: 390px; height: 72px; box-sizing: border-box; background-color: #50c1eb; padding: 8px 8px 16px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; box-shadow: 0 -10px 24px -16px rgba(127, 184, 26, 0.6); z-index: 2; overflow: hidden; border-radius: 16px 16px 0 0">
+<a class="nav-item" href="Dashboard.html" aria-current="page" style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #ffffff">
+<span style="position: relative; width: 56px; height: 32px; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="position: absolute; top: -4px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 999px; background-color: #13212d"></span><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg></span>
+<span style="font-size: 10px; line-height: 13px; font-weight: 700; text-align: center">Dashboard</span>
+</a>
+<a class="nav-item" href="Billetera.html" style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: rgba(255, 255, 255, 0.72)">
+<span style="width: 56px; height: 32px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"></path><path d="M16 14h.01"></path></svg></span>
+<span style="font-size: 10px; line-height: 13px; font-weight: 600; text-align: center">Billetera</span>
+</a>
+<a class="nav-item" href="Recomendaciones.html" style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: rgba(255, 255, 255, 0.72)">
+<span style="width: 56px; height: 32px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg></span>
+<span style="font-size: 10px; line-height: 13px; font-weight: 600; text-align: center">Recomendaciones</span>
+</a>
+<a class="nav-item" href="Inversion.html" style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: rgba(255, 255, 255, 0.72)">
+<span style="width: 56px; height: 32px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 7-8.5 8.5-5-5L2 17"></path><path d="M16 7h6v6"></path></svg></span>
+<span style="font-size: 10px; line-height: 13px; font-weight: 600; text-align: center">Inversión</span>
+</a>
+<svg class="nav-arrow" width="66" height="13" viewBox="0 0 46 13" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; left: 16px; bottom: 0"><path d="M0 13C9 13 13.5 9.5 17.5 4.2 19.8 1.2 21.2 0 23 0s3.2 1.2 5.5 4.2C32.5 9.5 37 13 46 13Z" fill="#ffffff"></path></svg>
+</nav>
+
+
+
+<button class="fab" type="button" onClick="" aria-label="Registrar gasto o ingreso" aria-expanded="false" aria-haspopup="menu" style="position: absolute; right: 16px; bottom: 92px; width: 64px; height: 64px; border: none; border-radius: 20px; background-color: #2fa8d8; color: #ffffff; display: flex; align-items: center; justify-content: center; box-shadow: 0 14px 26px -12px rgba(31, 127, 168, 0.8); z-index: 4">
+<svg class="fab-ic" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true" style="transform: none"><path d="M12 5v14M5 12h14"></path></svg>
+</button>
+
+
+
+
+</div>
+</body></html>
