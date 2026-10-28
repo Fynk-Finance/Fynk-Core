@@ -2,6 +2,8 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
+import { ThemeProvider } from '@shared/ui';
+
 import { InicioIllustration } from './InicioIllustration';
 import { DROP, FLOAT, SHINE, TWINKLE_SCALE, easeInOut, sampleKeyframes } from './inicioMotion';
 
@@ -60,6 +62,28 @@ describe('InicioIllustration', () => {
     reduceMotion.mockReturnValue(false);
     await renderMeasured();
     expect(screen.getByRole('image')).toBeOnTheScreen();
+  });
+});
+
+describe('InicioIllustration colors', () => {
+  const noStore = { load: async () => 'light' as const, save: async () => {} };
+  // react-native-svg hands fills to the native side as opaque ARGB numbers.
+  const fills = () => JSON.stringify(screen.toJSON());
+  const argb = (hex: string) => `"payload":${0xff000000 + parseInt(hex.slice(1), 16)}`;
+
+  it.each([
+    ['light', ['#f4fbfe', '#e4f5fc', '#d2eef9', '#eef9fe'], ['#182a37', '#1a3444', '#1d3a4a']],
+    ['dark', ['#182a37', '#1a3444', '#1d3a4a'], ['#f4fbfe', '#e4f5fc', '#d2eef9', '#eef9fe']],
+  ] as const)('draws the %s backdrop, shadow and card square', async (scheme, has, lacks) => {
+    reduceMotion.mockReturnValue(true);
+    await render(
+      <ThemeProvider initialPreference={scheme} store={noStore}>
+        <InicioIllustration />
+      </ThemeProvider>,
+    );
+    const all = fills();
+    for (const c of has) expect(all).toContain(argb(c));
+    for (const c of lacks) expect(all).not.toContain(argb(c));
   });
 });
 
