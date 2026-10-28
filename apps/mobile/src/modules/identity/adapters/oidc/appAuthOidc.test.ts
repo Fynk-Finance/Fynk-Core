@@ -83,6 +83,15 @@ describe('authorize', () => {
       kind: 'cancelled',
     });
   });
+
+  it('treats the access_denied redirect after a password reset as a cancel', async () => {
+    mockAuthorize.mockRejectedValueOnce(
+      Object.assign(new Error('access_denied'), { code: 'access_denied' }),
+    );
+    await expect(createAppAuthOidc(config).authorize('signIn')).rejects.toMatchObject({
+      kind: 'cancelled',
+    });
+  });
 });
 
 describe('classifyAppAuthError', () => {
@@ -92,6 +101,9 @@ describe('classifyAppAuthError', () => {
       { code: 'authentication_failed', message: '(org.openid.appauth.general error -3.)' },
       'cancelled',
     ],
+    [{ code: 'access_denied', message: 'access_denied' }, 'cancelled'],
+    [{ code: 'not_access_denied_at_all', message: 'x' }, 'rejected'],
+    [{ code: 'unauthorized_client', message: 'Client not allowed' }, 'rejected'],
     [{ code: 'service_configuration_fetch_error', message: 'x' }, 'network'],
     [{ code: 'token_refresh_failed', message: 'Network error' }, 'network'],
     [{ code: 'token_refresh_failed', message: 'The request timed out.' }, 'network'],
