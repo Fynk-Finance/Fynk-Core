@@ -9,6 +9,7 @@ import (
 	audit "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/devices"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/postgres"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/token"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/clock"
 )
 
@@ -30,6 +31,12 @@ type Activator interface {
 // NewDevices returns the Activator for M2, over identity.devices in pool.
 func NewDevices(pool *pgxpool.Pool, clk clock.Clock) Activator {
 	return activator{svc: devices.NewService(postgres.New(pool), clk, noAudit{}, nil)}
+}
+
+// NewDeviceChecker returns the token.DeviceChecker for the API's token verifier, over
+// identity.devices in pool. A removed, foreign or malformed device id is simply not usable.
+func NewDeviceChecker(pool *pgxpool.Pool, clk clock.Clock) token.DeviceChecker {
+	return devices.NewService(postgres.New(pool), clk, noAudit{}, nil)
 }
 
 type activator struct{ svc *devices.Service }

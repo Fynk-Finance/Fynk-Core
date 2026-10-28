@@ -13,6 +13,7 @@ import (
 
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/app"
 	audit "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
+	identityports "github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/clock"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/config"
@@ -53,7 +54,7 @@ func run(logger *slog.Logger) error {
 	}
 	defer func() { _ = rdb.Close() }()
 
-	verifier, err := newVerifier(cfg, logger)
+	verifier, err := newVerifier(cfg, logger, identityports.NewDeviceChecker(pool, clock.System{}))
 	if err != nil {
 		return err
 	}
