@@ -1,11 +1,15 @@
 // Mock Keycloak context for `pnpm dev` only. main.tsx imports this file behind `import.meta.env.DEV`,
 // so it never reaches the built theme.
-//   ?page=login.ftl | register.ftl | fynk-email-code.ftl   page to show (default login.ftl)
-//   &error=1                          login: wrong credentials, register: server errors
+//   ?page=login.ftl | register.ftl | login-reset-password.ftl | fynk-email-code.ftl |
+//         login-update-password.ftl | info.ftl | error.ftl      page to show (default login.ftl)
+//   &error=1                          login: wrong credentials, register: server errors,
+//                                     login-reset-password and login-update-password: field errors
 //   &password=0                       register: without the password fields (the realm always asks for it)
 //   fynk-email-code.ftl:  &purpose=verify | reset (default verify)
 //                         &error=wrong | new | malformed | many | wait
 //                         &cooldown=42  seconds left before "Reenviar código" (default 0)
+//   info.ftl:  &kind=reset (end of the password recovery) | generic (default reset)
+//   error.ftl: &link=0 (the client has no base URL)
 import { createGetKcContextMock } from 'keycloakify/login/KcContext';
 import type { KcContext } from './KcContext';
 
@@ -29,6 +33,15 @@ const codeMessages: Record<string, string> = {
   many: 'Hiciste demasiados intentos fallidos. Inténtalo de nuevo más tarde.',
   wait: 'Espera 42 segundos para pedir otro código.',
 };
+
+function fieldErrors(fields: Record<string, string>) {
+  return {
+    existsError: (...names: string[]) => names.some((name) => name in fields),
+    exists: (name: string) => name in fields,
+    get: (name: string) => fields[name] ?? '',
+    getFirstError: (...names: string[]) => names.map((name) => fields[name]).find(Boolean) ?? '',
+  };
+}
 
 export function getDevKcContext(search: string): KcContext {
   const params = new URLSearchParams(search);
@@ -72,6 +85,71 @@ export function getDevKcContext(search: string): KcContext {
         ...(codeMessages[error] !== undefined && {
           message: { type: 'error', summary: codeMessages[error] },
         }),
+      },
+    });
+  }
+
+  if (page === 'login-reset-password.ftl') {
+    return getKcContextMock({
+      pageId: 'login-reset-password.ftl',
+      overrides: {
+        realm,
+        auth: { attemptedUsername: withError ? 'laura.gomez@correo' : '' },
+        ...(withError && {
+          messagesPerField: fieldErrors({ username: 'Correo no válido.' }),
+        }),
+      },
+    });
+  }
+
+  if (page === 'login-update-password.ftl') {
+    return getKcContextMock({
+      pageId: 'login-update-password.ftl',
+      overrides: {
+        realm,
+        ...(withError && {
+          messagesPerField: fieldErrors({
+            password: 'Contraseña no válida: no puede ser igual que el correo.',
+          }),
+        }),
+      },
+    });
+  }
+
+  if (page === 'info.ftl') {
+    const reset = (params.get('kind') ?? 'reset') === 'reset';
+    return getKcContextMock({
+      pageId: 'info.ftl',
+      overrides: {
+        realm,
+        skipLink: reset,
+        message: {
+          type: 'success',
+          summary: reset
+            ? 'Tu cuenta se ha actualizado.'
+            : 'Tu correo se verificó. Puedes volver a la app.',
+        },
+        ...(!reset && {
+          messageHeader: 'Correo verificado',
+          client: { baseUrl: 'co.fynk.app://oauth/callback' },
+        }),
+        ...(reset && { messageHeader: '', client: { baseUrl: undefined } }),
+      },
+    });
+  }
+
+  if (page === 'error.ftl') {
+    return getKcContextMock({
+      pageId: 'error.ftl',
+      overrides: {
+        realm,
+        message: {
+          type: 'error',
+          summary: 'Tu sesión venció. Vuelve a la app e inicia el proceso otra vez.',
+        },
+        client: {
+          baseUrl: params.get('link') === '0' ? undefined : 'co.fynk.app://oauth/callback',
+        },
       },
     });
   }
