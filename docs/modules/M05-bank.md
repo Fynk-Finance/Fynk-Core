@@ -20,7 +20,7 @@ You are building module M5 Bank connection and sync of Fynk. The backend is the 
 
 1. `CLAUDE.md` (Architecture rules 4 and 7, Security rules), `docs/modules/00-shared-contracts.md` sections 2, 3.3, 4.4, 4.5 and 5.
 2. `docs/modules/M16-banco-demo.md`, sections API and OAuth, because you are its main client.
-3. Design PNGs `20-conectar-banco.png`, `15-config-cuentas.png`, `09-billetera.png` and `09-billetera-2.png` ("Mis cuentas" with "+ Conectar"), `08-notificaciones.png` (sync result). Read the code of the same screens in `docs/design/source/` first (file map in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs are for checking the result.
+3. Design screens `ConectarBanco`, `OnbCuentas`, `Billetera` ("Mis cuentas" with "+ Conectar") and `Notificaciones` (sync result). Pull to refresh on Dashboard, Billetera and Movimientos starts a sync (60 second cooldown). Read the code of these screens in `docs/design/sources/light/` and `docs/design/sources/dark/` first (inventory, gestures and transitions in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` are for checking the result. Every screen works in light and dark (colors only from `useTheme()`), and uses the default transition and back gesture of its kind unless the inventory says otherwise.
 4. Jira SCRUM-23, SCRUM-24, SCRUM-25, SCRUM-44, SCRUM-45.
 
 ## Stories and criteria
