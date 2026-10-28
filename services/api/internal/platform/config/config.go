@@ -29,6 +29,10 @@ type Config struct {
 	// Docker it differs from the issuer host (http://keycloak:8080 vs http://localhost:8081).
 	KeycloakURL   string
 	KeycloakRealm string
+	// KeycloakAdminClientSecret is the client secret of the Keycloak client fynk-admin (client
+	// credentials) that M1 uses for the admin API. Optional: when empty, the features that need
+	// it answer 503. Never log it.
+	KeycloakAdminClientSecret string
 }
 
 // IsLocal reports whether the API runs on a developer machine.
@@ -46,6 +50,8 @@ func Load(getenv func(string) string) (Config, error) {
 		KeycloakAudience: getenv("KEYCLOAK_AUDIENCE"),
 		KeycloakURL:      getenv("KEYCLOAK_URL"),
 		KeycloakRealm:    getenv("KEYCLOAK_REALM"),
+
+		KeycloakAdminClientSecret: getenv("FYNK_ADMIN_CLIENT_SECRET"),
 	}
 	if c.Port == "" {
 		c.Port = "8080"

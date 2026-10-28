@@ -164,6 +164,21 @@ func TestAcceptsAValidPS256Token(t *testing.T) {
 	}
 }
 
+func TestReadsTheSessionIDWhenPresent(t *testing.T) {
+	a, _, _ := testKeys(t)
+	f := newFixture(t, psKey(t, "a", a))
+	withSid := accessClaims()
+	withSid["sid"] = "session-1"
+	u, err := f.v.Verify(context.Background(), sign(t, jwt.SigningMethodPS256, a, "a", withSid), "")
+	if err != nil || u.SessionID != "session-1" {
+		t.Fatalf("with sid: %+v, %v", u, err)
+	}
+	u, err = f.v.Verify(context.Background(), sign(t, jwt.SigningMethodPS256, a, "a", accessClaims()), "")
+	if err != nil || u.SessionID != "" {
+		t.Fatalf("without sid: %+v, %v", u, err)
+	}
+}
+
 // HU-002: only PS256. RS256 with the same key, HS256 (also keyed with the public key, the
 // classic algorithm confusion) and "none" are rejected.
 func TestRejectsEveryOtherAlgorithm(t *testing.T) {
