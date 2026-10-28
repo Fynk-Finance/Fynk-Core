@@ -48,7 +48,7 @@ it('an expired access token triggers one refresh and one retry', async () => {
     const auth = req.headers.get('Authorization');
     seen.push(auth);
     if (auth !== 'Bearer new-access') return new Response(null, { status: 401 });
-    return Response.json({ module: 'identity', status: 'stub' });
+    return Response.json({ items: [] });
   });
   const client = createApiClient({
     baseUrl: 'http://api.test',
@@ -56,7 +56,7 @@ it('an expired access token triggers one refresh and one retry', async () => {
     fetch,
   });
 
-  const { response } = await client.GET('/identity/health');
+  const { response } = await client.GET('/devices');
 
   expect(response.status).toBe(200);
   expect(oidc.refresh).toHaveBeenCalledTimes(1);
@@ -74,7 +74,7 @@ it('sends no token when signed out', async () => {
     hooks: () => createApiHooks(session, () => null),
     fetch,
   });
-  await client.GET('/identity/health');
+  await client.GET('/devices');
   expect(fetch).toHaveBeenCalledTimes(1);
   expect((fetch.mock.calls[0] as unknown as [Request])[0].headers.has('Authorization')).toBe(false);
 });
