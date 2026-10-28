@@ -17,6 +17,7 @@ export default {
         <Badge label="Simulado" />
       </View>
     ),
+    WithIcon: () => <Badge label="Perfil verificado" tone="accent" size="lg" icon="check" />,
     OnPrimary: () => (
       <OnColor color="primaryLight" padding={12}>
         <Badge label="Mayor impacto" tone="onPrimary" />
