@@ -73,6 +73,9 @@
 | openapi-typescript | 7.13.0 | Generates `src/shared/api/schema.gen.ts` from the bundled contract. It declares TypeScript 5 as its peer. It generates correctly with TypeScript 6, so `pnpm-workspace.yaml` allows it (`peerDependencyRules`) |
 | react-native-app-auth | 9.0.0 | Added for M1. OpenID Connect with Authorization Code and PKCE S256 in the system browser (ASWebAuthenticationSession on iOS, Custom Tabs on Android), never a webview. Its Expo config plugin in `app.json` registers the redirect scheme `co.fynk.app` on both platforms. 9.0.0 needs React Native 0.86 or newer; it was out for 8 days when added |
 | react-native-keychain | 10.0.0 | Added for M1. Keeps the Keycloak tokens in the iOS Keychain and the Android Keystore with `WHEN_UNLOCKED_THIS_DEVICE_ONLY`, so they never reach AsyncStorage, backups or another phone. M2 reuses it for the vault key |
+| expo-crypto | 58.0.7 | Added for M1. `getRandomBytes` from the phone's secure random source, for the device's X25519 private key and the registration Idempotency-Key. M2 reuses it. The version `npx expo install` picks for SDK 58 |
+| expo-device | 58.0.5 | Added for M1. The phone's model name for the linked devices list ("iPhone 15"), never a hardware id. The version `npx expo install` picks for SDK 58 |
+| @noble/curves | 2.4.0 | Added for M1. X25519 public key of the device key pair, sent with `POST /devices` and used by M2's device approval. Audited pure JavaScript, no native code, runs on Hermes. It ships only ES modules, so `jest.config.js` adds `@noble` to jest-expo's transform list |
 
 The aliases `@shared/*` and `@modules/*` are declared once in `tsconfig.json`. Metro reads them from there (Expo's built-in tsconfig paths support), and Jest maps them in `jest.config.js`. No Babel alias plugin is needed.
 
