@@ -5,10 +5,11 @@ import Template from 'keycloakify/login/Template';
 import type { KcContext } from './KcContext';
 import { useI18n } from './i18n';
 import Login from './pages/Login';
+import Register from './pages/Register';
 
 const UserProfileFormFields = lazy(() => import('keycloakify/login/UserProfileFormFields'));
 
-// login.ftl uses the Fynk design. Every other page renders as Keycloak's default
+// login.ftl and register.ftl use the Fynk design. Every other page renders as Keycloak's default
 // until its Fynk version is added as a case of the switch.
 export default function KcPage(props: { kcContext: KcContext }) {
   const { kcContext } = props;
@@ -20,6 +21,8 @@ export default function KcPage(props: { kcContext: KcContext }) {
         switch (kcContext.pageId) {
           case 'login.ftl':
             return <Login kcContext={kcContext} i18n={i18n} />;
+          case 'register.ftl':
+            return <Register kcContext={kcContext} i18n={i18n} />;
           default:
             return (
               <DefaultPage

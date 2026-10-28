@@ -161,6 +161,9 @@ a:hover {
   gap: 8px;
   margin-bottom: 32px;
 }
+.fk-card-intro--tight {
+  margin-bottom: 24px;
+}
 .fk-card-title {
   margin: 0;
   font-family: 'Space Grotesk', sans-serif;
