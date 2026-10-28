@@ -1,0 +1,61 @@
+# Caddy egress for Fynk Staging (AWS EC2 egress instance with static Elastic IP)
+# Owned by M14 Infrastructure (docs/modules/M14-infrastructure.md).
+# Adds client certificate (mTLS) for Open Finance banks and proxies market data.
+
+{
+	admin off
+	auto_https off
+}
+
+:8443 {
+	tls /etc/caddy/internal.crt /etc/caddy/internal.key
+
+	# Access log in JSON without sensitive headers or query strings per HU-032 & HU-034
+	log {
+		output stdout
+		format filter {
+			wrap json
+			request>headers delete
+			request>tls delete
+			request>uri regexp \?.* ""
+			resp_headers delete
+		}
+	}
+
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# Route 1: Banco Demo (Simulator internal mTLS listener inside VPC)
+	handle_path /banco-demo/* {
+		reverse_proxy https://bank-simulator.internal:9443 {
+			header_up Host {upstream_hostport}
+			transport http {
+				tls_client_auth /run/secrets/fynk-client.crt /run/secrets/fynk-client.key
+				tls_trust_pool file /etc/caddy/banco-demo-ca.crt
+				tls_server_name bank-simulator
+			}
+		}
+	}
+
+	# Route 2: Bancolombia Sandbox Open Finance API
+	handle_path /bancolombia/* {
+		reverse_proxy https://api.sandbox.bancolombia.com {
+			header_up Host {upstream_hostport}
+			transport http {
+				tls_client_auth /run/secrets/fynk-client.crt /run/secrets/fynk-client.key
+			}
+		}
+	}
+
+	# Route 3: Alpaca Market Data API
+	handle_path /alpaca/* {
+		reverse_proxy https://data.alpaca.markets {
+			header_up Host {upstream_hostport}
+		}
+	}
+
+	handle {
+		respond 404
+	}
+}
