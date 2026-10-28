@@ -530,8 +530,8 @@ func TestLoginUsesTheFynkTheme(t *testing.T) {
 	if r.LoginTheme != "fynk" {
 		t.Fatalf("loginTheme = %q, want fynk", r.LoginTheme)
 	}
-	if r.EmailTheme != "" {
-		t.Fatalf("emailTheme = %q: the email theme is not built yet", r.EmailTheme)
+	if r.EmailTheme != "fynk" {
+		t.Fatalf("emailTheme = %q, want fynk", r.EmailTheme)
 	}
 	if got := clientByID(t, r, "fynk-mobile").BaseURL; got != "" {
 		t.Fatalf("fynk-mobile baseUrl = %q: Keycloak rejects custom-scheme base URLs", got)

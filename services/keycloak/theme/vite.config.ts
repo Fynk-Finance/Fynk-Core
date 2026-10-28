@@ -10,7 +10,8 @@ export default defineConfig({
       themeName: 'fynk',
       // Keeps account data out of the email-code page's embedded context (see postBuild.ts).
       postBuild,
-      // Only the login theme is ours (the email theme comes later). The account console stays Keycloak's.
+      // The login theme (src/login) and the code email theme (src/email: plain FreeMarker, copied into the jar
+      // as it is because it has a theme.properties) are ours. The account console stays Keycloak's.
       accountThemeImplementation: 'none',
       // The image runs Keycloak 26.8.1 only (services/keycloak/Dockerfile).
       keycloakVersionTargets: {
