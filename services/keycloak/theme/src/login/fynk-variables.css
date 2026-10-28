@@ -40,6 +40,14 @@
   --fk-danger: #c0392b;
   --fk-danger-surface: #fff5f5;
   --fk-danger-border: #f3c7c7;
+
+  /* Code boxes, email card and lime info box (OnbCorreo.html). */
+  --fk-border-code: #bfe6f6; /* border of a filled code box */
+  --fk-lime-surface: #f8fdee;
+  --fk-lime-border: rgba(168, 224, 58, 0.4);
+  --fk-lime-text: #3f5a0a;
+  --fk-lime-icon: #6a9e12;
+  --fk-shadow-tile: rgba(15, 34, 51, 0.2);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -67,5 +75,10 @@
     --fk-danger: #ff7d6e;
     --fk-danger-surface: #2e1a1c;
     --fk-danger-border: #5a2a2a;
+
+    --fk-border-code: #2b5267;
+    --fk-lime-surface: #1e2c16;
+    --fk-lime-text: #b6e45a;
+    --fk-shadow-tile: rgba(0, 0, 0, 0.2);
   }
 }
