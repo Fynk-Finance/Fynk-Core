@@ -77,8 +77,8 @@ func TestAllListsTheEightModulesOnce(t *testing.T) {
 
 func TestEveryStubRouteAnswers501ProblemJSON(t *testing.T) {
 	srv := newServer(t, nil)
-	// One path per endpoint group of the shared contracts, section 5. Identity's routes
-	// (/v1/me, /v1/devices/current) are real now and covered by its own tests.
+	// One path per endpoint group of the shared contracts, section 5. Identity implements its
+	// routes (/v1/me, /v1/devices) and covers them in its own tests.
 	paths := []string{
 		"/v1/backup/records", "/v1/device-approvals/pending",
 		"/v1/consent-texts/current", "/v1/consents/c1", "/v1/providers", "/v1/bank/accounts/query",
@@ -166,6 +166,9 @@ func TestNewRouterRejectsDuplicateModules(t *testing.T) {
 func TestGeneratedHealthPathsArePublicAndAnswerFromTheContract(t *testing.T) {
 	srv := newServer(t, nil)
 	for _, m := range All(Deps{}) {
+		if m.Name() == "identity" {
+			continue // identity replaced the example path with its real endpoints
+		}
 		res, body := get(t, srv.URL+"/v1/"+m.Name()+"/health", "")
 		if res.status != http.StatusOK {
 			t.Errorf("%s: status %d, want 200", m.Name(), res.status)
