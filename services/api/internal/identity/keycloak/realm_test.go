@@ -237,7 +237,7 @@ func TestTokensArePS256ShortLivedAndRotated(t *testing.T) {
 	}
 }
 
-// Sessions without offline tokens (team decision on open item 5): 30 days idle, 90 days max.
+// Sessions without offline tokens (team decision, CLAUDE.md "Offline sessions"): 30 days idle, 90 days max.
 func TestSessionsLast30DaysIdleWithoutOfflineAccess(t *testing.T) {
 	r, _ := loadRealm(t)
 	if r.SsoSessionIdleTimeout != 30*24*3600 || r.SsoSessionMaxLifespan != 90*24*3600 {

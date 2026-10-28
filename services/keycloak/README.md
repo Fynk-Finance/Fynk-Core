@@ -20,7 +20,7 @@ The file is written by hand and only holds what differs from Keycloak's defaults
 | Password policy | `length(8) and regexPattern(.*[A-Za-z].*) and digits(1) and notEmail` | HU-050, HU-001 |
 | Brute force | Locked 15 minutes after 5 failures, never permanently | HU-050 |
 | Tokens | Signed with PS256 from the `fynk-ps256` key, access token 5 minutes, refresh tokens rotate (`revokeRefreshToken`, reuse 0) | HU-050, HU-002 |
-| Sessions | 30 days idle, 90 days max, **no `offline_access`** | Team decision on open item 5 |
+| Sessions | 30 days idle, 90 days max, **no `offline_access`** | Team decision (CLAUDE.md, Decisions taken: Offline sessions) |
 | Email codes | The verification code and the reset code expire in 10 minutes (`actionTokenGeneratedByUserLifespan`) | HU-050, HU-005 |
 | Registration | Custom flow `fynk registration`: email, password and the terms checkbox, then the email code. The acceptance date is stored in the user attribute `terms_and_conditions` | HU-001 |
 | User profile | Email, optional first and last name, nothing else. Users cannot add attributes (`ADMIN_VIEW`), so no cédula can be stored | HU-001, CLAUDE.md rule 10 |
