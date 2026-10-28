@@ -119,8 +119,8 @@ Each person reviews the pull requests of their modules (see `.github/CODEOWNERS`
 
 | Data | Where |
 | --- | --- |
-| Login, password, sessions, email verification | Keycloak (its own database) |
-| Profile name, devices with public keys | Cloud, PostgreSQL schema `identity` |
+| Login, password, sessions, email verification, profile name | Keycloak (its own database) |
+| Devices with public keys | Cloud, PostgreSQL schema `identity` |
 | Consent metadata and acceptance evidence | Cloud, in clear, because it must be auditable |
 | Bank link record with a KMS HMAC fingerprint of the token | Cloud, never the token |
 | Bank token | Phone vault |
@@ -273,17 +273,17 @@ These rules let 17 modules work in parallel without stepping on each other.
 | Team | Modules assigned on 26 Oct 2026, see Team |
 | Dark mode (27 Oct) | Every screen in light and dark. Follows the phone by default, the person can pick Claro or Oscuro in Mi cuenta › Apariencia |
 | Navigation and gestures (27 Oct) | One default transition and back gesture per kind of screen (push, modal, sheet, tab, flow change), changed only when the design inventory says so. Every gesture has a button. Tabs switch by tap and by swipe |
+| Email codes (27 Oct) | Email verification at sign up and password reset use a 6 digit code sent by email, as in the design, instead of Keycloak's links. A Keycloak extension in `services/keycloak/extensions/email-code` does it: 10 minutes, 5 attempts per code, a new code every 60 s, 10 wrong codes in 12 h per user. See `docs/adr/0007-email-codes.md` |
+| Offline sessions (27 Oct) | No `offline_access`. The app keeps a normal refresh session (30 days idle, 90 days max) |
 
 ## Open items (ask the team, do not decide in code)
 
 1. Egress cost: without a NAT Gateway, the required VPC endpoints cost about USD 51 a month against about 33 for a NAT Gateway (see `docs/modules/M14-infrastructure.md`).
-2. Email verification and password reset use Keycloak links. The design shows 6 digit codes. Codes need a custom Keycloak extension in Java.
-3. Whether the Bancolombia sandbox allows delegated access to personal accounts (spike in M5).
-4. Audit retention periods (M13).
-5. Offline sessions in Keycloak for long lived mobile logins (M1).
-6. The design has 6 Fynk Plus subscription screens (`Sub*.html` in `docs/design/sources/`) that are not in Jira or in any module yet. Do not build them until the team plans them.
-7. "Privacidad y datos" in the design has a "Mejorar Fynk" switch that shares anonymous usage statistics. That data is not in "Where data lives". Hidden until the team decides.
-8. "Centro de ayuda" in the design offers support by WhatsApp. The team has to decide the channel and who answers it.
+2. Whether the Bancolombia sandbox allows delegated access to personal accounts (spike in M5).
+3. Audit retention periods (M13).
+4. The design has 6 Fynk Plus subscription screens (`Sub*.html` in `docs/design/sources/`) that are not in Jira or in any module yet. Do not build them until the team plans them.
+5. "Privacidad y datos" in the design has a "Mejorar Fynk" switch that shares anonymous usage statistics. That data is not in "Where data lives". Hidden until the team decides.
+6. "Centro de ayuda" in the design offers support by WhatsApp. The team has to decide the channel and who answers it.
 
 ## Glossary
 

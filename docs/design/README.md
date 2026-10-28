@@ -144,8 +144,8 @@ The file name is the same in all four folders: `sources/light/`, `sources/dark/`
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Inicio | `Inicio` | M1 | First screen, default | "Iniciar sesión" opens Login | None |
 | 2 | Iniciar sesión | `Login` | M1 | Keycloak theme in the system browser | Registro, Recuperar | Rendered as the Keycloak login theme. The "Huella o Face ID" button moves to the native lock screen and only shows when biometrics were enabled |
-| 3 | Crear cuenta | `Registro` | M1 | Keycloak theme | Login, then onboarding | Rendered as the Keycloak registration theme. The cédula field is removed |
-| 4 | Recuperar contraseña | `Recuperar` | M1 | Keycloak theme | "Volver a iniciar sesión" | Keycloak sends a link, not a code. Copy: "te enviaremos un enlace" |
+| 3 | Crear cuenta | `Registro` | M1 | Keycloak theme | Login, then the email code page (`OnbCorreo`), then the app | Rendered as the Keycloak registration theme. The cédula field is removed |
+| 4 | Recuperar contraseña | `Recuperar` | M1 | Keycloak theme | "Volver a iniciar sesión" | A 6 digit code, as designed (Keycloak extension, `docs/adr/0007-email-codes.md`): step 1 the email, step 2 the code, step 3 the new password, step 4 the success page "¡Contraseña actualizada!" with "Ir a iniciar sesión" |
 | 5 | Dashboard | `Dashboard` | M6, M7, M8, M10 | Tab, default | Avatar → Mi cuenta, chart icon → Estadísticas, bell → Notificaciones, tab → Detalle de cuentas, "Ver todos" → Metas, "Ver todo" → Movimientos, FAB "Registrar gasto o ingreso" → sheet (M7) | Fictional bank names |
 | 6 | Dashboard · Detalle de cuentas | `DashboardDetalles` | M6 | **Override:** not a route. The Dashboard header expands in place, by tap or drag on the tab | "Ocultar detalle de cuentas" | Fictional bank names |
 | 7 | Mi cuenta | `DetalleCuentas` | M1, M2, M4, M6, M13 | Pushed, default | Seguridad, Notificaciones, Privacidad y datos, Centro de ayuda, Cerrar sesión, Eliminar cuenta | Adds an "Apariencia" row (new, needs design review). The recovery code goes under Seguridad (M2). Consents live in Privacidad y datos › Cuentas conectadas (M4) |
@@ -163,8 +163,8 @@ The file name is the same in all four folders: `sources/light/`, `sources/dark/`
 | 19 | Centro de ayuda | `CfgAyuda` | M13 | Pushed, default | Questions expand, Correo, WhatsApp, "Reportar un problema" | New. The Fynk Plus question is hidden until Fynk Plus is planned. WhatsApp waits for a team decision |
 | 20 | Eliminar cuenta | `CfgEliminar` | M13 | Pushed, default | "Descarga tus datos primero" → Privacidad, reasons, type ELIMINAR, "Eliminar mi cuenta", "Cancelar y volver" | New. The Fynk Plus line is hidden. Deletion follows Ley 1581 |
 | 21 | Configuración · Aviso | `OnbIntro` | M3 | Flow change into onboarding, fade | "Comenzar configuración", "Omitir por ahora" | None |
-| 22 | Configuración · 1 Correo | `OnbCorreo` | M3, M1 | Pushed inside onboarding, default | Back to the previous step, Omitir | **Now step 1.** Link instead of a 6 digit code: "Te enviamos un enlace", buttons "Ya lo verifiqué" and "Reenviar" |
-| 23 | Configuración · 2 Nombre | `OnbNombre` | M3 | Pushed inside onboarding, default | "Continuar", back, Omitir | **Now step 2** |
+| 22 | Configuración · 1 Correo | `OnbCorreo` | M1 | Keycloak theme, right after "Crear cuenta" | "Reenviar" with the 60 s countdown | **Not an onboarding step any more.** It is the Keycloak code page of the sign up: the 6 digit code as designed, inside the Keycloak layout (new composition, needs design review). Onboarding starts at Nombre |
+| 23 | Configuración · 2 Nombre | `OnbNombre` | M3 | Pushed inside onboarding, default | "Continuar", back, Omitir | **Now step 1** (the email is verified in Keycloak before) |
 | 24 | Configuración · 3 Cuentas | `OnbCuentas` | M3, M5, M6 | Pushed inside onboarding, default | "Agregar otra cuenta" → Conectar banco | Banco Demo and Billetera Demo instead of Bancolombia and Daviplata |
 | 25 | Configuración · 4 Metas | `OnbMetas` | M3, M8 | Pushed inside onboarding, default | Back, Omitir | None |
 | 26 | Configuración · 5 Gastos recurrentes | `OnbGastos` | M3, M9 | Pushed inside onboarding, default | Back, Omitir | None |
