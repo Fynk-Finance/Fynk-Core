@@ -15,8 +15,8 @@
 <title>${msg("fynkEmailBrand")}</title>
 <style>
 @media (prefers-color-scheme: dark) {
-  .fk-page { background-color: #0b1620 !important; }
-  .fk-card { background-color: #13212d !important; border-color: #22313d !important; }
+  body, .fk-page { background-color: #0b1620 !important; }
+  .fk-card { background-color: #13212d !important; border-color: #22313d !important; border-top-color: #a8e03a !important; }
   .fk-text { color: #e8f1f6 !important; }
   .fk-muted { color: #97abb8 !important; }
   .fk-code { background-color: #182a37 !important; border-color: #2b5267 !important; color: #e8f1f6 !important; }
