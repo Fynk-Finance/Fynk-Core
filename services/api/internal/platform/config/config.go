@@ -4,6 +4,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // Env is the deployment environment.
@@ -29,6 +30,13 @@ type Config struct {
 	// Docker it differs from the issuer host (http://keycloak:8080 vs http://localhost:8081).
 	KeycloakURL   string
 	KeycloakRealm string
+	// EgressURL is the Caddy egress (M14) that adds Fynk's mTLS client certificate to every call
+	// to a bank or a market data provider: <EgressURL>/<provider>/... (M5 and M15). It must be
+	// https. Empty means no outside provider can be reached, and those calls fail closed.
+	EgressURL string
+	// EgressCAFile is the PEM file of the CA that signed the egress's own TLS certificate.
+	// Empty means the system roots.
+	EgressCAFile string
 }
 
 // IsLocal reports whether the API runs on a developer machine.
@@ -46,6 +54,8 @@ func Load(getenv func(string) string) (Config, error) {
 		KeycloakAudience: getenv("KEYCLOAK_AUDIENCE"),
 		KeycloakURL:      getenv("KEYCLOAK_URL"),
 		KeycloakRealm:    getenv("KEYCLOAK_REALM"),
+		EgressURL:        strings.TrimRight(getenv("EGRESS_URL"), "/"),
+		EgressCAFile:     getenv("EGRESS_CA_FILE"),
 	}
 	if c.Port == "" {
 		c.Port = "8080"
@@ -67,6 +77,10 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 	if c.RedisURL == "" {
 		errs = append(errs, errors.New("REDIS_URL is required"))
+	}
+	// TLS on every hop (CLAUDE.md, Security rules): the egress is never reached in clear.
+	if c.EgressURL != "" && !strings.HasPrefix(c.EgressURL, "https://") {
+		errs = append(errs, errors.New("EGRESS_URL must start with https://"))
 	}
 	return c, errors.Join(errs...)
 }
