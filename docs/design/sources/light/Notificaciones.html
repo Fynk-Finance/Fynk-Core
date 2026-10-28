@@ -1,0 +1,126 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390"><title>App azul y verde · Notificaciones</title></head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;background:#ffffff;color:#0f2233}
+a{color:#6a9e12}a:hover{color:#5a8a0c}
+.hscroll{scrollbar-width:none;-ms-overflow-style:none;scroll-snap-type:x mandatory;overflow-x:auto;overflow-y:hidden}
+.hscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.vscroll{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;overflow-x:hidden;overflow-y:auto}
+.vscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.btn{cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn:focus-visible,.nav-item:focus-visible,.card-link:focus-visible,.chip:focus-visible{outline:3px solid #dcf5a8;outline-offset:2px}
+.row{transition:background-color .15s ease}
+.row:hover{background-color:#f4fbfe !important}
+.card-link{transition:transform .2s ease,box-shadow .2s ease}
+.card-link:hover{transform:translateY(-2px)}
+.card-link:hover .go{transform:translateX(3px)}
+.go{transition:transform .2s ease}
+.chip{cursor:pointer}
+.nav-item{cursor:pointer;transition:color .2s ease}
+.nav-item:not([aria-current]):hover{color:#ffffff !important}
+@keyframes vd-shine{0%,62%{transform:translateX(0)}86%,100%{transform:translateX(520px)}}
+.shine{animation:vd-shine 7s ease-in-out infinite 1.5s}
+@media (prefers-reduced-motion:reduce){.shine{animation:none}}
+</style>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: #ffffff; position: relative; overflow: hidden">
+<div style="padding: 16px 16px 0; display: flex; flex-direction: column; gap: 8px; color: #0f2233">
+<header style="display: flex; align-items: center; justify-content: space-between; min-height: 48px">
+<a class="btn" href="Dashboard.html" aria-label="Volver al dashboard" style="width: 48px; height: 48px; box-sizing: border-box; border-radius: 14px; color: #1f93c2; display: flex; align-items: center; justify-content: center; text-decoration: none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width: 32px; height: 32px"><path d="m15 18-6-6 6-6"></path></svg></a>
+
+</header>
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 4px; width: 100%">
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px; line-height: 32px">Notificaciones</h1>
+<div data-dc-group="" style="box-sizing: border-box; display: flex; flex-direction: row; gap: 4px; justify-content: space-between; align-items: normal; width: 100%; height: 16px"><span style="font-size: 13px; line-height: 18px; color: #5e7482">3 sin leer</span><a href="#" style="font-size: 13px; font-weight: 600; text-decoration: none">Marcar como leídas</a></div>
+</div>
+</div>
+</div>
+
+<div style="position: absolute; left: 0; top: 134px; width: 390px; height: 710px; box-sizing: border-box; background-color: #ffffff; overflow: hidden">
+<div class="vscroll" style="height: 710px; box-sizing: border-box; padding: 16px 16px 32px; display: flex; flex-direction: column; gap: 16px">
+<section style="display: flex; flex-direction: column; gap: 8px; flex-shrink: 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #5e7482">Hoy</h2>
+<div style="display: flex; flex-direction: column; gap: 8px">
+
+<a class="card-link" href="Billetera.html" style="display: flex; gap: 8px; padding: 8px 0; text-decoration: none; color: #0f2233">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #a8e03a; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></span>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-size: 14px; line-height: 19px; font-weight: 700">Servicios públicos</span>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #5e7482; white-space: nowrap">9:12<span aria-label="Sin leer" style="width: 8px; height: 8px; border-radius: 999px; background-color: #a8e03a"></span></span>
+</div>
+<span style="font-size: 13px; line-height: 18px; color: #5e7482">Vence en 2 días: $186.000.</span>
+</div>
+</a>
+
+<a class="card-link" href="Dashboard.html" style="display: flex; gap: 8px; padding: 8px 0; text-decoration: none; color: #0f2233">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7 7 7-7"></path></svg></span>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-size: 14px; line-height: 19px; font-weight: 700">Salario recibido</span>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #5e7482; white-space: nowrap">8:05<span aria-label="Sin leer" style="width: 8px; height: 8px; border-radius: 999px; background-color: #a8e03a"></span></span>
+</div>
+<span style="font-size: 13px; line-height: 18px; color: #5e7482">Entraron +$5.200.000 a Bancolombia.</span>
+</div>
+</a>
+
+<a class="card-link" href="Recomendaciones.html" style="display: flex; gap: 8px; padding: 8px 0; text-decoration: none; color: #0f2233">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #a8e03a; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"></path></svg></span>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-size: 14px; line-height: 19px; font-weight: 700">Nueva recomendación</span>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #5e7482; white-space: nowrap">7:30<span aria-label="Sin leer" style="width: 8px; height: 8px; border-radius: 999px; background-color: #a8e03a"></span></span>
+</div>
+<span style="font-size: 13px; line-height: 18px; color: #5e7482">Podrías ahorrar $56.800 al mes en suscripciones.</span>
+</div>
+</a>
+
+</div>
+</section>
+<section style="display: flex; flex-direction: column; gap: 8px; flex-shrink: 0">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #5e7482">Esta semana</h2>
+<div style="display: flex; flex-direction: column; gap: 8px">
+
+<a class="card-link" href="Dashboard.html" style="display: flex; gap: 8px; padding: 8px 0; text-decoration: none; color: #0f2233">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path></svg></span>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-size: 14px; line-height: 19px; font-weight: 700">Viaje a Cartagena</span>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #5e7482; white-space: nowrap">Lun</span>
+</div>
+<span style="font-size: 13px; line-height: 18px; color: #5e7482">Llegaste al 64 % de tu meta.</span>
+</div>
+</a>
+
+<a class="card-link" href="DetalleCuentas.html" style="display: flex; gap: 8px; padding: 8px 0; text-decoration: none; color: #0f2233">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M3 21v-5h5"></path></svg></span>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-size: 14px; line-height: 19px; font-weight: 700">Nu Bank sincronizada</span>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #5e7482; white-space: nowrap">Dom</span>
+</div>
+<span style="font-size: 13px; line-height: 18px; color: #5e7482">Tus movimientos están al día.</span>
+</div>
+</a>
+
+<a class="card-link" href="Billetera.html" style="display: flex; gap: 8px; padding: 8px 0; text-decoration: none; color: #0f2233">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h20v12H2zM2 11h20"></path></svg></span>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-size: 14px; line-height: 19px; font-weight: 700">Streaming de video</span>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #5e7482; white-space: nowrap">Sáb</span>
+</div>
+<span style="font-size: 13px; line-height: 18px; color: #5e7482">Se renueva el 28 sep por $38.900.</span>
+</div>
+</a>
+
+</div>
+</section>
+</div>
+</div>
+</div>
+</body></html>

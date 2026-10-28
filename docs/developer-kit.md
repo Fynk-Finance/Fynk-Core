@@ -11,15 +11,16 @@ Everything a developer needs to start a module with Claude Code. Copy everything
 | `docs/modules/00-phases-and-gates.md` | Order of work, what runs in parallel, gate checklists |
 | `docs/modules/00-shared-contracts.md` | Types, ports, endpoints and reference numbers every module builds on |
 | `docs/modules/M00-...md` to `M16-...md` | One prompt per module, ready to paste into Claude Code |
-| `docs/design/README.md` | Design source, tokens, screen inventory, decided copy changes, missing screens |
-| `docs/design/source/` | The design's own code for 28 screens (`Verde*.dc.html`) plus `canvas.json`. Claude Code reads it first |
-| `docs/design/screens/` | 25 PNG images to compare the result with the design |
+| `docs/design/README.md` | Design source, light and dark tokens, navigation and gestures, screen inventory, decided copy changes, missing screens |
+| `docs/design/sources/` | The design's own code for 36 screens, in `light/` and `dark/` (`<Screen>.html`). Claude Code reads it first |
+| `docs/design/screens/` | 72 PNG images (`light/` and `dark/`) to compare the result with the design |
+| `scripts/design-color-pairs.mjs` | Prints the dark value of every light color of the design |
 | `docs/history/` | Project history: rules, session template and the first planning sessions |
 | `scripts/build-history.mjs` | Joins the session logs into `docs/history/PROJECT_HISTORY.md` |
 
 ## How a developer starts
 
-1. The design code is in `docs/design/source/` and the images in `docs/design/screens/`. Update them only when the design changes (see `docs/design/README.md`).
+1. The design code is in `docs/design/sources/` and the images in `docs/design/screens/`, each with a `light/` and a `dark/` folder. Update them only when the design changes (see `docs/design/README.md`).
 2. Pull `develop`, open Claude Code at the repository root.
 3. Paste the prompt of your module (everything below the line in `docs/modules/MNN-*.md`), or write: "Read docs/modules/M08-savings.md and do step 1 of the work plan."
 4. Claude Code creates the branch, writes the tests from the Jira criteria, implements, commits with the Jira key, rebases and opens the pull request to `develop`.

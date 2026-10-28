@@ -13,6 +13,7 @@ apps/mobile/src/shared/api/schema.gen.ts
 *.jks
 certs/
 **/secrets/
+!infra/terraform/modules/secrets/
 
 # Dependencies
 node_modules/
