@@ -17,11 +17,17 @@ func TestLoadReadsEveryValue(t *testing.T) {
 		"REDIS_URL":         "redis://x",
 		"KEYCLOAK_ISSUER":   "http://kc/realms/fynk",
 		"KEYCLOAK_AUDIENCE": "fynk-api",
+		"KEYCLOAK_URL":      "http://keycloak:8080",
+		"KEYCLOAK_REALM":    "fynk",
 	}))
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	want := Config{EnvLocal, "9000", "postgres://x", "redis://x", "http://kc/realms/fynk", "fynk-api"}
+	want := Config{
+		AppEnv: EnvLocal, Port: "9000", DatabaseURL: "postgres://x", RedisURL: "redis://x",
+		KeycloakIssuer: "http://kc/realms/fynk", KeycloakAudience: "fynk-api",
+		KeycloakURL: "http://keycloak:8080", KeycloakRealm: "fynk",
+	}
 	if c != want {
 		t.Fatalf("got %+v, want %+v", c, want)
 	}
@@ -37,6 +43,9 @@ func TestLoadDefaultsThePort(t *testing.T) {
 	}
 	if c.Port != "8080" {
 		t.Fatalf("Port = %q, want 8080", c.Port)
+	}
+	if c.KeycloakRealm != "fynk" {
+		t.Fatalf("KeycloakRealm = %q, want fynk", c.KeycloakRealm)
 	}
 	if c.IsLocal() {
 		t.Fatal("IsLocal() = true for prod")

@@ -1,0 +1,3 @@
+# Only the realm files go into the image.
+*
+!realms/*-realm.json

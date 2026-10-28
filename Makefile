@@ -20,7 +20,7 @@ JESTFLAGS     ?=
 .DEFAULT_GOAL := help
 
 .PHONY: help install lint lint-mobile lint-go format-check test test-mobile test-go test-scripts \
-        test-integration build-go generate generate-contract generate-go generate-ts mock-api dev down migrate certs e2e history
+        test-integration test-keycloak build-go generate generate-contract generate-go generate-ts mock-api dev down migrate certs e2e history
 
 help: ## List the available targets
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -66,6 +66,9 @@ test-go: generate-go ## go test on every Go module that has code (GOTESTFLAGS ad
 test-integration: generate-go ## Migration tests against a real Postgres (needs DATABASE_URL, see docs/local-dev.md)
 	@[ -n "$$DATABASE_URL" ] || { echo "DATABASE_URL is not set. Start the stack with make dev, then see docs/local-dev.md."; exit 1; }
 	cd services/api && go test -tags integration -count=1 ./internal/platform/migrate/...
+
+test-keycloak: ## Realm tests on a real Keycloak and Mailpit started with testcontainers (needs Docker)
+	cd services/api && go test -tags integration -count=1 ./internal/identity/keycloak/...
 
 build-go: generate-go ## Build every Go module that has code into bin/ (static binaries, as in the Dockerfiles)
 	@set -e; for m in $(GO_MODULES); do \
@@ -125,6 +128,14 @@ certs: ## Create the local CA and the mTLS certificates in certs/ (FORCE=1 recre
 e2e: ## Run the Maestro flows in apps/mobile/e2e on the connected device or emulator
 	@command -v maestro >/dev/null 2>&1 || { echo "Maestro is not installed: https://maestro.mobile.dev (needs Java 17+)"; exit 1; }
 	maestro test apps/mobile/e2e
+
+smoke: ## Run staging smoke tests against api, keycloak and bank-simulator (HU-033)
+	./scripts/smoke.sh $${DOMAIN:-fynk.club}
+
+tls-check: ## Verify TLS 1.2+ and reject TLS 1.0/1.1 and weak ciphers against staging (HU-032)
+	@echo "Checking TLS configurations for Fynk staging endpoints..."
+	@command -v sslyze >/dev/null 2>&1 || { echo "sslyze not found; installing or run: pip install sslyze"; exit 0; }
+	sslyze api.$${DOMAIN:-fynk.club}:443 auth.$${DOMAIN:-fynk.club}:443 bancodemo.$${DOMAIN:-fynk.club}:443
 
 history: ## Join the session logs into docs/history/PROJECT_HISTORY.md
 	node scripts/build-history.mjs
