@@ -170,9 +170,38 @@
   margin-bottom: 16px;
 }
 
+.fk-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 44px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--fk-text-secondary);
+}
+.fk-terms input {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--fk-primary);
+  /* The design draws the native checkbox with a white box in both themes. */
+  color-scheme: light;
+  cursor: pointer;
+}
+.fk-terms strong {
+  color: var(--fk-primary-deep);
+}
+.fk-terms-error {
+  margin: 0 0 16px;
+}
+
 .fk-eye:focus-visible,
 .fk-cta:focus-visible,
-.fk-link:focus-visible {
+.fk-link:focus-visible,
+.fk-terms input:focus-visible {
   outline: 3px solid var(--fk-focus-ring);
   outline-offset: 2px;
 }
