@@ -1,9 +1,11 @@
 // Two bank cards and two coin stacks of the Inicio screen. Paths, viewBox and colors are
-// copied from docs/design/sources/light/Inicio.html (screen illustration colors stay in the
-// module, see docs/design/README.md). The looping motion (fk-float, fk-shadow, fk-shine,
-// fk-drop, fk-twinkle, see inicioMotion.ts) runs on one layer per moving group, each layer an
-// Svg with the same viewBox, so the transforms apply in view space. With reduced motion the
-// resting frame is drawn as a single Svg and nothing is started.
+// copied from docs/design/sources/light/Inicio.html and docs/design/sources/dark/Inicio.html
+// (screen illustration colors stay in the module, see docs/design/README.md). Only the backdrop,
+// the card shadow and the blue card's second logo square differ between themes. The looping
+// motion (fk-float, fk-shadow, fk-shine, fk-drop, fk-twinkle, see inicioMotion.ts) runs on one
+// layer per moving group, each layer an Svg with the same viewBox, so the transforms apply in
+// view space. With reduced motion the resting frame is drawn as a single Svg and nothing is
+// started.
 import { useState, type ComponentProps, type ReactNode } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
@@ -13,7 +15,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { ClipPath, Defs, Ellipse, G, Path, Rect, Text } from 'react-native-svg';
 
-import { fonts } from '@shared/ui';
+import { fonts, useTheme, type ColorScheme } from '@shared/ui';
 
 import {
   DROP,
@@ -37,7 +39,8 @@ interface CardColors {
   nameBar: string;
   numberBar: string;
   logoA: string;
-  logoB: string;
+  /** The only card color that changes with the theme. */
+  logoB: Record<ColorScheme, string>;
 }
 
 const LIME: CardColors = {
@@ -49,7 +52,7 @@ const LIME: CardColors = {
   nameBar: '#d2f09a',
   numberBar: '#c3e877',
   logoA: '#dcf5a8',
-  logoB: '#f8fdee',
+  logoB: { light: '#f8fdee', dark: '#f8fdee' },
 };
 
 const BLUE: CardColors = {
@@ -61,10 +64,20 @@ const BLUE: CardColors = {
   nameBar: '#a9e0f5',
   numberBar: '#86d6f3',
   logoA: '#b5e5f7',
-  logoB: '#eef9fe',
+  logoB: { light: '#eef9fe', dark: '#182a37' },
+};
+
+// Colors of the picture that differ between docs/design/sources/light and dark/Inicio.html.
+const ILLUSTRATION: Record<
+  ColorScheme,
+  { backdropOuter: string; backdropInner: string; cardShadow: string }
+> = {
+  light: { backdropOuter: '#f4fbfe', backdropInner: '#e4f5fc', cardShadow: '#d2eef9' },
+  dark: { backdropOuter: '#182a37', backdropInner: '#1a3444', cardShadow: '#1d3a4a' },
 };
 
 function Card({ c, children }: { c: CardColors; children?: ReactNode }) {
+  const { scheme } = useTheme();
   return (
     <G clipPath="url(#fk-card-clip)">
       <Rect x={0} y={0} width={220} height={138} rx={18} fill={c.base} />
@@ -87,7 +100,7 @@ function Card({ c, children }: { c: CardColors; children?: ReactNode }) {
       <Rect x={22} y={94} width={112} height={8} rx={4} fill={c.nameBar} />
       <Rect x={22} y={110} width={58} height={6} rx={3} fill={c.numberBar} />
       <Rect x={156} y={95} width={26} height={26} rx={6} fill={c.logoA} />
-      <Rect x={174} y={95} width={26} height={26} rx={6} fill={c.logoB} fillOpacity={0.9} />
+      <Rect x={174} y={95} width={26} height={26} rx={6} fill={c.logoB[scheme]} fillOpacity={0.9} />
       {children}
     </G>
   );
@@ -204,16 +217,32 @@ const SPARKS: SparkSpec[] = [
 ];
 
 function Backdrop() {
+  const { scheme } = useTheme();
   return (
     <>
-      <Rect x={21} y={28} width={300} height={300} rx={64} fill="#f4fbfe" />
-      <Rect x={65} y={72} width={212} height={212} rx={44} fill="#e4f5fc" />
+      <Rect
+        x={21}
+        y={28}
+        width={300}
+        height={300}
+        rx={64}
+        fill={ILLUSTRATION[scheme].backdropOuter}
+      />
+      <Rect
+        x={65}
+        y={72}
+        width={212}
+        height={212}
+        rx={44}
+        fill={ILLUSTRATION[scheme].backdropInner}
+      />
     </>
   );
 }
 
 function CardShadow() {
-  return <Ellipse cx={171} cy={300} rx={92} ry={9} fill="#d2eef9" />;
+  const { scheme } = useTheme();
+  return <Ellipse cx={171} cy={300} rx={92} ry={9} fill={ILLUSTRATION[scheme].cardShadow} />;
 }
 
 function CardPlacement({ spec, children }: { spec: CardSpec; children: ReactNode }) {
