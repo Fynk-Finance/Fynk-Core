@@ -19,6 +19,8 @@ func TestLoadReadsEveryValue(t *testing.T) {
 		"KEYCLOAK_AUDIENCE": "fynk-api",
 		"KEYCLOAK_URL":      "http://keycloak:8080",
 		"KEYCLOAK_REALM":    "fynk",
+		"EGRESS_URL":        "https://caddy:8443/",
+		"EGRESS_CA_FILE":    "/certs/ca.crt",
 	}))
 	if err != nil {
 		t.Fatalf("Load: %v", err)
@@ -27,6 +29,7 @@ func TestLoadReadsEveryValue(t *testing.T) {
 		AppEnv: EnvLocal, Port: "9000", DatabaseURL: "postgres://x", RedisURL: "redis://x",
 		KeycloakIssuer: "http://kc/realms/fynk", KeycloakAudience: "fynk-api",
 		KeycloakURL: "http://keycloak:8080", KeycloakRealm: "fynk",
+		EgressURL: "https://caddy:8443", EgressCAFile: "/certs/ca.crt",
 	}
 	if c != want {
 		t.Fatalf("got %+v, want %+v", c, want)
@@ -68,5 +71,17 @@ func TestLoadRejectsUnknownAppEnv(t *testing.T) {
 	_, err := Load(env(map[string]string{"APP_ENV": "dev", "DATABASE_URL": "d", "REDIS_URL": "r"}))
 	if err == nil || !strings.Contains(err.Error(), `"dev"`) {
 		t.Fatalf("err = %v, want an unknown APP_ENV error", err)
+	}
+}
+
+// The egress is optional, so staging starts before M14 sets it; when set it must be https.
+func TestLoadAcceptsNoEgressAndRejectsAPlainHTTPOne(t *testing.T) {
+	base := map[string]string{"APP_ENV": "staging", "DATABASE_URL": "d", "REDIS_URL": "r"}
+	if c, err := Load(env(base)); err != nil || c.EgressURL != "" {
+		t.Fatalf("without EGRESS_URL: %+v, %v", c, err)
+	}
+	base["EGRESS_URL"] = "http://caddy.internal"
+	if _, err := Load(env(base)); err == nil || !strings.Contains(err.Error(), "EGRESS_URL must start with https://") {
+		t.Fatalf("plain http: err = %v", err)
 	}
 }

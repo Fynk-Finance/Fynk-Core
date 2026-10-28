@@ -16,6 +16,9 @@ x-api-env: &api-env
   KEYCLOAK_AUDIENCE: fynk-api
   # Keycloak as the API reaches it inside Docker (JWKS, admin API).
   KEYCLOAK_URL: http://keycloak:8080
+  # Caddy egress (M14): adds Fynk's mTLS client certificate on calls to banks (M5, M15).
+  EGRESS_URL: https://caddy:8443
+  EGRESS_CA_FILE: /certs/ca.crt
 
 services:
   postgres:
@@ -112,6 +115,9 @@ services:
     environment: *api-env
     ports:
       - '8080:8080'
+    volumes:
+      # Only the CA, to trust the egress's TLS certificate. The client key stays in Caddy.
+      - ./certs/ca.crt:/certs/ca.crt:ro
     depends_on:
       postgres:
         condition: service_healthy
