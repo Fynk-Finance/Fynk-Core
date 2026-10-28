@@ -5,6 +5,7 @@ import { lightColors as colors } from '../tokens';
 import { AmountText } from './AmountText';
 import { initialsOf } from './Avatar';
 import { GhostButton, PrimaryButton } from './Button';
+import { Badge } from './Badge';
 import { Chip } from './Chip';
 import { donutArcs } from './Donut';
 import { HeaderBlue } from './HeaderBlue';
@@ -171,5 +172,55 @@ describe('donutArcs', () => {
         14,
       ),
     ).toHaveLength(1);
+  });
+});
+
+type Json = ReturnType<typeof screen.toJSON>;
+type JsonNode = Exclude<Json, null | unknown[]>;
+
+function findByType(node: Json, type: string): JsonNode | undefined {
+  if (node === null) return undefined;
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const found = findByType(child as Json, type);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  if (node.type === type) return node;
+  for (const child of node.children ?? []) {
+    if (typeof child === 'string') continue;
+    const found = findByType(child, type);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+describe('Badge', () => {
+  it('uses 11 px text for the lg size and 10 px by default', async () => {
+    await render(
+      <>
+        <Badge label="Grande" size="lg" testID="lg" />
+        <Badge label="Normal" testID="md" />
+      </>,
+    );
+    expect(screen.getByText('Grande')).toHaveStyle({ fontSize: 11, lineHeight: 14 });
+    expect(screen.getByText('Normal')).toHaveStyle({ fontSize: 10 });
+  });
+
+  it('draws the icon with the foreground color of the tone', async () => {
+    await render(<Badge label="Perfil verificado" tone="accent" size="lg" icon="check" />);
+    const svg = findByType(screen.toJSON(), 'RNSVGSvgView');
+    expect(svg?.props).toMatchObject({
+      width: 12,
+      height: 12,
+      stroke: colors.onPrimary,
+      strokeWidth: 3.2,
+    });
+  });
+
+  it('draws no icon unless asked', async () => {
+    await render(<Badge label="Simulado" />);
+    expect(findByType(screen.toJSON(), 'RNSVGSvgView')).toBeUndefined();
   });
 });

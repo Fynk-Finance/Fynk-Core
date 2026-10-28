@@ -1870,6 +1870,240 @@ exports[`design system catalog Badge / Tones matches its snapshot 1`] = `
 </View>
 `;
 
+exports[`design system catalog Badge / WithIcon matches its dark snapshot 1`] = `
+<View
+  style={
+    [
+      {
+        "alignSelf": "flex-start",
+        "borderRadius": 999,
+      },
+      {
+        "paddingHorizontal": 8,
+        "paddingVertical": 4,
+      },
+      {
+        "alignItems": "center",
+        "flexDirection": "row",
+        "gap": 4,
+      },
+      {
+        "backgroundColor": "#A8E03A",
+      },
+    ]
+  }
+>
+  <RNSVGSvgView
+    accessibilityElementsHidden={true}
+    accessible={false}
+    align="xMidYMid"
+    bbHeight={12}
+    bbWidth={12}
+    fill="none"
+    focusable={false}
+    height={12}
+    importantForAccessibility="no-hide-descendants"
+    meetOrSlice={0}
+    minX={0}
+    minY={0}
+    stroke="#FFFFFF"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={3.2}
+    style={
+      [
+        {
+          "backgroundColor": "transparent",
+          "borderWidth": 0,
+        },
+        {
+          "flex": 0,
+          "height": 12,
+          "width": 12,
+        },
+      ]
+    }
+    vbHeight={24}
+    vbWidth={24}
+    width={12}
+  >
+    <RNSVGGroup
+      fill={null}
+      propList={
+        [
+          "fill",
+          "stroke",
+          "strokeWidth",
+          "strokeLinecap",
+          "strokeLinejoin",
+        ]
+      }
+      stroke={
+        {
+          "payload": 4294967295,
+          "type": 0,
+        }
+      }
+      strokeLinecap={1}
+      strokeLinejoin={1}
+      strokeWidth={3.2}
+    >
+      <RNSVGPath
+        d="M20 6 9 17l-5-5"
+        fill={null}
+        propList={
+          [
+            "fill",
+            "stroke",
+          ]
+        }
+        stroke={
+          {
+            "payload": 4294967295,
+            "type": 0,
+          }
+        }
+      />
+    </RNSVGGroup>
+  </RNSVGSvgView>
+  <Text
+    style={
+      [
+        {
+          "fontFamily": "PlusJakartaSans_700Bold",
+        },
+        {
+          "fontSize": 11,
+          "lineHeight": 14,
+        },
+        {
+          "color": "#FFFFFF",
+        },
+      ]
+    }
+  >
+    Perfil verificado
+  </Text>
+</View>
+`;
+
+exports[`design system catalog Badge / WithIcon matches its snapshot 1`] = `
+<View
+  style={
+    [
+      {
+        "alignSelf": "flex-start",
+        "borderRadius": 999,
+      },
+      {
+        "paddingHorizontal": 8,
+        "paddingVertical": 4,
+      },
+      {
+        "alignItems": "center",
+        "flexDirection": "row",
+        "gap": 4,
+      },
+      {
+        "backgroundColor": "#A8E03A",
+      },
+    ]
+  }
+>
+  <RNSVGSvgView
+    accessibilityElementsHidden={true}
+    accessible={false}
+    align="xMidYMid"
+    bbHeight={12}
+    bbWidth={12}
+    fill="none"
+    focusable={false}
+    height={12}
+    importantForAccessibility="no-hide-descendants"
+    meetOrSlice={0}
+    minX={0}
+    minY={0}
+    stroke="#FFFFFF"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={3.2}
+    style={
+      [
+        {
+          "backgroundColor": "transparent",
+          "borderWidth": 0,
+        },
+        {
+          "flex": 0,
+          "height": 12,
+          "width": 12,
+        },
+      ]
+    }
+    vbHeight={24}
+    vbWidth={24}
+    width={12}
+  >
+    <RNSVGGroup
+      fill={null}
+      propList={
+        [
+          "fill",
+          "stroke",
+          "strokeWidth",
+          "strokeLinecap",
+          "strokeLinejoin",
+        ]
+      }
+      stroke={
+        {
+          "payload": 4294967295,
+          "type": 0,
+        }
+      }
+      strokeLinecap={1}
+      strokeLinejoin={1}
+      strokeWidth={3.2}
+    >
+      <RNSVGPath
+        d="M20 6 9 17l-5-5"
+        fill={null}
+        propList={
+          [
+            "fill",
+            "stroke",
+          ]
+        }
+        stroke={
+          {
+            "payload": 4294967295,
+            "type": 0,
+          }
+        }
+      />
+    </RNSVGGroup>
+  </RNSVGSvgView>
+  <Text
+    style={
+      [
+        {
+          "fontFamily": "PlusJakartaSans_700Bold",
+        },
+        {
+          "fontSize": 11,
+          "lineHeight": 14,
+        },
+        {
+          "color": "#FFFFFF",
+        },
+      ]
+    }
+  >
+    Perfil verificado
+  </Text>
+</View>
+`;
+
 exports[`design system catalog Buttons / Accent matches its dark snapshot 1`] = `
 <View
   accessibilityLabel="Empezar"
