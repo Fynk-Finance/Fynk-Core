@@ -77,9 +77,10 @@ func TestAllListsTheEightModulesOnce(t *testing.T) {
 
 func TestEveryStubRouteAnswers501ProblemJSON(t *testing.T) {
 	srv := newServer(t, nil)
-	// One path per endpoint group of the shared contracts, section 5.
+	// One path per endpoint group of the shared contracts, section 5. Identity's routes
+	// (/v1/me, /v1/devices/current) are real now and covered by its own tests.
 	paths := []string{
-		"/v1/me", "/v1/devices/current", "/v1/backup/records", "/v1/device-approvals/pending",
+		"/v1/backup/records", "/v1/device-approvals/pending",
 		"/v1/consent-texts/current", "/v1/consents/c1", "/v1/providers", "/v1/bank/accounts/query",
 		"/v1/catalog/merchants", "/v1/recommendations", "/v1/privacy/policy", "/v1/market/cdt-products",
 	}
