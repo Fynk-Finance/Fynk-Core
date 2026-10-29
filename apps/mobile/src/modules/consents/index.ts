@@ -3,6 +3,7 @@ import { createPlaceholderScreen, type ModuleRoutes } from '@shared/navigation';
 
 import { appVersion, newIdempotencyKey } from './adapters/appInfo';
 import { createConsentsApi } from './adapters/consentsApi';
+import { systemClock } from './adapters/systemClock';
 import {
   createConsent as createConsentWith,
   type CreateConsentInput,
@@ -12,6 +13,9 @@ import { createRevocation } from './application/revocation';
 import { useConsents as useConsentsWith } from './application/useConsents';
 import { useConsentText as useConsentTextWith } from './application/useConsentText';
 import { createConsentAcceptance } from './ui/ConsentAcceptance';
+import { createConsentsListScreen } from './ui/ConsentsListScreen';
+import { CONSENT_DETAIL_ROUTE, CONSENTS_ROUTE } from './ui/routes';
+import { consentsStrings } from './ui/strings.es-CO';
 
 export type {
   Consent,
@@ -60,17 +64,34 @@ export const installIdentityCheck = revocation.installIdentityCheck;
 /** The authorization checkbox and the "Ir al portal de <Entidad>" button of Conectar banco. */
 export const ConsentAcceptance = createConsentAcceptance(deps);
 
-// Placeholder routes from M0 (M4 replaces them with the real screens).
+export { CONSENTS_ROUTE };
+
+/** Consentimientos (HU-007), pushed with the default transition. */
+export const ConsentsListScreen = createConsentsListScreen({ api: deps.api, clock: systemClock });
+
+/**
+ * A ready "Gestión de cuenta" row for M1's Mi cuenta (`miCuentaRows.ts`), with the same shape as
+ * its rows. The design opens consents from Privacidad y datos (M13); until that screen exists,
+ * M1 can add this row in one line.
+ */
+export const consentsMiCuentaRow = {
+  id: 'consents',
+  ...consentsStrings.miCuentaRow,
+  icon: 'shield',
+  target: { kind: 'navigate', route: CONSENTS_ROUTE },
+} as const;
+
 export const routes: ModuleRoutes = {
   module: 'consents',
   screens: [
+    { name: CONSENTS_ROUTE, component: ConsentsListScreen, path: 'consentimientos' },
     {
-      name: 'consents.List',
+      // Replaced by the real detail in the next pull request of the stack.
+      name: CONSENT_DETAIL_ROUTE,
       component: createPlaceholderScreen({
-        title: 'Consentimientos',
+        title: 'Consentimiento',
         owner: 'M4 · Consentimientos',
       }),
-      path: 'consentimientos',
     },
   ],
 };
