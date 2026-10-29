@@ -62,9 +62,12 @@ func TestFetchSendsTheKeysAndComputesTheChange(t *testing.T) {
 	}
 }
 
-func TestFetchWithoutKeysIsUnavailable(t *testing.T) {
+func TestFetchWithoutKeysOrEgressIsUnavailable(t *testing.T) {
 	if _, err := (Alpaca{BaseURL: "http://x"}).Fetch(context.Background(), DefaultSymbols); !errors.Is(err, ErrUnavailable) {
-		t.Fatalf("got %v", err)
+		t.Fatalf("no keys: got %v", err)
+	}
+	if _, err := (Alpaca{KeyID: "id", SecretKey: "s"}).Fetch(context.Background(), DefaultSymbols); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("no egress: got %v", err)
 	}
 }
 

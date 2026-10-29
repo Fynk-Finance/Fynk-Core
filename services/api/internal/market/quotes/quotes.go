@@ -80,7 +80,7 @@ var ErrUnavailable = errors.New("quotes unavailable")
 
 // Alpaca is the market data client. Requests go through the Caddy egress in AWS.
 type Alpaca struct {
-	BaseURL   string // https://data.alpaca.markets
+	BaseURL   string // <EgressURL>/alpaca; empty means no egress, so calls fail closed
 	KeyID     string // secret, never logged
 	SecretKey string // secret, never logged
 	Client    *http.Client
@@ -135,7 +135,7 @@ func (a Alpaca) SnapshotsURL(symbols []Symbol) string {
 
 // Fetch gets the latest trade and previous close of every symbol.
 func (a Alpaca) Fetch(ctx context.Context, symbols []Symbol) ([]Quote, error) {
-	if a.KeyID == "" || a.SecretKey == "" {
+	if a.BaseURL == "" || a.KeyID == "" || a.SecretKey == "" {
 		return nil, ErrUnavailable
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
