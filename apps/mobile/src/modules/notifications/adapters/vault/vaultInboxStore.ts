@@ -132,6 +132,20 @@ function storeOn(tx: VaultTx, transaction: InboxStore['transaction']): InboxStor
       );
       return rows.map((r) => r.id);
     },
+    async preference(key) {
+      const [row] = await tx.query<{ value: string }>(
+        'SELECT value FROM notifications_preferences WHERE key = ?',
+        [key],
+      );
+      return row?.value ?? null;
+    },
+    async setPreference(key, value) {
+      await tx.execute(
+        `INSERT INTO notifications_preferences (key, value) VALUES (?, ?)
+         ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+        [key, value],
+      );
+    },
     async scheduledOsId(id) {
       const [row] = await tx.query<{ os_id: string | null }>(
         'SELECT os_id FROM notifications_scheduled WHERE id = ?',

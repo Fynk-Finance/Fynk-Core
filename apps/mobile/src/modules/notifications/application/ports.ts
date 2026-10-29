@@ -5,6 +5,9 @@ import type { NotificationKind, NotifyInput } from '@shared/ports';
 
 import type { InboxItem } from '../domain/inbox';
 
+/** allowAll: "Permitir notificaciones". paymentLeadDays: days before a payment for its reminder. */
+export type PreferenceKey = 'allowAll' | 'paymentLeadDays';
+
 export interface NewInboxRow extends InboxItem {
   dedupeKey: string;
 }
@@ -28,6 +31,9 @@ export interface InboxStore {
   /** True unless the person turned the kind off. */
   isEnabled(kind: NotificationKind): Promise<boolean>;
   setEnabled(kind: NotificationKind, enabled: boolean): Promise<void>;
+  /** A setting of Ajustes de notificaciones that is not a kind, or null when never set. */
+  preference(key: PreferenceKey): Promise<string | null>;
+  setPreference(key: PreferenceKey, value: string): Promise<void>;
   /** Stores or replaces (same id) a scheduled notification. */
   saveScheduled(row: ScheduledRow): Promise<void>;
   deleteScheduled(id: Id): Promise<void>;

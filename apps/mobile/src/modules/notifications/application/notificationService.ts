@@ -9,7 +9,8 @@ import type { Clock, Id, IsoDateTime } from '@shared/domain/types';
 import type { NotificationKind, NotificationsPort, NotifyInput } from '@shared/ports';
 
 import { idsOverLimit, INBOX_LIMIT, type InboxItem } from '../domain/inbox';
-import { ALWAYS_ON } from '../domain/kinds';
+import { ALWAYS_ON, NOTIFICATION_KINDS } from '../domain/kinds';
+import { parseLeadDays, type PaymentLeadDays } from '../domain/settings';
 import type { InboxStore, LocalNotifier } from './ports';
 
 export interface NotificationServiceDeps {
@@ -30,8 +31,22 @@ export interface NotificationService extends NotificationsPort {
   /** Moves every scheduled notification whose time has passed into the inbox. */
   deliverDue(): Promise<number>;
   setEnabled(kind: NotificationKind, enabled: boolean): Promise<void>;
+  /** Everything Ajustes de notificaciones shows. */
+  settings(): Promise<NotificationSettings>;
+  /** "Permitir notificaciones": off silences every kind except new devices. */
+  setAllowAll(on: boolean): Promise<void>;
+  /** Days before a payment for its reminder (M9 reads it when it schedules). */
+  paymentLeadDays(): Promise<PaymentLeadDays>;
+  setPaymentLeadDays(days: PaymentLeadDays): Promise<void>;
   /** Called after every change of the inbox. Returns a function that unsubscribes. */
   subscribe(listener: () => void): () => void;
+}
+
+export interface NotificationSettings {
+  allowAll: boolean;
+  /** Whether each kind is on by itself, regardless of allowAll. */
+  kinds: Record<NotificationKind, boolean>;
+  paymentLeadDays: PaymentLeadDays;
 }
 
 /** Same instant, one text format, so times sort and compare as text in the vault. */
@@ -49,8 +64,21 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
   };
   const now = () => deps.clock.now().toISOString();
 
+  const allowAll = async (store: InboxStore) => (await store.preference('allowAll')) !== '0';
+
   const enabled = async (store: InboxStore, kind: NotificationKind) =>
-    ALWAYS_ON.has(kind) || store.isEnabled(kind);
+    ALWAYS_ON.has(kind) || ((await allowAll(store)) && (await store.isEnabled(kind)));
+
+  /** Drops the pending reminders of the kinds that are no longer enabled. */
+  const dropDisabledReminders = async (store: InboxStore) => {
+    for (const kind of NOTIFICATION_KINDS) {
+      if (await enabled(store, kind)) continue;
+      for (const id of await store.listScheduledIds(kind)) {
+        await cancelOs(store, id);
+        await store.deleteScheduled(id);
+      }
+    }
+  };
 
   /** Inserts one row unless its kind is off or its dedupe key is known, then trims the inbox. */
   const deliver = async (store: InboxStore, n: NotifyInput, createdAt: IsoDateTime) => {
@@ -146,12 +174,35 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
       if (ALWAYS_ON.has(kind) && !on) return;
       const store = deps.store();
       await store.setEnabled(kind, on);
-      if (on) return;
       // A kind turned off stops ringing at once: its pending reminders are dropped.
-      for (const id of await store.listScheduledIds(kind)) {
-        await cancelOs(store, id);
-        await store.deleteScheduled(id);
+      if (!on) await dropDisabledReminders(store);
+    },
+
+    async settings() {
+      const store = deps.store();
+      const kinds = {} as Record<NotificationKind, boolean>;
+      for (const kind of NOTIFICATION_KINDS) {
+        kinds[kind] = ALWAYS_ON.has(kind) || (await store.isEnabled(kind));
       }
+      return {
+        allowAll: await allowAll(store),
+        kinds,
+        paymentLeadDays: parseLeadDays(await store.preference('paymentLeadDays')),
+      };
+    },
+
+    async setAllowAll(on) {
+      const store = deps.store();
+      await store.setPreference('allowAll', on ? '1' : '0');
+      if (!on) await dropDisabledReminders(store);
+    },
+
+    async paymentLeadDays() {
+      return parseLeadDays(await deps.store().preference('paymentLeadDays'));
+    },
+
+    async setPaymentLeadDays(days) {
+      await deps.store().setPreference('paymentLeadDays', String(parseLeadDays(String(days))));
     },
 
     async list() {

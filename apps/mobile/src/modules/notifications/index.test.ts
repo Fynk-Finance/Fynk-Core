@@ -28,6 +28,7 @@ describe('notifications module', () => {
     expect(typeof useUnreadCount).toBe('function');
     expect(routes.screens?.map((s) => [s.name, s.path])).toEqual([
       ['notifications.Inbox', 'notificaciones'],
+      ['notifications.Settings', 'notificaciones/ajustes'],
     ]);
   });
 
