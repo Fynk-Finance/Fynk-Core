@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/http"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/migrations"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/module"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/problem"
@@ -26,8 +27,8 @@ type bankModule struct {
 // Name implements module.Module.
 func (bankModule) Name() string { return "bank" }
 
-// Migrations implements module.Module. The bank.links table comes in M5 step 2.
-func (bankModule) Migrations() fs.FS { return module.NoMigrations }
+// Migrations implements module.Module: the bank.links table.
+func (bankModule) Migrations() fs.FS { return migrations.FS }
 
 // Routes mounts the server generated from contracts/modules/bank.yaml. Every route needs a
 // token, checked before the generated server parses the request.
