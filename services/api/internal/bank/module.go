@@ -1,45 +1,59 @@
 package bank
 
 import (
-	"context"
+	"io/fs"
+	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/http"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/module"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/problem"
 )
 
-// New returns the bank module. Until M5 implements it, only the example health path of
-// contracts/modules/bank.yaml answers. Every other route answers 501.
+// New returns the bank module. GET /providers is served; the link and query endpoints answer
+// 501 until M5 step 2 adds the authorizations, the links table and the adapters behind them.
 func New(d module.Deps) module.Module {
-	return stub{
-		Stub: module.Stub{ModuleName: "bank", Prefixes: []string{"/providers", "/bank"}},
-		deps: d,
-	}
+	return bankModule{deps: d}
 }
 
-type stub struct {
-	module.Stub
+type bankModule struct {
 	deps module.Deps
 }
 
-// Routes mounts the server generated from the contract, then the 501 stub routes.
-func (s stub) Routes(r chi.Router) {
+// Name implements module.Module.
+func (bankModule) Name() string { return "bank" }
+
+// Migrations implements module.Module. The bank.links table comes in M5 step 2.
+func (bankModule) Migrations() fs.FS { return module.NoMigrations }
+
+// Routes mounts the server generated from contracts/modules/bank.yaml. Every route needs a
+// token, checked before the generated server parses the request.
+func (m bankModule) Routes(r chi.Router) {
 	strict := httpapi.NewStrictHandlerWithOptions(server{}, nil, httpapi.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  problem.RequestError,
-		ResponseErrorHandlerFunc: problem.ResponseErrorHandler(s.deps.Log),
+		ResponseErrorHandlerFunc: errorHandler(problem.ResponseErrorHandler(m.deps.Log)),
 	})
-	httpapi.HandlerWithOptions(strict, httpapi.ChiServerOptions{
-		BaseRouter:       r,
-		ErrorHandlerFunc: problem.RequestError,
+	r.Group(func(r chi.Router) {
+		r.Use(requireAuth)
+		httpapi.HandlerWithOptions(strict, httpapi.ChiServerOptions{
+			BaseRouter:       r,
+			ErrorHandlerFunc: problem.RequestError,
+		})
 	})
-	s.Stub.Routes(r)
 }
 
-// server implements the generated httpapi.StrictServerInterface.
-type server struct{}
-
-func (server) BankHealth(context.Context, httpapi.BankHealthRequestObject) (httpapi.BankHealthResponseObject, error) {
-	return httpapi.BankHealth200JSONResponse{Module: "bank", Status: httpapi.Stub}, nil
+// requireAuth is auth.Require for every route except the public example health path,
+// which the contract marks with security: [].
+func requireAuth(next http.Handler) http.Handler {
+	protected := auth.Require(next)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/bank/health") {
+			next.ServeHTTP(w, r)
+			return
+		}
+		protected.ServeHTTP(w, r)
+	})
 }

@@ -1,11 +1,12 @@
 # Contract of the bank module, owned by M5 (see CODEOWNERS).
 # Only M5 edits this file. Shared parts come from ../openapi.yaml.
-# The health path below is M0's example so generation works from day one.
-# Replace it with the real endpoints of docs/modules/00-shared-contracts.md, section 5.
+# Endpoints of docs/modules/00-shared-contracts.md, section 5. GET /providers is served now;
+# the link and query endpoints answer 501 until M5 step 2 (feature/bank-link-with-par-and-pkce).
+# Bank tokens travel only in request and response bodies, never in a URL or a header we log.
 openapi: 3.1.0
 info:
   title: Fynk API · Bank
-  version: 0.1.0
+  version: 0.2.0
 tags:
   - name: bank
     description: 'Bank providers, authorization and the bank proxy (M5).'
@@ -15,7 +16,7 @@ paths:
       tags: [bank]
       operationId: bankHealth
       summary: Example health path of the bank module
-      description: Public. Answers while the module is a stub. Removed when the module adds real endpoints.
+      description: Public. Kept until M0's shared test stops expecting it.
       security: []
       responses:
         '200':
@@ -29,3 +30,531 @@ paths:
                 status: stub
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
+  /providers:
+    get:
+      tags: [bank]
+      operationId: listProviders
+      summary: Entities the user can connect, for the selector of Conectar banco
+      description: The same list for every user. Only providers whose adapter works are listed.
+      responses:
+        '200':
+          description: Available providers, in display order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankProviderList'
+              example:
+                items:
+                  - id: banco-demo
+                    displayName: Banco Demo
+                    kind: bank
+                    isSimulated: true
+                    supportedScopes: [balances, transactions, account_details]
+                    logoKey: banco-demo
+                  - id: billetera-demo
+                    displayName: Billetera Demo
+                    kind: wallet
+                    isSimulated: true
+                    supportedScopes: [balances, transactions, account_details]
+                    logoKey: billetera-demo
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /bank/authorizations:
+    post:
+      tags: [bank]
+      operationId: createBankAuthorization
+      summary: Start the link with a pushed authorization request (PAR) to the bank
+      description: |
+        Needs a pending consent of the user (M4 POST /consents). The API sends the PAR with
+        private_key_jwt through the mTLS egress and returns the URL the app opens in the system
+        browser. The authorization expires in 10 minutes.
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/DeviceId'
+        - $ref: '#/components/parameters/BankNonce'
+        - $ref: '../openapi.yaml#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankAuthorizationRequest'
+            example:
+              provider: banco-demo
+              consentId: 01928c7e-5b1a-7c3d-9e2f-4a6b8c0d2e4f
+              codeChallenge: E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM
+              codeChallengeMethod: S256
+              state: 9b2f6c1e4a7d
+      responses:
+        '201':
+          description: The authorization to open in the system browser.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankAuthorization'
+              example:
+                authorizationId: 01928c80-1a2b-7c3d-8e4f-5a6b7c8d9e0f
+                authorizeUrl: https://auth.fynk.local/realms/banco-demo/protocol/openid-connect/auth?client_id=fynk&request_uri=urn%3Aietf%3Aparams%3Aoauth%3Arequest_uri%3Aabc
+                expiresAt: '2026-10-28T15:14:05Z'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '409':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '422':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '501':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /bank/authorizations/{id}/exchange:
+    post:
+      tags: [bank]
+      operationId: exchangeBankAuthorization
+      summary: Exchange the authorization code for the bank tokens and create the link
+      description: |
+        The API exchanges the code with PKCE and private_key_jwt, marks the consent granted (M4)
+        and stores the link with a fingerprint of the refresh token. The tokens are returned to
+        the phone, which keeps them in its vault. The API never stores them.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '../openapi.yaml#/components/parameters/DeviceId'
+        - $ref: '#/components/parameters/BankNonce'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankCodeExchange'
+            example:
+              code: SplxlOBeZQQYbYS6WxSbIA
+              codeVerifier: dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
+      responses:
+        '200':
+          description: The bank tokens and the new link.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankTokenSet'
+              example:
+                linkId: 01928c81-2b3c-7d4e-9f50-6a7b8c9d0e1f
+                provider: banco-demo
+                accessToken: eyJhbGciOiJQUzI1NiJ9.example-access
+                refreshToken: eyJhbGciOiJQUzI1NiJ9.example-refresh
+                expiresIn: 300
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '404':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '409':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '501':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /bank/accounts/query:
+    post:
+      tags: [bank]
+      operationId: queryBankAccounts
+      summary: Accounts the bank shares under the link's consent
+      description: The access token travels in the body. 409 consent_revoked when the consent is no longer active.
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/DeviceId'
+        - $ref: '#/components/parameters/BankNonce'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankAccountsQuery'
+            example:
+              linkId: 01928c81-2b3c-7d4e-9f50-6a7b8c9d0e1f
+              accessToken: eyJhbGciOiJQUzI1NiJ9.example-access
+      responses:
+        '200':
+          description: The accounts, in the shared Account shape. Only the last 4 digits of each number.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankAccountList'
+              example:
+                items:
+                  - providerAccountId: acc-ahorros-demo-01
+                    kind: savings
+                    displayName: Banco Demo · Ahorros
+                    last4: '4821'
+                    currency: COP
+                    balanceMinor: 320000000
+                    availableMinor: 320000000
+                    status: active
+                    isSimulated: true
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '409':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/BankRateLimited'
+        '501':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /bank/transactions/query:
+    post:
+      tags: [bank]
+      operationId: queryBankTransactions
+      summary: One page of an account's movements since a date
+      description: The access token travels in the body. Pages are newest first; follow nextCursor until it is absent.
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/DeviceId'
+        - $ref: '#/components/parameters/BankNonce'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankTransactionsQuery'
+            example:
+              linkId: 01928c81-2b3c-7d4e-9f50-6a7b8c9d0e1f
+              accessToken: eyJhbGciOiJQUzI1NiJ9.example-access
+              providerAccountId: acc-ahorros-demo-01
+              since: '2025-10-01T00:00:00Z'
+      responses:
+        '200':
+          description: One page of movements, in the shared Transaction shape.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankTransactionPage'
+              example:
+                items:
+                  - providerTxId: tx-2026-10-30-salario
+                    bookedAt: '2026-10-30T08:00:00Z'
+                    amountMinor: 520000000
+                    description: NOMINA EMPRESA DEMO SAS
+                    merchantRaw: EMPRESA DEMO SAS
+                    bankCategory: salary
+                    status: booked
+                nextCursor: c2FsYXJpbw
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '409':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/BankRateLimited'
+        '501':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /bank/tokens/refresh:
+    post:
+      tags: [bank]
+      operationId: refreshBankTokens
+      summary: Renew the bank tokens of a link
+      description: |
+        The phone sends the link's current refresh token in the body. The API checks its
+        fingerprint against the link, refreshes at the bank and stores the new fingerprint.
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/DeviceId'
+        - $ref: '#/components/parameters/BankNonce'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankRefreshRequest'
+            example:
+              linkId: 01928c81-2b3c-7d4e-9f50-6a7b8c9d0e1f
+              refreshToken: eyJhbGciOiJQUzI1NiJ9.example-refresh
+      responses:
+        '200':
+          description: The new bank tokens.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankTokenSet'
+              example:
+                linkId: 01928c81-2b3c-7d4e-9f50-6a7b8c9d0e1f
+                provider: banco-demo
+                accessToken: eyJhbGciOiJQUzI1NiJ9.example-access-2
+                refreshToken: eyJhbGciOiJQUzI1NiJ9.example-refresh-2
+                expiresIn: 300
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '409':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '501':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+components:
+  parameters:
+    BankNonce:
+      name: X-Request-Nonce
+      in: header
+      required: false
+      description: Single-use random value. A nonce seen in the last 5 minutes is rejected (replay protection).
+      schema:
+        type: string
+        minLength: 16
+        maxLength: 64
+  responses:
+    BankRateLimited:
+      description: Too many bank queries (30 a minute per user), or the bank asked to slow down.
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying.
+          schema:
+            type: integer
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/Problem'
+          example:
+            type: /problems/rate_limited
+            title: Too many requests
+            status: 429
+            detail: Try again in a moment.
+            code: rate_limited
+  schemas:
+    BankScope:
+      type: string
+      description: 'Data a provider can share: Saldos, Movimientos, Datos de la cuenta. Same values as M4 consent scopes.'
+      enum: [balances, transactions, account_details]
+    BankProvider:
+      type: object
+      required: [id, displayName, kind, isSimulated, supportedScopes, logoKey]
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        kind:
+          type: string
+          enum: [bank, wallet]
+        isSimulated:
+          type: boolean
+          description: True for Banco Demo and Billetera Demo. The app shows the "Simulado" badge.
+        supportedScopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/BankScope'
+        logoKey:
+          type: string
+          description: Key of the logo tile in the app's design system.
+    BankProviderList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BankProvider'
+    BankAuthorizationRequest:
+      type: object
+      required: [provider, consentId, codeChallenge, codeChallengeMethod, state]
+      properties:
+        provider:
+          type: string
+          maxLength: 40
+        consentId:
+          type: string
+          format: uuid
+        codeChallenge:
+          type: string
+          minLength: 43
+          maxLength: 128
+        codeChallengeMethod:
+          type: string
+          enum: [S256]
+        state:
+          type: string
+          minLength: 8
+          maxLength: 128
+    BankAuthorization:
+      type: object
+      required: [authorizationId, authorizeUrl, expiresAt]
+      properties:
+        authorizationId:
+          type: string
+          format: uuid
+        authorizeUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+    BankCodeExchange:
+      type: object
+      required: [code, codeVerifier]
+      properties:
+        code:
+          type: string
+          maxLength: 2048
+        codeVerifier:
+          type: string
+          minLength: 43
+          maxLength: 128
+    BankTokenSet:
+      type: object
+      required: [linkId, provider, accessToken, refreshToken, expiresIn]
+      properties:
+        linkId:
+          type: string
+          format: uuid
+        provider:
+          type: string
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+          format: int32
+          description: Seconds until the access token expires.
+    BankAccountsQuery:
+      type: object
+      required: [linkId, accessToken]
+      properties:
+        linkId:
+          type: string
+          format: uuid
+        accessToken:
+          type: string
+          maxLength: 8192
+    BankTransactionsQuery:
+      type: object
+      required: [linkId, accessToken, providerAccountId, since]
+      properties:
+        linkId:
+          type: string
+          format: uuid
+        accessToken:
+          type: string
+          maxLength: 8192
+        providerAccountId:
+          type: string
+          maxLength: 128
+        since:
+          type: string
+          format: date-time
+        cursor:
+          type: string
+          maxLength: 512
+        pageSize:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 200
+    BankRefreshRequest:
+      type: object
+      required: [linkId, refreshToken]
+      properties:
+        linkId:
+          type: string
+          format: uuid
+        refreshToken:
+          type: string
+          maxLength: 8192
+    BankCdt:
+      type: object
+      required: [rateEaBps, termDays, openedOn, maturesOn]
+      properties:
+        rateEaBps:
+          type: integer
+          format: int32
+          description: Effective annual rate in basis points, 1050 = 10,50 % E.A.
+        termDays:
+          type: integer
+          format: int32
+        openedOn:
+          type: string
+          format: date
+        maturesOn:
+          type: string
+          format: date
+    BankAccount:
+      type: object
+      description: The shared Account shape (shared contracts, section 2) as the provider reports it.
+      required: [providerAccountId, kind, displayName, currency, balanceMinor, status, isSimulated]
+      properties:
+        providerAccountId:
+          type: string
+        kind:
+          type: string
+          enum: [savings, checking, wallet, credit_card, cdt]
+        displayName:
+          type: string
+        last4:
+          type: string
+          pattern: '^[0-9]{4}$'
+        currency:
+          type: string
+          enum: [COP]
+        balanceMinor:
+          type: integer
+          format: int64
+          description: COP centavos. For a credit card, the amount owed (positive).
+        availableMinor:
+          type: integer
+          format: int64
+        creditLimitMinor:
+          type: integer
+          format: int64
+        paymentDueOn:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [active, closed]
+        isSimulated:
+          type: boolean
+        cdt:
+          $ref: '#/components/schemas/BankCdt'
+    BankAccountList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BankAccount'
+    BankTransaction:
+      type: object
+      description: The shared Transaction shape (shared contracts, section 2) as the provider reports it.
+      required: [providerTxId, bookedAt, amountMinor, description, status]
+      properties:
+        providerTxId:
+          type: string
+        bookedAt:
+          type: string
+          format: date-time
+        amountMinor:
+          type: integer
+          format: int64
+          description: COP centavos. Negative is money out, positive is money in.
+        description:
+          type: string
+        merchantRaw:
+          type: string
+        bankCategory:
+          type: string
+          description: The bank's own category, if any. M7 decides the Fynk category.
+        status:
+          type: string
+          enum: [booked, pending]
+    BankTransactionPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BankTransaction'
+        nextCursor:
+          type: string
+          description: Absent on the last page.
