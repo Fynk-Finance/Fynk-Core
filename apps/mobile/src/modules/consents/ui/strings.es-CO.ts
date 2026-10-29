@@ -68,7 +68,31 @@ export const consentsStrings = {
     expired: (date: string) => `Venció el ${date}`,
     revoked: (date: string) => `Revocado el ${date}`,
   },
-  revoke: { chip: 'Revocar' },
+  revoke: {
+    chip: 'Revocar',
+    button: 'Revocar acceso',
+    confirmTitle: (entity: string) => `¿Revocar el acceso de ${entity}?`,
+    confirmMessage: (entity: string) =>
+      `Fynk dejará de recibir datos de ${entity} de inmediato. Puedes volver a conectarla cuando quieras.`,
+    cancel: 'Cancelar',
+    confirm: 'Revocar',
+    // The M4 prompt's message after revoking.
+    done: (entity: string) => `Fynk ya no recibirá datos de ${entity}.`,
+    errors: {
+      ended: 'Este consentimiento ya había terminado.',
+      network: 'No pudimos conectarnos. Revisa tu internet e intenta de nuevo.',
+      unknown: 'No pudimos revocar el acceso. Intenta de nuevo.',
+    },
+  },
+  detail: {
+    back: 'Volver a Consentimientos',
+    version: (v: string) => `Versión del texto: ${v}`,
+    notified: (date: string) => `La entidad confirmó la revocación el ${date}`,
+    notifying: 'Estamos avisando a la entidad',
+    error: 'No pudimos cargar este consentimiento. Intenta de nuevo.',
+  },
+  // Privacidad y datos (CfgPrivacidad.html), offered to M13.
+  connected: { section: 'Cuentas conectadas', meta: 'Acceso de solo lectura' },
   // A row for Mi cuenta (M1), offered until Privacidad y datos (M13) exists.
   miCuentaRow: { title: 'Consentimientos', subtitle: 'Entidades conectadas y sus permisos' },
 } as const;
