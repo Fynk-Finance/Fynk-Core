@@ -41,7 +41,24 @@ var (
 	ErrStale = errors.New("bank: refresh token does not match the link")
 	// ErrConsentLinked: the consent already has a link (one link per consent).
 	ErrConsentLinked = errors.New("bank: consent already linked")
+	// ErrAuthorizationNotFound: the started link is unknown, used, expired or another user's.
+	ErrAuthorizationNotFound = errors.New("bank: authorization not found")
 )
+
+// AuthorizationTTL is how long a started link waits for the bank's answer (M5 prompt).
+const AuthorizationTTL = 10 * time.Minute
+
+// Authorization is a link started with a pushed authorization request, waiting for the code.
+// It holds ids only: the PKCE verifier stays on the phone and the code arrives at exchange.
+type Authorization struct {
+	ID          string    `json:"id"`
+	UserID      string    `json:"user_id"`
+	DeviceID    string    `json:"device_id"`
+	ConsentID   string    `json:"consent_id"`
+	Provider    string    `json:"provider"`
+	RedirectURI string    `json:"redirect_uri"`
+	ExpiresAt   time.Time `json:"expires_at"`
+}
 
 // Store keeps the links (Postgres in the API, memory in tests).
 type Store interface {
