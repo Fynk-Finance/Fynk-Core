@@ -2,14 +2,26 @@
 import { createPlaceholderScreen, type ModuleRoutes } from '@shared/navigation';
 import type { GetVaultDb, RegisterVaultMigrations } from '@shared/ports/vault';
 
-import { vault } from './adapters/defaultVault';
+import { useSession } from '@modules/identity';
 
-// Placeholder routes from M0 (M2 replaces them with the real screens).
+import { watchAppState } from './adapters/appStateLock';
+import { lockController } from './adapters/defaultLock';
+import { vault } from './adapters/defaultVault';
+import { createVaultFlow } from './ui/VaultFlow';
+import { createUseVaultGate } from './ui/useVaultGate';
+
+// identity/index.ts imports this file (wipe) and this file imports identity. The cycle works
+// because identity is only called inside functions, hooks and effects, never while loading.
 export const routes: ModuleRoutes = {
   module: 'vault',
-  flow: createPlaceholderScreen({ title: 'Desbloquear', owner: 'M2 · Bóveda y respaldo' }),
-  // Not shown until the module implements its gate.
-  useGate: () => false,
+  // Lock screen, shown with a fade and no back gesture (flow change).
+  flow: createVaultFlow(lockController),
+  // Open while there is a session and the vault is not unlocked.
+  useGate: createUseVaultGate({
+    controller: lockController,
+    useSession: () => useSession(),
+    watchAppState,
+  }),
   screens: [
     {
       name: 'vault.RecoveryCode',
@@ -31,7 +43,13 @@ export const getVaultDb: GetVaultDb = () => vault.getVaultDb();
  * Erases the vault: closes it, deletes the file and both copies of the key.
  * M1 calls it when this device was removed from the account. Safe when nothing was ever created.
  */
-export const wipe = (): Promise<void> => vault.wipe();
+export const wipe = async (): Promise<void> => {
+  try {
+    await vault.wipe();
+  } finally {
+    lockController.reset();
+  }
+};
 
 /** Placeholder: M2's row on M1's Seguridad screen (app unlock setting). Renders nothing yet. */
 export function UnlockSetting(): null {

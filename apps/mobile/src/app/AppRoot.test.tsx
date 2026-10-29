@@ -18,6 +18,19 @@ jest.mock('@modules/identity', () => {
   };
 });
 
+// The real vault gate (M2) reads the identity session and the Keychain; here it stays closed.
+jest.mock('@modules/vault', () => {
+  const { createPlaceholderScreen } = jest.requireActual('@shared/navigation');
+  return {
+    routes: {
+      module: 'vault',
+      flow: createPlaceholderScreen({ title: 'Desbloquear', owner: 'M2 · Bóveda y respaldo' }),
+      useGate: () => false,
+      screens: [],
+    },
+  };
+});
+
 beforeEach(() => {
   mockSignInGateOpen = false;
 });
