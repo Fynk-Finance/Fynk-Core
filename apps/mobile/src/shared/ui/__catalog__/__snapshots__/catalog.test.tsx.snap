@@ -18007,7 +18007,7 @@ exports[`design system catalog StepProgress / Step1 matches its dark snapshot 1`
       style={
         {
           "flexDirection": "row",
-          "gap": 6,
+          "gap": 8,
           "marginTop": 16,
         }
       }
@@ -18015,126 +18015,171 @@ exports[`design system catalog StepProgress / Step1 matches its dark snapshot 1`
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-1"
       >
         <View
-          collapsable={false}
-          jestAnimatedProps={
-            {
-              "value": {},
-            }
-          }
-          jestAnimatedStyle={
-            {
-              "value": {
-                "transform": [
-                  {
-                    "scaleX": 1,
-                  },
-                ],
-              },
-            }
-          }
-          jestInlineStyle={
-            [
-              {
-                "bottom": 0,
-                "left": 0,
-                "position": "absolute",
-                "right": 0,
-                "top": 0,
-              },
-              {
-                "backgroundColor": "#A8E03A",
-                "borderRadius": 999,
-              },
-              {
-                "transformOrigin": "left",
-              },
-            ]
-          }
           style={
-            [
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
+          }
+        >
+          <View
+            collapsable={false}
+            jestAnimatedProps={
               {
-                "bottom": 0,
-                "left": 0,
-                "position": "absolute",
-                "right": 0,
-                "top": 0,
-              },
+                "value": {},
+              }
+            }
+            jestAnimatedStyle={
               {
-                "backgroundColor": "#A8E03A",
-                "borderRadius": 999,
-              },
-              {
-                "transformOrigin": "left",
-              },
-              {
-                "transform": [
-                  {
-                    "scaleX": 1,
-                  },
-                ],
-              },
-            ]
+                "value": {
+                  "transform": [
+                    {
+                      "scaleX": 1,
+                    },
+                  ],
+                },
+              }
+            }
+            jestInlineStyle={
+              [
+                {
+                  "bottom": 0,
+                  "left": 0,
+                  "position": "absolute",
+                  "right": 0,
+                  "top": 0,
+                },
+                {
+                  "backgroundColor": "#A8E03A",
+                  "borderRadius": 999,
+                },
+                {
+                  "transformOrigin": "left",
+                },
+              ]
+            }
+            style={
+              [
+                {
+                  "bottom": 0,
+                  "left": 0,
+                  "position": "absolute",
+                  "right": 0,
+                  "top": 0,
+                },
+                {
+                  "backgroundColor": "#A8E03A",
+                  "borderRadius": 999,
+                },
+                {
+                  "transformOrigin": "left",
+                },
+                {
+                  "transform": [
+                    {
+                      "scaleX": 1,
+                    },
+                  ],
+                },
+              ]
+            }
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+            "height": 6,
+          }
+        }
+        testID="step-segment-2"
+      >
+        <View
+          style={
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
           }
         />
       </View>
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
-          }
-        }
-        testID="step-segment-2"
-      />
-      <View
-        style={
-          {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
-            "flex": 1,
-            "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-3"
-      />
+      >
+        <View
+          style={
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
+          }
+        />
+      </View>
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-4"
-      />
+      >
+        <View
+          style={
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
+          }
+        />
+      </View>
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-5"
-      />
+      >
+        <View
+          style={
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
+          }
+        />
+      </View>
     </View>
   </View>
 </View>
@@ -18383,7 +18428,7 @@ exports[`design system catalog StepProgress / Step1 matches its snapshot 1`] = `
       style={
         {
           "flexDirection": "row",
-          "gap": 6,
+          "gap": 8,
           "marginTop": 16,
         }
       }
@@ -18391,126 +18436,171 @@ exports[`design system catalog StepProgress / Step1 matches its snapshot 1`] = `
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-1"
       >
         <View
-          collapsable={false}
-          jestAnimatedProps={
-            {
-              "value": {},
-            }
-          }
-          jestAnimatedStyle={
-            {
-              "value": {
-                "transform": [
-                  {
-                    "scaleX": 1,
-                  },
-                ],
-              },
-            }
-          }
-          jestInlineStyle={
-            [
-              {
-                "bottom": 0,
-                "left": 0,
-                "position": "absolute",
-                "right": 0,
-                "top": 0,
-              },
-              {
-                "backgroundColor": "#A8E03A",
-                "borderRadius": 999,
-              },
-              {
-                "transformOrigin": "left",
-              },
-            ]
-          }
           style={
-            [
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
+          }
+        >
+          <View
+            collapsable={false}
+            jestAnimatedProps={
               {
-                "bottom": 0,
-                "left": 0,
-                "position": "absolute",
-                "right": 0,
-                "top": 0,
-              },
+                "value": {},
+              }
+            }
+            jestAnimatedStyle={
               {
-                "backgroundColor": "#A8E03A",
-                "borderRadius": 999,
-              },
-              {
-                "transformOrigin": "left",
-              },
-              {
-                "transform": [
-                  {
-                    "scaleX": 1,
-                  },
-                ],
-              },
-            ]
+                "value": {
+                  "transform": [
+                    {
+                      "scaleX": 1,
+                    },
+                  ],
+                },
+              }
+            }
+            jestInlineStyle={
+              [
+                {
+                  "bottom": 0,
+                  "left": 0,
+                  "position": "absolute",
+                  "right": 0,
+                  "top": 0,
+                },
+                {
+                  "backgroundColor": "#A8E03A",
+                  "borderRadius": 999,
+                },
+                {
+                  "transformOrigin": "left",
+                },
+              ]
+            }
+            style={
+              [
+                {
+                  "bottom": 0,
+                  "left": 0,
+                  "position": "absolute",
+                  "right": 0,
+                  "top": 0,
+                },
+                {
+                  "backgroundColor": "#A8E03A",
+                  "borderRadius": 999,
+                },
+                {
+                  "transformOrigin": "left",
+                },
+                {
+                  "transform": [
+                    {
+                      "scaleX": 1,
+                    },
+                  ],
+                },
+              ]
+            }
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+            "height": 6,
+          }
+        }
+        testID="step-segment-2"
+      >
+        <View
+          style={
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
           }
         />
       </View>
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
-          }
-        }
-        testID="step-segment-2"
-      />
-      <View
-        style={
-          {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
-            "flex": 1,
-            "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-3"
-      />
+      >
+        <View
+          style={
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
+          }
+        />
+      </View>
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-4"
-      />
+      >
+        <View
+          style={
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
+          }
+        />
+      </View>
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-5"
-      />
+      >
+        <View
+          style={
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
+          }
+        />
+      </View>
     </View>
   </View>
 </View>
@@ -18759,7 +18849,7 @@ exports[`design system catalog StepProgress / Step3 matches its dark snapshot 1`
       style={
         {
           "flexDirection": "row",
-          "gap": 6,
+          "gap": 8,
           "marginTop": 16,
         }
       }
@@ -18767,162 +18857,207 @@ exports[`design system catalog StepProgress / Step3 matches its dark snapshot 1`
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-1"
       >
         <View
           style={
-            [
-              {
-                "bottom": 0,
-                "left": 0,
-                "position": "absolute",
-                "right": 0,
-                "top": 0,
-              },
-              {
-                "backgroundColor": "#A8E03A",
-                "borderRadius": 999,
-              },
-            ]
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
           }
-        />
+        >
+          <View
+            style={
+              [
+                {
+                  "bottom": 0,
+                  "left": 0,
+                  "position": "absolute",
+                  "right": 0,
+                  "top": 0,
+                },
+                {
+                  "backgroundColor": "#A8E03A",
+                  "borderRadius": 999,
+                },
+              ]
+            }
+          />
+        </View>
       </View>
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-2"
       >
         <View
           style={
-            [
-              {
-                "bottom": 0,
-                "left": 0,
-                "position": "absolute",
-                "right": 0,
-                "top": 0,
-              },
-              {
-                "backgroundColor": "#A8E03A",
-                "borderRadius": 999,
-              },
-            ]
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
           }
-        />
+        >
+          <View
+            style={
+              [
+                {
+                  "bottom": 0,
+                  "left": 0,
+                  "position": "absolute",
+                  "right": 0,
+                  "top": 0,
+                },
+                {
+                  "backgroundColor": "#A8E03A",
+                  "borderRadius": 999,
+                },
+              ]
+            }
+          />
+        </View>
       </View>
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-3"
       >
         <View
-          collapsable={false}
-          jestAnimatedProps={
-            {
-              "value": {},
-            }
-          }
-          jestAnimatedStyle={
-            {
-              "value": {
-                "transform": [
-                  {
-                    "scaleX": 1,
-                  },
-                ],
-              },
-            }
-          }
-          jestInlineStyle={
-            [
-              {
-                "bottom": 0,
-                "left": 0,
-                "position": "absolute",
-                "right": 0,
-                "top": 0,
-              },
-              {
-                "backgroundColor": "#A8E03A",
-                "borderRadius": 999,
-              },
-              {
-                "transformOrigin": "left",
-              },
-            ]
-          }
           style={
-            [
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
+          }
+        >
+          <View
+            collapsable={false}
+            jestAnimatedProps={
               {
-                "bottom": 0,
-                "left": 0,
-                "position": "absolute",
-                "right": 0,
-                "top": 0,
-              },
+                "value": {},
+              }
+            }
+            jestAnimatedStyle={
               {
-                "backgroundColor": "#A8E03A",
-                "borderRadius": 999,
-              },
-              {
-                "transformOrigin": "left",
-              },
-              {
-                "transform": [
-                  {
-                    "scaleX": 1,
-                  },
-                ],
-              },
-            ]
+                "value": {
+                  "transform": [
+                    {
+                      "scaleX": 1,
+                    },
+                  ],
+                },
+              }
+            }
+            jestInlineStyle={
+              [
+                {
+                  "bottom": 0,
+                  "left": 0,
+                  "position": "absolute",
+                  "right": 0,
+                  "top": 0,
+                },
+                {
+                  "backgroundColor": "#A8E03A",
+                  "borderRadius": 999,
+                },
+                {
+                  "transformOrigin": "left",
+                },
+              ]
+            }
+            style={
+              [
+                {
+                  "bottom": 0,
+                  "left": 0,
+                  "position": "absolute",
+                  "right": 0,
+                  "top": 0,
+                },
+                {
+                  "backgroundColor": "#A8E03A",
+                  "borderRadius": 999,
+                },
+                {
+                  "transformOrigin": "left",
+                },
+                {
+                  "transform": [
+                    {
+                      "scaleX": 1,
+                    },
+                  ],
+                },
+              ]
+            }
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+            "height": 6,
+          }
+        }
+        testID="step-segment-4"
+      >
+        <View
+          style={
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
           }
         />
       </View>
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
-          }
-        }
-        testID="step-segment-4"
-      />
-      <View
-        style={
-          {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
-            "flex": 1,
-            "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-5"
-      />
+      >
+        <View
+          style={
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
+          }
+        />
+      </View>
     </View>
   </View>
 </View>
@@ -19171,7 +19306,7 @@ exports[`design system catalog StepProgress / Step3 matches its snapshot 1`] = `
       style={
         {
           "flexDirection": "row",
-          "gap": 6,
+          "gap": 8,
           "marginTop": 16,
         }
       }
@@ -19179,162 +19314,207 @@ exports[`design system catalog StepProgress / Step3 matches its snapshot 1`] = `
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-1"
       >
         <View
           style={
-            [
-              {
-                "bottom": 0,
-                "left": 0,
-                "position": "absolute",
-                "right": 0,
-                "top": 0,
-              },
-              {
-                "backgroundColor": "#A8E03A",
-                "borderRadius": 999,
-              },
-            ]
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
           }
-        />
+        >
+          <View
+            style={
+              [
+                {
+                  "bottom": 0,
+                  "left": 0,
+                  "position": "absolute",
+                  "right": 0,
+                  "top": 0,
+                },
+                {
+                  "backgroundColor": "#A8E03A",
+                  "borderRadius": 999,
+                },
+              ]
+            }
+          />
+        </View>
       </View>
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-2"
       >
         <View
           style={
-            [
-              {
-                "bottom": 0,
-                "left": 0,
-                "position": "absolute",
-                "right": 0,
-                "top": 0,
-              },
-              {
-                "backgroundColor": "#A8E03A",
-                "borderRadius": 999,
-              },
-            ]
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
           }
-        />
+        >
+          <View
+            style={
+              [
+                {
+                  "bottom": 0,
+                  "left": 0,
+                  "position": "absolute",
+                  "right": 0,
+                  "top": 0,
+                },
+                {
+                  "backgroundColor": "#A8E03A",
+                  "borderRadius": 999,
+                },
+              ]
+            }
+          />
+        </View>
       </View>
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-3"
       >
         <View
-          collapsable={false}
-          jestAnimatedProps={
-            {
-              "value": {},
-            }
-          }
-          jestAnimatedStyle={
-            {
-              "value": {
-                "transform": [
-                  {
-                    "scaleX": 1,
-                  },
-                ],
-              },
-            }
-          }
-          jestInlineStyle={
-            [
-              {
-                "bottom": 0,
-                "left": 0,
-                "position": "absolute",
-                "right": 0,
-                "top": 0,
-              },
-              {
-                "backgroundColor": "#A8E03A",
-                "borderRadius": 999,
-              },
-              {
-                "transformOrigin": "left",
-              },
-            ]
-          }
           style={
-            [
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
+          }
+        >
+          <View
+            collapsable={false}
+            jestAnimatedProps={
               {
-                "bottom": 0,
-                "left": 0,
-                "position": "absolute",
-                "right": 0,
-                "top": 0,
-              },
+                "value": {},
+              }
+            }
+            jestAnimatedStyle={
               {
-                "backgroundColor": "#A8E03A",
-                "borderRadius": 999,
-              },
-              {
-                "transformOrigin": "left",
-              },
-              {
-                "transform": [
-                  {
-                    "scaleX": 1,
-                  },
-                ],
-              },
-            ]
+                "value": {
+                  "transform": [
+                    {
+                      "scaleX": 1,
+                    },
+                  ],
+                },
+              }
+            }
+            jestInlineStyle={
+              [
+                {
+                  "bottom": 0,
+                  "left": 0,
+                  "position": "absolute",
+                  "right": 0,
+                  "top": 0,
+                },
+                {
+                  "backgroundColor": "#A8E03A",
+                  "borderRadius": 999,
+                },
+                {
+                  "transformOrigin": "left",
+                },
+              ]
+            }
+            style={
+              [
+                {
+                  "bottom": 0,
+                  "left": 0,
+                  "position": "absolute",
+                  "right": 0,
+                  "top": 0,
+                },
+                {
+                  "backgroundColor": "#A8E03A",
+                  "borderRadius": 999,
+                },
+                {
+                  "transformOrigin": "left",
+                },
+                {
+                  "transform": [
+                    {
+                      "scaleX": 1,
+                    },
+                  ],
+                },
+              ]
+            }
+          />
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "flex": 1,
+            "height": 6,
+          }
+        }
+        testID="step-segment-4"
+      >
+        <View
+          style={
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
           }
         />
       </View>
       <View
         style={
           {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
             "flex": 1,
             "height": 6,
-            "overflow": "hidden",
-          }
-        }
-        testID="step-segment-4"
-      />
-      <View
-        style={
-          {
-            "backgroundColor": "rgba(255, 255, 255, 0.32)",
-            "borderRadius": 999,
-            "flex": 1,
-            "height": 6,
-            "overflow": "hidden",
           }
         }
         testID="step-segment-5"
-      />
+      >
+        <View
+          style={
+            {
+              "backgroundColor": "rgba(255, 255, 255, 0.32)",
+              "borderRadius": 999,
+              "inset": 0,
+              "overflow": "hidden",
+              "position": "absolute",
+            }
+          }
+        />
+      </View>
     </View>
   </View>
 </View>
