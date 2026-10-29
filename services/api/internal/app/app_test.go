@@ -81,7 +81,7 @@ func TestEveryStubRouteAnswers501ProblemJSON(t *testing.T) {
 	// One path per endpoint group of the shared contracts, section 5, of the modules still stubbed.
 	// M5 bank has real endpoints, tested in internal/bank.
 	paths := []string{
-		"/v1/backup/records", "/v1/device-approvals/pending",
+		"/v1/device-approvals/pending",
 		"/v1/catalog/merchants", "/v1/recommendations", "/v1/privacy/policy", "/v1/market/cdt-products",
 	}
 	for _, p := range paths {
@@ -166,8 +166,8 @@ func TestNewRouterRejectsDuplicateModules(t *testing.T) {
 func TestGeneratedHealthPathsArePublicAndAnswerFromTheContract(t *testing.T) {
 	srv := newServer(t, nil)
 	for _, m := range All(Deps{}) {
-		if m.Name() == "identity" {
-			continue // identity replaced the example path with its real endpoints
+		if m.Name() == "identity" || m.Name() == "backup" {
+			continue // these modules replaced the example path with their real endpoints
 		}
 		res, body := get(t, srv.URL+"/v1/"+m.Name()+"/health", "")
 		if res.status != http.StatusOK {

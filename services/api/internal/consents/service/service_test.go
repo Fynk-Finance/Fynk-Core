@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	audit "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
+	bankports "github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/domain"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/store"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/clock"
@@ -50,12 +52,47 @@ func (r *recorder) types() []string {
 	return out
 }
 
+// bank is M5's revoker as M4 sees it: it records each notice and fails while down is set.
+type bank struct {
+	mu    sync.Mutex
+	calls []string
+	down  bool
+}
+
+func (b *bank) RevokeConsent(_ context.Context, provider, providerConsentID string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.calls = append(b.calls, provider+"/"+providerConsentID)
+	if b.down {
+		return fmt.Errorf("bankdemo: revoke: %w", bankports.ErrProviderUnavailable)
+	}
+	return nil
+}
+
+func (b *bank) count() int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return len(b.calls)
+}
+
+func (b *bank) setDown(down bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.down = down
+}
+
 func setup(t *testing.T) (*Service, *store.Memory, *recorder, *clock.Fixed) {
+	s, st, rec, clk, _ := setupWithBank(t)
+	return s, st, rec, clk
+}
+
+func setupWithBank(t *testing.T) (*Service, *store.Memory, *recorder, *clock.Fixed, *bank) {
 	t.Helper()
 	st := store.NewMemory(text)
 	rec := &recorder{}
 	clk := clock.NewFixed(t0)
-	return New(st, clk, rec, slog.New(slog.NewTextHandler(io.Discard, nil))), st, rec, clk
+	b := &bank{}
+	return New(st, clk, rec, slog.New(slog.NewTextHandler(io.Discard, nil)), b), st, rec, clk, b
 }
 
 func request(user string) domain.Request {
@@ -298,5 +335,155 @@ func TestAnAuditFailureDoesNotUndoTheChange(t *testing.T) {
 	}
 	if ok, _ := s.Active(context.Background(), "u1", c.ID); !ok {
 		t.Fatal("the grant must stand")
+	}
+}
+
+// The scopes come from M5's provider list: an entity Fynk cannot reach cannot be consented.
+func TestScopesComeFromTheBankProviderList(t *testing.T) {
+	s, _, _, _ := setup(t)
+	r := request("u1")
+	r.Provider = "bancolombia"
+	if _, err := s.Create(context.Background(), r, ""); !errors.Is(err, domain.ErrUnsupportedProvider) {
+		t.Fatalf("bancolombia before its adapter: err = %v", err)
+	}
+	r.Provider = "billetera-demo"
+	if _, err := s.Create(context.Background(), r, ""); err != nil {
+		t.Fatalf("billetera-demo: %v", err)
+	}
+}
+
+func grantedConsent(t *testing.T, s *Service, user string) domain.Consent {
+	t.Helper()
+	c := create(t, s, user)
+	if err := s.MarkGranted(context.Background(), c.ID, "bd-"+c.ID[30:]); err != nil {
+		t.Fatal(err)
+	}
+	return c
+}
+
+// HU-008: immediate revocation, the entity is notified, no new syncs, auditable evidence.
+func TestRevokeIsImmediateAndNotifiesTheEntity(t *testing.T) {
+	s, _, rec, clk, b := setupWithBank(t)
+	c := grantedConsent(t, s, "u1")
+	clk.Advance(time.Hour)
+	got, err := s.Revoke(context.Background(), "u1", c.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Status != domain.StatusRevoked || !got.RevokedAt.Equal(t0.Add(time.Hour)) || got.ProviderNotifiedAt == nil {
+		t.Fatalf("revoked %+v", got)
+	}
+	if ok, err := s.Active(context.Background(), "u1", c.ID); ok || err != nil {
+		t.Fatalf("Active after revoke = %v, %v", ok, err)
+	}
+	if b.count() != 1 || b.calls[0] != "banco-demo/bd-"+c.ID[30:] {
+		t.Fatalf("bank calls %v", b.calls)
+	}
+	want := []string{audit.ConsentCreated, audit.ConsentGranted, audit.ConsentRevoked}
+	if strings.Join(rec.types(), ",") != strings.Join(want, ",") {
+		t.Fatalf("audit %v", rec.types())
+	}
+	revoked := rec.events[2]
+	if len(revoked.Meta) != 2 || revoked.Meta["provider"] != "banco-demo" || revoked.Meta["consent_id"] != c.ID || revoked.UserID != "u1" {
+		t.Fatalf("revoked event %+v", revoked)
+	}
+}
+
+// HU-008: if the entity cannot be reached, the consent stays revoked and Fynk keeps trying.
+func TestAnUnreachableEntityIsRetriedUntilItAnswers(t *testing.T) {
+	s, st, rec, clk, b := setupWithBank(t)
+	c := grantedConsent(t, s, "u1")
+	b.setDown(true)
+	got, err := s.Revoke(context.Background(), "u1", c.ID)
+	if err != nil || got.Status != domain.StatusRevoked || got.ProviderNotifiedAt != nil {
+		t.Fatalf("revoke while the bank is down: %+v, %v", got, err)
+	}
+	if ok, _ := s.Active(context.Background(), "u1", c.ID); ok {
+		t.Fatal("the revocation must not wait for the bank")
+	}
+	clk.Advance(9 * time.Minute)
+	if _, _ = s.NotifyDue(context.Background()); b.count() != 1 {
+		t.Fatalf("retried before 10 minutes: %d calls", b.count())
+	}
+	clk.Advance(time.Minute)
+	if n, _ := s.NotifyDue(context.Background()); n != 0 || b.count() != 2 {
+		t.Fatalf("10 minutes: confirmed %d, calls %d", n, b.count())
+	}
+	b.setDown(false)
+	clk.Advance(10 * time.Minute)
+	if n, _ := s.NotifyDue(context.Background()); n != 1 || b.count() != 3 {
+		t.Fatalf("20 minutes: confirmed %d, calls %d", n, b.count())
+	}
+	stored, _ := st.Get(context.Background(), c.ID)
+	if stored.ProviderNotifiedAt == nil || stored.NextNotifyAt != nil || stored.NotifyAttempts != 3 {
+		t.Fatalf("stored %+v", stored)
+	}
+	clk.Advance(time.Hour)
+	if _, _ = s.NotifyDue(context.Background()); b.count() != 3 {
+		t.Fatal("a confirmed notice was sent again")
+	}
+	if n := strings.Count(strings.Join(rec.types(), ","), audit.ConsentRevoked); n != 1 {
+		t.Fatalf("consent.revoked audited %d times", n)
+	}
+}
+
+func TestNoticesStopAfterTwentyFourHours(t *testing.T) {
+	s, _, _, clk, b := setupWithBank(t)
+	c := grantedConsent(t, s, "u1")
+	b.setDown(true)
+	_, _ = s.Revoke(context.Background(), "u1", c.ID)
+	for i := 0; i < 6*26; i++ { // 26 hours, every 10 minutes
+		clk.Advance(10 * time.Minute)
+		_, _ = s.NotifyDue(context.Background())
+	}
+	// One try at once, then one every 10 minutes while less than 24 hours have passed.
+	if b.count() < 140 || b.count() > 145 {
+		t.Fatalf("%d notices in 26 hours", b.count())
+	}
+	before := b.count()
+	clk.Advance(time.Hour)
+	_, _ = s.NotifyDue(context.Background())
+	if b.count() != before {
+		t.Fatal("still notifying after 24 hours")
+	}
+}
+
+func TestRevokingTwiceNotifiesOnce(t *testing.T) {
+	s, _, rec, _, b := setupWithBank(t)
+	c := grantedConsent(t, s, "u1")
+	first, _ := s.Revoke(context.Background(), "u1", c.ID)
+	again, err := s.Revoke(context.Background(), "u1", c.ID)
+	if err != nil || again.ID != first.ID || again.Status != domain.StatusRevoked || b.count() != 1 {
+		t.Fatalf("again %+v, %v, %d calls", again, err, b.count())
+	}
+	if len(rec.types()) != 3 {
+		t.Fatalf("audit %v", rec.types())
+	}
+}
+
+func TestAPendingConsentIsRevokedWithoutCallingTheEntity(t *testing.T) {
+	s, _, _, _, b := setupWithBank(t)
+	c := create(t, s, "u1")
+	got, err := s.Revoke(context.Background(), "u1", c.ID)
+	if err != nil || got.Status != domain.StatusRevoked || b.count() != 0 {
+		t.Fatalf("%+v, %v, %d calls", got, err, b.count())
+	}
+	if err := s.MarkGranted(context.Background(), c.ID, "bd-late"); !errors.Is(err, domain.ErrNotPending) {
+		t.Fatalf("a revoked consent was granted afterwards: %v", err)
+	}
+}
+
+func TestOnlyTheOwnerCanRevokeAndOnlyWhileItLasts(t *testing.T) {
+	s, _, _, clk, _ := setupWithBank(t)
+	c := grantedConsent(t, s, "u1")
+	if _, err := s.Revoke(context.Background(), "u2", c.ID); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("other user: err = %v", err)
+	}
+	if ok, _ := s.Active(context.Background(), "u1", c.ID); !ok {
+		t.Fatal("another user's attempt changed the consent")
+	}
+	clk.Advance(366 * 24 * time.Hour)
+	if _, err := s.Revoke(context.Background(), "u1", c.ID); !errors.Is(err, domain.ErrNotRevocable) {
+		t.Fatalf("expired: err = %v", err)
 	}
 }

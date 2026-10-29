@@ -25,6 +25,9 @@ function fakeDevice() {
     deviceId: () => null,
     sync: jest.fn(async () => undefined),
     forget: jest.fn(async () => undefined),
+    current: jest.fn(async () => null),
+    publicKey: jest.fn(async () => null),
+    sharedSecret: jest.fn(async () => new Uint8Array(32)),
   } satisfies DeviceService;
 }
 

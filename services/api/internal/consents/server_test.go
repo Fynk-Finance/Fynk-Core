@@ -17,6 +17,7 @@ import (
 
 	audit "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/domain"
+	consentports "github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/service"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/store"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
@@ -43,22 +44,32 @@ func (t tokens) Verify(_ context.Context, token, deviceID string) (auth.User, er
 	return auth.User{ID: id, EmailVerified: true, DeviceID: deviceID}, nil
 }
 
+type nopBank struct{}
+
+func (nopBank) RevokeConsent(context.Context, string, string) error { return nil }
+
 type nopRecorder struct{}
 
 func (nopRecorder) Record(context.Context, audit.Event) error { return nil }
 
 func newAPI(t *testing.T) *httptest.Server {
+	srv, _ := newAPIWithService(t)
+	return srv
+}
+
+func newAPIWithService(t *testing.T) (*httptest.Server, *service.Service) {
 	t.Helper()
 	auth.Install(tokens{"token-ana": "ana", "token-beto": "beto"})
 	t.Cleanup(func() { auth.Install(nil) })
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	st := store.NewMemory(domain.Text{Version: "2026-10-v1", BodyMD: body, SHA256: sum[:], PublishedAt: t0})
-	m := consentsModule{svc: service.New(st, clock.NewFixed(t0), nopRecorder{}, log)}
+	svc := service.New(st, clock.NewFixed(t0), nopRecorder{}, log, nopBank{})
+	m := consentsModule{svc: svc}
 	r := chi.NewRouter()
 	r.Route("/v1", m.Routes)
 	srv := httptest.NewServer(r)
 	t.Cleanup(srv.Close)
-	return srv
+	return srv, svc
 }
 
 // reply is what a test reads from a response, whose body call already closed.
@@ -118,6 +129,7 @@ func TestEveryRouteNeedsATokenBeforeTheRequestIsParsed(t *testing.T) {
 		{http.MethodGet, "/v1/consents"},
 		{http.MethodPost, "/v1/consents"},
 		{http.MethodGet, "/v1/consents/not-a-uuid"},
+		{http.MethodPost, "/v1/consents/not-a-uuid/revoke"},
 	} {
 		res, b := call(t, tc.method, srv.URL+tc.path, "", nil)
 		if res.StatusCode != http.StatusUnauthorized || problemCode(t, b) != "unauthorized" {
@@ -212,5 +224,66 @@ func TestTheSameIdempotencyKeyCreatesOneConsent(t *testing.T) {
 	}
 	if len(ids) != 1 {
 		t.Fatalf("got %d consents", len(ids))
+	}
+}
+
+// stubBankQuery is M5's check before every bank call (shared contracts, section 4.5), stubbed:
+// a consent that is not active answers 409 consent_revoked.
+func stubBankQuery(checker consentports.ConsentChecker, userID, consentID string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ok, err := checker.Active(r.Context(), userID, consentID)
+		if err != nil || !ok {
+			problem.Write(w, problem.New(http.StatusConflict, "consent_revoked", "Conflict", "The consent is not active."))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+}
+
+// HU-008 and module test: after revoke, Active is false at once and M5's next query is 409.
+func TestAfterRevokeTheNextBankQueryAnswers409ConsentRevoked(t *testing.T) {
+	srv, svc := newAPIWithService(t)
+	_, b := call(t, http.MethodPost, srv.URL+"/v1/consents", "token-ana", validRequest())
+	var created map[string]any
+	_ = json.Unmarshal(b, &created)
+	id := created["id"].(string)
+	if err := svc.MarkGranted(context.Background(), id, "bd-1"); err != nil {
+		t.Fatal(err)
+	}
+	bankQuery := httptest.NewServer(stubBankQuery(svc, "ana", id))
+	defer bankQuery.Close()
+	if res, _ := call(t, http.MethodPost, bankQuery.URL, "", nil); res.StatusCode != http.StatusOK {
+		t.Fatalf("before revoke: %d", res.StatusCode)
+	}
+
+	res, b := call(t, http.MethodPost, srv.URL+"/v1/consents/"+id+"/revoke", "token-ana", nil)
+	var revoked map[string]any
+	_ = json.Unmarshal(b, &revoked)
+	if res.StatusCode != http.StatusOK || revoked["status"] != "revoked" || revoked["revokedAt"] == nil || revoked["providerNotifiedAt"] == nil {
+		t.Fatalf("revoke: %d %s", res.StatusCode, b)
+	}
+	res, b = call(t, http.MethodPost, bankQuery.URL, "", nil)
+	if res.StatusCode != http.StatusConflict || problemCode(t, b) != "consent_revoked" {
+		t.Fatalf("after revoke: %d %s", res.StatusCode, b)
+	}
+	// The list shows it revoked right away (HU-007, información actualizada).
+	if _, b := call(t, http.MethodGet, srv.URL+"/v1/consents/"+id, "token-ana", nil); !bytes.Contains(b, []byte(`"status":"revoked"`)) {
+		t.Fatalf("get after revoke: %s", b)
+	}
+}
+
+func TestOnlyTheOwnerCanRevokeThroughTheAPI(t *testing.T) {
+	srv, svc := newAPIWithService(t)
+	_, b := call(t, http.MethodPost, srv.URL+"/v1/consents", "token-ana", validRequest())
+	var created map[string]any
+	_ = json.Unmarshal(b, &created)
+	id := created["id"].(string)
+	_ = svc.MarkGranted(context.Background(), id, "bd-1")
+	res, b := call(t, http.MethodPost, srv.URL+"/v1/consents/"+id+"/revoke", "token-beto", nil)
+	if res.StatusCode != http.StatusNotFound || problemCode(t, b) != "consent_not_found" {
+		t.Fatalf("%d %s", res.StatusCode, b)
+	}
+	if ok, _ := svc.Active(context.Background(), "ana", id); !ok {
+		t.Fatal("another user revoked ana's consent")
 	}
 }

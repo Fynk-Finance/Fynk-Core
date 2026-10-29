@@ -131,6 +131,25 @@ describe('changePassword', () => {
   });
 });
 
+describe('reauthenticate', () => {
+  it('forces a fresh login with prompt=login and max_age=0 in the ephemeral browser session', async () => {
+    mockAuthorize.mockResolvedValueOnce(authorizeResult);
+    expect(await createAppAuthOidc(config).reauthenticate()).toEqual(tokens);
+    const sent = mockAuthorize.mock.calls[0]?.[0];
+    expect(sent?.additionalParameters).toEqual({ prompt: 'login', max_age: '0' });
+    expect(sent).toMatchObject({ usePKCE: true, iosPrefersEphemeralSession: true });
+  });
+
+  it('turns a closed browser into a cancelled error', async () => {
+    mockAuthorize.mockRejectedValueOnce(
+      Object.assign(new Error('User cancelled flow'), { code: 'authentication_error' }),
+    );
+    await expect(createAppAuthOidc(config).reauthenticate()).rejects.toMatchObject({
+      kind: 'cancelled',
+    });
+  });
+});
+
 describe('classifyAppAuthError', () => {
   it.each([
     [{ code: 'authentication_error', message: 'User cancelled flow' }, 'cancelled'],

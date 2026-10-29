@@ -20,7 +20,7 @@ import (
 //
 // Active is false for anything not active or past its expiry, and for another user's consent.
 func New(d module.Deps) ConsentChecker {
-	return service.New(store.New(d.DB), d.Clock, d.Audit, d.Log)
+	return service.New(store.New(d.DB), d.Clock, d.Audit, d.Log, service.BankRevoker{})
 }
 
 var _ ConsentChecker = (*service.Service)(nil)

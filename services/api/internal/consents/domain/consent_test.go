@@ -13,6 +13,8 @@ var (
 	body = "# Autorización\n"
 	sum  = sha256.Sum256([]byte(body))
 	text = Text{Version: "2026-10-v1", BodyMD: body, SHA256: sum[:], PublishedAt: now.Add(-time.Hour)}
+	// supported is what M5's provider list says Banco Demo offers.
+	supported = []Scope{ScopeBalances, ScopeTransactions, ScopeAccountDetails}
 )
 
 func request() Request {
@@ -28,7 +30,7 @@ func request() Request {
 
 func pending(t *testing.T) Consent {
 	t.Helper()
-	c, err := NewPending("c1", request(), text, now)
+	c, err := NewPending("c1", request(), supported, text, now)
 	if err != nil {
 		t.Fatalf("NewPending: %v", err)
 	}
@@ -53,11 +55,13 @@ func TestNewPendingRecordsScopeTermAndEvidence(t *testing.T) {
 
 // HU-006: no open or general consents, and only what was shown is accepted.
 func TestNewPendingRejectsWhatWasNotShown(t *testing.T) {
+	if _, err := NewPending("c1", request(), nil, text, now); !errors.Is(err, ErrUnsupportedProvider) {
+		t.Errorf("provider not offered: err = %v", err)
+	}
 	cases := map[string]struct {
 		edit func(*Request)
 		want error
 	}{
-		"unknown provider":   {func(r *Request) { r.Provider = "otro-banco" }, ErrUnsupportedProvider},
 		"no scopes":          {func(r *Request) { r.Scopes = nil }, ErrInvalidScopes},
 		"unknown scope":      {func(r *Request) { r.Scopes = []Scope{"payments"} }, ErrInvalidScopes},
 		"repeated scope":     {func(r *Request) { r.Scopes = []Scope{ScopeBalances, ScopeBalances} }, ErrInvalidScopes},
@@ -74,7 +78,7 @@ func TestNewPendingRejectsWhatWasNotShown(t *testing.T) {
 	for name, tc := range cases {
 		r := request()
 		tc.edit(&r)
-		if _, err := NewPending("c1", r, text, now); !errors.Is(err, tc.want) {
+		if _, err := NewPending("c1", r, supported, text, now); !errors.Is(err, tc.want) {
 			t.Errorf("%s: err = %v, want %v", name, err, tc.want)
 		}
 	}
@@ -83,7 +87,7 @@ func TestNewPendingRejectsWhatWasNotShown(t *testing.T) {
 func TestASubsetOfScopesIsAccepted(t *testing.T) {
 	r := request()
 	r.Scopes = []Scope{ScopeBalances}
-	if _, err := NewPending("c1", r, text, now); err != nil {
+	if _, err := NewPending("c1", r, supported, text, now); err != nil {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -145,5 +149,70 @@ func TestStatusAtReportsExpiryAfterTheTerm(t *testing.T) {
 	}
 	if p := pending(t); p.ActiveAt(now) || p.StatusAt(now) != StatusPending {
 		t.Fatal("a pending consent is never active")
+	}
+}
+
+func active(t *testing.T) Consent {
+	t.Helper()
+	c, err := pending(t).Grant("bd-1", text, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return c
+}
+
+// HU-008: revocation takes effect at once and schedules the notice to the entity.
+func TestRevokeStopsTheConsentAtOnceAndSchedulesTheNotice(t *testing.T) {
+	at := now.Add(time.Hour)
+	r, err := active(t).Revoke(ReasonUserRequest, at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Status != StatusRevoked || !r.RevokedAt.Equal(at) || r.RevokedReason != "user_request" || r.ActiveAt(at) {
+		t.Fatalf("revoked %+v", r)
+	}
+	if r.NextNotifyAt == nil || !r.NextNotifyAt.Equal(at.Add(NotifyRetryEvery)) || r.ProviderNotifiedAt != nil {
+		t.Fatalf("notice not scheduled: %+v", r)
+	}
+}
+
+func TestAPendingConsentIsRevokedWithoutANoticeToTheEntity(t *testing.T) {
+	r, err := pending(t).Revoke(ReasonUserRequest, now)
+	if err != nil || r.Status != StatusRevoked || r.NextNotifyAt != nil {
+		t.Fatalf("revoked %+v, %v", r, err)
+	}
+}
+
+func TestOnlyALiveConsentCanBeRevoked(t *testing.T) {
+	r, _ := active(t).Revoke(ReasonUserRequest, now)
+	if _, err := r.Revoke(ReasonUserRequest, now); !errors.Is(err, ErrAlreadyRevoked) {
+		t.Errorf("twice: err = %v", err)
+	}
+	ended := now.AddDate(0, 0, 365)
+	if _, err := active(t).Revoke(ReasonUserRequest, ended); !errors.Is(err, ErrNotRevocable) {
+		t.Errorf("expired: err = %v", err)
+	}
+	failed := pending(t)
+	failed.Status = StatusFailed
+	if _, err := failed.Revoke(ReasonUserRequest, now); !errors.Is(err, ErrNotRevocable) {
+		t.Errorf("failed: err = %v", err)
+	}
+}
+
+// HU-008: when the entity cannot be reached, try again every 10 minutes for 24 hours.
+func TestAFailedNoticeIsRetriedEveryTenMinutesForADay(t *testing.T) {
+	r, _ := active(t).Revoke(ReasonUserRequest, now)
+	r = r.NoticeFailed(now)
+	if r.NotifyAttempts != 1 || !r.NextNotifyAt.Equal(now.Add(10*time.Minute)) {
+		t.Fatalf("after one failure %+v", r)
+	}
+	late := now.Add(24*time.Hour - 5*time.Minute)
+	if r = r.NoticeFailed(late); r.NextNotifyAt != nil {
+		t.Fatalf("a retry after the 24 hours was scheduled: %v", r.NextNotifyAt)
+	}
+	ok, _ := active(t).Revoke(ReasonUserRequest, now)
+	ok = ok.Notified(now.Add(time.Second))
+	if ok.ProviderNotifiedAt == nil || ok.NextNotifyAt != nil {
+		t.Fatalf("notified %+v", ok)
 	}
 }

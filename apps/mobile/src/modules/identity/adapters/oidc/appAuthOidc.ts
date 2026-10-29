@@ -99,6 +99,20 @@ export function createAppAuthOidc(config: OidcConfig, fetchFn: Fetch = fetch): O
       }
     },
 
+    async reauthenticate() {
+      // prompt=login makes Keycloak ask for the credentials even with a session, and max_age=0
+      // says the same for an older session; either way the id token gets a new auth_time.
+      const additionalParameters = {
+        prompt: 'login',
+        max_age: '0',
+      } as unknown as AuthConfiguration['additionalParameters'];
+      try {
+        return toTokenSet(await authorize({ ...base, additionalParameters }));
+      } catch (e) {
+        throw toOidcError(e);
+      }
+    },
+
     async refresh(current: TokenSet) {
       try {
         const result = await refresh(base, { refreshToken: current.refreshToken });

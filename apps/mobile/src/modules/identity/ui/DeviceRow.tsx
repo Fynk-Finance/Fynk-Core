@@ -25,10 +25,12 @@ export interface DeviceRowProps {
   /** Draws the line between rows. */
   divided: boolean;
   disabled: boolean;
+  /** False while this phone waits for approval: the API refuses it to close other devices. */
+  canClose: boolean;
   onClose: () => void;
 }
 
-export function DeviceRow({ device, now, divided, disabled, onClose }: DeviceRowProps) {
+export function DeviceRow({ device, now, divided, disabled, canClose, onClose }: DeviceRowProps) {
   const styles = useThemedStyles(createStyles);
   const seen = lastSeenText(device, now);
   const pending = device.status === 'pending';
@@ -68,21 +70,23 @@ export function DeviceRow({ device, now, divided, disabled, onClose }: DeviceRow
       ) : (
         <>
           {pending ? <Badge tone="neutral" size="lg" label={t.pending} /> : null}
-          <Pressable
-            onPress={onClose}
-            disabled={disabled}
-            accessibilityRole="button"
-            accessibilityLabel={t.closeDevice(device.name)}
-            testID={`identity.security.device.${device.id}.close`}
-            style={({ pressed }) => [
-              styles.close,
-              pressed || disabled ? styles.closePressed : null,
-            ]}
-          >
-            <AppText variant="small" color="danger" style={styles.closeText}>
-              {t.close}
-            </AppText>
-          </Pressable>
+          {canClose ? (
+            <Pressable
+              onPress={onClose}
+              disabled={disabled}
+              accessibilityRole="button"
+              accessibilityLabel={t.closeDevice(device.name)}
+              testID={`identity.security.device.${device.id}.close`}
+              style={({ pressed }) => [
+                styles.close,
+                pressed || disabled ? styles.closePressed : null,
+              ]}
+            >
+              <AppText variant="small" color="danger" style={styles.closeText}>
+                {t.close}
+              </AppText>
+            </Pressable>
+          ) : null}
         </>
       )}
     </View>

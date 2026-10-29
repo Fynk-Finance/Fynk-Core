@@ -314,3 +314,26 @@ it('uses different colors in light and dark', async () => {
   await renderScreen({ preference: 'dark' });
   expect(background()).not.toBe(light);
 });
+
+describe('when this phone is pending', () => {
+  const pendingThis: LinkedDeviceItem = { ...thisPhone, status: 'pending' };
+
+  it.each(['light', 'dark'] as const)(
+    'hides every Cerrar and shows the hint in %s',
+    async (preference) => {
+      await renderScreen({ preference, list: async () => [pendingThis, tablet, pendingPhone] });
+      expect(screen.getByText(t.pendingHint)).toBeOnTheScreen();
+      expect(screen.getByText('Galaxy Tab S9')).toBeOnTheScreen();
+      expect(screen.queryByTestId('identity.security.device.dev-tab.close')).toBeNull();
+      expect(screen.queryByTestId('identity.security.device.dev-pending.close')).toBeNull();
+      expect(screen.queryByTestId('identity.security.closeAll')).toBeNull();
+    },
+  );
+
+  it('keeps Cerrar and the hint away when this phone is active', async () => {
+    await renderScreen({ list: async () => [thisPhone, tablet] });
+    expect(screen.queryByText(t.pendingHint)).toBeNull();
+    expect(screen.getByTestId('identity.security.device.dev-tab.close')).toBeOnTheScreen();
+    expect(screen.getByTestId('identity.security.closeAll')).toBeOnTheScreen();
+  });
+});
