@@ -10,8 +10,10 @@ import { recurringMigrations } from './adapters/vault/migrations';
 import { createVaultRecurringStore } from './adapters/vault/vaultRecurringStore';
 import { createRecurringService } from './application/recurringService';
 import type { SubscriptionsSummary } from './domain/amounts';
+import { createRecurringFormScreen, RECURRING_FORM_ROUTE } from './ui/RecurringFormScreen';
 
 export type { SubscriptionsSummary };
+export { RECURRING_FORM_ROUTE };
 
 registerVaultMigrations('recurring', recurringMigrations);
 
@@ -39,4 +41,12 @@ export const routes: ModuleRoutes = {
     owner: 'M9 · Gastos recurrentes y suscripciones',
     withHeader: true,
   }),
+  screens: [
+    {
+      // Add a fixed expense or subscription; with { id } it edits one.
+      name: RECURRING_FORM_ROUTE,
+      component: createRecurringFormScreen({ service }),
+      path: 'billetera/recurrentes/nuevo',
+    },
+  ],
 };
