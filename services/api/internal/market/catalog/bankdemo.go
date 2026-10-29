@@ -45,8 +45,9 @@ func (f FromProvider) Products(ctx context.Context) ([]Product, error) {
 
 // BankDemoProducts reads Banco Demo's public CDT catalog (GET /open-finance/v1/products/cdt, no
 // user token) through the Caddy egress and answers with M5's bankports.Product. It is the
-// Products() half of M5's Banco Demo adapter, which M5 has not built yet: when M5 adds it, the
-// module wires M5's provider in FromProvider and this type goes away (CLAUDE.md, rule 7).
+// same call as Products() of M5's Banco Demo adapter, which the market cannot import (depguard:
+// only internal/bank/ports). When M5 exposes the catalog in bank/ports, the module wires it in
+// FromProvider and this type goes away (CLAUDE.md, rule 7; ADR 0006).
 type BankDemoProducts struct {
 	BaseURL string // <EgressURL>/banco-demo
 	Client  *http.Client
@@ -76,7 +77,7 @@ func (b BankDemoProducts) Products(ctx context.Context) ([]bankports.Product, er
 	if err != nil {
 		return nil, fmt.Errorf("banco demo products: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("banco demo products: status %d", resp.StatusCode)
 	}
