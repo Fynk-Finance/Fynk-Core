@@ -1,11 +1,12 @@
-// Text field of VerdeLogin and VerdeOnbNombre: label above, 56 px light blue field with an icon
+// Text field of Login and OnbNombre: label above, 56 px light blue field with an icon
 // on the left, blue border and white background on focus, eye toggle for passwords.
 import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { Icon, type IconName } from '../icons';
 import { uiStrings } from '../strings.es-CO';
-import { colors, fonts, radius, size } from '../tokens';
+import { useTheme, useThemedStyles, type Theme } from '../theme';
+import { fonts, radius, size } from '../tokens';
 import { AppText } from './AppText';
 
 export interface TextFieldProps extends Omit<TextInputProps, 'style' | 'secureTextEntry'> {
@@ -28,6 +29,8 @@ export function TextField({
   testID,
   ...input
 }: TextFieldProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [focused, setFocused] = useState(false);
   const [visible, setVisible] = useState(false);
   const hasError = Boolean(error);
@@ -89,36 +92,37 @@ export function TextField({
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: { gap: 8 },
-  field: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    height: size.input,
-    paddingHorizontal: 16,
-    borderRadius: radius.input,
-    borderWidth: 1.5,
-    borderColor: colors.surfaceBlue,
-    backgroundColor: colors.surfaceBlueSoft,
-  },
-  fieldWithEye: { paddingRight: 8 },
-  focused: { borderColor: colors.primary, backgroundColor: colors.white },
-  error: { borderColor: colors.danger },
-  input: {
-    flex: 1,
-    height: '100%',
-    fontFamily: fonts.body.regular,
-    fontSize: 15,
-    color: colors.textPrimary,
-    padding: 0,
-  },
-  eye: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.tileSm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  eyePressed: { backgroundColor: colors.surfaceBlue },
-});
+const createStyles = ({ colors }: Theme) =>
+  StyleSheet.create({
+    wrapper: { gap: 8 },
+    field: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      height: size.input,
+      paddingHorizontal: 16,
+      borderRadius: radius.input,
+      borderWidth: 1.5,
+      borderColor: colors.borderBlue,
+      backgroundColor: colors.surfaceBlueSoft,
+    },
+    fieldWithEye: { paddingRight: 8 },
+    focused: { borderColor: colors.primary, backgroundColor: colors.background },
+    error: { borderColor: colors.danger },
+    input: {
+      flex: 1,
+      height: '100%',
+      fontFamily: fonts.body.regular,
+      fontSize: 15,
+      color: colors.textPrimary,
+      padding: 0,
+    },
+    eye: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.tileSm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    eyePressed: { backgroundColor: colors.surfaceBlue },
+  });

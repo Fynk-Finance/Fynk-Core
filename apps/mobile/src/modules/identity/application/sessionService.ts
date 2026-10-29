@@ -1,7 +1,7 @@
 // The app session: Keycloak tokens, their refresh and the sign-in state the UI shows.
 import type { Clock } from '@shared/domain/types';
 
-import { isRefreshDue, type SessionStatus, type TokenSet } from '../domain/session';
+import { isRefreshDue, subjectOf, type SessionStatus, type TokenSet } from '../domain/session';
 import { isOidcError, type AuthMode, type OidcPort, type TokenStorePort } from './ports';
 
 export interface SessionState {
@@ -12,6 +12,9 @@ export interface SessionState {
   error: 'network' | 'unknown' | null;
 }
 
+/** `changed`: the new password is set. `cancelled`: nothing changed. `failed`: try again. */
+export type ChangePasswordResult = 'changed' | 'cancelled' | 'failed';
+
 export interface SessionService {
   getState(): SessionState;
   subscribe(listener: () => void): () => void;
@@ -20,6 +23,11 @@ export interface SessionService {
   signIn(): Promise<void>;
   signUp(): Promise<void>;
   signOut(): Promise<void>;
+  /**
+   * Opens Keycloak's "Cambiar contraseña" page. Keycloak ends the other sessions, so the app
+   * continues on the new session it returns. Concurrent calls share one run.
+   */
+  changePassword(): Promise<ChangePasswordResult>;
   /** The access token, refreshed first when it expires within 60 s. Null when signed out. */
   getAccessToken(): Promise<string | null>;
   /** Refreshes now. Resolves true when a new access token is available. */
@@ -39,6 +47,7 @@ export function createSessionService({ oidc, store, clock }: SessionDeps): Sessi
   let generation = 0;
   let restoring: Promise<void> | null = null;
   let authorizing: Promise<void> | null = null;
+  let changing: Promise<ChangePasswordResult> | null = null;
   let refreshing: Promise<boolean> | null = null;
   const listeners = new Set<() => void>();
 
@@ -74,6 +83,46 @@ export function createSessionService({ oidc, store, clock }: SessionDeps): Sessi
       authorizing = null;
     });
     return authorizing;
+  };
+
+  const runChangePassword = async (): Promise<ChangePasswordResult> => {
+    const old = tokens;
+    if (!old) return 'cancelled';
+    const gen = generation;
+    let answer: Awaited<ReturnType<OidcPort['changePassword']>>;
+    try {
+      answer = await oidc.changePassword();
+    } catch (e) {
+      return isOidcError(e, 'cancelled') ? 'cancelled' : 'failed';
+    }
+    // The browser opened a new Keycloak session. Signed out meanwhile: close it, keep nothing.
+    if (gen !== generation) {
+      await oidc.endSession(answer.tokens).catch(() => undefined);
+      return 'cancelled';
+    }
+    // Keycloak asks for the login first, and someone could sign in there with another account.
+    // The vault on this phone belongs to this account, so tokens of another one are never kept.
+    const before = subjectOf(old.idToken);
+    if (before === null || subjectOf(answer.tokens.idToken) !== before) {
+      await oidc.endSession(answer.tokens).catch(() => undefined);
+      return 'failed';
+    }
+    try {
+      await store.save(answer.tokens);
+    } catch {
+      return 'failed';
+    }
+    if (gen !== generation) {
+      await store.clear().catch(() => undefined);
+      await oidc.endSession(answer.tokens).catch(() => undefined);
+      return 'cancelled';
+    }
+    tokens = answer.tokens;
+    // Whatever the status, the browser made a new session. Close the old one so a cancelled
+    // change does not leave two open.
+    await oidc.endSession(old).catch(() => undefined);
+    if (answer.actionStatus === 'success') return 'changed';
+    return answer.actionStatus === 'cancelled' ? 'cancelled' : 'failed';
   };
 
   const refresh = async (): Promise<boolean> => {
@@ -119,6 +168,12 @@ export function createSessionService({ oidc, store, clock }: SessionDeps): Sessi
     },
     signIn: () => authorize('signIn'),
     signUp: () => authorize('signUp'),
+    changePassword() {
+      changing ??= runChangePassword().finally(() => {
+        changing = null;
+      });
+      return changing;
+    },
     async signOut() {
       const current = tokens;
       await forget();

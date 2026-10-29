@@ -1,5 +1,7 @@
 # Gate A: the app opens on the Dashboard with the four tabs of the design, and the tabs switch.
 # Run with `make e2e` on a device or emulator that has the development build installed.
+# That build needs EXPO_PUBLIC_DEV_AUTH=dev-token (apps/mobile/.env.example) to open past the
+# sign-in. The sign-in flows with the real Keycloak are in e2e/identity/ and run on their own.
 appId: com.fynkfinance.app
 ---
 - launchApp

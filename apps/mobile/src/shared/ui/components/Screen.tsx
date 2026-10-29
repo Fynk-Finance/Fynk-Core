@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, spacing } from '../tokens';
+import { useThemedStyles, type Theme } from '../theme';
+import { spacing } from '../tokens';
 
 export interface ScreenProps {
   children: ReactNode;
@@ -26,6 +27,7 @@ export function Screen({
   gap = spacing.section,
   testID,
 }: ScreenProps) {
+  const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const content = [
     padded ? styles.padded : null,
@@ -54,8 +56,9 @@ export function Screen({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  fill: { flex: 1 },
-  padded: { paddingHorizontal: spacing.screen },
-});
+const createStyles = ({ colors }: Theme) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.background },
+    fill: { flex: 1 },
+    padded: { paddingHorizontal: spacing.screen },
+  });

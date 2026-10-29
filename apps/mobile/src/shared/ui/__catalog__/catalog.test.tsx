@@ -1,6 +1,7 @@
 // Snapshot test of every story: a change to a component's output shows up in review.
 import { act, render, screen } from '@testing-library/react-native';
 
+import { ThemeProvider } from '../theme';
 import { storyGroups } from './index';
 
 // Snapshots are taken with reduced motion on, so every animation sits still and the output is
@@ -25,6 +26,8 @@ afterEach(async () => {
   });
 });
 
+const noStore = { load: async () => 'dark' as const, save: async () => {} };
+
 const cases = storyGroups.flatMap((group) =>
   Object.entries(group.stories)
     .filter(([name]) => !group.notSnapshotted?.includes(name))
@@ -39,8 +42,20 @@ describe('design system catalog', () => {
     }
   });
 
+  // Light is the default without a provider: these snapshots are the light design.
   it.each(cases)('%s matches its snapshot', async (_name, Story) => {
     await render(<Story />);
+    const tree = screen.toJSON();
+    expect(tree).not.toBeNull();
+    expect(tree).toMatchSnapshot();
+  });
+
+  it.each(cases)('%s matches its dark snapshot', async (_name, Story) => {
+    await render(
+      <ThemeProvider initialPreference="dark" store={noStore}>
+        <Story />
+      </ThemeProvider>,
+    );
     const tree = screen.toJSON();
     expect(tree).not.toBeNull();
     expect(tree).toMatchSnapshot();

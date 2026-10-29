@@ -70,3 +70,16 @@ func TestLoadRejectsUnknownAppEnv(t *testing.T) {
 		t.Fatalf("err = %v, want an unknown APP_ENV error", err)
 	}
 }
+
+func TestLoadReadsTheOptionalAdminClientSecret(t *testing.T) {
+	base := map[string]string{"APP_ENV": "staging", "DATABASE_URL": "d", "REDIS_URL": "r"}
+	c, err := Load(env(base))
+	if err != nil || c.KeycloakAdminClientSecret != "" {
+		t.Fatalf("without the secret: %q, %v", c.KeycloakAdminClientSecret, err)
+	}
+	base["FYNK_ADMIN_CLIENT_SECRET"] = "fake-admin-secret"
+	c, err = Load(env(base))
+	if err != nil || c.KeycloakAdminClientSecret != "fake-admin-secret" {
+		t.Fatalf("with the secret: %q, %v", c.KeycloakAdminClientSecret, err)
+	}
+}

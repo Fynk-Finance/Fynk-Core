@@ -21,6 +21,7 @@ function fakeSession(initial: SessionState['status'] = 'restoring') {
     signIn: jest.fn(async () => undefined),
     signUp: jest.fn(async () => undefined),
     signOut: jest.fn(async () => undefined),
+    changePassword: jest.fn(async () => 'cancelled' as const),
     getAccessToken: jest.fn(async () => null),
     refreshAccessToken: jest.fn(async () => false),
   };

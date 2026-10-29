@@ -18,3 +18,19 @@ export const routes: ModuleRoutes = {
     },
   ],
 };
+
+/**
+ * Placeholder until M2 builds the vault: there is nothing to erase yet.
+ * M2 replaces it. M1 calls it when this device was removed from the account.
+ */
+export async function wipe(): Promise<void> {}
+
+/** Placeholder: M2's row on M1's Seguridad screen (app unlock setting). Renders nothing yet. */
+export function UnlockSetting(): null {
+  return null;
+}
+
+/** Placeholder: M2's row on M1's Seguridad screen (recovery code). Renders nothing yet. */
+export function RecoveryCodeRow(): null {
+  return null;
+}
