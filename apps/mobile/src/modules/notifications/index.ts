@@ -15,6 +15,8 @@ import { notificationsMigrations } from './adapters/vault/migrations';
 import { getVaultDb, registerVaultMigrations } from './adapters/vault/vaultAccess';
 import { createVaultInboxStore } from './adapters/vault/vaultInboxStore';
 import { createNotificationService } from './application/notificationService';
+import type { PaymentLeadDays } from './domain/settings';
+import { createNotificationSettingsScreen } from './ui/NotificationSettingsScreen';
 import { createNotificationsScreen } from './ui/NotificationsScreen';
 import { useUnreadCount as useUnreadCountOf } from './ui/useInbox';
 
@@ -58,6 +60,16 @@ export const NotificationsScreen = createNotificationsScreen({ service, clock })
 /** Number of unread notifications, for the bell: `<HeaderBlue hasUnread={useUnreadCount() > 0} />`. */
 export const useUnreadCount = (): number => useUnreadCountOf(service);
 
+/** Mi cuenta › Notificaciones. M1 links its "Notificaciones" row to this route. */
+export const NOTIFICATION_SETTINGS_ROUTE = 'notifications.Settings' as const;
+export const NotificationSettingsScreen = createNotificationSettingsScreen({ service });
+
+/**
+ * Days before a payment for its reminder, as the person chose in Ajustes de notificaciones
+ * (0, 1 or 2; 2 by default). M9 reads it when it schedules a payment reminder.
+ */
+export const getPaymentReminderLeadDays = (): Promise<PaymentLeadDays> => service.paymentLeadDays();
+
 export const routes: ModuleRoutes = {
   module: 'notifications',
   screens: [
@@ -65,6 +77,11 @@ export const routes: ModuleRoutes = {
       name: 'notifications.Inbox',
       component: NotificationsScreen,
       path: 'notificaciones',
+    },
+    {
+      name: NOTIFICATION_SETTINGS_ROUTE,
+      component: NotificationSettingsScreen,
+      path: 'notificaciones/ajustes',
     },
   ],
 };

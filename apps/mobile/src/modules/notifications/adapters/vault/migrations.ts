@@ -31,4 +31,14 @@ export const notificationsMigrations: VaultMigration[] = [
       );
     `,
   },
+  {
+    // "Permitir notificaciones" and the payment reminder lead time of Ajustes de notificaciones.
+    version: 2,
+    up: `
+      CREATE TABLE notifications_preferences (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `,
+  },
 ];
