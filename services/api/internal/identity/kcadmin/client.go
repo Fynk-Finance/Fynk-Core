@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -201,6 +202,39 @@ func (c *Client) PasswordUpdatedAt(ctx context.Context, id string) (time.Time, b
 		}
 	}
 	return time.Time{}, false, nil
+}
+
+// EmailResetAttribute is the user attribute the Keycloak extension fills (epoch milliseconds
+// as a string) when a password reset with the email code is verified. Only that flow writes
+// it, and it is admin-only: the person cannot see or change it.
+const EmailResetAttribute = "fynkEmailResetAt"
+
+// EmailResetAt returns when the person last proved the mailbox with a password reset by email
+// code. The bool is false when the attribute is missing or not a valid timestamp. ErrNotFound
+// when the user does not exist.
+func (c *Client) EmailResetAt(ctx context.Context, id string) (time.Time, bool, error) {
+	data, status, err := c.do(ctx, "get user", http.MethodGet, c.realmURL("/users/"+url.PathEscape(id)), nil)
+	if status == http.StatusNotFound {
+		return time.Time{}, false, ErrNotFound
+	}
+	if err != nil {
+		return time.Time{}, false, err
+	}
+	var u struct {
+		Attributes map[string][]string `json:"attributes"`
+	}
+	if err := json.Unmarshal(data, &u); err != nil {
+		return time.Time{}, false, errors.New("kcadmin: get user: decode")
+	}
+	vals := u.Attributes[EmailResetAttribute]
+	if len(vals) == 0 {
+		return time.Time{}, false, nil
+	}
+	ms, err := strconv.ParseInt(vals[0], 10, 64)
+	if err != nil || ms <= 0 {
+		return time.Time{}, false, nil
+	}
+	return time.UnixMilli(ms).UTC(), true, nil
 }
 
 // UpdateNames changes only firstName and lastName. It reads the whole user and writes it
