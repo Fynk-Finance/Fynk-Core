@@ -41,6 +41,8 @@ const t = recurringStrings.form;
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
 
 export const RECURRING_FORM_ROUTE = 'recurring.Form' as const;
+/** The same form opened by a reminder's link, fynk://billetera/recurrentes/<id>. */
+export const RECURRING_EDIT_ROUTE = 'recurring.Edit' as const;
 export type RecurringFormParams = { id?: string } | undefined;
 
 export function createRecurringFormScreen({ service }: { service: RecurringService }) {

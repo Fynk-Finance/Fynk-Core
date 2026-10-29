@@ -11,12 +11,15 @@ import {
 import { isValidRecurring, type RecurringInput, type StoredRecurringItem } from '../domain/item';
 import type { YearMonth } from '../domain/types';
 import type { RecurringStore } from './ports';
+import type { ReminderScheduler } from './reminders';
 
 export interface RecurringServiceDeps {
   /** The vault store. Throws VaultLockedError while the vault is locked. */
   store: () => RecurringStore;
   clock: Clock;
   newId: () => Id;
+  /** Payment and renewal reminders (SCRUM-57). Without it, nothing is scheduled. */
+  reminders?: ReminderScheduler;
 }
 
 export interface RecurringService {
@@ -30,6 +33,8 @@ export interface RecurringService {
   /** "Gastos fijos de este mes" of Billetera: every active item, counted in the current month. */
   fixedExpensesThisMonth(): Promise<MoneyMinor>;
   subscriptionsSummary(): Promise<SubscriptionsSummary>;
+  /** Schedules the next reminder of every item again: when the vault opens and after a sync. */
+  refreshReminders(): Promise<void>;
   /** Called after every change. Returns a function that unsubscribes. */
   subscribe(listener: () => void): () => void;
 }
@@ -62,6 +67,10 @@ export function createRecurringService(deps: RecurringServiceDeps): RecurringSer
   const changed = () => {
     for (const listener of [...listeners]) listener();
   };
+  // A reminder that cannot be scheduled never blocks saving: the next refresh tries again.
+  const remind = async (task: (r: ReminderScheduler) => Promise<void>) => {
+    if (deps.reminders) await task(deps.reminders).catch(() => undefined);
+  };
   const active = async () => (await deps.store().list()).filter((i) => i.status === 'active');
 
   const editable = (input: RecurringInput) => {
@@ -85,31 +94,35 @@ export function createRecurringService(deps: RecurringServiceDeps): RecurringSer
     },
 
     async create(input) {
-      const id = deps.newId();
-      await deps.store().save({
-        id,
+      const item: StoredRecurringItem = {
+        id: deps.newId(),
         ...editable(input),
         status: 'active',
         usage: null,
         merchantKey: null,
         source: 'manual',
         createdAt: deps.clock.now().toISOString(),
-      });
+      };
+      await deps.store().save(item);
       changed();
-      return id;
+      await remind((r) => r.plan(item));
+      return item.id;
     },
 
     async update(id, input) {
       const store = deps.store();
       const current = await store.get(id);
       if (!current) throw new RecurringNotFoundError();
-      await store.save({ ...current, ...editable(input) });
+      const item: StoredRecurringItem = { ...current, ...editable(input) };
+      await store.save(item);
       changed();
+      await remind((r) => r.plan(item));
     },
 
     async remove(id) {
       await deps.store().remove(id);
       changed();
+      await remind((r) => r.cancel(id));
     },
 
     async fixedExpensesThisMonth() {
@@ -118,6 +131,11 @@ export function createRecurringService(deps: RecurringServiceDeps): RecurringSer
 
     async subscriptionsSummary() {
       return subscriptionsSummary(await active(), bogotaMonth(deps.clock.now()));
+    },
+
+    async refreshReminders() {
+      if (!deps.reminders) return;
+      for (const item of await deps.store().list()) await remind((r) => r.plan(item));
     },
 
     subscribe(listener) {

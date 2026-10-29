@@ -102,4 +102,16 @@ describe('settings', () => {
     await service.setEnabled('device_approval', false);
     expect((await service.settings()).kinds.device_approval).toBe(true);
   });
+
+  it('tells the modules that schedule reminders when a setting changes (M9 reschedules)', async () => {
+    const listener = jest.fn();
+    const unsubscribe = service.onSettingsChanged(listener);
+    await service.setPaymentLeadDays(1);
+    await service.setEnabled('payment_due', true);
+    await service.setAllowAll(true);
+    expect(listener).toHaveBeenCalledTimes(3);
+    unsubscribe();
+    await service.setPaymentLeadDays(2);
+    expect(listener).toHaveBeenCalledTimes(3);
+  });
 });

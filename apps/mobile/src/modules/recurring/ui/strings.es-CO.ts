@@ -57,6 +57,14 @@ export const recurringStrings = {
     cardLabel: (name: string, amount: string, schedule: string, state: string) =>
       [name, amount, schedule, state].filter(Boolean).join(', '),
   },
+  // Notification bodies (M9 prompt): the title is the item's name.
+  reminders: {
+    paymentDue: (leadDays: 0 | 1 | 2, amount: string) =>
+      `${['Vence hoy', 'Vence mañana', 'Vence en 2 días'][leadDays]}: ${amount}.`,
+    renewal: (leadDays: 0 | 1 | 2, date: string, amount: string) =>
+      `Se renueva ${leadDays === 0 ? 'hoy' : `el ${date}`} por ${amount}.`,
+    months: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+  },
   // Lun, Mar… in the order of the weekday mask bits (Sunday first).
   weekdayShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
 } as const;
