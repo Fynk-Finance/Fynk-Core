@@ -42,6 +42,21 @@ export const recurringStrings = {
       date_invalid: 'Elige una fecha válida.',
     } satisfies Record<RecurringError, string>,
   },
+  billetera: {
+    title: 'Billetera',
+    subtitle: 'Gastos fijos de este mes',
+    // M1 exports no first name yet; M0's placeholder shows the same word.
+    guest: 'Invitado',
+    recurring: 'Gastos recurrentes',
+    add: '+ Agregar',
+    emptyTitle: 'Aún no tienes gastos recurrentes',
+    emptyMessage:
+      'Agrega tu arriendo, servicios o suscripciones y te avisaremos antes de cada pago.',
+    emptyAction: 'Agregar gasto',
+    error: 'No pudimos cargar tus gastos recurrentes.',
+    cardLabel: (name: string, amount: string, schedule: string, state: string) =>
+      [name, amount, schedule, state].filter(Boolean).join(', '),
+  },
   // Lun, Mar… in the order of the weekday mask bits (Sunday first).
   weekdayShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
 } as const;
