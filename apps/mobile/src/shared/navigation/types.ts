@@ -16,9 +16,25 @@ export interface ModuleScreen {
    * e.g. `metas/:goalId` for fynk://metas/123.
    */
   path?: string;
-  /** Shown as a modal sheet instead of a pushed screen. */
-  presentation?: 'card' | 'modal';
+  /**
+   * How the screen enters and leaves (shared contracts 3.6). Default `push`. Set it only when the
+   * screen's row in the inventory of docs/design/README.md says so.
+   */
+  transition?: ScreenTransition;
+  /** Back gesture. Default: edge swipe for `push`, swipe down for `modal` and `sheet`. */
+  gesture?: BackGesture;
 }
+
+/**
+ * push: slides in from the right, back with the button or the edge swipe.
+ * modal: slides up from the bottom, closes with its chevron or a swipe down.
+ * sheet: a bottom sheet over the screen, closes with a drag down, the scrim or system back.
+ * fade: cross fade, for flow changes. none: no animation.
+ */
+export type ScreenTransition = 'push' | 'modal' | 'sheet' | 'fade' | 'none';
+
+/** default: the gesture of the transition. vertical: swipe down. off: buttons and system back only. */
+export type BackGesture = 'default' | 'vertical' | 'off';
 
 export interface ModuleRoutes {
   module: ModuleName;

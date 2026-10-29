@@ -1,6 +1,8 @@
 // Session rules of the identity module. Pure: no I/O, no clock of its own.
 import type { IsoDateTime } from '@shared/domain/types';
 
+import { fromBase64 } from './device';
+
 /** Tokens Keycloak gives the app. Kept only in Keychain or Keystore (adapters/keychain). */
 export interface TokenSet {
   accessToken: string;
@@ -40,4 +42,26 @@ export function parseTokenSet(raw: string): TokenSet | null {
     refreshToken: t.refreshToken as string,
     idToken: t.idToken as string,
   };
+}
+
+/**
+ * The account (`sub`) a JWT was issued to, or null when the token cannot be read. It only reads
+ * the payload to compare accounts; the signature is checked by the API, not here.
+ */
+export function subjectOf(jwt: string): string | null {
+  const payload = jwt.split('.')[1];
+  if (!payload) return null;
+  const b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+  const bytes = fromBase64(b64.padEnd(Math.ceil(b64.length / 4) * 4, '='));
+  if (!bytes) return null;
+  // Byte by byte is enough for `sub`, a UUID in Keycloak; other claims may decode wrong.
+  let text = '';
+  for (const b of bytes) text += String.fromCharCode(b);
+  try {
+    const claims: unknown = JSON.parse(text);
+    const sub = (claims as { sub?: unknown } | null)?.sub;
+    return typeof sub === 'string' && sub !== '' ? sub : null;
+  } catch {
+    return null;
+  }
 }

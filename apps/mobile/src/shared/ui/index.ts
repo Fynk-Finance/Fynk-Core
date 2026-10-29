@@ -1,5 +1,6 @@
 // Fynk design system (owned by M0). Modules import everything visual from '@shared/ui'.
 export * from './tokens';
+export * from './theme';
 export { useAppFonts, fontAssets } from './fonts';
 export { uiStrings } from './strings.es-CO';
 export * from './icons';
@@ -12,14 +13,19 @@ export * from './components/Button';
 export * from './components/Card';
 export * from './components/Chip';
 export * from './components/Donut';
+export * from './components/Fab';
 export * from './components/HeaderBlue';
 export * from './components/IconTile';
 export * from './components/LineChart';
 export * from './components/ListRow';
+export * from './components/PageDots';
 export * from './components/ProgressBar';
 export * from './components/Screen';
+export * from './components/SearchField';
 export * from './components/SectionHeader';
+export * from './components/SegmentedControl';
 export * from './components/Shine';
 export * from './components/States';
 export * from './components/StepProgress';
+export * from './components/Switch';
 export * from './components/TextField';

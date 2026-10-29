@@ -1,0 +1,56 @@
+# M1: a new person signs up with Keycloak and lands in the app (HU-001, HU-050).
+# Empezar opens Keycloak's registration in the system browser. The 6 digit code is read from the
+# local Mailpit, and after the code page the app is past the identity gate.
+#
+# It needs the real Keycloak, so it lives outside the top-level flows that `make e2e` runs (those
+# use EXPO_PUBLIC_DEV_AUTH=dev-token and skip Keycloak). To run it:
+#   1. `make dev` (Keycloak on 8081, Mailpit on 8025, the API on 8080).
+#   2. A development build with EXPO_PUBLIC_DEV_AUTH empty and the Keycloak issuer of
+#      apps/mobile/.env.example; on an Android emulator also `adb reverse tcp:8081 tcp:8081`.
+#   3. `maestro test apps/mobile/e2e/identity/signup.yaml`
+# Each run makes a new throwaway account on the local realm. The scripts run on this computer,
+# so they reach Mailpit on localhost.
+appId: com.fynkfinance.app
+env:
+  MAILPIT_URL: http://localhost:8025
+  # Test-only password for the throwaway local account, never a real one.
+  PASSWORD: FynkE2e2026
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runScript: scripts/new-account.js
+- tapOn: 'Empezar'
+
+# Keycloak's Fynk registration page.
+- extendedWaitUntil:
+    visible: 'Crea tu cuenta'
+    timeout: 20000
+- tapOn: 'Correo electrónico'
+- inputText: ${output.email}
+- tapOn: 'Contraseña'
+- inputText: ${PASSWORD}
+- tapOn: 'Confirma tu contraseña'
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn: 'Acepto los.*'
+- tapOn: 'Crear cuenta'
+
+# The code page: the code comes from Mailpit, retried while the email arrives.
+- extendedWaitUntil:
+    visible: 'Verifica tu correo'
+    timeout: 20000
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript: scripts/mailpit-code.js
+- tapOn: 'Código de verificación'
+- inputText: ${output.code}
+- tapOn: 'Verificar correo'
+
+# Past the identity gate. M3's onboarding has no gate yet, so the tabs show. When M3 adds its
+# gate, this step changes to M3's first screen.
+- extendedWaitUntil:
+    visible: 'Dashboard'
+    timeout: 20000
+- assertVisible: 'Inversión'
