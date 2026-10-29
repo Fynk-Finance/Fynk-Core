@@ -4,7 +4,8 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Icon, type IconName } from '../icons';
-import { colors } from '../tokens';
+import { useTheme } from '../theme';
+import { lightColors, type Palette } from '../tokens';
 
 export type IconTileTone = 'outline' | 'soft' | 'accent' | 'danger' | 'white';
 export type IconTileSize = 26 | 32 | 36 | 40 | 42 | 44 | 72;
@@ -34,16 +35,27 @@ const ICON: Record<IconTileSize, number> = {
   72: 34,
 };
 
-const TONES: Record<IconTileTone, { bg: string; fg: string; border?: string }> = {
-  outline: { bg: colors.surfaceBlueSoft, fg: colors.primaryDark, border: colors.surfaceBlue },
-  soft: { bg: colors.surfaceBlue, fg: colors.primaryDark },
-  accent: { bg: colors.accent, fg: colors.white },
-  danger: { bg: colors.dangerSoft, fg: colors.danger },
-  white: { bg: colors.white, fg: colors.primaryDark },
-};
+function toneColors(
+  colors: Palette,
+  tone: IconTileTone,
+): { bg: string; fg: string; border?: string } {
+  switch (tone) {
+    case 'outline':
+      return { bg: colors.surfaceBlueSoft, fg: colors.primaryDark, border: colors.borderBlue };
+    case 'soft':
+      return { bg: colors.surfaceBlue, fg: colors.primaryDark };
+    case 'accent':
+      return { bg: colors.accent, fg: colors.onPrimary };
+    case 'danger':
+      return { bg: colors.dangerSoft, fg: colors.danger };
+    // White tile on blue cards: drawn on blue, so it keeps its light colors in dark.
+    case 'white':
+      return { bg: colors.onPrimary, fg: lightColors.primaryDark };
+  }
+}
 
 export function IconTile({ icon, tone = 'outline', size = 44 }: IconTileProps) {
-  const t = TONES[tone];
+  const t = toneColors(useTheme().colors, tone);
   return (
     <View
       style={[

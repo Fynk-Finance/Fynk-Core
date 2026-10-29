@@ -1,0 +1,444 @@
+/*
+ * Multi step flows of the Fynk login theme: password recovery (Recuperar.html), the email code page
+ * (OnbCorreo.html), and the success, info and error pages. Colors come from fynk-variables.css.
+ */
+
+/* Compact header with the back button (Recuperar.html): 15 px under the text become 35 px. */
+.fk-header--flow {
+  padding: 16px 24px 0;
+  gap: 0;
+}
+.fk-flow-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+}
+.fk-flow-spacer {
+  width: 48px;
+  flex-shrink: 0;
+}
+.fk-header--flow .fk-header-text {
+  margin-top: 32px;
+}
+.fk-header--flow .fk-header-title {
+  font-size: 32px;
+  line-height: 38px;
+}
+.fk-header--flow .fk-header-subtitle {
+  opacity: 0.92;
+}
+.fk-band--flow {
+  margin-top: 35px;
+}
+.fk-logo--small {
+  gap: 8px;
+}
+.fk-logo--small .fk-logo-word {
+  font-size: 20px;
+  line-height: 26px;
+  letter-spacing: normal;
+}
+
+.fk-back {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+.fk-back:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+.fk-back:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* One step of a flow: slides in from the right (Recuperar.html `.step`). */
+@keyframes fk-step-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.fk-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  animation: fk-step-in 0.35s ease-out both;
+}
+.fk-step .fk-card-intro {
+  margin-bottom: 24px;
+}
+.fk-step .fk-card-title {
+  font-size: 26px;
+  line-height: 32px;
+}
+.fk-step .fk-card-subtitle {
+  overflow-wrap: anywhere;
+}
+.fk-spacer {
+  flex: 1;
+  min-height: 24px;
+}
+.fk-form--grow {
+  flex: 1;
+}
+
+.fk-progress {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.fk-progress-dot {
+  height: 6px;
+  width: 14px;
+  border-radius: 999px;
+  background-color: var(--fk-border);
+  transition:
+    width 0.25s ease,
+    background-color 0.25s ease;
+}
+.fk-progress-dot[data-state='current'] {
+  width: 28px;
+  background-color: var(--fk-primary);
+}
+.fk-progress-dot[data-state='done'] {
+  background-color: var(--fk-primary);
+}
+
+/* Shield boxes: blue (Recuperar.html) and lime (OnbCorreo.html). */
+.fk-box {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 16px;
+  padding: 8px 16px;
+  border-radius: 14px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.fk-box svg {
+  flex-shrink: 0;
+}
+.fk-box--blue {
+  background-color: var(--fk-surface-blue-soft);
+  color: var(--fk-text-secondary);
+}
+.fk-box--blue svg {
+  color: var(--fk-primary-dark);
+}
+.fk-box--lime {
+  background-color: var(--fk-lime-surface);
+  border: 1px solid var(--fk-lime-border);
+  color: var(--fk-lime-text);
+}
+.fk-box--lime svg {
+  color: var(--fk-lime-icon);
+}
+
+/* The box sits 16 px under a field, whose group already leaves 8. */
+.fk-group--tight + .fk-box {
+  margin-top: 8px;
+}
+
+/* Email card of OnbCorreo.html. */
+.fk-mail-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background-color: var(--fk-background);
+  border: 1px solid var(--fk-border-blue);
+  box-shadow: 0 6px 16px -12px var(--fk-shadow-tile);
+}
+.fk-mail-tile {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background-color: var(--fk-surface-blue);
+  color: var(--fk-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fk-mail-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex-grow: 1;
+}
+.fk-mail-caption {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--fk-text-secondary);
+}
+.fk-mail-address {
+  font-size: 14px;
+  line-height: 19px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Six boxes over one transparent input. */
+.fk-label--code {
+  margin-bottom: 8px;
+}
+.fk-code + .fk-error,
+.fk-code + .fk-hint {
+  margin-top: 8px;
+}
+.fk-change {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+.fk-code {
+  position: relative;
+}
+.fk-code-boxes {
+  display: flex;
+  justify-content: space-between;
+}
+.fk-code-box {
+  width: 48px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 1.5px solid var(--fk-border-blue);
+  background-color: var(--fk-surface-blue-soft);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 22px;
+  font-weight: 600;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+.fk-code-box[data-filled='true'] {
+  border-color: var(--fk-border-code);
+  background-color: var(--fk-background);
+}
+.fk-code-box[data-active='true'] {
+  border-color: var(--fk-primary);
+  background-color: var(--fk-background);
+}
+.fk-code[data-invalid='true'] .fk-code-box {
+  border-color: var(--fk-danger);
+}
+.fk-code-caret {
+  width: 2px;
+  height: 24px;
+  border-radius: 2px;
+  background-color: var(--fk-primary);
+  animation: fk-blink 1s steps(1) infinite;
+}
+@keyframes fk-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.fk-code-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  /* 16 px keeps iOS Safari from zooming in when the input gets focus. */
+  font-size: 16px;
+  cursor: text;
+}
+.fk-code-input::selection {
+  background: transparent;
+}
+
+.fk-resend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  font-size: 13px;
+  line-height: 18px;
+}
+.fk-resend-caption {
+  color: var(--fk-text-secondary);
+}
+.fk-resend-wait {
+  font-weight: 700;
+  color: var(--fk-text-placeholder);
+}
+.fk-resend-time {
+  font-family: 'IBM Plex Mono', monospace;
+}
+.fk-resend-button {
+  cursor: pointer;
+  min-height: 44px;
+  margin: -13px -4px;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+  color: var(--fk-primary-deep);
+}
+.fk-resend-button:focus-visible {
+  outline: 3px solid var(--fk-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Link centered under the button ("Volver a iniciar sesión", "Cambiar correo"). */
+.fk-link--center {
+  align-self: center;
+  margin: 4px 0 -12px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--fk-primary-deep);
+}
+.fk-link--center:hover {
+  color: var(--fk-primary-deep);
+}
+/* The same link drawn by a submit button (Cancelar of the password change). */
+button.fk-link--center {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+/* Live checklist of the new password. */
+.fk-rules {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fk-rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--fk-text-secondary);
+}
+.fk-rule[data-met='true'] {
+  color: var(--fk-text-primary);
+}
+.fk-rule-mark {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-radius: 999px;
+  border: 1.5px solid var(--fk-border-code);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fk-on-primary);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+.fk-rule[data-met='true'] .fk-rule-mark {
+  border-color: var(--fk-primary);
+  background-color: var(--fk-primary);
+}
+.fk-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Success, info and error pages. */
+.fk-status {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: fk-step-in 0.35s ease-out both;
+}
+.fk-status-mark {
+  width: 72px;
+  height: 72px;
+  margin: 8px 0 24px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--fk-accent);
+  /* Lime stays lime in dark; the check keeps the dark ink of the design text on lime. */
+  color: #0f2233;
+}
+.fk-status-mark--error {
+  background-color: var(--fk-danger-surface);
+  border: 1.5px solid var(--fk-danger-border);
+  color: var(--fk-danger);
+}
+.fk-status .fk-card-title {
+  font-size: 26px;
+  line-height: 32px;
+}
+.fk-status-body {
+  margin-top: 8px;
+}
+.fk-status .fk-cta {
+  margin-top: auto;
+  text-decoration: none;
+}
+.fk-status .fk-cta,
+.fk-status .fk-cta:hover {
+  color: var(--fk-on-primary);
+}
+.fk-status-message {
+  margin: 0;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--fk-text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fk-step,
+  .fk-status,
+  .fk-code-caret,
+  .fk-progress-dot,
+  .fk-back,
+  .fk-code-box,
+  .fk-rule-mark {
+    animation: none;
+    transition: none;
+  }
+}

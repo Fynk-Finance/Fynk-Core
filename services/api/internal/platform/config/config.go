@@ -37,6 +37,10 @@ type Config struct {
 	// EgressCAFile is the PEM file of the CA that signed the egress's own TLS certificate.
 	// Empty means the system roots.
 	EgressCAFile string
+	// KeycloakAdminClientSecret is the client secret of the Keycloak client fynk-admin (client
+	// credentials) that M1 uses for the admin API. Optional: when empty, the features that need
+	// it answer 503. Never log it.
+	KeycloakAdminClientSecret string
 }
 
 // IsLocal reports whether the API runs on a developer machine.
@@ -56,6 +60,8 @@ func Load(getenv func(string) string) (Config, error) {
 		KeycloakRealm:    getenv("KEYCLOAK_REALM"),
 		EgressURL:        strings.TrimRight(getenv("EGRESS_URL"), "/"),
 		EgressCAFile:     getenv("EGRESS_CA_FILE"),
+
+		KeycloakAdminClientSecret: getenv("FYNK_ADMIN_CLIENT_SECRET"),
 	}
 	if c.Port == "" {
 		c.Port = "8080"

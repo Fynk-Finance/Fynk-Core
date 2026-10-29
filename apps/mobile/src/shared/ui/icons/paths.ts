@@ -1,6 +1,7 @@
-// Icon shapes copied from the design code (docs/design/source). All use a 24 x 24 viewBox,
+// Icon shapes copied from the design code (docs/design/sources). All use a 24 x 24 viewBox,
 // a round stroke and `currentColor`, like the design. Source screen next to each group.
-import { colors } from '../tokens';
+// The primary light dot is the same in both themes.
+import { lightColors } from '../tokens';
 
 export type IconShape =
   | { kind: 'path'; d: string; fill?: string; stroke?: false; opacity?: number }
@@ -50,6 +51,7 @@ export const icons = {
   // Actions and states (VerdeDetalleCuentas, VerdeOnbOmitir, VerdeConectarBanco)
   check: p('M20 6 9 17l-5-5'),
   plus: p('M12 5v14M5 12h14'),
+  search: p('M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3'), // Movimientos
   close: p('M18 6 6 18M6 6l12 12'),
   trash: p(
     'M3 6h18',
@@ -123,7 +125,7 @@ export const icons = {
       fill: CURRENT,
       stroke: false,
     },
-    { kind: 'circle', cx: 16.5, cy: 14, r: 1.6, fill: colors.primaryLight, stroke: false },
+    { kind: 'circle', cx: 16.5, cy: 14, r: 1.6, fill: lightColors.primaryLight, stroke: false },
   ],
   tabRecommendations: p(
     'M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5',

@@ -5,7 +5,8 @@ import { Text, type TextStyle } from 'react-native';
 
 import { formatCop, formatCopSigned } from '../../domain/money';
 import type { MoneyMinor } from '../../domain/types';
-import { colors, fonts, lineHeight, type ColorToken, type FontSize } from '../tokens';
+import { useTheme } from '../theme';
+import { fonts, lineHeight, type ColorToken, type FontSize } from '../tokens';
 
 export interface AmountTextProps {
   amountMinor: MoneyMinor;
@@ -29,6 +30,7 @@ export function AmountText({
   style,
   testID,
 }: AmountTextProps) {
+  const { colors } = useTheme();
   const text = signed ? formatCopSigned(amountMinor) : formatCop(amountMinor);
   const display = text.replace(/^-/, TYPOGRAPHIC_MINUS);
   const auto: ColorToken = signed && amountMinor > 0 ? 'primaryDark' : 'textPrimary';

@@ -1,8 +1,9 @@
-// The Fynk logo, copied from VerdeLogin.dc.html (mark 34 x 42 plus the "Fynk" wordmark).
+// The Fynk logo, copied from docs/design/sources/light/Login.html (mark 34 x 42 plus the "Fynk" wordmark).
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { G, Path, Rect } from 'react-native-svg';
 
-import { colors, fonts } from '../tokens';
+import { useTheme } from '../theme';
+import { fonts } from '../tokens';
 
 export interface FynkLogoProps {
   /** Height of the mark. The design uses 42. */
@@ -13,11 +14,10 @@ export interface FynkLogoProps {
 
 const MARK_RATIO = 34 / 42;
 
-export function FynkLogo({
-  height = 42,
-  color = colors.white,
-  withWordmark = true,
-}: FynkLogoProps) {
+export function FynkLogo({ height = 42, color: colorProp, withWordmark = true }: FynkLogoProps) {
+  // The logo sits on blue in the design, so it is white in both themes by default.
+  const { colors } = useTheme();
+  const color = colorProp ?? colors.onPrimary;
   return (
     <View style={styles.row} accessible accessibilityRole="image" accessibilityLabel="Fynk">
       <Svg width={height * MARK_RATIO} height={height} viewBox="80 20 510 640">

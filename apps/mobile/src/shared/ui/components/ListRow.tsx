@@ -5,7 +5,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { MoneyMinor } from '../../domain/types';
 import { Icon, type IconName } from '../icons';
-import { colors, radius } from '../tokens';
+import { useTheme, useThemedStyles, type Theme } from '../theme';
+import { radius } from '../tokens';
 import { AmountText } from './AmountText';
 import { AppText } from './AppText';
 import { IconTile, type IconTileSize, type IconTileTone } from './IconTile';
@@ -41,6 +42,8 @@ export function ListRow({
   accessibilityLabel,
   testID,
 }: ListRowProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   return (
     <Pressable
       onPress={onPress}
@@ -75,18 +78,19 @@ export function ListRow({
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    marginHorizontal: -8,
-    borderRadius: radius.input,
-  },
-  pressed: { backgroundColor: colors.surfaceBlueSoft },
-  texts: { flex: 1, minWidth: 0, gap: 2 },
-  titleLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  title: { flexShrink: 1 },
-});
+const createStyles = ({ colors }: Theme) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 8,
+      marginHorizontal: -8,
+      borderRadius: radius.input,
+    },
+    pressed: { backgroundColor: colors.surfaceBlueSoft },
+    texts: { flex: 1, minWidth: 0, gap: 2 },
+    titleLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    title: { flexShrink: 1 },
+  });

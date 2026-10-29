@@ -1,17 +1,34 @@
 import { createFixedClock } from '@shared/testing';
 
+import { toBase64 } from '../domain/device';
 import type { TokenSet } from '../domain/session';
-import { OidcError, type AuthMode, type OidcPort, type TokenStorePort } from './ports';
+import {
+  OidcError,
+  type ActionStatus,
+  type AuthMode,
+  type OidcPort,
+  type TokenStorePort,
+} from './ports';
 import { createSessionService } from './sessionService';
 
 const NOW = '2026-10-27T15:00:00.000Z';
 
-function tokenSet(n: number, expiresAt = '2026-10-27T15:05:00.000Z'): TokenSet {
+// Base64url without padding, as in a JWT. Each character becomes one byte.
+const b64url = (text: string) =>
+  toBase64(Uint8Array.from(text, (c) => c.charCodeAt(0)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+// An unsigned JWT with only the claims the session reads.
+const jwt = (claims: object) => `e30.${b64url(JSON.stringify(claims))}.sig`;
+
+function tokenSet(n: number, expiresAt = '2026-10-27T15:05:00.000Z', sub = 'user-a'): TokenSet {
   return {
     accessToken: `access-${n}`,
     accessTokenExpiresAt: expiresAt,
     refreshToken: `refresh-${n}`,
-    idToken: `id-${n}`,
+    idToken: jwt({ sub, n }),
   };
 }
 
@@ -40,6 +57,12 @@ function setup(stored: TokenSet | null = null) {
   let issued = stored ? 1 : 0; // the stored set counts as the first one issued
   const oidc = {
     authorize: jest.fn(async (_mode: AuthMode) => tokenSet(++issued)),
+    changePassword: jest.fn(
+      async (): Promise<{ tokens: TokenSet; actionStatus: ActionStatus }> => ({
+        tokens: tokenSet(++issued),
+        actionStatus: 'success',
+      }),
+    ),
     refresh: jest.fn(async (_t: TokenSet) => tokenSet(++issued, '2026-10-27T15:10:00.000Z')),
     endSession: jest.fn(async (_t: TokenSet) => undefined),
   } satisfies OidcPort;
@@ -188,6 +211,114 @@ describe('signOut', () => {
     await service.signOut();
     expect(store.saved()).toBeNull();
     expect(service.getState().status).toBe('signedOut');
+  });
+});
+
+describe('changePassword', () => {
+  type Answer = { tokens: TokenSet; actionStatus: ActionStatus };
+  const signedIn = async () => {
+    const ctx = setup(tokenSet(1));
+    await ctx.service.restore();
+    return ctx;
+  };
+
+  it('never keeps the tokens of another account signed in on the Keycloak page', async () => {
+    const { service, oidc, store } = await signedIn();
+    const other = tokenSet(2, undefined, 'user-b');
+    oidc.changePassword.mockResolvedValueOnce({ tokens: other, actionStatus: 'success' });
+    expect(await service.changePassword()).toBe('failed');
+    expect(oidc.endSession).toHaveBeenCalledWith(other);
+    expect(oidc.endSession).not.toHaveBeenCalledWith(tokenSet(1));
+    expect(store.saved()).toEqual(tokenSet(1));
+    expect(await service.getAccessToken()).toBe('access-1');
+  });
+
+  it('keeps nothing when the new id token cannot be read', async () => {
+    const { service, oidc, store } = await signedIn();
+    const unreadable = { ...tokenSet(2), idToken: 'not-a-jwt' };
+    oidc.changePassword.mockResolvedValueOnce({ tokens: unreadable, actionStatus: 'success' });
+    expect(await service.changePassword()).toBe('failed');
+    expect(store.saved()).toEqual(tokenSet(1));
+  });
+
+  it('keeps the new tokens, ends the old Keycloak session and reports changed', async () => {
+    const { service, oidc, store } = await signedIn();
+    expect(await service.changePassword()).toBe('changed');
+    expect(store.saved()).toEqual(tokenSet(2));
+    expect(await service.getAccessToken()).toBe('access-2');
+    expect(oidc.endSession).toHaveBeenCalledWith(tokenSet(1));
+    expect(service.getState().status).toBe('signedIn');
+  });
+
+  it('does nothing when the browser is closed', async () => {
+    const { service, oidc, store } = await signedIn();
+    oidc.changePassword.mockRejectedValueOnce(new OidcError('cancelled'));
+    expect(await service.changePassword()).toBe('cancelled');
+    expect(store.saved()).toEqual(tokenSet(1));
+    expect(oidc.endSession).not.toHaveBeenCalled();
+    expect(service.getState().status).toBe('signedIn');
+  });
+
+  it('switches to the new session when Keycloak cancelled the action, and ends the old one', async () => {
+    const { service, oidc, store } = await signedIn();
+    oidc.changePassword.mockResolvedValueOnce({ tokens: tokenSet(5), actionStatus: 'cancelled' });
+    expect(await service.changePassword()).toBe('cancelled');
+    expect(store.saved()).toEqual(tokenSet(5));
+    expect(oidc.endSession).toHaveBeenCalledWith(tokenSet(1));
+  });
+
+  it.each(['error', 'unknown'] as const)('reports failed for the status %s', async (status) => {
+    const { service, oidc, store } = await signedIn();
+    oidc.changePassword.mockResolvedValueOnce({ tokens: tokenSet(5), actionStatus: status });
+    expect(await service.changePassword()).toBe('failed');
+    expect(store.saved()).toEqual(tokenSet(5));
+  });
+
+  it.each(['network', 'rejected'] as const)('keeps the session on a %s failure', async (kind) => {
+    const { service, oidc, store } = await signedIn();
+    oidc.changePassword.mockRejectedValueOnce(new OidcError(kind));
+    expect(await service.changePassword()).toBe('failed');
+    expect(store.saved()).toEqual(tokenSet(1));
+    expect(service.getState().status).toBe('signedIn');
+  });
+
+  it('ignores an error ending the old session', async () => {
+    const { service, oidc } = await signedIn();
+    oidc.endSession.mockRejectedValueOnce(new OidcError('network'));
+    expect(await service.changePassword()).toBe('changed');
+  });
+
+  it('stays signed out when the person signs out while the browser is open', async () => {
+    const { service, oidc, store } = await signedIn();
+    const pending = deferred<Answer>();
+    oidc.changePassword.mockReturnValueOnce(pending.promise);
+    const running = service.changePassword();
+    await service.signOut();
+    pending.resolve({ tokens: tokenSet(9), actionStatus: 'success' });
+    expect(await running).toBe('cancelled');
+    expect(service.getState().status).toBe('signedOut');
+    expect(store.saved()).toBeNull();
+    expect(await service.getAccessToken()).toBeNull();
+    // The Keycloak session the browser just opened is closed too.
+    expect(oidc.endSession).toHaveBeenCalledWith(tokenSet(9));
+  });
+
+  it('shares one run between concurrent calls', async () => {
+    const { service, oidc } = await signedIn();
+    const pending = deferred<Answer>();
+    oidc.changePassword.mockReturnValueOnce(pending.promise);
+    const first = service.changePassword();
+    const second = service.changePassword();
+    pending.resolve({ tokens: tokenSet(3), actionStatus: 'success' });
+    expect(await Promise.all([first, second])).toEqual(['changed', 'changed']);
+    expect(oidc.changePassword).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not open the browser when signed out', async () => {
+    const { service, oidc } = setup();
+    await service.restore();
+    expect(await service.changePassword()).toBe('cancelled');
+    expect(oidc.changePassword).not.toHaveBeenCalled();
   });
 });
 

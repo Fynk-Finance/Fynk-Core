@@ -16,7 +16,7 @@ export default {
         hasUnread
         title="Billetera"
         subtitle="Gastos fijos de este mes"
-        trailing={<AmountText amountMinor={193060000} size={24} color="white" />}
+        trailing={<AmountText amountMinor={193060000} size={24} color="onPrimary" />}
       />
     ),
     NoUnreadDecorated: () => <HeaderBlue name="Laura" decorated avatarTone="light" />,
