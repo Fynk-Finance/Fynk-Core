@@ -197,9 +197,9 @@ describe('app-wide api client', () => {
     const mod = require('./client') as typeof import('./client');
 
     mod.configureApiHooks({ getAccessToken: () => 'from-m1', getDeviceId: () => 'dev-9' });
-    await mod.unwrap(mod.api.GET('/identity/health'));
+    await mod.unwrap(mod.api.GET('/bank/health'));
 
-    expect(seen[0]!.url).toBe('http://localhost:4010/identity/health');
+    expect(seen[0]!.url).toBe('http://localhost:4010/bank/health');
     expect(seen[0]!.headers.get('Authorization')).toBe('Bearer from-m1');
     expect(seen[0]!.headers.get('X-Device-Id')).toBe('dev-9');
     spy.mockRestore();

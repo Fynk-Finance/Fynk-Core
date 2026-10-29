@@ -1,4 +1,12 @@
-import { isRefreshDue, parseTokenSet, type TokenSet } from './session';
+import { toBase64 } from './device';
+import { isRefreshDue, parseTokenSet, subjectOf, type TokenSet } from './session';
+
+// Base64url without padding, as in a JWT. Each character becomes one byte.
+const b64url = (text: string) =>
+  toBase64(Uint8Array.from(text, (c) => c.charCodeAt(0)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 
 const tokens: TokenSet = {
   accessToken: 'access',
@@ -31,5 +39,25 @@ describe('parseTokenSet', () => {
     ['an array', '[]'],
   ])('returns null for %s', (_, raw) => {
     expect(parseTokenSet(raw)).toBeNull();
+  });
+});
+
+describe('subjectOf', () => {
+  const jwt = (claims: object) => `e30.${b64url(JSON.stringify(claims))}.sig`;
+
+  it('reads the sub of a JWT payload, also without base64 padding', () => {
+    expect(subjectOf(jwt({ sub: '3f8b2a54-6a1e-4c58-9d3b-7a1f0c2e9b11' }))).toBe(
+      '3f8b2a54-6a1e-4c58-9d3b-7a1f0c2e9b11',
+    );
+    expect(subjectOf(jwt({ sub: 'ab', name: 'Camila Pérez' }))).toBe('ab');
+  });
+
+  it('is null for a token it cannot read or without sub', () => {
+    expect(subjectOf('')).toBeNull();
+    expect(subjectOf('not-a-jwt')).toBeNull();
+    expect(subjectOf('a.%%%.c')).toBeNull();
+    expect(subjectOf(`e30.${b64url('not json')}.sig`)).toBeNull();
+    expect(subjectOf(jwt({ name: 'x' }))).toBeNull();
+    expect(subjectOf(jwt({ sub: 7 }))).toBeNull();
   });
 });

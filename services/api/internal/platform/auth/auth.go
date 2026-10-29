@@ -29,6 +29,7 @@ type User struct {
 	ID            string // Keycloak sub
 	EmailVerified bool
 	DeviceID      string // from X-Device-Id, checked against identity.devices by M1
+	SessionID     string // Keycloak sid claim; M1 revokes it when the device is removed
 }
 
 // Verifier checks an access token and returns its user.

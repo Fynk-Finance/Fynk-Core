@@ -19,6 +19,8 @@ x-api-env: &api-env
   # Caddy egress (M14): adds Fynk's mTLS client certificate on calls to banks (M5, M15).
   EGRESS_URL: https://caddy:8443
   EGRESS_CA_FILE: /certs/ca.crt
+  # Secret of the fynk-admin client, for the Keycloak admin API (M1). Same variable Keycloak reads.
+  FYNK_ADMIN_CLIENT_SECRET: ${FYNK_ADMIN_CLIENT_SECRET:?missing in .env, copy it from .env.example}
 
 services:
   postgres:

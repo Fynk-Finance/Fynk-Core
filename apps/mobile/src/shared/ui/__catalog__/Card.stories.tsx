@@ -19,7 +19,7 @@ export default {
     ),
     Primary: () => (
       <Card variant="primary" onPress={() => {}} accessibilityLabel="Oportunidad de ahorro">
-        <AppText variant="cardTitle" color="white">
+        <AppText variant="cardTitle" color="onPrimary">
           Ahorra $56.800 al mes
         </AppText>
       </Card>

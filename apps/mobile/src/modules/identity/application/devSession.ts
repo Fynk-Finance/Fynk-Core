@@ -26,6 +26,8 @@ export function createDevSession(): SessionService {
     signIn: async () => set('signedIn'),
     signUp: async () => set('signedIn'),
     signOut: async () => set('signedOut'),
+    // There is no Keycloak to change a password in.
+    changePassword: async () => 'cancelled',
     getAccessToken: async () => (state.status === 'signedIn' ? DEV_TOKEN : null),
     refreshAccessToken: async () => false,
   };
