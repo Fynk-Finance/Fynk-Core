@@ -44,5 +44,23 @@ export function createConsentsApi(client: ApiClient = api): ConsentsApiPort {
       );
       return toConsent(consent);
     },
+    async list() {
+      const { items } = await unwrap(client.GET('/consents'));
+      return items.map(toConsent);
+    },
+    async get(id) {
+      return toConsent(await unwrap(client.GET('/consents/{id}', { params: { path: { id } } })));
+    },
+    async revoke(id) {
+      return toConsent(
+        await unwrap(client.POST('/consents/{id}/revoke', { params: { path: { id } } })),
+      );
+    },
+    // M5's provider list is read here instead of through @modules/bank, whose index already
+    // imports this module (Conectar banco hosts the consent part).
+    async entityNames() {
+      const { items } = await unwrap(client.GET('/providers'));
+      return Object.fromEntries(items.map((p) => [p.id, p.displayName]));
+    },
   };
 }
