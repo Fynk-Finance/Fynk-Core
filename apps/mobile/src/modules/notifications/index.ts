@@ -3,13 +3,15 @@ import { randomUUID } from 'expo-crypto';
 
 import type { Clock } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
-import { createPlaceholderScreen, type ModuleRoutes } from '@shared/navigation';
+import type { ModuleRoutes } from '@shared/navigation';
 import type { NotificationsPort } from '@shared/ports';
 
 import { notificationsMigrations } from './adapters/vault/migrations';
 import { getVaultDb, registerVaultMigrations } from './adapters/vault/vaultAccess';
 import { createVaultInboxStore } from './adapters/vault/vaultInboxStore';
 import { createNotificationService } from './application/notificationService';
+import { createNotificationsScreen } from './ui/NotificationsScreen';
+import { useUnreadCount as useUnreadCountOf } from './ui/useInbox';
 
 registerVaultMigrations('notifications', notificationsMigrations);
 
@@ -29,16 +31,17 @@ appEvents.on('vault.unlocked', () => {
 /** The shared NotificationsPort (contracts 3.4). Other modules notify and schedule through it. */
 export const notificationsPort: NotificationsPort = service;
 
-// Placeholder route from M0 until feature/notifications-inbox-screen.
+export const NotificationsScreen = createNotificationsScreen({ service, clock });
+
+/** Number of unread notifications, for the bell: `<HeaderBlue hasUnread={useUnreadCount() > 0} />`. */
+export const useUnreadCount = (): number => useUnreadCountOf(service);
+
 export const routes: ModuleRoutes = {
   module: 'notifications',
   screens: [
     {
       name: 'notifications.Inbox',
-      component: createPlaceholderScreen({
-        title: 'Notificaciones',
-        owner: 'M12 · Notificaciones',
-      }),
+      component: NotificationsScreen,
       path: 'notificaciones',
     },
   ],
