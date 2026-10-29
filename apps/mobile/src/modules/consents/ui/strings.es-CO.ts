@@ -1,5 +1,5 @@
 // Copy of the consents module (Spanish, Colombia).
-import type { ConsentErrorKind, ConsentScope } from '../domain/consent';
+import type { ConsentErrorKind, ConsentScope, ConsentStatus } from '../domain/consent';
 
 export const consentsStrings = {
   // ConectarBanco.html, the consent part (M4). The header and the entity selector are M5's.
@@ -40,4 +40,35 @@ export const consentsStrings = {
     network: 'No pudimos conectarnos. Revisa tu internet e intenta de nuevo.',
     unknown: 'No pudimos registrar tu autorización. Intenta de nuevo.',
   } satisfies Record<ConsentErrorKind, string>,
+  // Consentimientos: new screens built from "Cuentas conectadas" of CfgPrivacidad.html and the
+  // cards of ConectarBanco.html. Needs design review.
+  list: {
+    title: 'Consentimientos',
+    subtitle: 'Las entidades que comparten datos con Fynk y por cuánto tiempo.',
+    back: 'Volver',
+    section: 'Tus consentimientos',
+    sectionMeta: 'Acceso de solo lectura',
+    empty: 'Aún no has conectado ninguna entidad',
+    emptyMessage: 'Cuando conectes un banco o billetera, verás aquí su autorización.',
+    connect: 'Conectar banco',
+    error: 'No pudimos cargar tus consentimientos. Intenta de nuevo.',
+    openHint: 'Abre el detalle del consentimiento',
+  },
+  status: {
+    active: 'Activo',
+    pending: 'Pendiente',
+    revoked: 'Revocado',
+    expired: 'Vencido',
+    failed: 'Fallido',
+  } satisfies Record<ConsentStatus, string>,
+  dates: {
+    granted: (date: string) => `Otorgado el ${date}`,
+    requested: (date: string) => `Solicitado el ${date}`,
+    expires: (date: string) => `Vence el ${date}`,
+    expired: (date: string) => `Venció el ${date}`,
+    revoked: (date: string) => `Revocado el ${date}`,
+  },
+  revoke: { chip: 'Revocar' },
+  // A row for Mi cuenta (M1), offered until Privacidad y datos (M13) exists.
+  miCuentaRow: { title: 'Consentimientos', subtitle: 'Entidades conectadas y sus permisos' },
 } as const;
