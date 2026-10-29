@@ -42,7 +42,11 @@ func setup(t *testing.T) *pgxpool.Pool {
 	reset()
 	t.Cleanup(reset)
 	for _, src := range []migrate.Source{{Schema: "backup", FS: migrations.FS}, {Schema: "identity", FS: idmigrations.FS}} {
-		if res, err := migrate.Up(ctx, dbURL, src); err != nil || res.Version != 1 || res.Dirty {
+		want := uint(1)
+		if src.Schema == "backup" {
+			want = 2
+		}
+		if res, err := migrate.Up(ctx, dbURL, src); err != nil || uint(res.Version) != want || res.Dirty {
 			t.Fatalf("migrate %s: %+v, %v", src.Schema, res, err)
 		}
 	}
