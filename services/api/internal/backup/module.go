@@ -1,12 +1,22 @@
 package backup
 
-import "github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/module"
+import (
+	"io/fs"
 
-// New returns the backup module. The contract in contracts/modules/backup.yaml is complete and
-// generates internal/backup/http, but M2 has not implemented the endpoints yet, so the generated
-// handler is not mounted: every route under /backup and /device-approvals answers 501 not_implemented
-// through module.Stub, after authentication. The implementation PRs mount the generated strict
-// server here and drop the stub.
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/migrations"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/module"
+)
+
+// New returns the backup module. Its schema is migrated, but no endpoint is mounted yet: every
+// route under /backup and /device-approvals answers 501 not_implemented through module.Stub,
+// after authentication. The endpoint PRs mount the generated strict server here.
 func New(_ module.Deps) module.Module {
-	return module.Stub{ModuleName: "backup", Prefixes: []string{"/backup", "/device-approvals"}}
+	return mod{Stub: module.Stub{ModuleName: "backup", Prefixes: []string{"/backup", "/device-approvals"}}}
 }
+
+type mod struct {
+	module.Stub
+}
+
+// Migrations implements module.Module: the backup schema.
+func (mod) Migrations() fs.FS { return migrations.FS }
