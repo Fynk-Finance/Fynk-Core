@@ -79,6 +79,6 @@ it('shows the revoked status in the list and the detail at once (HU-008)', async
   await act(async () => {
     await result.current.revoke.mutateAsync('c-1');
   });
-  expect(result.current.list?.[0]?.status).toBe('revoked');
-  expect(result.current.one?.status).toBe('revoked');
+  await waitFor(() => expect(result.current.list?.[0]?.status).toBe('revoked'));
+  await waitFor(() => expect(result.current.one?.status).toBe('revoked'));
 });

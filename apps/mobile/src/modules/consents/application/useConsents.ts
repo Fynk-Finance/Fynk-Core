@@ -43,7 +43,10 @@ export function useRevokeConsent(revocation: Revocation) {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => revocation.revokeConsent(id),
-    onSuccess: (consent: Consent) => {
+    onSuccess: async (consent: Consent) => {
+      // A read that started before the revocation must not land after it with the old status.
+      await client.cancelQueries({ queryKey: consentQueryKey(consent.id) });
+      await client.cancelQueries({ queryKey: CONSENTS_QUERY_KEY });
       client.setQueryData(consentQueryKey(consent.id), consent);
       client.setQueryData<Consent[]>(CONSENTS_QUERY_KEY, (list) =>
         list?.map((c) => (c.id === consent.id ? consent : c)),
