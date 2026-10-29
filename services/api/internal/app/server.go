@@ -13,6 +13,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/problem"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/requestid"
 )
@@ -22,12 +24,36 @@ type Pinger interface {
 	Ping(ctx context.Context) error
 }
 
+// Option configures NewRouter.
+type Option func(*routerConfig)
+
+type routerConfig struct {
+	auditVerifier AuditVerifier
+}
+
+// AuditVerifier verifies the audit trail integrity.
+type AuditVerifier interface {
+	Verify(ctx context.Context) (audit.VerificationResult, error)
+}
+
+// WithAuditVerifier configures the verifier used by GET /internal/audit/verify.
+func WithAuditVerifier(v AuditVerifier) Option {
+	return func(c *routerConfig) {
+		c.auditVerifier = v
+	}
+}
+
 // readyTimeout bounds each readiness check.
 const readyTimeout = 2 * time.Second
 
-// NewRouter builds the HTTP handler: /healthz, /readyz and every module under /v1.
+// NewRouter builds the HTTP handler: /healthz, /readyz, /internal, and every module under /v1.
 // checks maps a dependency name ("postgres", "redis") to its Pinger.
-func NewRouter(log *slog.Logger, modules []Module, checks map[string]Pinger) (http.Handler, error) {
+func NewRouter(log *slog.Logger, modules []Module, checks map[string]Pinger, opts ...Option) (http.Handler, error) {
+	var cfg routerConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
 	seen := map[string]bool{}
 	for _, m := range modules {
 		if seen[m.Name()] {
@@ -45,6 +71,23 @@ func NewRouter(log *slog.Logger, modules []Module, checks map[string]Pinger) (ht
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 	r.Get("/readyz", readyz(checks))
+
+	if cfg.auditVerifier != nil {
+		r.Route("/internal", func(ir chi.Router) {
+			ir.Use(auth.Require)
+			ir.Get("/audit/verify", func(w http.ResponseWriter, r *http.Request) {
+				res, err := cfg.auditVerifier.Verify(r.Context())
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				if err != nil || !res.Valid {
+					w.WriteHeader(http.StatusInternalServerError)
+					_ = json.NewEncoder(w).Encode(res)
+					return
+				}
+				w.WriteHeader(http.StatusOK)
+				_ = json.NewEncoder(w).Encode(res)
+			})
+		})
+	}
 
 	r.Route("/v1", func(v chi.Router) {
 		for _, m := range modules {
