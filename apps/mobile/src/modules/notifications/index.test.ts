@@ -1,5 +1,5 @@
 // Public API of the module and the "no server push" criterion of SCRUM-70.
-import { notificationsPort, routes } from './index';
+import { NotificationsScreen, notificationsPort, routes, useUnreadCount } from './index';
 
 // Node's fs and path, typed here because the app has no Node types (same as tokens.test.ts).
 declare const __dirname: string;
@@ -19,11 +19,13 @@ function sourceFiles(dir: string): string[] {
 }
 
 describe('notifications module', () => {
-  it('exports the shared NotificationsPort and the inbox route', () => {
+  it('exports the port, the screen, the bell hook and the inbox route', () => {
     expect(typeof notificationsPort.notify).toBe('function');
     expect(typeof notificationsPort.schedule).toBe('function');
     expect(typeof notificationsPort.cancel).toBe('function');
     expect(typeof notificationsPort.isEnabled).toBe('function');
+    expect(typeof NotificationsScreen).toBe('function');
+    expect(typeof useUnreadCount).toBe('function');
     expect(routes.screens?.map((s) => [s.name, s.path])).toEqual([
       ['notifications.Inbox', 'notificaciones'],
     ]);
