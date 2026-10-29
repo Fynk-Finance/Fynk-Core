@@ -5,10 +5,12 @@ import type { ModuleRoutes } from '@shared/navigation';
 
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
+import { createProfileNameApi } from './adapters/api/profileNameApi';
 import { onboardingMigrations } from './adapters/vault/migrations';
 import { createVaultProgressStore } from './adapters/vault/vaultProgressStore';
 import { createOnboardingService } from './application/onboardingService';
-import { createOnboardingNavigator } from './ui/OnboardingNavigator';
+import { createNameStep } from './ui/NameStepScreen';
+import { createOnboardingNavigator, placeholderSteps } from './ui/OnboardingNavigator';
 import { createUseOnboardingGate } from './ui/useOnboardingGate';
 
 registerVaultMigrations('onboarding', onboardingMigrations);
@@ -25,7 +27,10 @@ const service = createOnboardingService({
 void service.load();
 
 /** The guided setup: Aviso, Nombre, Cuentas, Metas, Gastos recurrentes and Omitir. */
-export const OnboardingNavigator = createOnboardingNavigator(service);
+export const OnboardingNavigator = createOnboardingNavigator(service, {
+  ...placeholderSteps,
+  name: createNameStep(createProfileNameApi()),
+});
 
 /** Whether the person ended the setup (finished or skipped). Throws while the vault is locked. */
 export const isOnboardingFinished = (): Promise<boolean> => service.isFinished();
