@@ -181,7 +181,7 @@ func TestActivate(t *testing.T) {
 
 func TestOtherRoutesStayNotImplementedAndAuthIsRequired(t *testing.T) {
 	h := serve(t, &fakeRecovery{})
-	for _, r := range [][2]string{{"POST", "/v1/backup/reset"}, {"PUT", "/v1/device-approvals"},
+	for _, r := range [][2]string{{"POST", "/v1/backup/unknown"}, {"PUT", "/v1/device-approvals"},
 		{"DELETE", "/v1/backup/recovery-key"}} {
 		wantProblem(t, do(h, r[0], r[1], ""), 501, "not_implemented")
 	}
