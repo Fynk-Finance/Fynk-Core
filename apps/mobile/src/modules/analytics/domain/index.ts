@@ -6,3 +6,4 @@ export * from './recurringIncome';
 export * from './snapshot';
 export * from './spending';
 export * from './types';
+export * from './periods';
