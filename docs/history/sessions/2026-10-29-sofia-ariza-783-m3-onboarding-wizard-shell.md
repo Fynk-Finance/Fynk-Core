@@ -42,6 +42,7 @@ Same session as `2026-10-29-sofia-ariza-783-m3-onboarding-progress.md`. Sofia ap
   * The vault tables are registered at load.
   * `index.ts` exports `isOnboardingFinished()`, `OnboardingNavigator` and `routes`.
 * **`src/app/AppRoot.test.tsx` (M0, Sofia's file):** a stand-in for the onboarding gate, plus two tests. Onboarding shows after sign in, and sign in wins when both gates are open.
+* **`e2e/tabs.yaml` (Gate A, M0):** a fresh install now opens the setup first, so the flow skips it with "Omitir por ahora" and "Omitir de todos modos" when it shows.
 * **`docs/modules/M03-onboarding.md`:** the decisions of 29 Oct (4 steps, Omitir per step, name split) and the new branch names.
 * **Tests:** `ui/OnboardingNavigator.test.tsx`, 13 tests on sql.js.
   * Aviso's copy, and "Comenzar" opening "Paso 1 de 4".
@@ -64,6 +65,8 @@ Same session as `2026-10-29-sofia-ariza-783-m3-onboarding-progress.md`. Sofia ap
 * **While the progress is unread the gate stays open,** but sign in and unlock come first. A finished person sees only a short plain background after unlocking, never a flash of the tabs.
 * **The shell was over 400 lines, so it was split.** Even split, this pull request is about 1,180 lines, a fifth of them tests.
 * **Python on Windows wrote one doc with CRLF line endings.** It was converted back to LF before the commit.
+
+* **M1's `e2e/identity/signup.yaml` will stop at the setup.** After sign up the setup shows, not the Dashboard. It is Daniel's file, so it was not changed. Its last step should wait for "Configuremos tu cuenta" (its own comment already says so).
 
 ## Next step
 
