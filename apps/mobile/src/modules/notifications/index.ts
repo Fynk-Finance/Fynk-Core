@@ -70,11 +70,14 @@ export const NotificationSettingsScreen = createNotificationSettingsScreen({ ser
  */
 export const getPaymentReminderLeadDays = (): Promise<PaymentLeadDays> => service.paymentLeadDays();
 
+/** The inbox. The bell of every blue header opens it. */
+export const NOTIFICATIONS_ROUTE = 'notifications.Inbox' as const;
+
 export const routes: ModuleRoutes = {
   module: 'notifications',
   screens: [
     {
-      name: 'notifications.Inbox',
+      name: NOTIFICATIONS_ROUTE,
       component: NotificationsScreen,
       path: 'notificaciones',
     },
