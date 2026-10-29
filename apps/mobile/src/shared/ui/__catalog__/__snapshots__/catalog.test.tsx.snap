@@ -20248,6 +20248,342 @@ exports[`design system catalog TextField / Email matches its snapshot 1`] = `
 </View>
 `;
 
+exports[`design system catalog TextField / Money matches its dark snapshot 1`] = `
+<View
+  style={
+    {
+      "gap": 8,
+    }
+  }
+>
+  <Text
+    style={
+      [
+        {
+          "fontFamily": "PlusJakartaSans_600SemiBold",
+          "fontSize": 14,
+          "lineHeight": 20,
+        },
+        {
+          "color": "#E8F1F6",
+        },
+        null,
+        undefined,
+      ]
+    }
+  >
+    ¿Cuánto tienes en efectivo?
+  </Text>
+  <View
+    style={
+      [
+        {
+          "alignItems": "center",
+          "backgroundColor": "#182A37",
+          "borderColor": "#223746",
+          "borderRadius": 14,
+          "borderWidth": 1.5,
+          "flexDirection": "row",
+          "gap": 10,
+          "height": 56,
+          "paddingHorizontal": 16,
+        },
+        null,
+        null,
+        null,
+      ]
+    }
+  >
+    <RNSVGSvgView
+      accessibilityElementsHidden={true}
+      accessible={false}
+      align="xMidYMid"
+      bbHeight={18}
+      bbWidth={18}
+      fill="none"
+      focusable={false}
+      height={18}
+      importantForAccessibility="no-hide-descendants"
+      meetOrSlice={0}
+      minX={0}
+      minY={0}
+      stroke="#62C8F0"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      style={
+        [
+          {
+            "backgroundColor": "transparent",
+            "borderWidth": 0,
+          },
+          {
+            "flex": 0,
+            "height": 18,
+            "width": 18,
+          },
+        ]
+      }
+      vbHeight={24}
+      vbWidth={24}
+      width={18}
+    >
+      <RNSVGGroup
+        fill={null}
+        propList={
+          [
+            "fill",
+            "stroke",
+            "strokeWidth",
+            "strokeLinecap",
+            "strokeLinejoin",
+          ]
+        }
+        stroke={
+          {
+            "payload": 4284664048,
+            "type": 0,
+          }
+        }
+        strokeLinecap={1}
+        strokeLinejoin={1}
+        strokeWidth={2}
+      >
+        <RNSVGPath
+          d="M2 6h20v12H2zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 12h.01M18 12h.01"
+          fill={null}
+          propList={
+            [
+              "fill",
+              "stroke",
+            ]
+          }
+          stroke={
+            {
+              "payload": 4284664048,
+              "type": 0,
+            }
+          }
+        />
+      </RNSVGGroup>
+    </RNSVGSvgView>
+    <Text
+      accessibilityElementsHidden={true}
+      importantForAccessibility="no"
+      style={
+        [
+          {
+            "fontFamily": "PlusJakartaSans_400Regular",
+            "fontSize": 15,
+            "lineHeight": 22,
+          },
+          {
+            "color": "#E8F1F6",
+          },
+          null,
+          {
+            "color": "#97ABB8",
+            "fontFamily": "IBMPlexMono_600SemiBold",
+            "fontSize": 15,
+          },
+        ]
+      }
+    >
+      $
+    </Text>
+    <TextInput
+      accessibilityLabel="¿Cuánto tienes en efectivo?"
+      defaultValue="600.000"
+      keyboardType="number-pad"
+      onBlur={[Function]}
+      onFocus={[Function]}
+      placeholder="0"
+      placeholderTextColor="#71889A"
+      secureTextEntry={false}
+      selectionColor="#2FA8D8"
+      style={
+        {
+          "color": "#E8F1F6",
+          "flex": 1,
+          "fontFamily": "PlusJakartaSans_400Regular",
+          "fontSize": 15,
+          "height": "100%",
+          "padding": 0,
+        }
+      }
+    />
+  </View>
+</View>
+`;
+
+exports[`design system catalog TextField / Money matches its snapshot 1`] = `
+<View
+  style={
+    {
+      "gap": 8,
+    }
+  }
+>
+  <Text
+    style={
+      [
+        {
+          "fontFamily": "PlusJakartaSans_600SemiBold",
+          "fontSize": 14,
+          "lineHeight": 20,
+        },
+        {
+          "color": "#0F2233",
+        },
+        null,
+        undefined,
+      ]
+    }
+  >
+    ¿Cuánto tienes en efectivo?
+  </Text>
+  <View
+    style={
+      [
+        {
+          "alignItems": "center",
+          "backgroundColor": "#F4FBFE",
+          "borderColor": "#E4F5FC",
+          "borderRadius": 14,
+          "borderWidth": 1.5,
+          "flexDirection": "row",
+          "gap": 10,
+          "height": 56,
+          "paddingHorizontal": 16,
+        },
+        null,
+        null,
+        null,
+      ]
+    }
+  >
+    <RNSVGSvgView
+      accessibilityElementsHidden={true}
+      accessible={false}
+      align="xMidYMid"
+      bbHeight={18}
+      bbWidth={18}
+      fill="none"
+      focusable={false}
+      height={18}
+      importantForAccessibility="no-hide-descendants"
+      meetOrSlice={0}
+      minX={0}
+      minY={0}
+      stroke="#1F93C2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      style={
+        [
+          {
+            "backgroundColor": "transparent",
+            "borderWidth": 0,
+          },
+          {
+            "flex": 0,
+            "height": 18,
+            "width": 18,
+          },
+        ]
+      }
+      vbHeight={24}
+      vbWidth={24}
+      width={18}
+    >
+      <RNSVGGroup
+        fill={null}
+        propList={
+          [
+            "fill",
+            "stroke",
+            "strokeWidth",
+            "strokeLinecap",
+            "strokeLinejoin",
+          ]
+        }
+        stroke={
+          {
+            "payload": 4280259522,
+            "type": 0,
+          }
+        }
+        strokeLinecap={1}
+        strokeLinejoin={1}
+        strokeWidth={2}
+      >
+        <RNSVGPath
+          d="M2 6h20v12H2zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 12h.01M18 12h.01"
+          fill={null}
+          propList={
+            [
+              "fill",
+              "stroke",
+            ]
+          }
+          stroke={
+            {
+              "payload": 4280259522,
+              "type": 0,
+            }
+          }
+        />
+      </RNSVGGroup>
+    </RNSVGSvgView>
+    <Text
+      accessibilityElementsHidden={true}
+      importantForAccessibility="no"
+      style={
+        [
+          {
+            "fontFamily": "PlusJakartaSans_400Regular",
+            "fontSize": 15,
+            "lineHeight": 22,
+          },
+          {
+            "color": "#0F2233",
+          },
+          null,
+          {
+            "color": "#5E7482",
+            "fontFamily": "IBMPlexMono_600SemiBold",
+            "fontSize": 15,
+          },
+        ]
+      }
+    >
+      $
+    </Text>
+    <TextInput
+      accessibilityLabel="¿Cuánto tienes en efectivo?"
+      defaultValue="600.000"
+      keyboardType="number-pad"
+      onBlur={[Function]}
+      onFocus={[Function]}
+      placeholder="0"
+      placeholderTextColor="#8A9BA6"
+      secureTextEntry={false}
+      selectionColor="#2FA8D8"
+      style={
+        {
+          "color": "#0F2233",
+          "flex": 1,
+          "fontFamily": "PlusJakartaSans_400Regular",
+          "fontSize": 15,
+          "height": "100%",
+          "padding": 0,
+        }
+      }
+    />
+  </View>
+</View>
+`;
+
 exports[`design system catalog TextField / Password matches its dark snapshot 1`] = `
 <View
   style={

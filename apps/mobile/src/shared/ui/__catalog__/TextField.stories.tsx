@@ -18,6 +18,16 @@ export default {
         helper="Puedes cambiarlo cuando quieras desde Mi cuenta."
       />
     ),
+    Money: () => (
+      <TextField
+        label="¿Cuánto tienes en efectivo?"
+        icon="cash"
+        prefix="$"
+        placeholder="0"
+        defaultValue="600.000"
+        keyboardType="number-pad"
+      />
+    ),
     WithError: () => (
       <TextField label="Correo electrónico" icon="mail" error="Escribe un correo válido." />
     ),

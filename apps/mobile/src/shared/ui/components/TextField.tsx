@@ -12,6 +12,8 @@ import { AppText } from './AppText';
 export interface TextFieldProps extends Omit<TextInputProps, 'style' | 'secureTextEntry'> {
   label: string;
   icon?: IconName;
+  /** Text before the value, like the `$` of the money fields in OnbCuentas, OnbGastos, OnbMetas. */
+  prefix?: string;
   /** Password field: hidden text plus the "Mostrar contraseña" eye toggle. */
   secure?: boolean;
   error?: string;
@@ -21,6 +23,7 @@ export interface TextFieldProps extends Omit<TextInputProps, 'style' | 'secureTe
 export function TextField({
   label,
   icon,
+  prefix,
   secure = false,
   error,
   helper,
@@ -49,6 +52,11 @@ export function TextField({
         ]}
       >
         {icon ? <Icon name={icon} size={18} color={colors.primaryDark} /> : null}
+        {prefix ? (
+          <AppText style={styles.prefix} importantForAccessibility="no" accessibilityElementsHidden>
+            {prefix}
+          </AppText>
+        ) : null}
         <TextInput
           {...input}
           testID={testID}
@@ -107,6 +115,11 @@ const createStyles = ({ colors }: Theme) =>
       backgroundColor: colors.surfaceBlueSoft,
     },
     fieldWithEye: { paddingRight: 8 },
+    prefix: {
+      fontFamily: fonts.amount.semibold,
+      fontSize: 15,
+      color: colors.textSecondary,
+    },
     focused: { borderColor: colors.primary, backgroundColor: colors.background },
     error: { borderColor: colors.danger },
     input: {

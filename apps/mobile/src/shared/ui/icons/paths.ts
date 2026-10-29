@@ -72,6 +72,7 @@ export const icons = {
   bank: p('M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18M12 3l9 5H3z'),
   card: p('M2 7h20v12H2zM2 11h20'),
   cardAlt: p('M2 6h20v12H2zM2 10h20M6 15h4'),
+  cash: p('M2 6h20v12H2zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 12h.01M18 12h.01'), // OnbCuentas
   chartLine: p('M3 3v18h18M7 15l4-4 3 3 5-6'),
   goal: p(
     'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
