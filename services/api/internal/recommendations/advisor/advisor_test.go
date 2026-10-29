@@ -78,7 +78,7 @@ func goodOutput() Output {
 		Summary: "Este mes recibiste $5.580.000. Tus gastos fijos son $1.930.600 y tienes 4 suscripciones por $112.600 al mes.",
 		Steps: []Step{
 			{FactKey: "subscriptions.low_use", Title: "Suscripciones", Text: "Tienes 2 suscripciones que casi no usas. Revisa cuáles cancelar y ahorra hasta $56.800 al mes."},
-			{FactKey: "category_increase.restaurants", Title: "Restaurantes", Text: "Este mes llevas un 30 % más que el anterior. Fija un tope semanal."},
+			{FactKey: "category_increase.restaurants", Title: "Restaurantes", Text: "Este mes llevas un 30 % más que el anterior. Fija un tope semanal."}, //nolint:misspell // Spanish copy
 			{FactKey: "payday_contribution", Title: "Aporte automático", Text: "Programa un recordatorio de $300.000 para tu meta el día de tu salario."},
 		},
 	}

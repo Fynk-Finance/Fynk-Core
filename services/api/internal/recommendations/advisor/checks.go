@@ -61,7 +61,7 @@ var forbidden = []string{
 	"av villas", "banco caja social", "scotiabank", "colpatria", "itau", "banco agrario",
 	"bancoomeva", "banco falabella", "banco pichincha", "gnb sudameris", "banco w", "lulo bank",
 	"nubank", "nequi", "daviplata", "rappipay", "banco demo", "billetera demo", "skandia",
-	"porvenir", "proteccion", "colfondos",
+	"porvenir", "proteccion", "colfondos", //nolint:misspell // Spanish pension fund name
 }
 
 // accents maps the accented letters of Spanish to plain ones (ñ stays).
