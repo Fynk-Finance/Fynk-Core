@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/config"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/module"
@@ -178,5 +179,45 @@ func TestGeneratedHealthPathsArePublicAndAnswerFromTheContract(t *testing.T) {
 		if err := json.Unmarshal(body, &got); err != nil || got.Module != m.Name() || got.Status != "stub" {
 			t.Errorf("%s: body %s", m.Name(), body)
 		}
+	}
+}
+
+type fakeAuditVerifier struct {
+	res audit.VerificationResult
+	err error
+}
+
+func (f fakeAuditVerifier) Verify(context.Context) (audit.VerificationResult, error) {
+	return f.res, f.err
+}
+
+func TestInternalAuditVerifyEndpoint(t *testing.T) {
+	auth.Install(auth.DevVerifier{Env: config.EnvLocal})
+	t.Cleanup(func() { auth.Install(nil) })
+
+	verifier := fakeAuditVerifier{
+		res: audit.VerificationResult{Valid: true, Count: 10, HeadHash: "0123456789abcdef"},
+	}
+	h, err := NewRouter(quiet, All(Deps{}), nil, WithAuditVerifier(verifier))
+	if err != nil {
+		t.Fatalf("NewRouter: %v", err)
+	}
+	srv := httptest.NewServer(h)
+	t.Cleanup(srv.Close)
+
+	// 1. Unauthenticated request rejected with 401
+	res, _ := get(t, srv.URL+"/internal/audit/verify", "")
+	if res.status != http.StatusUnauthorized {
+		t.Fatalf("expected 401 for unauthenticated request, got %d", res.status)
+	}
+
+	// 2. Authenticated request succeeds with 200 and result
+	res, body := get(t, srv.URL+"/internal/audit/verify", auth.DevToken)
+	if res.status != http.StatusOK {
+		t.Fatalf("expected 200 for authenticated request, got %d", res.status)
+	}
+	var out audit.VerificationResult
+	if err := json.Unmarshal(body, &out); err != nil || !out.Valid || out.Count != 10 {
+		t.Fatalf("unexpected response body: %s", string(body))
 	}
 }
