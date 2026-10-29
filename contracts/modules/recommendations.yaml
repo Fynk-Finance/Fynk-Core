@@ -41,13 +41,31 @@ paths:
                 recurringIncome:
                   - { kind: salary, monthlyMinor: 558000000 }
                 fixedExpensesMonthlyMinor: 193060000
-                subscriptions: { count: 4, monthlyMinor: 11260000, lowUseCount: 2, lowUseMonthlyMinor: 5680000 }
+                subscriptions:
+                  { count: 4, monthlyMinor: 11260000, lowUseCount: 2, lowUseMonthlyMinor: 5680000 }
                 goals:
-                  - { ref: goal_1, categoryId: savings, targetMinor: 80000000, savedMinor: 52000000, monthsLeft: 2, onTrack: true }
+                  - {
+                      ref: goal_1,
+                      categoryId: savings,
+                      targetMinor: 80000000,
+                      savedMinor: 52000000,
+                      monthsLeft: 2,
+                      onTrack: true,
+                    }
                 caps: []
                 opportunities:
-                  - { factKey: subscriptions.low_use, kind: subscriptions, categoryId: subscriptions, monthlyMinor: 5680000 }
-                  - { factKey: category_increase.restaurants, kind: category_increase, categoryId: restaurants, monthlyMinor: 4500000 }
+                  - {
+                      factKey: subscriptions.low_use,
+                      kind: subscriptions,
+                      categoryId: subscriptions,
+                      monthlyMinor: 5680000,
+                    }
+                  - {
+                      factKey: category_increase.restaurants,
+                      kind: category_increase,
+                      categoryId: restaurants,
+                      monthlyMinor: 4500000,
+                    }
               factKeys: [subscriptions.low_use, category_increase.restaurants]
       responses:
         '200':
@@ -229,7 +247,28 @@ components:
     RecommendationsCategoryId:
       type: string
       enum:
-        [salary, income_other, rent, utilities, telecom, groceries, restaurants, cinema, treats, transport, subscriptions, health, education, shopping, gym, transfers, savings, card_payment, fees, other]
+        [
+          salary,
+          income_other,
+          rent,
+          utilities,
+          telecom,
+          groceries,
+          restaurants,
+          cinema,
+          treats,
+          transport,
+          subscriptions,
+          health,
+          education,
+          shopping,
+          gym,
+          transfers,
+          savings,
+          card_payment,
+          fees,
+          other,
+        ]
     Recommendations:
       type: object
       required: [summary, steps, fallback, modelId, promptVersion, snapshotHash, generatedAt]
