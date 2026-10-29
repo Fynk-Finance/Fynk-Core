@@ -1,22 +1,30 @@
 // Public API of the accounts module. Other modules import only from this file.
 // M5 is the only writer (upsertFromSync, markLinkRevoked); everyone else reads.
+import { randomUUID } from 'expo-crypto';
+
 import type { Account, Clock, Id, IsoDate, MoneyMinor } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
 import { createPlaceholderScreen, type ModuleRoutes } from '@shared/navigation';
+import type { MarkDirty } from '@shared/ports';
 
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
 import { accountsMigrations } from './adapters/vault/migrations';
 import { createVaultAccountsStore } from './adapters/vault/vaultAccountsStore';
+import { createVaultCashStore } from './adapters/vault/vaultCashStore';
 import { createAccountsService, type AccountsOverview } from './application/accountsService';
-import type { BalancePoint } from './application/ports';
+import { createCashService } from './application/cashService';
+import type { BalancePoint, Cash } from './application/ports';
 import { ACCOUNTS_QUERY_KEY, createUseAccounts } from './application/useAccounts';
 import type { ConnectedAccountsSummary } from './domain/netWorth';
 
-export type { AccountsOverview, BalancePoint, ConnectedAccountsSummary };
+export type { AccountsOverview, BalancePoint, Cash, ConnectedAccountsSummary };
+export type { CashInputProps } from './ui/CashInput';
 export { ACCOUNTS_QUERY_KEY };
 export { maskedNumber } from './domain/masking';
+export { InvalidCashAmountError } from './domain/cash';
 export { InvalidSyncedAccountError } from './domain/syncedAccounts';
+export { CashInput } from './ui/CashInput';
 
 registerVaultMigrations('accounts', accountsMigrations);
 
@@ -26,6 +34,21 @@ const service = createAccountsService({
   store: () => createVaultAccountsStore(getVaultDb()),
   clock,
 });
+
+// TODO(M2) SCRUM-62 take registerBackupCollection and markDirty from @modules/vault once M2
+// exports them, and register cash.backupCollection there. Until then cash is only in the vault.
+const markDirty: MarkDirty = () => undefined;
+
+const cash = createCashService({
+  store: () => createVaultCashStore(getVaultDb()),
+  clock,
+  newId: randomUUID,
+  markDirty,
+  onChanged: service.notifyChanged,
+});
+
+/** The accounts.cash collection, for M2's encrypted backup. */
+export const cashBackupCollection = cash.backupCollection;
 
 // Derived values are recomputed after a sync and whenever the vault opens or closes.
 appEvents.on('sync.completed', service.notifyChanged);
@@ -66,6 +89,14 @@ export const getCdtAccounts = (): Promise<Account[]> => service.getCdtAccounts()
 /** One balance per account per day from `from` on, oldest first (M15 chart). */
 export const getBalanceHistory = (accountIds: Id[], from: IsoDate): Promise<BalancePoint[]> =>
   service.getBalanceHistory(accountIds, from);
+
+// ---- Cash (HU-054) ----
+
+/** The registered cash, or null before the person registers any (M3 prefills CashInput). */
+export const getCash = (): Promise<Cash | null> => cash.getCash();
+
+/** Registers or updates cash. Throws InvalidCashAmountError below zero or with decimals. */
+export const setCash = (amountMinor: MoneyMinor): Promise<void> => cash.setCash(amountMinor);
 
 // Placeholder routes from M0 (the Dashboard comes with feature/dashboard-balance-and-account-detail).
 export const routes: ModuleRoutes = {

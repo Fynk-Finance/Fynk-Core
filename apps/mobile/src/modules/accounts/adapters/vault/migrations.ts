@@ -46,4 +46,17 @@ export const accountsMigrations: VaultMigration[] = [
       );
     `,
   },
+  {
+    version: 2,
+    up: `
+      -- Every amount the person registered as cash (HU-054), newest last.
+      CREATE TABLE accounts_cash_history (
+        id TEXT PRIMARY KEY,
+        amount_minor INTEGER NOT NULL CHECK (amount_minor >= 0),
+        set_at TEXT NOT NULL
+      );
+      -- Version of the cash account in the backup (accounts.cash). Bank accounts keep 0.
+      ALTER TABLE accounts_accounts ADD COLUMN backup_version INTEGER NOT NULL DEFAULT 0;
+    `,
+  },
 ];
