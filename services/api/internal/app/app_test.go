@@ -81,7 +81,7 @@ func TestEveryStubRouteAnswers501ProblemJSON(t *testing.T) {
 	// One path per endpoint group of the shared contracts, section 5, of the modules still stubbed.
 	// M5 bank has real endpoints, tested in internal/bank.
 	paths := []string{
-		"/v1/device-approvals/pending",
+		"/v1/backup/reset",
 		"/v1/catalog/merchants", "/v1/recommendations", "/v1/privacy/policy", "/v1/market/cdt-products",
 	}
 	for _, p := range paths {
