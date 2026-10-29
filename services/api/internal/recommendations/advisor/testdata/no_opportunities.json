@@ -1,0 +1,64 @@
+{
+ "snapshot": {
+  "schemaVersion": 1,
+  "periodEnd": "2026-10-28",
+  "months": 12,
+  "monthlyIncomeMinor": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   558000000,
+   558000000,
+   558000000,
+   0
+  ],
+  "monthlySpendMinor": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   40000000,
+   55000000,
+   59500000
+  ],
+  "spendByCategory": [
+   {
+    "categoryId": "groceries",
+    "last30dMinor": 40000000,
+    "prev30dMinor": 40000000
+   },
+   {
+    "categoryId": "restaurants",
+    "last30dMinor": 19500000,
+    "prev30dMinor": 15000000
+   }
+  ],
+  "recurringIncome": [
+   {
+    "kind": "salary",
+    "monthlyMinor": 558000000
+   }
+  ],
+  "fixedExpensesMonthlyMinor": 193060000,
+  "subscriptions": {
+   "count": 1,
+   "monthlyMinor": 3890000,
+   "lowUseCount": 0,
+   "lowUseMonthlyMinor": 0
+  },
+  "goals": [],
+  "caps": [],
+  "opportunities": []
+ },
+ "factKeys": []
+}

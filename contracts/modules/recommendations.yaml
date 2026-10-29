@@ -1,31 +1,311 @@
 # Contract of the recommendations module, owned by M11 (see CODEOWNERS).
 # Only M11 edits this file. Shared parts come from ../openapi.yaml.
-# The health path below is M0's example so generation works from day one.
-# Replace it with the real endpoints of docs/modules/00-shared-contracts.md, section 5.
 openapi: 3.1.0
 info:
   title: Fynk API · Recommendations
-  version: 0.1.0
+  version: 0.2.0
 tags:
   - name: recommendations
-    description: 'AI recommendations from the aggregate snapshot (M11).'
+    description: 'AI recommendations from the aggregate snapshot (M11). The model only writes text: every number comes from the phone.'
 paths:
-  /recommendations/health:
-    get:
+  /recommendations:
+    post:
       tags: [recommendations]
-      operationId: recommendationsHealth
-      summary: Example health path of the recommendations module
-      description: Public. Answers while the module is a stub. Removed when the module adds real endpoints.
-      security: []
+      operationId: createRecommendations
+      summary: Write the summary and one text per opportunity from the aggregate snapshot
+      description: |
+        One model call per request (AWS Bedrock Converse, temperature 0.2, at most 800 output tokens).
+        The body is at most 16 KB and may not carry any field outside the contract: anything else
+        answers `400 invalid_snapshot`, which also keeps raw movements out.
+        The answer is checked before it is returned (every factKey known, every `$` amount and
+        percent present in the snapshot, no product, issuer, ticker or promise of returns). After
+        one failed retry it answers `fallback: true` and the phone shows its fixed templates.
+        Nothing is stored. 10 requests per person per day.
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/DeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecommendationsRequest'
+            example:
+              snapshot:
+                schemaVersion: 1
+                periodEnd: '2026-10-28'
+                months: 12
+                monthlyIncomeMinor: [0, 0, 0, 0, 0, 0, 0, 0, 558000000, 558000000, 558000000, 0]
+                monthlySpendMinor: [0, 0, 0, 0, 0, 0, 0, 0, 0, 40000000, 55000000, 59500000]
+                spendByCategory:
+                  - { categoryId: restaurants, last30dMinor: 19500000, prev30dMinor: 15000000 }
+                recurringIncome:
+                  - { kind: salary, monthlyMinor: 558000000 }
+                fixedExpensesMonthlyMinor: 193060000
+                subscriptions:
+                  { count: 4, monthlyMinor: 11260000, lowUseCount: 2, lowUseMonthlyMinor: 5680000 }
+                goals:
+                  - {
+                      ref: goal_1,
+                      categoryId: savings,
+                      targetMinor: 80000000,
+                      savedMinor: 52000000,
+                      monthsLeft: 2,
+                      onTrack: true,
+                    }
+                caps: []
+                opportunities:
+                  - {
+                      factKey: subscriptions.low_use,
+                      kind: subscriptions,
+                      categoryId: subscriptions,
+                      monthlyMinor: 5680000,
+                    }
+                  - {
+                      factKey: category_increase.restaurants,
+                      kind: category_increase,
+                      categoryId: restaurants,
+                      monthlyMinor: 4500000,
+                    }
+              factKeys: [subscriptions.low_use, category_increase.restaurants]
       responses:
         '200':
-          description: The module is mounted.
+          description: The texts, or `fallback` when they could not be trusted.
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ModuleHealth'
+                $ref: '#/components/schemas/Recommendations'
               example:
-                module: recommendations
-                status: stub
+                summary: Este mes recibiste $5.580.000. Tienes 4 suscripciones por $112.600 al mes y 2 casi no las usas.
+                steps:
+                  - factKey: subscriptions.low_use
+                    title: Suscripciones
+                    text: Tienes 2 suscripciones que casi no usas. Revisa cuáles cancelar y ahorra hasta $56.800 al mes.
+                  - factKey: category_increase.restaurants
+                    title: Restaurantes
+                    text: Este mes llevas un 30 % más que el anterior. Fija un tope semanal.
+                fallback: false
+                modelId: amazon.nova-lite-v1:0
+                promptVersion: 2026-10-28.1
+                snapshotHash: 3f1d0a6c2b8e4f7a9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b
+                generatedAt: '2026-10-28T17:00:00Z'
+        '400':
+          description: The body is not a valid snapshot. Code `invalid_snapshot`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/invalid_snapshot
+                title: Invalid snapshot
+                status: 400
+                code: invalid_snapshot
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '429':
+          description: 10 requests today already. Code `rate_limited`. The phone keeps showing its cached result.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/rate_limited
+                title: Too many requests
+                status: 429
+                code: rate_limited
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
+components:
+  schemas:
+    RecommendationsRequest:
+      type: object
+      additionalProperties: false
+      required: [snapshot, factKeys]
+      properties:
+        snapshot:
+          $ref: '#/components/schemas/RecommendationsSnapshot'
+        factKeys:
+          type: array
+          maxItems: 40
+          description: Keys of the opportunities to write about, all present in snapshot.opportunities.
+          items:
+            type: string
+    RecommendationsSnapshot:
+      type: object
+      additionalProperties: false
+      description: AggregateSnapshot of the shared contracts (3.5). Totals only, in integer COP centavos.
+      required:
+        - schemaVersion
+        - periodEnd
+        - months
+        - monthlyIncomeMinor
+        - monthlySpendMinor
+        - spendByCategory
+        - recurringIncome
+        - fixedExpensesMonthlyMinor
+        - subscriptions
+        - goals
+        - caps
+        - opportunities
+      properties:
+        schemaVersion:
+          type: integer
+          enum: [1]
+        periodEnd:
+          type: string
+          format: date
+        months:
+          type: integer
+          enum: [12]
+        monthlyIncomeMinor:
+          type: array
+          minItems: 12
+          maxItems: 12
+          items: { type: integer, format: int64, minimum: 0 }
+        monthlySpendMinor:
+          type: array
+          minItems: 12
+          maxItems: 12
+          items: { type: integer, format: int64, minimum: 0 }
+        spendByCategory:
+          type: array
+          maxItems: 40
+          items:
+            type: object
+            additionalProperties: false
+            required: [categoryId, last30dMinor, prev30dMinor]
+            properties:
+              categoryId: { $ref: '#/components/schemas/RecommendationsCategoryId' }
+              last30dMinor: { type: integer, format: int64, minimum: 0 }
+              prev30dMinor: { type: integer, format: int64, minimum: 0 }
+        recurringIncome:
+          type: array
+          maxItems: 40
+          items:
+            type: object
+            additionalProperties: false
+            required: [kind, monthlyMinor]
+            properties:
+              kind: { type: string, enum: [salary, other] }
+              monthlyMinor: { type: integer, format: int64, minimum: 0 }
+        fixedExpensesMonthlyMinor:
+          type: integer
+          format: int64
+          minimum: 0
+        subscriptions:
+          type: object
+          additionalProperties: false
+          required: [count, monthlyMinor, lowUseCount, lowUseMonthlyMinor]
+          properties:
+            count: { type: integer, minimum: 0 }
+            monthlyMinor: { type: integer, format: int64, minimum: 0 }
+            lowUseCount: { type: integer, minimum: 0 }
+            lowUseMonthlyMinor: { type: integer, format: int64, minimum: 0 }
+        goals:
+          type: array
+          maxItems: 40
+          items:
+            type: object
+            additionalProperties: false
+            required: [ref, categoryId, targetMinor, savedMinor, monthsLeft, onTrack]
+            properties:
+              ref:
+                type: string
+                pattern: '^goal_[0-9]{1,2}$'
+                description: Position of the goal. Its name never leaves the phone.
+              categoryId: { $ref: '#/components/schemas/RecommendationsCategoryId' }
+              targetMinor: { type: integer, format: int64, minimum: 0 }
+              savedMinor: { type: integer, format: int64, minimum: 0 }
+              monthsLeft: { type: integer, minimum: 0 }
+              onTrack: { type: boolean }
+        caps:
+          type: array
+          maxItems: 40
+          items:
+            type: object
+            additionalProperties: false
+            required: [categoryId, period, capMinor, spentMinor]
+            properties:
+              categoryId: { $ref: '#/components/schemas/RecommendationsCategoryId' }
+              period: { type: string, enum: [week, month] }
+              capMinor: { type: integer, format: int64, minimum: 1 }
+              spentMinor: { type: integer, format: int64, minimum: 0 }
+        opportunities:
+          type: array
+          maxItems: 40
+          items:
+            type: object
+            additionalProperties: false
+            required: [factKey, kind, monthlyMinor]
+            properties:
+              factKey:
+                type: string
+                pattern: '^[a-z0-9_]+(\.[a-z0-9_]+)?$'
+              kind: { type: string, enum: [subscriptions, category_increase, payday_contribution] }
+              categoryId:
+                $ref: '#/components/schemas/RecommendationsCategoryId'
+              monthlyMinor: { type: integer, format: int64, minimum: 0 }
+    RecommendationsCategoryId:
+      type: string
+      enum:
+        [
+          salary,
+          income_other,
+          rent,
+          utilities,
+          telecom,
+          groceries,
+          restaurants,
+          cinema,
+          treats,
+          transport,
+          subscriptions,
+          health,
+          education,
+          shopping,
+          gym,
+          transfers,
+          savings,
+          card_payment,
+          fees,
+          other,
+        ]
+    Recommendations:
+      type: object
+      required: [summary, steps, fallback, modelId, promptVersion, snapshotHash, generatedAt]
+      properties:
+        summary:
+          type: string
+          maxLength: 400
+          description: Empty when fallback is true.
+        steps:
+          type: array
+          description: One text per factKey that passed the checks. Empty when fallback is true.
+          items:
+            $ref: '#/components/schemas/RecommendationsStep'
+        fallback:
+          type: boolean
+          description: True when the phone must show its fixed templates instead of model text.
+        modelId:
+          type: string
+          description: Model that wrote the text (RN-04, traceability).
+        promptVersion:
+          type: string
+          description: Version of the system prompt.
+        snapshotHash:
+          type: string
+          description: SHA-256 of the snapshot the text was written from.
+        generatedAt:
+          type: string
+          format: date-time
+    RecommendationsStep:
+      type: object
+      required: [factKey, title, text]
+      properties:
+        factKey:
+          type: string
+        title:
+          type: string
+          maxLength: 40
+        text:
+          type: string
+          maxLength: 160
