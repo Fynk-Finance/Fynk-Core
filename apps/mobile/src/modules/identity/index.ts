@@ -89,9 +89,19 @@ export const onSessionChange = (listener: (state: SessionState) => void): (() =>
  */
 export const reauthenticate = (): Promise<ReauthenticateResult> => session.reauthenticate();
 
-/** This phone as the API knows it. Null when not registered, and in the dev session. */
-export const currentDevice = (): Promise<{ id: string; status: 'active' | 'pending' } | null> =>
-  device?.current() ?? Promise.resolve(null);
+/**
+ * This phone as the API knows it. It first waits for the registration of this sign in, so a new
+ * phone is never reported before the API has decided its status. Null when it is not registered
+ * or was just removed. The dev session has no API, so its phone counts as active.
+ */
+export const currentDevice = async (): Promise<{
+  id: string;
+  status: 'active' | 'pending';
+} | null> => {
+  if (!device) return { id: 'dev', status: 'active' };
+  await device.sync();
+  return device.current();
+};
 
 /** The X25519 public key of this phone. Null before it has a key pair, and in the dev session. */
 export const devicePublicKey = (): Promise<Uint8Array | null> =>
