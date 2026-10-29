@@ -1,0 +1,57 @@
+# M3 (SCRUM-69): a new person goes through the guided setup from Aviso to the Dashboard, and the
+# setup reopens on the step where the app was closed.
+# Run with `make e2e` on a device or emulator with the development build installed. Like
+# tabs.yaml, that build uses EXPO_PUBLIC_DEV_AUTH=dev-token, which has no API session, so the
+# Nombre step (it saves with PATCH /me) is skipped with "Omitir" here; NameStepScreen.test.tsx
+# covers saving the name. Cuentas, Metas and Gastos are placeholders until M5, M6, M8 and M9
+# export their components, and Listo comes after them; this flow grows with them.
+appId: com.fynkfinance.app
+---
+- launchApp:
+    clearState: true
+
+# Aviso
+- extendedWaitUntil:
+    visible: 'Configuremos tu cuenta'
+    timeout: 20000
+- assertVisible: '4 pasos'
+- assertVisible: '3 minutos'
+- tapOn: 'Comenzar configuración'
+
+# 1 Nombre
+- extendedWaitUntil:
+    visible: 'Paso 1 de 4'
+    timeout: 5000
+- assertVisible: '¿Cómo te llamamos?'
+- tapOn: 'Omitir'
+
+# 2 Cuentas
+- assertVisible: 'Paso 2 de 4'
+- assertVisible: 'Agrega tus cuentas'
+- tapOn: 'Continuar'
+
+# 3 Metas, then the app is closed and opened again: the setup is still on Metas.
+- assertVisible: 'Paso 3 de 4'
+- assertVisible: 'Crea tus metas'
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: 'Paso 3 de 4'
+    timeout: 20000
+- tapOn: 'Continuar'
+
+# 4 Gastos recurrentes
+- assertVisible: 'Paso 4 de 4'
+- tapOn: 'Terminar configuración'
+
+# The setup ended: the tabs fade in, and the setup does not come back on the next launch.
+- extendedWaitUntil:
+    visible: 'Dashboard'
+    timeout: 5000
+- assertVisible: 'Inversión'
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: 'Dashboard'
+    timeout: 20000
+- assertNotVisible: 'Configuremos tu cuenta'
