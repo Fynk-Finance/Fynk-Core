@@ -23,14 +23,20 @@ function Probe() {
 
 async function renderScreen(state: LockState, preference: ThemePreference = 'light') {
   const onPassword = jest.fn();
+  const onBiometric = jest.fn();
   const onRetry = jest.fn();
   await render(
     <ThemeProvider initialPreference={preference} store={noStore}>
       <Probe />
-      <LockScreen state={state} onPassword={onPassword} onRetry={onRetry} />
+      <LockScreen
+        state={state}
+        onPassword={onPassword}
+        onBiometric={onBiometric}
+        onRetry={onRetry}
+      />
     </ThemeProvider>,
   );
-  return { onPassword, onRetry };
+  return { onPassword, onBiometric, onRetry };
 }
 
 const probe = (id: string) => String(screen.getByTestId(`probe.${id}`).props.children);
@@ -98,4 +104,35 @@ it('uses different background colors in light and dark', async () => {
   await screen.unmount();
   await renderScreen({ status: 'locked' }, 'dark');
   expect(probe('background')).not.toBe(light);
+});
+
+describe('biometric button', () => {
+  it('is not there without copy B', async () => {
+    await renderScreen({ status: 'locked' });
+    expect(screen.queryByRole('button', { name: t.biometric })).toBeNull();
+    expect(screen.queryByText(t.orWith)).toBeNull();
+  });
+
+  it('shows next to the password button when copy B exists, and presses', async () => {
+    const { onBiometric, onPassword } = await renderScreen({ status: 'locked', biometric: true });
+    const button = screen.getByRole('button', { name: t.biometric });
+    expect(button.props.accessibilityHint).toBe(t.biometricHint);
+    expect(screen.getByRole('button', { name: t.password })).toBeOnTheScreen();
+    await fireEvent.press(button);
+    expect(onBiometric).toHaveBeenCalledTimes(1);
+    expect(onPassword).not.toHaveBeenCalled();
+  });
+
+  it.each(['biometricsOff', 'biometricFailed'] as const)('shows the %s notice', async (notice) => {
+    await renderScreen({ status: 'locked', notice });
+    expect(screen.getByText(t.notices[notice])).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: t.password })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: t.biometric })).toBeNull();
+  });
+
+  it.each(['light', 'dark'] as const)('draws in the %s theme', async (preference) => {
+    await renderScreen({ status: 'locked', biometric: true }, preference);
+    expect(screen.getByTestId('vault.lock')).toHaveStyle({ backgroundColor: probe('primary') });
+    expect(screen.getByRole('button', { name: t.biometric })).toBeOnTheScreen();
+  });
 });

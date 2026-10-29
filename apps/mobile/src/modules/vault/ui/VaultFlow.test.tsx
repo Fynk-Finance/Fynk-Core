@@ -18,6 +18,8 @@ function fakeController(initial: LockState = { status: 'locked' }) {
     },
     unlock: jest.fn(async () => undefined),
     unlockWithPassword: jest.fn(async () => undefined),
+    unlockWithBiometrics: jest.fn(async () => undefined),
+    autoPromptBiometric: jest.fn(async () => undefined),
   } as unknown as LockController;
   const set = (next: LockState) =>
     act(async () => {
@@ -56,4 +58,25 @@ it('retries the unlock from the error state', async () => {
   await render(<Flow />);
   await fireEvent.press(screen.getByRole('button', { name: 'Reintentar' }));
   expect(controller.unlock).toHaveBeenCalledTimes(1);
+});
+
+it('opens the biometric prompt once when it shows, and again from the button', async () => {
+  const { controller } = fakeController({ status: 'locked', biometric: true });
+  const Flow = createVaultFlow(controller);
+  await render(<Flow />);
+  expect(controller.autoPromptBiometric).toHaveBeenCalledTimes(1);
+  expect(controller.unlockWithBiometrics).not.toHaveBeenCalled();
+  await fireEvent.press(screen.getByRole('button', { name: vaultStrings.lock.biometric }));
+  expect(controller.unlockWithBiometrics).toHaveBeenCalledTimes(1);
+});
+
+it('opens the prompt when the button arrives after the lock, not before', async () => {
+  // lock() shows `locked` at once and adds the button when the copy B lookup answers.
+  const { controller, set } = fakeController({ status: 'unlocked' });
+  const Flow = createVaultFlow(controller);
+  await render(<Flow />);
+  await set({ status: 'locked' });
+  expect(controller.autoPromptBiometric).not.toHaveBeenCalled();
+  await set({ status: 'locked', biometric: true });
+  expect(controller.autoPromptBiometric).toHaveBeenCalledTimes(1);
 });
