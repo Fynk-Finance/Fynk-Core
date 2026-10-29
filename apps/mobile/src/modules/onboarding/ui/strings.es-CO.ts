@@ -32,6 +32,18 @@ export const onboardingStrings = {
       subtitle: 'Arriendo, servicios, suscripciones… todo lo que pagas cada mes.',
     },
   } satisfies Record<StepId, { title: string; subtitle: string }>,
+  name: {
+    label: 'Nombre',
+    placeholder: 'Tu nombre',
+    hint: 'Puedes cambiarlo cuando quieras desde Mi cuenta.',
+    hello: 'Hola,',
+    // Not in the design: new, needs design review.
+    errors: {
+      invalid: 'Escribe solo letras. También puedes usar espacios, guiones, apóstrofos y puntos.',
+      tooLong: 'El nombre y el apellido pueden tener hasta 50 letras cada uno.',
+      notSaved: 'No pudimos guardar tu nombre. Revisa tu conexión e intenta de nuevo.',
+    },
+  },
   // Steps whose content another module still has to build (not in the design).
   placeholder: {
     comingSoon: 'Paso en construcción',

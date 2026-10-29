@@ -34,7 +34,7 @@ const Stack = createNativeStackNavigator<OnboardingParamList>();
 /** The screen of each step. Steps 2 to 4 wait for M5, M6, M8 and M9 (see PlaceholderStep). */
 export type StepScreens = Record<StepId, ComponentType>;
 
-const defaultSteps: StepScreens = {
+export const placeholderSteps: StepScreens = {
   name: createPlaceholderStep('name'),
   accounts: createPlaceholderStep('accounts'),
   goals: createPlaceholderStep('goals'),
@@ -91,7 +91,7 @@ function Steps({ initialStep, steps }: { initialStep: WizardStep; steps: StepScr
 
 export function createOnboardingNavigator(
   service: OnboardingService,
-  steps: StepScreens = defaultSteps,
+  steps: StepScreens = placeholderSteps,
 ) {
   return function OnboardingNavigator() {
     const styles = useThemedStyles(createStyles);
