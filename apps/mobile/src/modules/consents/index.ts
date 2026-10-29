@@ -1,5 +1,5 @@
 // Public API of the consents module. Other modules import only from this file.
-import { createPlaceholderScreen, type ModuleRoutes } from '@shared/navigation';
+import type { ModuleRoutes } from '@shared/navigation';
 
 import { appVersion, newIdempotencyKey } from './adapters/appInfo';
 import { createConsentsApi } from './adapters/consentsApi';
@@ -13,6 +13,8 @@ import { createRevocation } from './application/revocation';
 import { useConsents as useConsentsWith } from './application/useConsents';
 import { useConsentText as useConsentTextWith } from './application/useConsentText';
 import { createConsentAcceptance } from './ui/ConsentAcceptance';
+import { createConnectedAccountsSection } from './ui/ConnectedAccountsSection';
+import { createConsentDetailScreen } from './ui/ConsentDetailScreen';
 import { createConsentsListScreen } from './ui/ConsentsListScreen';
 import { CONSENT_DETAIL_ROUTE, CONSENTS_ROUTE } from './ui/routes';
 import { consentsStrings } from './ui/strings.es-CO';
@@ -69,6 +71,20 @@ export { CONSENTS_ROUTE };
 /** Consentimientos (HU-007), pushed with the default transition. */
 export const ConsentsListScreen = createConsentsListScreen({ api: deps.api, clock: systemClock });
 
+/** One consent with "Revocar acceso" (HU-008), pushed with the default transition. */
+export const ConsentDetailScreen = createConsentDetailScreen({
+  api: deps.api,
+  clock: systemClock,
+  revocation,
+});
+
+/** "Cuentas conectadas" with "Revocar", for M13's Privacidad y datos (CfgPrivacidad.html). */
+export const ConnectedAccountsSection = createConnectedAccountsSection({
+  api: deps.api,
+  clock: systemClock,
+  revocation,
+});
+
 /**
  * A ready "Gestión de cuenta" row for M1's Mi cuenta (`miCuentaRows.ts`), with the same shape as
  * its rows. The design opens consents from Privacidad y datos (M13); until that screen exists,
@@ -85,13 +101,6 @@ export const routes: ModuleRoutes = {
   module: 'consents',
   screens: [
     { name: CONSENTS_ROUTE, component: ConsentsListScreen, path: 'consentimientos' },
-    {
-      // Replaced by the real detail in the next pull request of the stack.
-      name: CONSENT_DETAIL_ROUTE,
-      component: createPlaceholderScreen({
-        title: 'Consentimiento',
-        owner: 'M4 · Consentimientos',
-      }),
-    },
+    { name: CONSENT_DETAIL_ROUTE, component: ConsentDetailScreen },
   ],
 };
