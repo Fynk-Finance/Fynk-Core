@@ -33,6 +33,34 @@ export interface InboxStore {
   deleteScheduled(id: Id): Promise<void>;
   /** Scheduled rows with fireAt at or before `now`, oldest first. */
   listDue(now: IsoDateTime): Promise<ScheduledRow[]>;
+  /** Ids of the scheduled rows of one kind. */
+  listScheduledIds(kind: NotificationKind): Promise<Id[]>;
+  /** The OS notification id of a scheduled row, null when none was scheduled. */
+  scheduledOsId(id: Id): Promise<string | null>;
+  setScheduledOsId(id: Id, osId: string | null): Promise<void>;
   /** Runs `fn` in one vault transaction. */
   transaction<T>(fn: (store: InboxStore) => Promise<T>): Promise<T>;
+}
+
+export type OsPermission = 'granted' | 'denied' | 'undetermined';
+
+/** What the phone shows when a scheduled notification fires. */
+export interface LocalNotificationRequest {
+  title: string;
+  body: string;
+  fireAt: Date;
+  data: { scheduledId: Id; deepLink: string };
+}
+
+/**
+ * Local notifications of the phone's OS (adapters/os/expoLocalNotifier.ts). Only local ones:
+ * nothing here talks to a server (architecture rule 4).
+ */
+export interface LocalNotifier {
+  permission(): Promise<OsPermission>;
+  /** Shows the short explanation, then the OS prompt. True when the person allowed it. */
+  askPermission(): Promise<boolean>;
+  /** Schedules it and returns the OS id. */
+  schedule(request: LocalNotificationRequest): Promise<string>;
+  cancel(osId: string): Promise<void>;
 }
