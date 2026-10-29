@@ -213,6 +213,8 @@ paths:
                 createdAt: '2026-10-27T14:03:11Z'
         '401':
           $ref: '../openapi.yaml#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/BackupDeviceNotActive'
         '404':
           description: The person never set a recovery key, or the backup was reset. Code `recovery_key_not_found`.
           content:
@@ -262,6 +264,8 @@ paths:
                 code: invalid_request
         '401':
           $ref: '../openapi.yaml#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/BackupDeviceNotActive'
         '404':
           description: The person has no recovery key. Code `recovery_key_not_found`.
           content:
