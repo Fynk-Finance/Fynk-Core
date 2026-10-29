@@ -3,12 +3,13 @@ import { createAppEvents, type AppEvent } from '@shared/events/appEvents';
 import { createFixedClock } from '@shared/testing';
 
 import { createLockController, type LockController, type LockIdentity } from './lockController';
-import { VaultNotEncryptedError, type DekStore } from './ports';
+import { VaultNotEncryptedError, type BiometricRead, type DekStore } from './ports';
 import type { Vault } from './vault';
 
 const START = '2026-11-03T15:00:00Z';
 const MIN = 60 * 1000;
 const DEK = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
+const PROMPT = { title: 'T', subtitle: 'S', cancel: 'C' };
 const ACTIVE = { id: 'd1', status: 'active' } as const;
 
 function setup(
@@ -18,6 +19,11 @@ function setup(
     device?: Awaited<ReturnType<LockIdentity['currentDevice']>> | 'offline';
     openError?: Error;
     reauth?: Awaited<ReturnType<LockIdentity['reauthenticate']>>;
+    /** Copy B: the DEK it holds, or null for none. */
+    copyB?: Uint8Array | null;
+    biometrics?: boolean;
+    read?: BiometricRead;
+    write?: 'ok' | 'cancelled' | Error;
   } = {},
 ) {
   const clock = createFixedClock(START);
@@ -27,6 +33,7 @@ function setup(
   events.on('vault.locked', () => emitted.push('vault.locked'));
 
   let stored: Uint8Array | null = options.dek === undefined ? DEK : options.dek;
+  let copyB: Uint8Array | null = options.copyB ?? null;
   let opened = false;
   let openError = options.openError;
   const dekStore: DekStore = {
@@ -37,6 +44,19 @@ function setup(
     remove: jest.fn(async () => undefined),
     removeAll: jest.fn(async () => {
       stored = null;
+      copyB = null;
+    }),
+    biometricsAvailable: jest.fn(async () => options.biometrics ?? true),
+    hasBiometric: jest.fn(async () => copyB !== null),
+    writeBiometric: jest.fn(async (dek) => {
+      if (options.write instanceof Error) throw options.write;
+      if (options.write === 'cancelled') return 'cancelled';
+      copyB = dek;
+      return 'ok';
+    }),
+    readBiometric: jest.fn(async () => options.read ?? ({ status: 'ok', dek: copyB! } as const)),
+    removeBiometric: jest.fn(async () => {
+      copyB = null;
     }),
   };
   const vault = {
@@ -82,6 +102,7 @@ function setup(
     identity,
     clock,
     nowMs: () => nowMs,
+    biometricPrompt: PROMPT,
   });
   return {
     controller,
@@ -91,6 +112,7 @@ function setup(
     newDek,
     emitted,
     storedDek: () => stored,
+    copyB: () => copyB,
     setDevice: (next: typeof device) => {
       device = next;
     },
@@ -344,5 +366,150 @@ describe('locking', () => {
     stop();
     await t.controller.lock();
     expect(seen).toEqual(['unlocking', 'unlocking', 'unlocked']);
+  });
+});
+
+describe('biometric unlock (copy B)', () => {
+  const STALE = 6 * MIN;
+
+  it('shows the button when copy B exists and the phone has biometrics', async () => {
+    const t = setup({ copyB: DEK, loginAgoMs: STALE });
+    await t.controller.unlock();
+    expect(t.controller.getState()).toEqual({ status: 'locked', biometric: true });
+    expect(t.dekStore.readBiometric).not.toHaveBeenCalled();
+  });
+
+  it('hides the button without copy B or without biometric hardware', async () => {
+    const a = setup({ loginAgoMs: STALE });
+    await a.controller.unlock();
+    expect(a.controller.getState().biometric).toBeUndefined();
+    const b = setup({ copyB: DEK, biometrics: false, loginAgoMs: STALE });
+    await b.controller.unlock();
+    expect(b.controller.getState().biometric).toBeUndefined();
+  });
+
+  it('opens the vault with the DEK of copy B', async () => {
+    const t = setup({ copyB: DEK, loginAgoMs: STALE });
+    await t.controller.unlock();
+    await t.controller.unlockWithBiometrics();
+    expect(t.dekStore.readBiometric).toHaveBeenCalledWith(PROMPT);
+    expect(t.vault.open).toHaveBeenCalledWith(DEK);
+    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+  });
+
+  it('stays locked without an error when the person cancels', async () => {
+    const t = setup({ copyB: DEK, loginAgoMs: STALE, read: { status: 'cancelled' } });
+    await t.controller.unlock();
+    await t.controller.unlockWithBiometrics();
+    expect(t.vault.open).not.toHaveBeenCalled();
+    expect(t.controller.getState()).toEqual({ status: 'locked', biometric: true });
+  });
+
+  it('copy B disappears after an enrollment change: deleted, notice, password needed', async () => {
+    const t = setup({ copyB: DEK, loginAgoMs: STALE, read: { status: 'invalidated' } });
+    await t.controller.unlock();
+    await t.controller.unlockWithBiometrics();
+    expect(t.copyB()).toBeNull();
+    expect(t.vault.open).not.toHaveBeenCalled();
+    expect(t.controller.getState()).toEqual({ status: 'locked', notice: 'biometricsOff' });
+    expect((await t.controller.biometricStatus()).enabled).toBe(false);
+    await t.controller.unlockWithPassword();
+    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+  });
+
+  it('keeps copy B and allows a retry after another error', async () => {
+    const t = setup({ copyB: DEK, loginAgoMs: STALE, read: { status: 'failed' } });
+    await t.controller.unlock();
+    await t.controller.unlockWithBiometrics();
+    expect(t.copyB()).toEqual(DEK);
+    expect(t.controller.getState()).toEqual({
+      status: 'locked',
+      biometric: true,
+      notice: 'biometricFailed',
+    });
+  });
+
+  it('prompts by itself once per lock, not in a loop', async () => {
+    const t = setup({ copyB: DEK, loginAgoMs: STALE, read: { status: 'cancelled' } });
+    await t.controller.unlock();
+    await t.controller.autoPromptBiometric();
+    await t.controller.autoPromptBiometric();
+    expect(t.dekStore.readBiometric).toHaveBeenCalledTimes(1);
+    await t.controller.unlockWithBiometrics();
+    expect(t.dekStore.readBiometric).toHaveBeenCalledTimes(2);
+    await t.controller.lock();
+    await t.controller.autoPromptBiometric();
+    expect(t.dekStore.readBiometric).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not prompt by itself without copy B', async () => {
+    const t = setup({ loginAgoMs: STALE });
+    await t.controller.unlock();
+    await t.controller.autoPromptBiometric();
+    expect(t.dekStore.readBiometric).not.toHaveBeenCalled();
+  });
+
+  it('keeps the password path when copy B exists', async () => {
+    const t = setup({ copyB: DEK, loginAgoMs: STALE });
+    await t.controller.unlock();
+    await t.controller.unlockWithPassword();
+    expect(t.identity.reauthenticate).toHaveBeenCalledTimes(1);
+    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+  });
+
+  it('lock keeps the button when copy B exists', async () => {
+    const t = setup({ copyB: DEK });
+    await t.controller.unlock();
+    await t.controller.lock();
+    expect(t.controller.getState()).toEqual({ status: 'locked', biometric: true });
+  });
+
+  it('removeAll (wipe) clears copy B', async () => {
+    const t = setup({ copyB: DEK });
+    await t.dekStore.removeAll();
+    expect(t.copyB()).toBeNull();
+  });
+});
+
+describe('turning biometrics on and off', () => {
+  it('writes copy B from copy A after a fresh login, without asking for the password', async () => {
+    const t = setup({ loginAgoMs: 4 * MIN });
+    expect(await t.controller.enableBiometrics()).toBe('enabled');
+    expect(t.identity.reauthenticate).not.toHaveBeenCalled();
+    expect(t.copyB()).toEqual(DEK);
+    expect(await t.controller.biometricStatus()).toEqual({ supported: true, enabled: true });
+  });
+
+  it('asks for the password first when the login is older than 5 minutes', async () => {
+    const t = setup({ loginAgoMs: 6 * MIN });
+    expect(await t.controller.enableBiometrics()).toBe('enabled');
+    expect(t.identity.reauthenticate).toHaveBeenCalledTimes(1);
+    expect(t.copyB()).toEqual(DEK);
+  });
+
+  it.each([
+    ['cancelled', 'cancelled'],
+    ['failed', 'failed'],
+  ] as const)('writes nothing when the password step is %s', async (reauth, expected) => {
+    const t = setup({ loginAgoMs: null, reauth });
+    expect(await t.controller.enableBiometrics()).toBe(expected);
+    expect(t.dekStore.writeBiometric).not.toHaveBeenCalled();
+  });
+
+  it('writes nothing without biometric hardware', async () => {
+    const t = setup({ biometrics: false });
+    expect(await t.controller.enableBiometrics()).toBe('failed');
+    expect(t.dekStore.writeBiometric).not.toHaveBeenCalled();
+  });
+
+  it('reports cancelled or failed from the write', async () => {
+    expect(await setup({ write: 'cancelled' }).controller.enableBiometrics()).toBe('cancelled');
+    expect(await setup({ write: new Error('x') }).controller.enableBiometrics()).toBe('failed');
+  });
+
+  it('turning off removes copy B', async () => {
+    const t = setup({ copyB: DEK });
+    await t.controller.disableBiometrics();
+    expect(t.copyB()).toBeNull();
   });
 });

@@ -5,6 +5,7 @@ import { currentDevice, lastLoginAt, onSessionChange, reauthenticate } from '@mo
 
 import { createLockController } from '../application/lockController';
 import { newDek } from './crypto/newDek';
+import { vaultStrings } from '../ui/strings.es-CO';
 import { vault } from './defaultVault';
 import { createDekStore } from './keychain/dekStore';
 
@@ -20,4 +21,5 @@ export const lockController = createLockController({
   },
   clock: { now: () => new Date() },
   nowMs: () => Date.now(),
+  biometricPrompt: vaultStrings.biometric.prompt,
 });

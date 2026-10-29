@@ -4,15 +4,23 @@
 import type { Clock } from '@shared/domain/types';
 
 import { isFreshLogin, shouldLock } from '../domain/lockPolicy';
-import { VaultNotEncryptedError, type DekStore } from './ports';
+import { VaultNotEncryptedError, type BiometricPrompt, type DekStore } from './ports';
 import type { Vault } from './vault';
 
 export type LockError = 'notEncrypted' | 'keychain' | 'offline' | 'unknown';
 
+/** Messages for the lock screen. `biometricsOff`: the phone's biometrics changed, copy B was deleted. */
+export type LockNotice = 'biometricsOff' | 'biometricFailed';
+
 export interface LockState {
   status: 'locked' | 'unlocking' | 'unlocked' | 'pendingDevice' | 'error';
   error?: LockError;
+  /** Locked only: copy B exists and the phone has biometrics, so the button may show. */
+  biometric?: boolean;
+  notice?: LockNotice;
 }
+
+export type EnableBiometricsResult = 'enabled' | 'cancelled' | 'failed';
 
 /** What the controller needs from identity (M1). The wiring passes lazy calls. */
 export interface LockIdentity {
@@ -31,6 +39,8 @@ export interface LockControllerDeps {
   clock: Clock;
   /** Milliseconds, for the background timer. */
   nowMs: () => number;
+  /** Texts of the system biometric prompt. */
+  biometricPrompt: BiometricPrompt;
 }
 
 export interface LockController {
@@ -41,6 +51,16 @@ export interface LockController {
   /** Asks Keycloak for the password again, then opens. */
   unlockWithPassword(): Promise<void>;
   lock(): Promise<void>;
+  /** Opens with copy B behind the system prompt. Cancel keeps it locked without an error. */
+  unlockWithBiometrics(): Promise<void>;
+  /** Opens the prompt once per lock, when copy B exists. The lock screen calls it on show. */
+  autoPromptBiometric(): Promise<void>;
+  /** The phone has biometrics and copy B exists. Never prompts. */
+  biometricStatus(): Promise<{ supported: boolean; enabled: boolean }>;
+  /** Turns biometrics on: needs a login of the last 5 minutes, else the password again first. */
+  enableBiometrics(): Promise<EnableBiometricsResult>;
+  /** Turns biometrics off by deleting copy B. */
+  disableBiometrics(): Promise<void>;
   /** Locks on sign out. Returns the unsubscribe. */
   start(): () => void;
   /** AppState wiring: the app left the foreground. */
@@ -61,12 +81,27 @@ export function createLockController(deps: LockControllerDeps): LockController {
   // Bumped by lock and reset, so an open that finishes afterwards is closed again.
   let generation = 0;
   let inFlight: Promise<void> | null = null;
+  // The biometric prompt opens by itself once per lock, never in a loop.
+  let autoPrompted = false;
   const listeners = new Set<() => void>();
 
   const set = (next: LockState) => {
     state = next;
     listeners.forEach((l) => l());
   };
+
+  async function biometricReady(): Promise<boolean> {
+    try {
+      return (await dekStore.biometricsAvailable()) && (await dekStore.hasBiometric());
+    } catch {
+      return false;
+    }
+  }
+
+  async function locked(notice?: LockNotice): Promise<LockState> {
+    const biometric = await biometricReady();
+    return { status: 'locked', ...(biometric && { biometric }), ...(notice && { notice }) };
+  }
 
   async function openWith(dek: Uint8Array): Promise<void> {
     const mine = generation;
@@ -132,7 +167,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
     }
     if (!dek) return setUpFirstPhone();
     if (isFreshLogin(identity.lastLoginAt(), clock.now())) return openWith(dek);
-    set(LOCKED);
+    set(await locked());
   }
 
   const controller: LockController = {
@@ -154,7 +189,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
       const result = await identity.reauthenticate();
       if (result === 'cancelled') return;
       if (result === 'failed') {
-        set({ status: 'locked', error: 'unknown' });
+        set({ status: 'locked', error: 'unknown', biometric: state.biometric });
         return;
       }
       let dek: Uint8Array | null;
@@ -168,10 +203,61 @@ export function createLockController(deps: LockControllerDeps): LockController {
       if (!dek) return controller.unlock();
       await openWith(dek);
     },
+    async unlockWithBiometrics() {
+      if (state.status === 'unlocking' || state.status === 'unlocked') return;
+      set({ status: 'unlocking' });
+      const result = await dekStore.readBiometric(deps.biometricPrompt);
+      if (result.status === 'ok') return openWith(result.dek);
+      if (result.status === 'invalidated') {
+        // Never readable again: delete it so the setting reads off and the password is needed.
+        try {
+          await dekStore.removeBiometric();
+        } catch {
+          // The next read reports the same and tries again.
+        }
+        set(await locked('biometricsOff'));
+        return;
+      }
+      set(await locked(result.status === 'failed' ? 'biometricFailed' : undefined));
+    },
+    async autoPromptBiometric() {
+      if (inFlight) await inFlight;
+      if (autoPrompted || state.status !== 'locked' || !state.biometric) return;
+      autoPrompted = true;
+      await controller.unlockWithBiometrics();
+    },
+    async biometricStatus() {
+      const supported = await dekStore.biometricsAvailable().catch(() => false);
+      const enabled = supported && (await dekStore.hasBiometric().catch(() => false));
+      return { supported, enabled };
+    },
+    async enableBiometrics() {
+      if (!(await dekStore.biometricsAvailable().catch(() => false))) return 'failed';
+      if (!isFreshLogin(identity.lastLoginAt(), clock.now())) {
+        const result = await identity.reauthenticate();
+        if (result !== 'ok') return result === 'cancelled' ? 'cancelled' : 'failed';
+      }
+      try {
+        const dek = await dekStore.read();
+        if (!dek) return 'failed';
+        const written = await dekStore.writeBiometric(dek, deps.biometricPrompt);
+        return written === 'ok' ? 'enabled' : 'cancelled';
+      } catch {
+        return 'failed';
+      }
+    },
+    async disableBiometrics() {
+      await dekStore.removeBiometric();
+    },
     async lock() {
       generation += 1;
+      const mine = generation;
+      autoPrompted = false;
       await vault.close();
+      // Locked at once; the button is added when the copy B lookup answers.
       set(LOCKED);
+      const next = await locked();
+      if (next.biometric && state === LOCKED && mine === generation) set(next);
     },
     start() {
       return identity.onSessionChange((session) => {
@@ -190,6 +276,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
     },
     reset() {
       generation += 1;
+      autoPrompted = false;
       backgroundSince = null;
       set(LOCKED);
     },
