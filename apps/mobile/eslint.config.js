@@ -63,4 +63,24 @@ module.exports = defineConfig([
       ],
     },
   },
+  {
+    // Light and dark (shared contracts 3.6): screens read colors from useTheme(), never from a
+    // fixed palette, so every screen follows the phone or the Apariencia choice.
+    files: ['src/app/**/*.{ts,tsx}', 'src/modules/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        2,
+        {
+          paths: [
+            {
+              name: '@shared/ui',
+              importNames: ['lightColors', 'darkColors', 'palettes', 'shadows', 'makeShadows'],
+              message:
+                'Read colors and shadows with useTheme() or useThemedStyles() from @shared/ui.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);

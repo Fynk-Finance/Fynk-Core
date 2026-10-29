@@ -6,7 +6,8 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 import { Icon, type IconName } from '../icons';
-import { colors, fonts, radius, shadow, size } from '../tokens';
+import { useTheme } from '../theme';
+import { fonts, radius, size } from '../tokens';
 
 interface BaseProps {
   label: string;
@@ -96,6 +97,7 @@ function BaseButton({
 export type PrimaryButtonProps = BaseProps;
 
 export function PrimaryButton(props: PrimaryButtonProps) {
+  const { colors } = useTheme();
   return (
     <BaseButton
       {...props}
@@ -103,7 +105,7 @@ export function PrimaryButton(props: PrimaryButtonProps) {
         height: size.buttonPrimary,
         background: colors.primary,
         pressedBackground: colors.primaryPressed,
-        textColor: colors.white,
+        textColor: colors.onPrimary,
         fontFamily: fonts.body.bold,
         fontSize: 16,
         arrowStroke: 2.4,
@@ -115,6 +117,7 @@ export function PrimaryButton(props: PrimaryButtonProps) {
 export type AccentButtonProps = BaseProps;
 
 export function AccentButton(props: AccentButtonProps) {
+  const { colors, shadow } = useTheme();
   return (
     <BaseButton
       {...props}
@@ -122,7 +125,7 @@ export function AccentButton(props: AccentButtonProps) {
         height: size.buttonPrimary,
         background: colors.accent,
         pressedBackground: colors.accentPressed,
-        textColor: colors.white,
+        textColor: colors.onPrimary,
         fontFamily: fonts.body.semibold,
         fontSize: 16,
         arrowStroke: 2.2,
@@ -138,13 +141,14 @@ export interface GhostButtonProps extends BaseProps {
 }
 
 export function GhostButton({ tone = 'default', size: s = 'md', ...props }: GhostButtonProps) {
+  const { colors } = useTheme();
   const danger = tone === 'danger';
   return (
     <BaseButton
       {...props}
       look={{
         height: s === 'lg' ? size.buttonPrimary : size.buttonSecondary,
-        background: danger ? colors.dangerSurface : colors.white,
+        background: danger ? colors.dangerSurface : colors.background,
         pressedBackground: danger ? colors.dangerSoft : colors.surfaceBlueSoft,
         borderColor: danger ? colors.dangerBorder : colors.border,
         textColor: danger

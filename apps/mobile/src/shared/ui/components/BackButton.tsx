@@ -4,7 +4,8 @@ import { Pressable, StyleSheet } from 'react-native';
 
 import { Icon } from '../icons';
 import { uiStrings } from '../strings.es-CO';
-import { colors, radius, size } from '../tokens';
+import { useTheme, useThemedStyles, type Theme } from '../theme';
+import { radius, size } from '../tokens';
 
 export interface BackButtonProps {
   onPress?: () => void;
@@ -13,6 +14,8 @@ export interface BackButtonProps {
 }
 
 export function BackButton({ onPress, tone = 'onPrimary', accessibilityLabel }: BackButtonProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const onPrimary = tone === 'onPrimary';
   return (
     <Pressable
@@ -30,20 +33,21 @@ export function BackButton({ onPress, tone = 'onPrimary', accessibilityLabel }: 
         name="chevronLeft"
         size={onPrimary ? 20 : 30}
         strokeWidth={2.4}
-        color={onPrimary ? colors.white : colors.primaryDark}
+        color={onPrimary ? colors.onPrimary : colors.primaryDark}
       />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    width: size.backButton,
-    height: size.backButton,
-    borderRadius: radius.input,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  onPrimary: { backgroundColor: colors.onPrimaryOverlay },
-  pressed: { opacity: 0.7 },
-});
+const createStyles = ({ colors }: Theme) =>
+  StyleSheet.create({
+    button: {
+      width: size.backButton,
+      height: size.backButton,
+      borderRadius: radius.input,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    onPrimary: { backgroundColor: colors.onPrimaryOverlay },
+    pressed: { opacity: 0.7 },
+  });

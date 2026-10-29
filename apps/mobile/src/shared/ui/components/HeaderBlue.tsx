@@ -8,7 +8,8 @@ import Svg, { Rect } from 'react-native-svg';
 
 import { Icon } from '../icons';
 import { uiStrings } from '../strings.es-CO';
-import { colors, radius, shadow, size, spacing } from '../tokens';
+import { useTheme, useThemedStyles, type Theme } from '../theme';
+import { radius, size, spacing } from '../tokens';
 import { AppText } from './AppText';
 import { Avatar } from './Avatar';
 
@@ -27,6 +28,8 @@ export interface HeaderBlueProps {
   decorated?: boolean;
   /** Light avatar of the Inversión header. */
   avatarTone?: 'primary' | 'light';
+  /** The Dashboard header, a muted blue in dark mode (`headerDashboard`). */
+  dashboard?: boolean;
 }
 
 export function HeaderBlue({
@@ -40,11 +43,22 @@ export function HeaderBlue({
   children,
   decorated = false,
   avatarTone = 'primary',
+  dashboard = false,
 }: HeaderBlueProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.shadow}>
-      <View style={[styles.blue, { paddingTop: insets.top + spacing.screen }]}>
+      <View
+        style={[
+          styles.blue,
+          {
+            paddingTop: insets.top + spacing.screen,
+            ...(dashboard ? { backgroundColor: colors.headerDashboard } : null),
+          },
+        ]}
+      >
         {decorated ? (
           <Svg width={390} height={257} viewBox="0 0 390 257" style={StyleSheet.absoluteFill}>
             <Rect x={268} y={-70} width={190} height={190} rx={44} fill={colors.headerShapeA} />
@@ -62,10 +76,10 @@ export function HeaderBlue({
           >
             <Avatar name={name} tone={avatarTone} />
             <View style={styles.greeting}>
-              <AppText variant="caption" color="white" style={styles.hello}>
+              <AppText variant="caption" color="onPrimary" style={styles.hello}>
                 {uiStrings.greeting}
               </AppText>
-              <AppText variant="bodyStrong" color="white" style={styles.name} numberOfLines={1}>
+              <AppText variant="bodyStrong" color="onPrimary" style={styles.name} numberOfLines={1}>
                 {name}
               </AppText>
             </View>
@@ -78,18 +92,18 @@ export function HeaderBlue({
             style={({ pressed }) => [styles.bell, pressed && styles.pressed]}
             testID="header-bell"
           >
-            <Icon name="bell" size={22} color={colors.white} />
+            <Icon name="bell" size={22} color={colors.onPrimary} />
             {hasUnread ? <View style={styles.dot} testID="header-unread-dot" /> : null}
           </Pressable>
         </View>
         {title ? (
           <View style={styles.titleRow}>
             <View style={styles.titleText}>
-              <AppText variant="screenTitle" color="white">
+              <AppText variant="screenTitle" color="onPrimary">
                 {title}
               </AppText>
               {subtitle ? (
-                <AppText variant="small" color="white" style={styles.subtitle}>
+                <AppText variant="small" color="onPrimary" style={styles.subtitle}>
                   {subtitle}
                 </AppText>
               ) : null}
@@ -103,51 +117,52 @@ export function HeaderBlue({
   );
 }
 
-const styles = StyleSheet.create({
-  shadow: { ...shadow.header, zIndex: 1 },
-  blue: {
-    backgroundColor: colors.primary,
-    borderBottomLeftRadius: radius.sheetSm,
-    borderBottomRightRadius: radius.sheetSm,
-    paddingHorizontal: spacing.screen,
-    paddingBottom: spacing.screen,
-    gap: spacing.xl,
-    overflow: 'hidden',
-  },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  account: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 5,
-    paddingLeft: 5,
-    paddingRight: 16,
-    borderRadius: radius.pill,
-    flexShrink: 1,
-  },
-  greeting: { gap: 1, flexShrink: 1 },
-  hello: { lineHeight: 14, opacity: 0.85 },
-  name: { lineHeight: 18 },
-  bell: {
-    width: size.iconButton,
-    height: size.iconButton,
-    borderRadius: radius.button,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dot: {
-    position: 'absolute',
-    top: 11,
-    right: 12,
-    width: 9,
-    height: 9,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accent,
-    borderWidth: 2,
-    borderColor: colors.primary,
-  },
-  pressed: { opacity: 0.8 },
-  titleRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  titleText: { gap: spacing.xs, flexShrink: 1 },
-  subtitle: { opacity: 0.92 },
-});
+const createStyles = ({ colors, shadow }: Theme) =>
+  StyleSheet.create({
+    shadow: { ...shadow.header, zIndex: 1 },
+    blue: {
+      backgroundColor: colors.primary,
+      borderBottomLeftRadius: radius.sheetSm,
+      borderBottomRightRadius: radius.sheetSm,
+      paddingHorizontal: spacing.screen,
+      paddingBottom: spacing.screen,
+      gap: spacing.xl,
+      overflow: 'hidden',
+    },
+    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    account: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingVertical: 5,
+      paddingLeft: 5,
+      paddingRight: 16,
+      borderRadius: radius.pill,
+      flexShrink: 1,
+    },
+    greeting: { gap: 1, flexShrink: 1 },
+    hello: { lineHeight: 14, opacity: 0.85 },
+    name: { lineHeight: 18 },
+    bell: {
+      width: size.iconButton,
+      height: size.iconButton,
+      borderRadius: radius.button,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dot: {
+      position: 'absolute',
+      top: 11,
+      right: 12,
+      width: 9,
+      height: 9,
+      borderRadius: radius.pill,
+      backgroundColor: colors.accent,
+      borderWidth: 2,
+      borderColor: colors.primary,
+    },
+    pressed: { opacity: 0.8 },
+    titleRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+    titleText: { gap: spacing.xs, flexShrink: 1 },
+    subtitle: { opacity: 0.92 },
+  });

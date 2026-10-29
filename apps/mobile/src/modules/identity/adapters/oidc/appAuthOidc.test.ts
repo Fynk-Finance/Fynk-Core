@@ -83,6 +83,52 @@ describe('authorize', () => {
       kind: 'cancelled',
     });
   });
+
+  it('treats the access_denied redirect after a password reset as a cancel', async () => {
+    mockAuthorize.mockRejectedValueOnce(
+      Object.assign(new Error('access_denied'), { code: 'access_denied' }),
+    );
+    await expect(createAppAuthOidc(config).authorize('signIn')).rejects.toMatchObject({
+      kind: 'cancelled',
+    });
+  });
+});
+
+describe('changePassword', () => {
+  it('asks Keycloak for the UPDATE_PASSWORD action and returns the tokens and the status', async () => {
+    mockAuthorize.mockResolvedValueOnce({
+      ...authorizeResult,
+      authorizeAdditionalParameters: { kc_action_status: 'success' },
+    });
+    const result = await createAppAuthOidc(config).changePassword();
+    expect(result).toEqual({ tokens, actionStatus: 'success' });
+    const sent = mockAuthorize.mock.calls[0]?.[0];
+    expect(sent?.additionalParameters).toEqual({ kc_action: 'UPDATE_PASSWORD' });
+    expect(sent).toMatchObject({ usePKCE: true, iosPrefersEphemeralSession: true });
+  });
+
+  it.each([
+    ['success', 'success'],
+    ['cancelled', 'cancelled'],
+    ['error', 'error'],
+    ['something-else', 'unknown'],
+    [undefined, 'unknown'],
+  ])('reads kc_action_status %s as %s', async (raw, expected) => {
+    mockAuthorize.mockResolvedValueOnce({
+      ...authorizeResult,
+      authorizeAdditionalParameters: raw === undefined ? undefined : { kc_action_status: raw },
+    });
+    expect((await createAppAuthOidc(config).changePassword()).actionStatus).toBe(expected);
+  });
+
+  it('turns a closed browser into a cancelled error', async () => {
+    mockAuthorize.mockRejectedValueOnce(
+      Object.assign(new Error('User cancelled flow'), { code: 'authentication_error' }),
+    );
+    await expect(createAppAuthOidc(config).changePassword()).rejects.toMatchObject({
+      kind: 'cancelled',
+    });
+  });
 });
 
 describe('classifyAppAuthError', () => {
@@ -92,6 +138,9 @@ describe('classifyAppAuthError', () => {
       { code: 'authentication_failed', message: '(org.openid.appauth.general error -3.)' },
       'cancelled',
     ],
+    [{ code: 'access_denied', message: 'access_denied' }, 'cancelled'],
+    [{ code: 'not_access_denied_at_all', message: 'x' }, 'rejected'],
+    [{ code: 'unauthorized_client', message: 'Client not allowed' }, 'rejected'],
     [{ code: 'service_configuration_fetch_error', message: 'x' }, 'network'],
     [{ code: 'token_refresh_failed', message: 'Network error' }, 'network'],
     [{ code: 'token_refresh_failed', message: 'The request timed out.' }, 'network'],

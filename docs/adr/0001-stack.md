@@ -51,7 +51,11 @@
 | @types/sql.js | 1.4.11 | Types for sql.js |
 | @react-navigation/native | 7.5.1 | Navigation (decided: React Navigation v7). Root stack, tabs and `fynk://` deep links |
 | @react-navigation/native-stack | 7.21.0 | Native stack for pushed screens and full-screen flows |
-| @react-navigation/bottom-tabs | 7.21.0 | The four main tabs, drawn by the custom `TabBar` of the design |
+| @react-navigation/material-top-tabs | 7.8.1 | The four main tabs placed at the bottom, so they switch by tap and by horizontal swipe (decided 27 Oct 2026). Keeps the custom `TabBar`. It replaced `@react-navigation/bottom-tabs` 7.21.0, which had no swipe |
+| react-native-tab-view | 4.3.4 | Peer of material top tabs: the swipeable pages |
+| react-native-pager-view | 9.0.7 | Native pager under react-native-tab-view. Nested horizontal carousels scroll first and hand the swipe to the pager at their edge |
+| react-native-gesture-handler | 3.3.0 | Native gestures inside screens (Dashboard pull tab, account carousel, bottom sheet drag), animated with Reanimated. The root is wrapped in `GestureHandlerRootView`; Jest loads its `jestSetup.js` |
+| @react-native-async-storage/async-storage | 2.2.0 | Plain app storage for the theme preference (Sistema, Claro, Oscuro). It is read before the vault unlocks and holds no personal data. Jest uses the library's own mock |
 | react-native-screens | 4.30.0 | Native screen containers required by React Navigation |
 | react-native-safe-area-context | 5.10.1 | Safe area insets for headers and the tab bar |
 | react-native-svg | 15.16.0 | Icons, logo, illustrations and charts copied from the design SVG |
@@ -63,12 +67,15 @@
 | @expo-google-fonts/plus-jakarta-sans | 0.4.2 | Body font, weights 400 to 700, imported per weight so only those files are bundled |
 | @expo-google-fonts/space-grotesk | 0.4.1 | Heading font, weights 500 and 700 |
 | @expo-google-fonts/ibm-plex-mono | 0.4.1 | Money font, weights 500 and 600 |
-| expo-system-ui | 58.0.6 | Applies `userInterfaceStyle: light` on Android (the design is light only) |
+| expo-system-ui | 58.0.6 | Applies `userInterfaceStyle: automatic` on Android and paints the window behind the screens with the theme's canvas color |
 | @tanstack/react-query | 5.104.5 | Async server state (decided). No background refetch, see `src/app/queryClient.ts`. 5.105.0 was a few hours old and is held back by the release age policy |
 | openapi-fetch | 0.17.0 | Typed fetch client built on the generated `paths` types. Small, no runtime codegen, lets the client add headers and retry once after a token refresh |
 | openapi-typescript | 7.13.0 | Generates `src/shared/api/schema.gen.ts` from the bundled contract. It declares TypeScript 5 as its peer. It generates correctly with TypeScript 6, so `pnpm-workspace.yaml` allows it (`peerDependencyRules`) |
 | react-native-app-auth | 9.0.0 | Added for M1. OpenID Connect with Authorization Code and PKCE S256 in the system browser (ASWebAuthenticationSession on iOS, Custom Tabs on Android), never a webview. Its Expo config plugin in `app.json` registers the redirect scheme `co.fynk.app` on both platforms. 9.0.0 needs React Native 0.86 or newer; it was out for 8 days when added |
 | react-native-keychain | 10.0.0 | Added for M1. Keeps the Keycloak tokens in the iOS Keychain and the Android Keystore with `WHEN_UNLOCKED_THIS_DEVICE_ONLY`, so they never reach AsyncStorage, backups or another phone. M2 reuses it for the vault key |
+| expo-crypto | 58.0.7 | Added for M1. `getRandomBytes` from the phone's secure random source, for the device's X25519 private key and the registration Idempotency-Key. M2 reuses it. The version `npx expo install` picks for SDK 58 |
+| expo-device | 58.0.5 | Added for M1. The phone's model name for the linked devices list ("iPhone 15"), never a hardware id. The version `npx expo install` picks for SDK 58 |
+| @noble/curves | 2.4.0 | Added for M1. X25519 public key of the device key pair, sent with `POST /devices` and used by M2's device approval. Audited pure JavaScript, no native code, runs on Hermes. It ships only ES modules, so `jest.config.js` adds `@noble` to jest-expo's transform list |
 
 The aliases `@shared/*` and `@modules/*` are declared once in `tsconfig.json`. Metro reads them from there (Expo's built-in tsconfig paths support), and Jest maps them in `jest.config.js`. No Babel alias plugin is needed.
 
@@ -113,6 +120,28 @@ Images are pinned to exact versions. A version is taken only once it has been ou
 | smallstep/step-cli | 0.31.0 | `make certs`: creates the local CA and certificates inside Docker, so nobody installs mkcert or step |
 | golang | 1.27.3-bookworm | Build stage of the API and bank simulator images, same Go as `go.mod` |
 | gcr.io/distroless/static-debian12 | nonroot, pinned by digest | Runtime image: no shell, no package manager, non-root user. The tag moves, so the digest is pinned |
+
+## Keycloak theme (`services/keycloak/theme`)
+
+The theme is its own pnpm project, outside the root workspace (`pnpm-workspace.yaml` only lists `apps/*`), with its own `pnpm-lock.yaml`. Install it with `pnpm install --ignore-workspace` from that folder. It builds a Keycloak theme JAR with `keycloakify build`, which needs a JDK and Maven (Keycloakify runs `mvn package`). Versions were taken once they had been out for at least 14 days.
+
+| Library | Version | Why |
+| --- | --- | --- |
+| keycloakify | 11.16.1 | Builds the `fynk` login theme as a Keycloak JAR (`keycloakVersionTargets` covers Keycloak 26.8.1 only). 11.16.2 to 11.16.4 were less than 14 days old |
+| react | 19.3.0 | Theme pages are React components, rendered by Keycloak with the context Keycloakify injects |
+| react-dom | 19.3.0 | React renderer, same version as react |
+| @types/react | 19.3.0 | React types matching React 19.3 |
+| @types/react-dom | 19.3.0 | React DOM types |
+| @types/node | 22.20.5 | Node types for the theme's build script (`postBuild.ts` edits the generated pages). Same major as the Node the image builds with |
+| vite | 8.3.4 | Bundler Keycloakify's plugin runs on. 8.3.5 was too new |
+| @vitejs/plugin-react | 6.1.2 | React support for Vite 8 |
+| typescript | 6.0.3 | Same as the mobile app. TypeScript 7 has not been tried with Keycloakify |
+| prettier | 3.9.10 | Same as the workspace root, with the same `.prettierrc` values |
+| @fontsource/plus-jakarta-sans | 5.3.0 | Body font, served from the JAR. No Google Fonts or any CDN at runtime |
+| @fontsource/space-grotesk | 5.3.0 | Heading font, served from the JAR |
+| @fontsource/ibm-plex-mono | 5.3.0 | Money font, served from the JAR |
+
+The email theme is not built yet. Keycloakify 11 needs a separate email builder for it, which a later pull request adds.
 
 ## CI (`.github/workflows/ci.yml`)
 

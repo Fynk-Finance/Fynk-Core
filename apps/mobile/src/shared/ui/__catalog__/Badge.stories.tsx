@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 
 import { Badge } from '../components/Badge';
-import { colors } from '../tokens';
+import { OnColor } from './OnColor';
 import type { StoryGroup } from './types';
 
 export default {
@@ -17,10 +17,11 @@ export default {
         <Badge label="Simulado" />
       </View>
     ),
+    WithIcon: () => <Badge label="Perfil verificado" tone="accent" size="lg" icon="check" />,
     OnPrimary: () => (
-      <View style={{ backgroundColor: colors.primaryLight, padding: 12 }}>
+      <OnColor color="primaryLight" padding={12}>
         <Badge label="Mayor impacto" tone="onPrimary" />
-      </View>
+      </OnColor>
     ),
   },
 } satisfies StoryGroup;
