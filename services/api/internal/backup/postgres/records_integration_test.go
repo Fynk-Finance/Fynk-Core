@@ -134,7 +134,9 @@ func TestStoredRecordNeverContainsPlaintext(t *testing.T) {
 	if w.Code != 200 || len(p.Records) != 1 {
 		t.Fatalf("GET: %d %s", w.Code, w.Body)
 	}
-	var back struct{ Records []struct{ Nonce, Ciphertext string } }
+	var back struct {
+		Records []struct{ Nonce, Ciphertext string }
+	}
 	_ = json.Unmarshal(w.Body.Bytes(), &back)
 	n, _ := base64.StdEncoding.DecodeString(back.Records[0].Nonce)
 	c, _ := base64.StdEncoding.DecodeString(back.Records[0].Ciphertext)
