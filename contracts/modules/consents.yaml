@@ -1,11 +1,10 @@
 # Contract of the consents module, owned by M4 (see CODEOWNERS).
 # Only M4 edits this file. Shared parts come from ../openapi.yaml.
-# The health path below is M0's example so generation works from day one.
-# Replace it with the real endpoints of docs/modules/00-shared-contracts.md, section 5.
+# Endpoints of docs/modules/00-shared-contracts.md, section 5. Revocation lands in the next step.
 openapi: 3.1.0
 info:
   title: Fynk API · Consents
-  version: 0.1.0
+  version: 0.2.0
 tags:
   - name: consents
     description: 'Open Finance consents: texts, grants, revocation and evidence (M4).'
@@ -15,7 +14,7 @@ paths:
       tags: [consents]
       operationId: consentsHealth
       summary: Example health path of the consents module
-      description: Public. Answers while the module is a stub. Removed when the module adds real endpoints.
+      description: Public. Kept until M0's shared test stops expecting it.
       security: []
       responses:
         '200':
@@ -29,3 +28,265 @@ paths:
                 status: stub
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
+  /consent-texts/current:
+    get:
+      tags: [consents]
+      operationId: getCurrentConsentText
+      summary: Current consent text, purpose and term shown on Conectar banco
+      responses:
+        '200':
+          description: The text the app shows and the user accepts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentsText'
+              example:
+                version: 2026-10-v1
+                bodyMd: "# Autorización para compartir tus datos con Fynk\n..."
+                sha256: 9f2c4e0b7a1d3c5e8f6a2b4d6e8f0a1c3e5b7d9f1a3c5e7b9d1f3a5c7e9b1d3f
+                publishedAt: '2026-10-27T00:00:00Z'
+                purpose: Mostrarte tus finanzas y recomendaciones dentro de Fynk.
+                termDays: 365
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /consents:
+    post:
+      tags: [consents]
+      operationId: createConsent
+      summary: Record the user's explicit acceptance as a pending consent
+      description: |
+        Stores the exact scopes, purpose and term the app showed, plus the acceptance evidence.
+        The consent stays pending until the bank returns tokens (M5 calls MarkGranted).
+        Needs the X-Device-Id header.
+      parameters:
+        - $ref: '../openapi.yaml#/components/parameters/DeviceId'
+        - $ref: '../openapi.yaml#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentsCreateRequest'
+            example:
+              provider: banco-demo
+              scopes: [balances, transactions, account_details]
+              purpose: Mostrarte tus finanzas y recomendaciones dentro de Fynk.
+              termDays: 365
+              textVersion: 2026-10-v1
+              textSha256: 9f2c4e0b7a1d3c5e8f6a2b4d6e8f0a1c3e5b7d9f1a3c5e7b9d1f3a5c7e9b1d3f
+              appVersion: 0.1.0
+              locale: es-CO
+      responses:
+        '201':
+          description: The pending consent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentsConsent'
+              example:
+                id: 01928c7e-5b1a-7c3d-9e2f-4a6b8c0d2e4f
+                provider: banco-demo
+                scopes: [balances, transactions, account_details]
+                purpose: Mostrarte tus finanzas y recomendaciones dentro de Fynk.
+                termDays: 365
+                status: pending
+                textVersion: 2026-10-v1
+                createdAt: '2026-10-27T15:04:05Z'
+                acceptedAt: '2026-10-27T15:04:05Z'
+        '400':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '422':
+          description: |
+            The consent is not specific or does not match what was shown. Codes: unsupported_provider,
+            invalid_scopes, purpose_mismatch, term_mismatch, unknown_text_version, text_mismatch,
+            device_required, idempotency_conflict.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/invalid_scopes
+                title: Invalid scopes
+                status: 422
+                detail: The scopes must be a non-empty subset of what the provider supports.
+                code: invalid_scopes
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+    get:
+      tags: [consents]
+      operationId: listConsents
+      summary: Consents of the signed-in user, newest first
+      responses:
+        '200':
+          description: Every consent of the user, with its status as of now.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentsList'
+              example:
+                items:
+                  - id: 01928c7e-5b1a-7c3d-9e2f-4a6b8c0d2e4f
+                    provider: banco-demo
+                    scopes: [balances, transactions, account_details]
+                    purpose: Mostrarte tus finanzas y recomendaciones dentro de Fynk.
+                    termDays: 365
+                    status: active
+                    textVersion: 2026-10-v1
+                    createdAt: '2026-10-27T15:04:05Z'
+                    acceptedAt: '2026-10-27T15:04:05Z'
+                    grantedAt: '2026-10-27T15:05:10Z'
+                    expiresAt: '2027-10-27T15:05:10Z'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /consents/{id}:
+    get:
+      tags: [consents]
+      operationId: getConsent
+      summary: One consent of the signed-in user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The consent, with its status as of now.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentsConsent'
+              example:
+                id: 01928c7e-5b1a-7c3d-9e2f-4a6b8c0d2e4f
+                provider: banco-demo
+                scopes: [balances, transactions, account_details]
+                purpose: Mostrarte tus finanzas y recomendaciones dentro de Fynk.
+                termDays: 365
+                status: active
+                textVersion: 2026-10-v1
+                createdAt: '2026-10-27T15:04:05Z'
+                acceptedAt: '2026-10-27T15:04:05Z'
+                grantedAt: '2026-10-27T15:05:10Z'
+                expiresAt: '2027-10-27T15:05:10Z'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '404':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+components:
+  schemas:
+    ConsentsScope:
+      type: string
+      description: 'Data the entity shares: Saldos, Movimientos, Datos de la cuenta.'
+      enum: [balances, transactions, account_details]
+    ConsentsStatus:
+      type: string
+      description: Status as of now. An active consent past expiresAt is reported as expired.
+      enum: [pending, active, revoked, expired, failed]
+    ConsentsText:
+      type: object
+      required: [version, bodyMd, sha256, publishedAt, purpose, termDays]
+      properties:
+        version:
+          type: string
+        bodyMd:
+          type: string
+          description: Spanish (Colombia) text in Markdown.
+        sha256:
+          type: string
+          description: Hex SHA-256 of bodyMd. The app sends it back as acceptance evidence.
+          pattern: '^[0-9a-f]{64}$'
+        publishedAt:
+          type: string
+          format: date-time
+        purpose:
+          type: string
+        termDays:
+          type: integer
+          format: int32
+    ConsentsCreateRequest:
+      type: object
+      required: [provider, scopes, purpose, termDays, textVersion, textSha256, appVersion, locale]
+      additionalProperties: false
+      properties:
+        provider:
+          type: string
+          maxLength: 40
+        scopes:
+          type: array
+          minItems: 1
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/ConsentsScope'
+        purpose:
+          type: string
+          maxLength: 200
+        termDays:
+          type: integer
+          format: int32
+        textVersion:
+          type: string
+          maxLength: 40
+        textSha256:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        appVersion:
+          type: string
+          maxLength: 40
+        locale:
+          type: string
+          maxLength: 10
+    ConsentsConsent:
+      type: object
+      required:
+        [id, provider, scopes, purpose, termDays, status, textVersion, createdAt, acceptedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+        scopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsentsScope'
+        purpose:
+          type: string
+        termDays:
+          type: integer
+          format: int32
+        status:
+          $ref: '#/components/schemas/ConsentsStatus'
+        textVersion:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        acceptedAt:
+          type: string
+          format: date-time
+        grantedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        revokedAt:
+          type: string
+          format: date-time
+    ConsentsList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsentsConsent'
