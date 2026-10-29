@@ -9,7 +9,10 @@ import {
   useTheme as useNavigationTheme,
   type InitialState,
 } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import {
+  createNativeStackNavigator,
+  type NativeStackNavigationOptions,
+} from '@react-navigation/native-stack';
 import { useEffect, useState, type ComponentType } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -24,7 +27,7 @@ import { IntroScreen } from './IntroScreen';
 import { OnboardingProvider, useOnboardingState } from './OnboardingContext';
 import { createPlaceholderStep } from './PlaceholderStep';
 import { SkipWarningScreen } from './SkipWarningScreen';
-import { SKIP_ROUTE, STEP_ROUTES, type OnboardingParamList } from './routes';
+import { SKIP_ROUTE, STEP_ROUTES, type OnboardingParamList, type StepParams } from './routes';
 
 const Stack = createNativeStackNavigator<OnboardingParamList>();
 
@@ -50,16 +53,30 @@ function Steps({ initialStep, steps }: { initialStep: WizardStep; steps: StepScr
   const [initialState] = useState(() => initialStateFor(initialStep));
 
   const push = screenOptionsFor({}, { reduceMotion });
+  const stepOptions = ({
+    route,
+  }: {
+    route: { params?: StepParams };
+  }): NativeStackNavigationOptions =>
+    route.params?.fromIntro && !reduceMotion ? { ...push, animation: 'none' } : push;
 
   return (
     <NavigationIndependentTree>
       <NavigationContainer theme={navigationTheme} initialState={initialState}>
         <Stack.Navigator screenOptions={{ headerShown: false, ...push }}>
           <Stack.Screen name={STEP_ROUTES.intro} component={IntroScreen} />
-          <Stack.Screen name={STEP_ROUTES.name} component={steps.name} />
-          <Stack.Screen name={STEP_ROUTES.accounts} component={steps.accounts} />
-          <Stack.Screen name={STEP_ROUTES.goals} component={steps.goals} />
-          <Stack.Screen name={STEP_ROUTES.recurring} component={steps.recurring} />
+          <Stack.Screen name={STEP_ROUTES.name} component={steps.name} options={stepOptions} />
+          <Stack.Screen
+            name={STEP_ROUTES.accounts}
+            component={steps.accounts}
+            options={stepOptions}
+          />
+          <Stack.Screen name={STEP_ROUTES.goals} component={steps.goals} options={stepOptions} />
+          <Stack.Screen
+            name={STEP_ROUTES.recurring}
+            component={steps.recurring}
+            options={stepOptions}
+          />
           {/* Inventory row 28: Omitir is a modal. */}
           <Stack.Screen
             name={SKIP_ROUTE}

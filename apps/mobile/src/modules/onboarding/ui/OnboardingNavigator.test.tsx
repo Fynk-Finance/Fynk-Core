@@ -11,6 +11,7 @@ import { onboardingMigrations } from '../adapters/vault/migrations';
 import { createVaultProgressStore } from '../adapters/vault/vaultProgressStore';
 import { createOnboardingService, type OnboardingService } from '../application/onboardingService';
 import { initialProgress, type OnboardingProgress } from '../domain/progress';
+import { MORPH_MS } from './IntroScreen';
 import { createOnboardingNavigator, initialStateFor } from './OnboardingNavigator';
 import { onboardingStrings } from './strings.es-CO';
 import { createUseOnboardingGate } from './useOnboardingGate';
@@ -70,6 +71,7 @@ describe('Aviso', () => {
     expect(screen.getByText(copy.intro.minutes)).toBeTruthy();
     expect(screen.getByRole('header', { name: copy.intro.title })).toBeTruthy();
     expect(screen.getByText(copy.intro.text)).toBeTruthy();
+    expect(screen.getByRole('image', { name: copy.intro.illustration })).toBeTruthy();
   });
 
   it('"Comenzar configuración" opens step 1 of 4 and saves it', async () => {
@@ -77,6 +79,22 @@ describe('Aviso', () => {
     await press(copy.intro.start);
     await waitFor(() => expect(screen.getByText('Paso 1 de 4')).toBeTruthy());
     expect((await saved())?.step).toBe('name');
+  });
+
+  it('plays the panel morph before step 1 when motion is allowed', async () => {
+    reduceMotion.mockReturnValue(false);
+    jest.useFakeTimers();
+    try {
+      await openOn(null);
+      await press(copy.intro.start);
+      expect(screen.queryByText('Paso 1 de 4')).toBeNull();
+      await act(async () => {
+        jest.advanceTimersByTime(MORPH_MS);
+      });
+      expect(screen.getByText('Paso 1 de 4')).toBeTruthy();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('"Omitir por ahora" shows the warning first', async () => {
