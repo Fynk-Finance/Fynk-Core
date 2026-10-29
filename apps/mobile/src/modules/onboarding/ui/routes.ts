@@ -11,11 +11,16 @@ export const STEP_ROUTES = {
 
 export const SKIP_ROUTE = 'onboarding.Skip';
 
+/** The first step arrives from Aviso with the header already in place, so it does not slide in. */
+export interface StepParams {
+  fromIntro?: boolean;
+}
+
 export type OnboardingParamList = {
   [STEP_ROUTES.intro]: undefined;
-  [STEP_ROUTES.name]: undefined;
-  [STEP_ROUTES.accounts]: undefined;
-  [STEP_ROUTES.goals]: undefined;
-  [STEP_ROUTES.recurring]: undefined;
+  [STEP_ROUTES.name]: StepParams | undefined;
+  [STEP_ROUTES.accounts]: StepParams | undefined;
+  [STEP_ROUTES.goals]: StepParams | undefined;
+  [STEP_ROUTES.recurring]: StepParams | undefined;
   [SKIP_ROUTE]: undefined;
 };

@@ -1,11 +1,27 @@
-// Aviso (OnbIntro): the full blue screen with "4 pasos" and "3 minutos", "Comenzar
-// configuración" and "Omitir por ahora". The illustration and the panel that shrinks into the
-// step header come in the next branch (feature/onboarding-intro-motion).
+// Aviso (OnbIntro): the full blue screen with the illustration, "4 pasos" and "3 minutos",
+// "Comenzar configuración" and "Omitir por ahora". "Comenzar" shrinks the blue panel into the
+// step header (0.7 s, cubic-bezier(.76,0,.24,1)) while the content leaves, then shows step 1
+// without a slide, so the header stays in place. Coming back grows it again. With reduced
+// motion the step simply fades in.
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+  type LayoutChangeEvent,
+} from 'react-native';
+import Animated, {
+  Easing,
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
 
@@ -23,12 +39,16 @@ import {
 } from '@shared/ui';
 
 import { TOTAL_STEPS } from '../domain/steps';
+import { ILLUSTRATION_HEIGHT, IntroIllustration } from './IntroIllustration';
 import { useOnboarding } from './OnboardingContext';
+import { PANEL_HEIGHT, StepPanelShapes } from './StepLayout';
 import { SKIP_ROUTE, STEP_ROUTES, type OnboardingParamList } from './routes';
 import { onboardingStrings } from './strings.es-CO';
 import { useRise } from './useRise';
 
 const copy = onboardingStrings.intro;
+export const MORPH_MS = 700;
+const MORPH = { duration: MORPH_MS, easing: Easing.bezier(0.76, 0, 0.24, 1) };
 
 function ClockIcon() {
   return (
@@ -61,17 +81,30 @@ export function IntroScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const reduceMotion = useReducedMotion();
   const service = useOnboarding();
   const navigation = useNavigation<NativeStackNavigationProp<OnboardingParamList>>();
   const rise = useRise();
+  const morph = useSharedValue(0);
   const [leaving, setLeaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [art, setArt] = useState(1);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Back from step 1: Aviso is the screen on top again.
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  // Back from step 1: save Aviso as the current screen and grow the panel again.
   useFocusEffect(
     useCallback(() => {
       service.visit('intro').catch(() => undefined);
-    }, [service]),
+      if (morph.get() > 0) morph.set(reduceMotion ? 0 : withTiming(0, MORPH));
+    }, [morph, reduceMotion, service]),
   );
 
   const begin = async () => {
@@ -80,26 +113,71 @@ export function IntroScreen() {
     setFailed(false);
     try {
       await service.begin();
-      navigation.navigate(STEP_ROUTES.name);
     } catch {
       setFailed(true);
-    } finally {
       setLeaving(false);
+      return;
     }
+    if (reduceMotion) {
+      navigation.navigate(STEP_ROUTES.name);
+      setLeaving(false);
+      return;
+    }
+    morph.set(withTiming(1, MORPH));
+    timer.current = setTimeout(() => {
+      navigation.navigate(STEP_ROUTES.name, { fromIntro: true });
+      setLeaving(false);
+    }, MORPH_MS);
+  };
+
+  const panelHeight = insets.top + PANEL_HEIGHT;
+  const panel = useAnimatedStyle(() => {
+    const r = interpolate(morph.value, [0, 1], [0, radius.sheetSm]);
+    return {
+      height: interpolate(morph.value, [0, 1], [height, panelHeight]),
+      borderBottomLeftRadius: r,
+      borderBottomRightRadius: r,
+    };
+  });
+  const fullShapes = useAnimatedStyle(() => ({
+    opacity: interpolate(morph.value, [0, 0.64], [1, 0], Extrapolation.CLAMP),
+  }));
+  const headerShapes = useAnimatedStyle(() => ({
+    opacity: interpolate(morph.value, [0, 0.64], [0, 1], Extrapolation.CLAMP),
+  }));
+  // `ob-out`: opacity .32 s ease-in, up 36 px in .4 s.
+  const out = useAnimatedStyle(() => ({
+    opacity: interpolate(morph.value, [0, 0.46], [1, 0], Extrapolation.CLAMP),
+    transform: [{ translateY: interpolate(morph.value, [0, 0.57], [0, -36], Extrapolation.CLAMP) }],
+  }));
+
+  // The illustration shrinks on short phones so it never runs under the text.
+  const onArtLayout = (e: LayoutChangeEvent) => {
+    const room = e.nativeEvent.layout.height;
+    setArt(Math.min(1, room / ILLUSTRATION_HEIGHT));
   };
 
   return (
     <View style={styles.root} testID="onboarding.intro">
-      <View style={[StyleSheet.absoluteFill, styles.panel]}>
-        <FullScreenShapes />
+      <Animated.View style={[styles.panel, panel]}>
+        <Animated.View style={[StyleSheet.absoluteFill, fullShapes]}>
+          <FullScreenShapes />
+        </Animated.View>
+        <Animated.View style={[StyleSheet.absoluteFill, { top: insets.top }, headerShapes]}>
+          <StepPanelShapes />
+        </Animated.View>
         <Shine distance={620} height={920} width={56} opacity={0.12} />
-      </View>
+      </Animated.View>
 
-      <View style={[styles.content, { paddingTop: insets.top }]}>
+      <Animated.View style={[styles.content, { paddingTop: insets.top }, out]}>
         <View style={styles.logo}>
           <FynkLogo height={35} color={colors.onPrimary} />
         </View>
-        <View style={styles.art} />
+        <View style={styles.art} onLayout={onArtLayout}>
+          <View style={{ transform: [{ scale: art }] }}>
+            <IntroIllustration />
+          </View>
+        </View>
         <Animated.View
           style={[styles.bottom, { paddingBottom: Math.max(32, insets.bottom + 16) }, rise]}
         >
@@ -157,18 +235,25 @@ export function IntroScreen() {
             </AppText>
           </Pressable>
         </Animated.View>
-      </View>
+      </Animated.View>
     </View>
   );
 }
 
 const createStyles = ({ colors, shadow }: Theme) =>
   StyleSheet.create({
-    root: { flex: 1, backgroundColor: colors.primary },
-    panel: { backgroundColor: colors.primary, overflow: 'hidden' },
+    root: { flex: 1, backgroundColor: colors.background },
+    panel: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: colors.primary,
+      overflow: 'hidden',
+    },
     content: { flex: 1 },
     logo: { paddingTop: 48, paddingHorizontal: 24, alignItems: 'flex-start' },
-    art: { flex: 1 },
+    art: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0 },
     bottom: { paddingHorizontal: 24 },
     chips: { flexDirection: 'row', gap: 8 },
     chip: {

@@ -10,6 +10,7 @@ export const onboardingStrings = {
     text: 'Te guiaremos paso a paso para dejar Fynk listo para ti.',
     start: 'Comenzar configuración',
     skip: 'Omitir por ahora',
+    illustration: 'Ilustración: lista de pasos de configuración con tarjeta, meta y monedas',
   },
   step: {
     back: 'Volver al paso anterior',
