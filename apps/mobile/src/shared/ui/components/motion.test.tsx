@@ -4,6 +4,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 
 import { Shine } from './Shine';
 import { Skeleton } from './States';
+import { StepProgress } from './StepProgress';
 
 jest.mock('react-native-reanimated', () => {
   const actual = jest.requireActual<{ default: unknown }>('react-native-reanimated');
@@ -28,6 +29,19 @@ describe('motion', () => {
     reduceMotion.mockReturnValue(true);
     await render(<Shine distance={500} height={200} />);
     expect(screen.toJSON()).toBeNull();
+  });
+
+  it('throws the burst from the current step segment when motion is allowed', async () => {
+    reduceMotion.mockReturnValue(false);
+    await render(<StepProgress step={2} total={4} />);
+    expect(screen.getAllByTestId('step-burst')).toHaveLength(1);
+  });
+
+  it('drops the step burst when reduced motion is on', async () => {
+    reduceMotion.mockReturnValue(true);
+    await render(<StepProgress step={2} total={4} />);
+    expect(screen.queryByTestId('step-burst')).toBeNull();
+    expect(screen.getByRole('progressbar')).toBeTruthy();
   });
 
   it('keeps the skeleton visible either way', async () => {
