@@ -41,6 +41,23 @@ type Config struct {
 	// credentials) that M1 uses for the admin API. Optional: when empty, the features that need
 	// it answer 503. Never log it.
 	KeycloakAdminClientSecret string
+
+	// Bank link (M5). Every one is optional: without them the link endpoints fail closed.
+	//
+	// BankSignerKeyFile is the PEM RSA private key that signs the private_key_jwt client
+	// assertions (PS256) on a developer machine. In AWS an asymmetric KMS key replaces it (M14).
+	BankSignerKeyFile string
+	// BankFingerprintKeyFile holds the HMAC key, at least 32 bytes, of the refresh token
+	// fingerprints kept with each bank link. In AWS a KMS HMAC key replaces it (M14).
+	BankFingerprintKeyFile string
+	// BankRedirectURI is where a bank sends the authorization code: the app's deep link.
+	BankRedirectURI string
+	// BancoDemoClientID is Fynk's client at the simulated bank (M16), BancoDemoIssuer the
+	// issuer the client assertion is addressed to, and BancoDemoAuthorizeURL the authorization
+	// page the phone opens in the system browser.
+	BancoDemoClientID     string
+	BancoDemoIssuer       string
+	BancoDemoAuthorizeURL string
 }
 
 // IsLocal reports whether the API runs on a developer machine.
@@ -62,12 +79,22 @@ func Load(getenv func(string) string) (Config, error) {
 		EgressCAFile:     getenv("EGRESS_CA_FILE"),
 
 		KeycloakAdminClientSecret: getenv("FYNK_ADMIN_CLIENT_SECRET"),
+
+		BankSignerKeyFile:      getenv("BANK_SIGNER_KEY_FILE"),
+		BankFingerprintKeyFile: getenv("BANK_FINGERPRINT_KEY_FILE"),
+		BankRedirectURI:        getenv("BANK_REDIRECT_URI"),
+		BancoDemoClientID:      getenv("BANCO_DEMO_CLIENT_ID"),
+		BancoDemoIssuer:        getenv("BANCO_DEMO_ISSUER"),
+		BancoDemoAuthorizeURL:  getenv("BANCO_DEMO_AUTHORIZE_URL"),
 	}
 	if c.Port == "" {
 		c.Port = "8080"
 	}
 	if c.KeycloakRealm == "" {
 		c.KeycloakRealm = "fynk"
+	}
+	if c.BankRedirectURI == "" {
+		c.BankRedirectURI = "fynk://bank/callback"
 	}
 
 	var errs []error
@@ -87,6 +114,11 @@ func Load(getenv func(string) string) (Config, error) {
 	// TLS on every hop (CLAUDE.md, Security rules): the egress is never reached in clear.
 	if c.EgressURL != "" && !strings.HasPrefix(c.EgressURL, "https://") {
 		errs = append(errs, errors.New("EGRESS_URL must start with https://"))
+	}
+	// The phone opens the bank's authorization page; outside a developer machine it is https.
+	if c.BancoDemoAuthorizeURL != "" && c.AppEnv != EnvLocal &&
+		!strings.HasPrefix(c.BancoDemoAuthorizeURL, "https://") {
+		errs = append(errs, errors.New("BANCO_DEMO_AUTHORIZE_URL must start with https://"))
 	}
 	return c, errors.Join(errs...)
 }
