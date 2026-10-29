@@ -1,0 +1,116 @@
+{
+ "snapshot": {
+  "schemaVersion": 1,
+  "periodEnd": "2026-10-28",
+  "months": 12,
+  "monthlyIncomeMinor": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   558000000,
+   558000000,
+   558000000,
+   0
+  ],
+  "monthlySpendMinor": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   40000000,
+   55000000,
+   59500000
+  ],
+  "spendByCategory": [
+   {
+    "categoryId": "rent",
+    "last30dMinor": 140000000,
+    "prev30dMinor": 140000000
+   },
+   {
+    "categoryId": "groceries",
+    "last30dMinor": 62700000,
+    "prev30dMinor": 60000000
+   },
+   {
+    "categoryId": "transport",
+    "last30dMinor": 41800000,
+    "prev30dMinor": 30000000
+   },
+   {
+    "categoryId": "cinema",
+    "last30dMinor": 31340000,
+    "prev30dMinor": 20000000
+   },
+   {
+    "categoryId": "utilities",
+    "last30dMinor": 27860000,
+    "prev30dMinor": 27000000
+   },
+   {
+    "categoryId": "other",
+    "last30dMinor": 44540000,
+    "prev30dMinor": 40000000
+   }
+  ],
+  "recurringIncome": [
+   {
+    "kind": "salary",
+    "monthlyMinor": 558000000
+   }
+  ],
+  "fixedExpensesMonthlyMinor": 193060000,
+  "subscriptions": {
+   "count": 4,
+   "monthlyMinor": 11260000,
+   "lowUseCount": 2,
+   "lowUseMonthlyMinor": 5680000
+  },
+  "goals": [
+   {
+    "ref": "goal_1",
+    "categoryId": "savings",
+    "targetMinor": 80000000,
+    "savedMinor": 52000000,
+    "monthsLeft": 2,
+    "onTrack": true
+   }
+  ],
+  "caps": [
+   {
+    "categoryId": "restaurants",
+    "period": "week",
+    "capMinor": 20000000,
+    "spentMinor": 0
+   }
+  ],
+  "opportunities": [
+   {
+    "factKey": "category_increase.transport",
+    "kind": "category_increase",
+    "categoryId": "transport",
+    "monthlyMinor": 11800000
+   },
+   {
+    "factKey": "category_increase.cinema",
+    "kind": "category_increase",
+    "categoryId": "cinema",
+    "monthlyMinor": 11340000
+   }
+  ]
+ },
+ "factKeys": [
+  "category_increase.transport",
+  "category_increase.cinema"
+ ]
+}
