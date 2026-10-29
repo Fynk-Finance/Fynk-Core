@@ -1,45 +1,56 @@
 package identity
 
 import (
-	"context"
+	"io/fs"
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/devices"
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/http"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/kcadmin"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/migrations"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/postgres"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/module"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/problem"
 )
 
-// New returns the identity module. Until M1 implements it, only the example health path of
-// contracts/modules/identity.yaml answers. Every other route answers 501.
+// New returns the identity module: the profile and the devices endpoints are real.
 func New(d module.Deps) module.Module {
-	return stub{
-		Stub: module.Stub{ModuleName: "identity", Prefixes: []string{"/me", "/devices"}},
+	admin := kcadmin.New(d.Config, nil)
+	return mod{
+		Stub: module.Stub{ModuleName: "identity"},
 		deps: d,
+		// The pool is only used when a request arrives, so a nil DB is fine at construction.
+		devices: devices.NewService(postgres.New(d.DB), d.Clock, d.Audit, nil),
+		admin:   admin,
+		revoker: admin,
 	}
 }
 
-type stub struct {
+type mod struct {
 	module.Stub
-	deps module.Deps
+	deps    module.Deps
+	devices deviceService
+	admin   profileAdmin
+	revoker sessionRevoker
 }
 
-// Routes mounts the server generated from the contract, then the 501 stub routes.
-func (s stub) Routes(r chi.Router) {
-	strict := httpapi.NewStrictHandlerWithOptions(server{}, nil, httpapi.StrictHTTPServerOptions{
+// Routes mounts the server generated from the contract behind auth.Require.
+func (m mod) Routes(r chi.Router) {
+	srv := server{devices: m.devices, revoker: m.revoker, admin: m.admin, cache: m.deps.Redis, log: m.deps.Log}
+	strict := httpapi.NewStrictHandlerWithOptions(srv, nil, httpapi.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  problem.RequestError,
-		ResponseErrorHandlerFunc: problem.ResponseErrorHandler(s.deps.Log),
+		ResponseErrorHandlerFunc: problem.ResponseErrorHandler(m.deps.Log),
 	})
-	httpapi.HandlerWithOptions(strict, httpapi.ChiServerOptions{
-		BaseRouter:       r,
-		ErrorHandlerFunc: problem.RequestError,
+	r.Group(func(g chi.Router) {
+		g.Use(auth.Require)
+		httpapi.HandlerWithOptions(strict, httpapi.ChiServerOptions{
+			BaseRouter:       g,
+			ErrorHandlerFunc: problem.RequestError,
+		})
 	})
-	s.Stub.Routes(r)
 }
 
-// server implements the generated httpapi.StrictServerInterface.
-type server struct{}
-
-func (server) IdentityHealth(context.Context, httpapi.IdentityHealthRequestObject) (httpapi.IdentityHealthResponseObject, error) {
-	return httpapi.IdentityHealth200JSONResponse{Module: "identity", Status: httpapi.Stub}, nil
-}
+// Migrations implements module.Module: the identity schema.
+func (mod) Migrations() fs.FS { return migrations.FS }

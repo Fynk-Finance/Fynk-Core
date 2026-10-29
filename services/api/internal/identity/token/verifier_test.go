@@ -164,6 +164,21 @@ func TestAcceptsAValidPS256Token(t *testing.T) {
 	}
 }
 
+func TestReadsTheSessionIDWhenPresent(t *testing.T) {
+	a, _, _ := testKeys(t)
+	f := newFixture(t, psKey(t, "a", a))
+	withSid := accessClaims()
+	withSid["sid"] = "session-1"
+	u, err := f.v.Verify(context.Background(), sign(t, jwt.SigningMethodPS256, a, "a", withSid), "")
+	if err != nil || u.SessionID != "session-1" {
+		t.Fatalf("with sid: %+v, %v", u, err)
+	}
+	u, err = f.v.Verify(context.Background(), sign(t, jwt.SigningMethodPS256, a, "a", accessClaims()), "")
+	if err != nil || u.SessionID != "" {
+		t.Fatalf("without sid: %+v, %v", u, err)
+	}
+}
+
 // HU-002: only PS256. RS256 with the same key, HS256 (also keyed with the public key, the
 // classic algorithm confusion) and "none" are rejected.
 func TestRejectsEveryOtherAlgorithm(t *testing.T) {
@@ -349,6 +364,12 @@ func (d fakeDevices) Usable(_ context.Context, userID, deviceID string) (bool, e
 	return d[userID+"/"+deviceID], nil
 }
 
+type brokenDevices struct{}
+
+func (brokenDevices) Usable(context.Context, string, string) (bool, error) {
+	return true, errors.New("database down")
+}
+
 // X-Device-Id is only trusted after the identity module checked it against identity.devices.
 func TestDeviceIDIsOnlyTrustedWhenChecked(t *testing.T) {
 	a, _, _ := testKeys(t)
@@ -364,6 +385,20 @@ func TestDeviceIDIsOnlyTrustedWhenChecked(t *testing.T) {
 	}
 	if u, _ := f.v.Verify(context.Background(), token, "device-2"); u.DeviceID != "" {
 		t.Fatalf("unknown device: DeviceID = %q", u.DeviceID)
+	}
+}
+
+// A failed device lookup must not turn a valid token into a 401 (the app would sign out).
+func TestADeviceLookupErrorKeepsTheTokenButNotTheDevice(t *testing.T) {
+	a, _, _ := testKeys(t)
+	f := newFixture(t, psKey(t, "a", a))
+	f.v.cfg.Devices = brokenDevices{}
+	u, err := f.v.Verify(context.Background(), sign(t, jwt.SigningMethodPS256, a, "a", accessClaims()), "device-1")
+	if err != nil || u.ID != "user-1" {
+		t.Fatalf("Verify = %+v, %v; want the user and no error", u, err)
+	}
+	if u.DeviceID != "" {
+		t.Fatalf("an unchecked device was trusted: DeviceID = %q", u.DeviceID)
 	}
 }
 

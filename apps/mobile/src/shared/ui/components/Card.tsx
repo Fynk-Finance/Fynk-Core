@@ -6,7 +6,8 @@ import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent, type ViewStyle } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 
-import { colors, radius, shadow } from '../tokens';
+import { useThemedStyles, type Theme } from '../theme';
+import { radius } from '../tokens';
 import { Shine } from './Shine';
 
 export interface CardProps {
@@ -26,6 +27,7 @@ export function Card({
   style,
   testID,
 }: CardProps) {
+  const styles = useThemedStyles(createStyles);
   const [box, setBox] = useState({ width: 350, height: 96 });
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -43,7 +45,7 @@ export function Card({
               width={120}
               height={120}
               rx={30}
-              fill={colors.cardShapeLight}
+              fill={styles.shapes.light}
             />
             <Rect
               x={box.width - 66}
@@ -51,7 +53,7 @@ export function Card({
               width={64}
               height={64}
               rx={16}
-              fill={colors.cardShapeLighter}
+              fill={styles.shapes.lighter}
             />
             <Rect
               x={-30}
@@ -59,7 +61,7 @@ export function Card({
               width={80}
               height={80}
               rx={20}
-              fill={colors.headerShapeB}
+              fill={styles.shapes.corner}
             />
           </Svg>
           <Shine distance={box.width + 170} height={box.height + 80} width={40} />
@@ -96,27 +98,34 @@ export function Card({
   );
 }
 
-const styles = StyleSheet.create({
-  base: { overflow: 'hidden' },
-  outlined: {
-    backgroundColor: colors.white,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.surfaceBlue,
-    padding: 14,
-    ...shadow.card,
+const createStyles = ({ colors, shadow }: Theme) => ({
+  ...StyleSheet.create({
+    base: { overflow: 'hidden' },
+    outlined: {
+      backgroundColor: colors.background,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.borderBlue,
+      padding: 14,
+      ...shadow.card,
+    },
+    soft: {
+      backgroundColor: colors.surfaceBlueSoft,
+      borderRadius: radius.sheetSm,
+      borderWidth: 1,
+      borderColor: colors.borderBlue,
+      padding: 16,
+    },
+    primary: {
+      backgroundColor: colors.primaryLight,
+      borderRadius: radius.card,
+      padding: 14,
+    },
+    pressed: { transform: [{ translateY: 1 }], opacity: 0.95 },
+  }),
+  shapes: {
+    light: colors.cardShapeLight,
+    lighter: colors.cardShapeLighter,
+    corner: colors.headerShapeB,
   },
-  soft: {
-    backgroundColor: colors.surfaceBlueSoft,
-    borderRadius: radius.sheetSm,
-    borderWidth: 1,
-    borderColor: colors.surfaceBlue,
-    padding: 16,
-  },
-  primary: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.card,
-    padding: 14,
-  },
-  pressed: { transform: [{ translateY: 1 }], opacity: 0.95 },
 });
