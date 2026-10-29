@@ -12,6 +12,23 @@ export interface VaultDriver {
   deleteFile(): Promise<void>;
 }
 
+/** Texts of the system biometric prompt. They come from the strings file of the module. */
+export interface BiometricPrompt {
+  title: string;
+  subtitle: string;
+  cancel: string;
+}
+
+/**
+ * Result of reading copy B. `invalidated` means the phone's fingerprints or faces changed (or the
+ * key is gone), so the copy can never be read again. `failed` is any other error and can be retried.
+ */
+export type BiometricRead =
+  | { status: 'ok'; dek: Uint8Array }
+  | { status: 'cancelled' }
+  | { status: 'invalidated' }
+  | { status: 'failed' };
+
 /** Copies A and B of the DEK (see M02, key hierarchy). */
 export interface DekStore {
   read(): Promise<Uint8Array | null>;
@@ -20,6 +37,16 @@ export interface DekStore {
   remove(): Promise<void>;
   /** Removes copy A and copy B. */
   removeAll(): Promise<void>;
+  /** True when the phone has usable biometrics (fingerprint or face enrolled). Never prompts. */
+  biometricsAvailable(): Promise<boolean>;
+  /** True when copy B exists. Never prompts. This is the "biometrics enabled" setting. */
+  hasBiometric(): Promise<boolean>;
+  /** Writes copy B, bound to the phone's current biometric set. May show the system prompt. */
+  writeBiometric(dek: Uint8Array, prompt: BiometricPrompt): Promise<'ok' | 'cancelled'>;
+  /** Reads copy B behind the system prompt. Never throws; the result says what happened. */
+  readBiometric(prompt: BiometricPrompt): Promise<BiometricRead>;
+  /** Removes copy B only. */
+  removeBiometric(): Promise<void>;
 }
 
 /** Thrown when the build has no SQLCipher: the vault must never write plaintext. */

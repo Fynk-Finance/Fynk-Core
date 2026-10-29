@@ -75,6 +75,11 @@ function createDekStore(): DekStore & { removed: string[] } {
     write: async () => undefined,
     remove: async () => void removed.push('A'),
     removeAll: async () => void removed.push('A', 'B'),
+    biometricsAvailable: async () => false,
+    hasBiometric: async () => false,
+    writeBiometric: async () => 'ok',
+    readBiometric: async () => ({ status: 'invalidated' }),
+    removeBiometric: async () => undefined,
   };
 }
 
