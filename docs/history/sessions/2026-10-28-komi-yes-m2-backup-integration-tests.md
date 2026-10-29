@@ -27,6 +27,7 @@ After the M2 plan was approved, Daniel said "continue". This is the first step o
 ## Decisions and problems
 
 * **The whole `internal/backup/...` tree, not only `backup/postgres`.** That way the HTTP integration tests are included too.
+* **`-p 1`:** backup's integration tests migrate the `identity` schema too, because they activate a real device. If the packages ran in parallel, each would drop the schema under the other. Running them one at a time costs a few seconds.
 * **`Makefile` belongs to M0,** so this is its own small pull request for Sofia.
 
 ## Next step
