@@ -31,7 +31,8 @@ Julián asked Claude (claude.ai, Fynk project, session linked to the repository 
 
 ## Decisions and problems
 
-* Interim Banco Demo adapter until M5 exports `Provider.Products()` (rule 7): ask Juan Carlos.
+* After the rebase on `develop` with M5's provider port (#52) and M0's egress settings (#53): the catalog uses `bankports.Product` through `catalog.FromProvider`, ready to take M5's Banco Demo adapter, and Banco Demo and Alpaca are called through `EGRESS_URL` with the egress CA. The settings `MARKET_BANCO_DEMO_URL` and `MARKET_ALPACA_DATA_URL` are gone. Until M5 adds its Banco Demo adapter, `BankDemoProducts` reads the public catalog (ask Juan Carlos).
+* The Banco de la República download is not behind the egress: ask Juan Pablo (M14) for a route.
 * The exact format of Banco de la República's file could not be confirmed from the build environment; the URL is configurable and ADR 0006 asks to confirm it before Gate E. No value is invented: without it the endpoint answers 503.
 * Alpaca is non commercial reference data (finding in ADR 0006).
 * "+ Invertir": the prompt says `/portal/cdt`, the simulator serves `/portal/actions`; ask M16.

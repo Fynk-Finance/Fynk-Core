@@ -2,6 +2,7 @@ package market
 
 import (
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -19,29 +20,22 @@ import (
 )
 
 // settings of the module, from the environment. The Alpaca keys are secrets (Secrets Manager in
-// AWS, .env locally) and are never logged.
+// AWS, .env locally) and are never logged. Banco Demo and Alpaca are reached through the egress of
+// the shared config (EGRESS_URL, EGRESS_CA_FILE), at /banco-demo and /alpaca.
 type settings struct {
-	BankDemoURL  string // MARKET_BANCO_DEMO_URL, Banco Demo through the egress
 	BanrepCSVURL string // MARKET_BANREP_CDT_CSV_URL, the published weekly rates file
-	AlpacaURL    string // MARKET_ALPACA_DATA_URL, default https://data.alpaca.markets
 	AlpacaKeyID  string // ALPACA_API_KEY_ID
 	AlpacaSecret string // ALPACA_API_SECRET_KEY
 	Symbols      []quotes.Symbol
 }
 
 func loadSettings(getenv func(string) string) settings {
-	s := settings{
-		BankDemoURL:  getenv("MARKET_BANCO_DEMO_URL"),
+	return settings{
 		BanrepCSVURL: getenv("MARKET_BANREP_CDT_CSV_URL"),
-		AlpacaURL:    getenv("MARKET_ALPACA_DATA_URL"),
 		AlpacaKeyID:  getenv("ALPACA_API_KEY_ID"),
 		AlpacaSecret: getenv("ALPACA_API_SECRET_KEY"),
 		Symbols:      quotes.ParseSymbols(getenv("MARKET_SYMBOLS")),
 	}
-	if s.AlpacaURL == "" {
-		s.AlpacaURL = "https://data.alpaca.markets"
-	}
-	return s
 }
 
 // New returns the market module (M15).
@@ -51,7 +45,17 @@ func New(d module.Deps) module.Module {
 	if d.Clock != nil {
 		now = d.Clock.Now
 	}
-	client := &http.Client{Timeout: 10 * time.Second}
+	log := d.Log
+	if log == nil {
+		log = slog.Default()
+	}
+	client, err := egressClient(d.Config.EgressCAFile)
+	if err != nil {
+		log.Warn("market: the egress CA could not be read, calls to Banco Demo and Alpaca will fail", "error", err)
+		client = &http.Client{Timeout: 10 * time.Second}
+	}
+	bankDemoURL := egressPath(d.Config.EgressURL, "banco-demo")
+	alpacaURL := egressPath(d.Config.EgressURL, "alpaca")
 
 	var cache interface {
 		catalog.Cache
@@ -62,14 +66,19 @@ func New(d module.Deps) module.Module {
 	}
 
 	var sources []catalog.Source
-	if cfg.BankDemoURL != "" {
-		sources = append(sources, catalog.BankDemo{BaseURL: cfg.BankDemoURL, Client: client})
+	if bankDemoURL != "" {
+		// Until M5 exports its Banco Demo provider, its Products() is read here (ADR 0006).
+		sources = append(sources, catalog.FromProvider{
+			Lister:    catalog.BankDemoProducts{BaseURL: bankDemoURL, Client: client},
+			Issuer:    "Banco Demo",
+			Simulated: true,
+		})
 	}
 	srv := server{
 		catalog:   catalog.NewService(cache, now, sources...),
 		reference: reference.NewService(pgReferenceStore{db: d.DB}, reference.HTTPFetcher{URL: cfg.BanrepCSVURL, Client: client}, now),
 		quotes: quotes.NewService(quotes.Alpaca{
-			BaseURL: cfg.AlpacaURL, KeyID: cfg.AlpacaKeyID, SecretKey: cfg.AlpacaSecret, Client: client,
+			BaseURL: alpacaURL, KeyID: cfg.AlpacaKeyID, SecretKey: cfg.AlpacaSecret, Client: client,
 		}, cfg.Symbols, cache, now),
 	}
 	return mod{Stub: module.Stub{ModuleName: "market"}, deps: d, srv: srv}

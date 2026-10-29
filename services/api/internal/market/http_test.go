@@ -112,7 +112,7 @@ func TestUnavailableIs503(t *testing.T) {
 
 func TestSettings(t *testing.T) {
 	s := loadSettings(func(string) string { return "" })
-	if s.AlpacaURL != "https://data.alpaca.markets" || len(s.Symbols) != 10 {
+	if len(s.Symbols) != 10 || s.AlpacaKeyID != "" {
 		t.Fatalf("defaults: %+v", s)
 	}
 }
