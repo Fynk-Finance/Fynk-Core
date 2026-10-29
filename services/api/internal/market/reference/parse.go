@@ -128,7 +128,7 @@ func (f HTTPFetcher) Fetch(ctx context.Context, termDays int) (Rate, error) {
 	if err != nil {
 		return Rate{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return Rate{}, fmt.Errorf("banrep: status %d", resp.StatusCode)
 	}
