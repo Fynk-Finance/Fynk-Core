@@ -54,9 +54,9 @@ describe('Gastos por categoría', () => {
     setAnalyticsService(h.service);
     await renderScreens({ screens, initial: 'analytics.Spending' });
     await screen.findByText('$3.482.400');
-    fireEvent.press(screen.getByTestId('analytics.period.last_month'));
+    await fireEvent.press(screen.getByTestId('analytics.period.last_month'));
     expect(await screen.findByText('100 % · 1 movimiento')).toBeOnTheScreen();
-    fireEvent.press(screen.getByTestId('analytics.category.restaurants'));
+    await fireEvent.press(screen.getByTestId('analytics.category.restaurants'));
     expect(await screen.findByTestId('probe.route')).toHaveTextContent(
       'transactions.All {"categoryId":"restaurants","from":"2026-09-01","to":"2026-09-30"}',
     );
@@ -66,7 +66,7 @@ describe('Gastos por categoría', () => {
     const h = await setupAnalytics(octoberTxs);
     setAnalyticsService(h.service);
     await renderScreens({ screens, initial: 'analytics.Spending' });
-    fireEvent.press(await screen.findByText('Tendencias'));
+    await fireEvent.press(await screen.findByText('Tendencias'));
     expect(await screen.findByTestId('analytics.trend.last')).toHaveTextContent('$3.482.400');
     expect(screen.getByTestId('analytics.trend.change')).toHaveTextContent(
       '+3382 % frente al mes anterior',
@@ -99,7 +99,7 @@ describe('Topes', () => {
       initialParams: { categoryId: 'restaurants', suggestedMinor: cop(200_000) },
     });
     expect(await screen.findByDisplayValue('$200.000')).toBeOnTheScreen();
-    fireEvent.press(screen.getByTestId('analytics.capForm.save'));
+    await fireEvent.press(screen.getByTestId('analytics.capForm.save'));
     // Saved: the form closes on Topes, which shows the new cap.
     expect(await screen.findByText('Cerca del tope')).toBeOnTheScreen();
     const [status] = await h.service.listCapStatuses();
@@ -111,7 +111,7 @@ describe('Topes', () => {
     const h = await setupAnalytics([]);
     setAnalyticsService(h.service);
     await renderScreens({ screens, initial: 'analytics.CapForm' });
-    fireEvent.press(await screen.findByTestId('analytics.capForm.category.treats'));
+    await fireEvent.press(await screen.findByTestId('analytics.capForm.category.treats'));
     expect(await screen.findByDisplayValue('$20.000')).toBeOnTheScreen();
   });
 
