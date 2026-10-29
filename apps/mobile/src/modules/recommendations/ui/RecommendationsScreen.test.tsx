@@ -93,7 +93,7 @@ it('shows the design numbers from M10 and the model text by factKey', async () =
 it('"Fijar tope" opens the cap form with the category and the suggested amount', async () => {
   await install();
   await renderScreens({ screens, initial: 'Recomendaciones' });
-  fireEvent.press(
+  await fireEvent.press(
     await screen.findByTestId('recommendations.action.category_increase.restaurants'),
   );
   expect(await screen.findByTestId('probe.route')).toHaveTextContent(
@@ -104,7 +104,7 @@ it('"Fijar tope" opens the cap form with the category and the suggested amount',
 it('"Programar" opens the goal reminder and "Revisar" the subscriptions', async () => {
   await install();
   await renderScreens({ screens, initial: 'Recomendaciones' });
-  fireEvent.press(await screen.findByTestId('recommendations.action.payday_contribution'));
+  await fireEvent.press(await screen.findByTestId('recommendations.action.payday_contribution'));
   expect(await screen.findByTestId('probe.route')).toHaveTextContent(
     'savings.Goals {"goalId":"goal-cartagena","paydayAmountMinor":30000000}',
   );
@@ -114,7 +114,7 @@ it('filters the steps by Gastos', async () => {
   await install();
   await renderScreens({ screens, initial: 'Recomendaciones' });
   await screen.findByText(texts.summary);
-  fireEvent.press(screen.getByTestId('recommendations.filter.expenses'));
+  await fireEvent.press(screen.getByTestId('recommendations.filter.expenses'));
   expect(await screen.findByText('1 sugerencia')).toBeOnTheScreen();
   expect(screen.queryByTestId('recommendations.step.subscriptions.low_use')).toBeNull();
 });
