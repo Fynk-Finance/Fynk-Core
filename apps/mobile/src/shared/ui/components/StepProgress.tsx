@@ -1,6 +1,6 @@
 // Onboarding header of VerdeOnbNombre: back button, "Paso 1 de 5", "Omitir", and five segments
 // on the blue header. The current segment fills with `pb-fill` (0.6 s, cubic-bezier(.65,0,.35,1),
-// 0.15 s delay), off when reduced motion is on.
+// 0.15 s delay) and throws the `pb-pop` burst (StepBurst), both off when reduced motion is on.
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -17,6 +17,7 @@ import { useThemedStyles, type Theme } from '../theme';
 import { fonts, radius, size } from '../tokens';
 import { AppText } from './AppText';
 import { BackButton } from './BackButton';
+import { StepBurst } from './StepBurst';
 
 export interface StepProgressProps {
   /** 1-based current step. */
@@ -76,8 +77,12 @@ export function StepProgress({ step, total = 5, onBack, onSkip }: StepProgressPr
       >
         {Array.from({ length: total }, (_, i) => (
           <View key={i} style={styles.segment} testID={`step-segment-${i + 1}`}>
-            {i + 1 < current ? <View style={[StyleSheet.absoluteFill, styles.fill]} /> : null}
-            {i + 1 === current ? <CurrentSegment /> : null}
+            <View style={styles.track}>
+              {i + 1 < current ? <View style={[StyleSheet.absoluteFill, styles.fill]} /> : null}
+              {i + 1 === current ? <CurrentSegment /> : null}
+            </View>
+            {/* Outside the clipped track, so the bits can fly over the header. */}
+            {i + 1 === current ? <StepBurst /> : null}
           </View>
         ))}
       </View>
@@ -99,10 +104,11 @@ const createStyles = ({ colors }: Theme) =>
     skip: { minWidth: 44, height: 44, alignItems: 'flex-end', justifyContent: 'center' },
     skipText: { fontFamily: fonts.body.bold },
     pressed: { opacity: 0.7 },
-    segments: { flexDirection: 'row', gap: 6, marginTop: 16 },
-    segment: {
-      flex: 1,
-      height: 6,
+    segments: { flexDirection: 'row', gap: 8, marginTop: 16 },
+    segment: { flex: 1, height: 6 },
+    track: {
+      position: 'absolute',
+      inset: 0,
       borderRadius: radius.pill,
       backgroundColor: colors.onPrimaryTrack,
       overflow: 'hidden',
