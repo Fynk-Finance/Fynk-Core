@@ -7,6 +7,7 @@ import { useSession } from '@modules/identity';
 import { watchAppState } from './adapters/appStateLock';
 import { lockController } from './adapters/defaultLock';
 import { vault } from './adapters/defaultVault';
+import { createUnlockSetting } from './ui/UnlockSetting';
 import { createVaultFlow } from './ui/VaultFlow';
 import { createUseVaultGate } from './ui/useVaultGate';
 
@@ -51,10 +52,8 @@ export const wipe = async (): Promise<void> => {
   }
 };
 
-/** Placeholder: M2's row on M1's Seguridad screen (app unlock setting). Renders nothing yet. */
-export function UnlockSetting(): null {
-  return null;
-}
+/** M2's "Desbloqueo" card on M1's Seguridad screen: the Face ID or fingerprint switch. */
+export const UnlockSetting = createUnlockSetting(lockController);
 
 /** Placeholder: M2's row on M1's Seguridad screen (recovery code). Renders nothing yet. */
 export function RecoveryCodeRow(): null {

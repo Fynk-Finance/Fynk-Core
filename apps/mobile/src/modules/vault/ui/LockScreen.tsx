@@ -1,11 +1,19 @@
 // Lock screen (new screen, needs design review). The header is the one of Login.html: the blue
 // background with its rounded squares, the Fynk logo and the title. The lime layer and white
-// sheet below hold the unlock button. Biometrics arrive in the next PR.
+// sheet below hold the unlock buttons: the password and, when enabled, "Huella o Face ID".
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Rect } from 'react-native-svg';
 
-import { AppText, ErrorState, FynkLogo, PrimaryButton, radius, useTheme } from '@shared/ui';
+import {
+  AppText,
+  ErrorState,
+  FynkLogo,
+  GhostButton,
+  PrimaryButton,
+  radius,
+  useTheme,
+} from '@shared/ui';
 
 import type { LockState } from '../application/lockController';
 import { vaultStrings } from './strings.es-CO';
@@ -15,6 +23,7 @@ const t = vaultStrings.lock;
 export interface LockScreenProps {
   state: LockState;
   onPassword: () => void;
+  onBiometric: () => void;
   onRetry: () => void;
 }
 
@@ -26,7 +35,7 @@ const SHEET_PAD = 32;
 // The lime layer shows 14 px above the white sheet (645 against 631 in Login.html).
 const LIME_EDGE = 14;
 
-export function LockScreen({ state, onPassword, onRetry }: LockScreenProps) {
+export function LockScreen({ state, onPassword, onBiometric, onRetry }: LockScreenProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
 
@@ -61,7 +70,12 @@ export function LockScreen({ state, onPassword, onRetry }: LockScreenProps) {
               { backgroundColor: colors.background, paddingBottom: insets.bottom + SHEET_PAD },
             ]}
           >
-            <SheetContent state={state} onPassword={onPassword} onRetry={onRetry} />
+            <SheetContent
+              state={state}
+              onPassword={onPassword}
+              onBiometric={onBiometric}
+              onRetry={onRetry}
+            />
           </View>
         </View>
       </View>
@@ -69,7 +83,7 @@ export function LockScreen({ state, onPassword, onRetry }: LockScreenProps) {
   );
 }
 
-function SheetContent({ state, onPassword, onRetry }: LockScreenProps) {
+function SheetContent({ state, onPassword, onBiometric, onRetry }: LockScreenProps) {
   const { colors } = useTheme();
 
   if (state.status === 'unlocking') {
@@ -110,6 +124,39 @@ function SheetContent({ state, onPassword, onRetry }: LockScreenProps) {
         accessibilityHint={t.passwordHint}
         testID="vault.lock.password"
       />
+      {state.biometric ? (
+        <>
+          {/* Login.html: a divider "o ingresa con" and the ghost button with the fingerprint. */}
+          <View style={styles.divider} accessibilityElementsHidden>
+            <View style={[styles.rule, { backgroundColor: colors.border }]} />
+            <AppText variant="small" color="textPlaceholder">
+              {t.orWith}
+            </AppText>
+            <View style={[styles.rule, { backgroundColor: colors.border }]} />
+          </View>
+          <GhostButton
+            tone="neutral"
+            size="lg"
+            icon="fingerprint"
+            label={t.biometric}
+            onPress={onBiometric}
+            accessibilityHint={t.biometricHint}
+            testID="vault.lock.biometric"
+          />
+        </>
+      ) : null}
+      {state.notice ? (
+        <AppText
+          variant="small"
+          color="textSecondary"
+          align="center"
+          accessibilityLiveRegion="polite"
+          accessibilityRole="alert"
+          testID="vault.lock.notice"
+        >
+          {t.notices[state.notice]}
+        </AppText>
+      ) : null}
       {state.error ? (
         <AppText
           variant="small"
@@ -143,5 +190,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.sheet,
   },
   actions: { gap: 16 },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rule: { flex: 1, height: 1 },
   center: { alignItems: 'center', gap: 10, paddingVertical: 24 },
 });

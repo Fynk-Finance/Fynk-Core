@@ -3,6 +3,8 @@
 jest.mock('react-native-app-auth', () => ({ authorize: jest.fn(), refresh: jest.fn() }));
 jest.mock('react-native-keychain', () => ({
   ACCESSIBLE: { WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'x', AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 'y' },
+  hasGenericPassword: jest.fn(async () => false),
+  getSupportedBiometryType: jest.fn(async () => null),
   getGenericPassword: jest.fn(async () => false),
   setGenericPassword: jest.fn(async () => ({ service: 's', storage: 'keychain' })),
   resetGenericPassword: jest.fn(async () => true),
@@ -44,6 +46,6 @@ it.each(['identity', 'vault'] as const)('loads both module indexes, %s first', (
 it('keeps the vault screens and placeholders', () => {
   const { vault } = loadBoth('vault');
   expect(vault.routes.screens?.map((s) => s.name)).toEqual(['vault.RecoveryCode']);
-  expect(vault.UnlockSetting()).toBeNull();
+  expect(typeof vault.UnlockSetting).toBe('function');
   expect(vault.RecoveryCodeRow()).toBeNull();
 });
