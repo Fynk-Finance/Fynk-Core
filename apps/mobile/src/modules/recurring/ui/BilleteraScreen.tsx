@@ -1,13 +1,16 @@
 // Billetera tab (design Billetera, inventory row 9), owned by M9 with "Mis cuentas" from M6.
-// Blue header with "Gastos fijos de este mes", then "Gastos recurrentes · Próximos" with
-// "+ Agregar" and the 2 column cards. M6 adds "Mis cuentas" above when it lands; the
-// subscriptions section and the savings banner come with SCRUM-56.
+// Blue header with "Gastos fijos de este mes", then "Gastos recurrentes" with "+ Agregar" and
+// the 2 column cards of the fixed expenses, the savings banner when a subscription is marked
+// "Casi nunca" (SCRUM-56), and "Otros gastos" with the subscriptions. M6 adds "Mis cuentas"
+// above when it lands.
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { StyleSheet, View } from 'react-native';
 
+import { formatCop } from '@shared/domain/money';
 import type { Clock, IsoDate } from '@shared/domain/types';
 import {
   AmountText,
+  AppText,
   EmptyState,
   ErrorState,
   HeaderBlue,
@@ -20,9 +23,12 @@ import {
 } from '@shared/ui';
 
 import type { RecurringService } from '../application/recurringService';
+import type { StoredRecurringItem } from '../domain/item';
 import { RecurringCard } from './RecurringCard';
 import { RECURRING_FORM_ROUTE } from './RecurringFormScreen';
+import { SavingsBanner } from './SavingsBanner';
 import { recurringStrings } from './strings.es-CO';
+import { SubscriptionRow } from './SubscriptionRow';
 import { useRecurringItems } from './useRecurringItems';
 
 const t = recurringStrings.billetera;
@@ -39,6 +45,8 @@ export interface BilleteraDeps {
   useUnreadCount: () => number;
   accountRoute: string;
   notificationsRoute: string;
+  /** The savings banner opens Recomendaciones (inventory row 9). */
+  recommendationsRoute: string;
 }
 
 export function createBilleteraScreen(deps: BilleteraDeps) {
@@ -49,6 +57,8 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
     const unread = deps.useUnreadCount();
     const today = bogotaToday(deps.clock.now());
     const add = () => navigation.navigate(RECURRING_FORM_ROUTE);
+    const edit = (item: StoredRecurringItem) =>
+      navigation.navigate(RECURRING_FORM_ROUTE, { id: item.id });
 
     const header = (
       <HeaderBlue
@@ -100,16 +110,42 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
             onAction={add}
           />
         ) : (
-          <View style={styles.grid} testID="recurring.billetera.grid">
-            {state.items.map((item) => (
-              <RecurringCard
-                key={item.id}
-                item={item}
-                today={today}
-                onPress={(i) => navigation.navigate(RECURRING_FORM_ROUTE, { id: i.id })}
+          <>
+            <View style={styles.grid} testID="recurring.billetera.grid">
+              {state.items
+                .filter((item) => item.kind === 'fixed')
+                .map((item) => (
+                  <RecurringCard key={item.id} item={item} today={today} onPress={edit} />
+                ))}
+            </View>
+            {state.subscriptions.lowUseCount > 0 ? (
+              <SavingsBanner
+                monthlyMinor={state.subscriptions.lowUseMonthlyMinor}
+                count={state.subscriptions.lowUseCount}
+                onPress={() => navigation.navigate(deps.recommendationsRoute)}
               />
-            ))}
-          </View>
+            ) : null}
+            {state.subscriptions.count > 0 ? (
+              <View style={styles.subscriptions} testID="recurring.billetera.subscriptions">
+                <SectionHeader
+                  title={t.subscriptions}
+                  meta={
+                    <AppText variant="captionStrong" color="textSecondary">
+                      {t.subscriptionsMeta(
+                        state.subscriptions.count,
+                        formatCop(state.subscriptions.monthlyMinor),
+                      )}
+                    </AppText>
+                  }
+                />
+                {state.items
+                  .filter((item) => item.kind === 'subscription')
+                  .map((item) => (
+                    <SubscriptionRow key={item.id} item={item} today={today} onPress={edit} />
+                  ))}
+              </View>
+            ) : null}
+          </>
         )}
       </Screen>
     );
@@ -120,4 +156,5 @@ const createStyles = () =>
   StyleSheet.create({
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
     skeleton: { flexBasis: '48%', flexGrow: 1 },
+    subscriptions: { gap: spacing.md, marginTop: spacing.md },
   });

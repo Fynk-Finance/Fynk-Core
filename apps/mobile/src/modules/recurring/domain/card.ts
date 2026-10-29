@@ -73,6 +73,12 @@ export function chargeState(s: Schedule, today: IsoDate): ChargeState {
   return { kind: 'upcoming', date: next };
 }
 
+/** "28 sep": day and short month of a date, as in "renueva 28 sep". */
+export function dayMonth(date: IsoDate): string {
+  const [, m, d] = date.split('-').map(Number) as [number, number, number];
+  return `${d} ${MONTHS[m - 1]}`;
+}
+
 /** The badge text of a ChargeState: "Hoy", "Mañana", "En 2 días", "Pagado", "Lun 29". */
 export function chargeLabel(state: ChargeState): string {
   switch (state.kind) {

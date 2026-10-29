@@ -19,6 +19,9 @@ export const recurringStrings = {
     dayHelper: 'Del 1 al 31. Si el mes es más corto, el último día.',
     weekday: 'Día de la semana',
     weekdays: 'Días',
+    usage: '¿Cuánto la usas?',
+    usageHelper: 'Las que casi no usas suman a tu oportunidad de ahorro.',
+    usages: { high: 'Mucho', some: 'A veces', low: 'Casi nunca' },
     reminder: 'Recordatorio',
     reminderOn: 'Te avisaremos antes de cada pago',
     reminderOff: 'Desactivado',
@@ -56,6 +59,21 @@ export const recurringStrings = {
     error: 'No pudimos cargar tus gastos recurrentes.',
     cardLabel: (name: string, amount: string, schedule: string, state: string) =>
       [name, amount, schedule, state].filter(Boolean).join(', '),
+    // The design's title for the subscriptions section.
+    subscriptions: 'Otros gastos',
+    subscriptionsMeta: (count: number, amount: string) =>
+      `${count} ${count === 1 ? 'activa' : 'activas'} · ${amount}/mes`,
+    lowUse: 'Poco uso',
+    renews: (date: string) => `Renueva ${date}`,
+    savings: {
+      overline: 'Oportunidad de ahorro',
+      before: 'Ahorra ',
+      after: ' al mes',
+      subtitle: (count: number) =>
+        count === 1 ? '1 suscripción que casi no usas' : `${count} suscripciones que casi no usas`,
+      label: (amount: string) =>
+        `Oportunidad de ahorro: podrías ahorrar ${amount} al mes. Ver en Recomendaciones`,
+    },
   },
   // Notification bodies (M9 prompt): the title is the item's name.
   reminders: {

@@ -36,8 +36,23 @@ describe('readForm', () => {
         schedule: { periodicity: 'monthly', anchorDay: 1 },
         categoryId: 'rent',
         reminderEnabled: true,
+        usage: null,
       },
     });
+  });
+
+  it('keeps "¿Cuánto la usas?" only for subscriptions (SCRUM-56)', () => {
+    const base = {
+      ...emptyForm(),
+      name: 'Música',
+      amount: '16.900',
+      day: '7',
+      usage: 'low' as const,
+    };
+    const sub = readForm({ ...base, kind: 'subscription' });
+    const fixed = readForm({ ...base, kind: 'fixed' });
+    expect(sub.ok && sub.input.usage).toBe('low');
+    expect(fixed.ok && fixed.input.usage).toBeNull();
   });
 
   it('reports every missing field at once', () => {
