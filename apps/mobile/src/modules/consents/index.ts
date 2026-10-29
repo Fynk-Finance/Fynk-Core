@@ -9,6 +9,7 @@ import {
 } from './application/createConsent';
 import type { ConsentsDeps } from './application/ports';
 import { useConsentText as useConsentTextWith } from './application/useConsentText';
+import { createConsentAcceptance } from './ui/ConsentAcceptance';
 
 export type {
   Consent,
@@ -19,6 +20,9 @@ export type {
 } from './domain/consent';
 export { scopesOf } from './domain/consent';
 export type { CreateConsentInput } from './application/createConsent';
+export { ConsentScopeCard, type ConsentScopeCardProps } from './ui/ConsentScopeCard';
+export { ConsentCheckbox, type ConsentCheckboxProps } from './ui/ConsentCheckbox';
+export type { ConsentAcceptanceProps } from './ui/ConsentAcceptance';
 
 const deps: ConsentsDeps = { api: createConsentsApi(), appVersion, newIdempotencyKey };
 
@@ -27,6 +31,9 @@ export const useConsentText = () => useConsentTextWith(deps.api);
 
 /** Records the acceptance of exactly what was shown as a pending consent. */
 export const createConsent = (input: CreateConsentInput) => createConsentWith(deps, input);
+
+/** The authorization checkbox and the "Ir al portal de <Entidad>" button of Conectar banco. */
+export const ConsentAcceptance = createConsentAcceptance(deps);
 
 // Placeholder routes from M0 (M4 replaces them with the real screens).
 export const routes: ModuleRoutes = {
