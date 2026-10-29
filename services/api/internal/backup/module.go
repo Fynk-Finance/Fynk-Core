@@ -8,6 +8,7 @@ import (
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/http"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/migrations"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/postgres"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/records"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/recovery"
 	identity "github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
@@ -15,7 +16,7 @@ import (
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/problem"
 )
 
-// New returns the backup module. The recovery key endpoints are real; every other route under
+// New returns the backup module. The recovery key and record endpoints are real; every other route under
 // /backup and /device-approvals still answers 501 not_implemented through module.Stub, after
 // authentication, until the implementation PRs mount it.
 func New(d module.Deps) module.Module {
@@ -26,10 +27,12 @@ func New(d module.Deps) module.Module {
 	}
 	svc := recovery.NewService(postgres.New(d.DB), identity.NewDeviceReader(d.DB, d.Clock, d.Audit, nil),
 		identity.NewDevices(d.DB, d.Clock), lim, d.Clock, d.Audit)
+	recs := records.NewService(postgres.NewRecords(d.DB), identity.NewDeviceReader(d.DB, d.Clock, d.Audit, nil), d.Clock, d.Audit)
 	return mod{
 		Stub:     module.Stub{ModuleName: "backup", Prefixes: []string{"/backup", "/device-approvals"}},
 		deps:     d,
 		recovery: svc,
+		records:  recs,
 	}
 }
 
@@ -37,13 +40,14 @@ type mod struct {
 	module.Stub
 	deps     module.Deps
 	recovery recoveryService
+	records  recordsService
 }
 
 // Routes mounts the implemented operations of the generated server behind auth.Require and the
 // stub for the rest. chi picks the exact routes before the stub's wildcard.
 func (m mod) Routes(r chi.Router) {
-	strict := httpapi.NewStrictHandlerWithOptions(server{recovery: m.recovery}, nil, httpapi.StrictHTTPServerOptions{
-		RequestErrorHandlerFunc:  problem.RequestError,
+	strict := httpapi.NewStrictHandlerWithOptions(server{recovery: m.recovery, records: m.records}, nil, httpapi.StrictHTTPServerOptions{
+		RequestErrorHandlerFunc:  requestError,
 		ResponseErrorHandlerFunc: problem.ResponseErrorHandler(m.deps.Log),
 	})
 	w := httpapi.ServerInterfaceWrapper{Handler: strict, ErrorHandlerFunc: problem.RequestError}
@@ -52,6 +56,8 @@ func (m mod) Routes(r chi.Router) {
 		g.Put("/backup/recovery-key", w.PutBackupRecoveryKey)
 		g.Get("/backup/recovery-key", w.GetBackupRecoveryKey)
 		g.Post("/backup/recovery-key/activate", w.ActivateWithRecoveryKey)
+		g.With(limitBody).Put("/backup/records", w.PutBackupRecords)
+		g.Get("/backup/records", w.GetBackupRecords)
 	})
 	m.Stub.Routes(r)
 }

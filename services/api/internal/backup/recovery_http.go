@@ -22,12 +22,13 @@ type recoveryService interface {
 	Activate(ctx context.Context, user auth.User, proof []byte) error
 }
 
-// server implements the recovery key operations of the generated interface. The embedded
+// server implements the recovery key and record operations of the generated interface. The embedded
 // interface is nil on purpose: Routes mounts only the operations implemented here, so the
 // others can never be reached through it (they answer 501 through the module stub).
 type server struct {
 	httpapi.StrictServerInterface
 	recovery recoveryService
+	records  recordsService
 }
 
 func prob(status int, code, title, detail string) httpapi.Problem {
