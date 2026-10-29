@@ -282,7 +282,7 @@ type Event struct {
 }
 ```
 
-Required event types: `auth.login`, `auth.login_failed`, `auth.password_reset`, `device.registered`, `device.approved`, `device.rejected`, `device.removed`, `consent.created`, `consent.granted`, `consent.revoked`, `consent.expired`, `bank.link_created`, `bank.sync`, `bank.sync_failed`, `bank.token_refreshed`, `backup.uploaded`, `backup.restored`, `recovery_key.set`, `privacy.deletion_requested`, `privacy.deletion_completed`.
+Required event types: `auth.login`, `auth.login_failed`, `auth.password_reset`, `device.registered`, `device.approved`, `device.rejected`, `device.removed`, `consent.created`, `consent.granted`, `consent.revoked`, `consent.expired`, `bank.link_created`, `bank.sync`, `bank.sync_failed`, `bank.token_refreshed`, `backup.uploaded`, `backup.restored`, `backup.reset`, `recovery_key.set`, `privacy.deletion_requested`, `privacy.deletion_completed`.
 
 ### 4.4 Bank provider port (owned by M5)
 
@@ -324,7 +324,7 @@ Generated files are gitignored and rebuilt by `make generate` and by CI, so they
 | Module | Endpoints (all under `/v1`) |
 | --- | --- |
 | M1 identity | `GET /me`, `PATCH /me`, `POST /devices`, `GET /devices`, `GET /devices/current`, `DELETE /devices/{id}`, `POST /devices/sign-out-others` |
-| M2 backup | `PUT /backup/records`, `GET /backup/records`, `PUT /backup/recovery-key`, `GET /backup/recovery-key`, `POST /device-approvals`, `GET /device-approvals/pending`, `GET /device-approvals/{id}`, `POST /device-approvals/{id}/approve`, `POST /device-approvals/{id}/reject` |
+| M2 backup | `PUT /backup/records`, `GET /backup/records`, `PUT /backup/recovery-key`, `GET /backup/recovery-key`, `POST /backup/recovery-key/activate`, `POST /backup/reset`, `POST /device-approvals`, `GET /device-approvals/pending`, `GET /device-approvals/{id}`, `POST /device-approvals/{id}/approve`, `POST /device-approvals/{id}/reject` |
 | M4 consents | `GET /consent-texts/current`, `POST /consents`, `GET /consents`, `GET /consents/{id}`, `POST /consents/{id}/revoke` |
 | M5 bank | `GET /providers`, `POST /bank/authorizations`, `POST /bank/authorizations/{id}/exchange`, `POST /bank/accounts/query`, `POST /bank/transactions/query`, `POST /bank/tokens/refresh` |
 | M9 catalog | `GET /catalog/merchants` (ETag) |

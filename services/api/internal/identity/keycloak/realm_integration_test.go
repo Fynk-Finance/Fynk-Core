@@ -1480,3 +1480,123 @@ func TestIntegrationCodeEmailsUseTheFynkEmailTheme(t *testing.T) {
 	assertCodeEmail(t, waitForMail(t, resetTo),
 		"Tu código para restablecer la contraseña en Fynk", "Recupera tu contraseña")
 }
+
+// --- Email reset stamp (M2 backup reset) ---------------------------------------------------
+
+// emailResetAt reads fynkEmailResetAt of the user through the admin API, in epoch milliseconds
+// (0 when the attribute is missing).
+func emailResetAt(t *testing.T, email string) int64 {
+	t.Helper()
+	u := findUser(t, email)
+	if u == nil {
+		t.Fatal("user not found")
+	}
+	vals := u.Attributes["fynkEmailResetAt"]
+	if len(vals) == 0 {
+		return 0
+	}
+	ms, err := strconv.ParseInt(vals[0], 10, 64)
+	if err != nil {
+		t.Fatalf("fynkEmailResetAt is not epoch milliseconds: %v", err)
+	}
+	return ms
+}
+
+// resetWithTheCode runs the whole reset with the email code and the new password.
+func resetWithTheCode(t *testing.T, email, newPassword string) {
+	t.Helper()
+	b := newBrowser(t)
+	page := startReset(t, b, email)
+	mailed := waitForCode(t, email)
+	code, page := b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {mailed}, "verify": {""}})
+	if code != "" || pageID(t, page) != "login-update-password.ftl" {
+		t.Fatal("after the right code the page should ask for the new password")
+	}
+	b.submit(formAction(t, page, "login-update-password.ftl"),
+		url.Values{"password-new": {newPassword}, "password-confirm": {newPassword}})
+}
+
+func TestIntegrationResetWithTheCodeStampsTheTime(t *testing.T) {
+	email := newEmail("stamp")
+	createUser(t, email, goodPassword, true)
+	if got := emailResetAt(t, email); got != 0 {
+		t.Fatalf("a new account has the stamp %d", got)
+	}
+	before := time.Now().UnixMilli()
+	resetWithTheCode(t, email, "nueva-clave-2")
+	after := time.Now().UnixMilli()
+	got := emailResetAt(t, email)
+	// Allow a little clock difference between the container and the host.
+	if got < before-5000 || got > after+5000 {
+		t.Fatalf("stamp %d is not between %d and %d", got, before, after)
+	}
+}
+
+func TestIntegrationAppInitiatedPasswordChangeDoesNotStamp(t *testing.T) {
+	email := newEmail("nostamp")
+	createUser(t, email, goodPassword, true)
+	b := newBrowser(t)
+	login(t, b, email, goodPassword)
+	p := newPKCE()
+	page := b.startPasswordChange(t, p, email)
+	code, _ := b.submit(formAction(t, page, "login-update-password.ftl"), url.Values{
+		"password-new": {"nueva-clave-2"}, "password-confirm": {"nueva-clave-2"}, "logout-sessions": {"on"},
+	})
+	if code == "" {
+		t.Fatal("the password change did not return to the app")
+	}
+	if again := login(t, newBrowser(t), email, "nueva-clave-2"); again.AccessToken == "" {
+		t.Fatal("the new password does not work")
+	}
+	if got := emailResetAt(t, email); got != 0 {
+		t.Fatalf("a password change that needs only the password set the stamp to %d", got)
+	}
+}
+
+// The person cannot set or see the stamp with their own token through the account API.
+func TestIntegrationThePersonCannotWriteOrSeeTheStamp(t *testing.T) {
+	email := newEmail("account")
+	createUser(t, email, goodPassword, true)
+	resetWithTheCode(t, email, "nueva-clave-2")
+	stamped := emailResetAt(t, email)
+	if stamped == 0 {
+		t.Fatal("the reset did not stamp")
+	}
+	tok := login(t, newBrowser(t), email, "nueva-clave-2")
+
+	account := func(method string, body any) (int, string) {
+		var r io.Reader
+		if body != nil {
+			r = strings.NewReader(string(mustJSON(t, body)))
+		}
+		req, err := http.NewRequest(method, env.keycloak+"/realms/fynk/account", r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Authorization", "Bearer "+tok.AccessToken)
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+		raw, _ := io.ReadAll(resp.Body)
+		return resp.StatusCode, string(raw)
+	}
+
+	status, body := account(http.MethodGet, nil)
+	if status != http.StatusOK {
+		t.Fatalf("account API GET: status %d, the test cannot check the stamp", status)
+	}
+	if strings.Contains(body, "fynkEmailResetAt") {
+		t.Fatal("the account API shows the stamp")
+	}
+	status, _ = account(http.MethodPost, map[string]any{
+		"email": email, "firstName": "Ana", "attributes": map[string][]string{"fynkEmailResetAt": {strconv.FormatInt(time.Now().UnixMilli()+3600000, 10)}},
+	})
+	t.Logf("account API POST answered %d", status)
+	if got := emailResetAt(t, email); got != stamped {
+		t.Fatalf("the stamp changed from %d to %d through the account API", stamped, got)
+	}
+}

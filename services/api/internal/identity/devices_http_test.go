@@ -40,6 +40,7 @@ type fakeService struct {
 	gotUser     auth.User
 	gotCurrent  string
 	gotOthers   string
+	gotCaller   string
 	list        []devices.Device
 	err         error
 	registered  int
@@ -68,7 +69,10 @@ func (f *fakeService) Current(_ context.Context, _ auth.User, id string) (device
 	}
 	return dev(devA, devices.StatusActive), nil
 }
-func (f *fakeService) Remove(context.Context, string, string) (string, error) { return f.sid, f.err }
+func (f *fakeService) Remove(_ context.Context, _, caller, _ string) (string, error) {
+	f.gotCaller = caller
+	return f.sid, f.err
+}
 func (f *fakeService) RemoveOthers(_ context.Context, _, cur string) ([]string, error) {
 	f.gotOthers = cur
 	return f.sids, f.err
@@ -280,6 +284,24 @@ func TestRemove(t *testing.T) {
 	wantProblem(t, do(h, "DELETE", "/v1/devices/not-a-uuid", "", nil), 400, "bad_request")
 	f.err = devices.ErrNotFound
 	wantProblem(t, do(h, "DELETE", "/v1/devices/"+devB, "", nil), 404, "device_not_found")
+	f.err = devices.ErrNotActive
+	p := wantProblem(t, do(h, "DELETE", "/v1/devices/"+devB, "", nil), 403, "device_not_active")
+	if p.Detail != "Only an active device can close other sessions." {
+		t.Fatalf("detail = %q", p.Detail)
+	}
+}
+
+func TestRemovePassesTheTrustedCallerDevice(t *testing.T) {
+	f := &fakeService{}
+	h := serve(t, f)
+	if rec := do(h, "DELETE", "/v1/devices/"+devB, "", map[string]string{"X-Device-Id": devA}); rec.Code != 204 || f.gotCaller != devA {
+		t.Fatalf("status %d caller %q", rec.Code, f.gotCaller)
+	}
+	f.gotCaller = "x"
+	do(h, "DELETE", "/v1/devices/"+devB, "", nil)
+	if f.gotCaller != "" {
+		t.Fatalf("caller %q without a header", f.gotCaller)
+	}
 }
 
 func TestSignOutOthers(t *testing.T) {
@@ -294,6 +316,8 @@ func TestSignOutOthers(t *testing.T) {
 	wantProblem(t, do(h, "POST", "/v1/devices/sign-out-others", "", hdr), 404, "device_not_found")
 	f.err = devices.ErrRemoved
 	wantProblem(t, do(h, "POST", "/v1/devices/sign-out-others", "", hdr), 410, "device_removed")
+	f.err = devices.ErrNotActive
+	wantProblem(t, do(h, "POST", "/v1/devices/sign-out-others", "", hdr), 403, "device_not_active")
 }
 
 func TestDevicesRequireAToken(t *testing.T) {

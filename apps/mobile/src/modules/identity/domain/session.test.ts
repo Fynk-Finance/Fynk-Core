@@ -1,5 +1,5 @@
 import { toBase64 } from './device';
-import { isRefreshDue, parseTokenSet, subjectOf, type TokenSet } from './session';
+import { authTimeOf, isRefreshDue, parseTokenSet, subjectOf, type TokenSet } from './session';
 
 // Base64url without padding, as in a JWT. Each character becomes one byte.
 const b64url = (text: string) =>
@@ -59,5 +59,32 @@ describe('subjectOf', () => {
     expect(subjectOf(`e30.${b64url('not json')}.sig`)).toBeNull();
     expect(subjectOf(jwt({ name: 'x' }))).toBeNull();
     expect(subjectOf(jwt({ sub: 7 }))).toBeNull();
+  });
+});
+
+describe('authTimeOf', () => {
+  const jwt = (claims: object) => `e30.${b64url(JSON.stringify(claims))}.sig`;
+
+  it('reads auth_time, the seconds since the epoch of the last interactive login', () => {
+    expect(authTimeOf(jwt({ sub: 'ab', auth_time: 1793113200 }))).toBe(1793113200);
+  });
+
+  it.each([
+    ['missing', { sub: 'ab' }],
+    ['a string', { auth_time: '1793113200' }],
+    ['zero', { auth_time: 0 }],
+    ['negative', { auth_time: -5 }],
+    ['a fraction', { auth_time: 1793113200.5 }],
+    ['null', { auth_time: null }],
+  ])('is null when auth_time is %s', (_, claims) => {
+    expect(authTimeOf(jwt(claims))).toBeNull();
+  });
+
+  it('is null for a token it cannot read', () => {
+    expect(authTimeOf('')).toBeNull();
+    expect(authTimeOf('not-a-jwt')).toBeNull();
+    expect(authTimeOf('a.%%%.c')).toBeNull();
+    expect(authTimeOf(`e30.${b64url('not json')}.sig`)).toBeNull();
+    expect(authTimeOf(`e30.${b64url('null')}.sig`)).toBeNull();
   });
 });

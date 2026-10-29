@@ -25,7 +25,7 @@ type deviceService interface {
 	Register(ctx context.Context, user auth.User, in devices.RegisterInput, idempotencyKey string) (devices.Device, bool, error)
 	List(ctx context.Context, userID string) ([]devices.Device, error)
 	Current(ctx context.Context, user auth.User, deviceID string) (devices.Device, error)
-	Remove(ctx context.Context, userID, deviceID string) (string, error)
+	Remove(ctx context.Context, userID, callerDeviceID, deviceID string) (string, error)
 	RemoveOthers(ctx context.Context, userID, currentDeviceID string) ([]string, error)
 }
 
@@ -54,6 +54,11 @@ func prob(status int, code, title, detail string) httpapi.Problem {
 
 func notFound() httpapi.Problem {
 	return prob(http.StatusNotFound, "device_not_found", "Device not found", "")
+}
+
+func notActive() httpapi.Problem {
+	return prob(http.StatusForbidden, "device_not_active", "Device not active",
+		"Only an active device can close other sessions.")
 }
 
 func removed() httpapi.Problem {
@@ -174,8 +179,10 @@ func (s server) RemoveDevice(ctx context.Context, req httpapi.RemoveDeviceReques
 	if !ok {
 		return nil, errNoUser
 	}
-	sid, err := s.devices.Remove(ctx, user.ID, req.DeviceId.String())
+	sid, err := s.devices.Remove(ctx, user.ID, user.DeviceID, req.DeviceId.String())
 	switch {
+	case errors.Is(err, devices.ErrNotActive):
+		return httpapi.RemoveDevice403ApplicationProblemPlusJSONResponse(notActive()), nil
 	case errors.Is(err, devices.ErrNotFound):
 		return httpapi.RemoveDevice404ApplicationProblemPlusJSONResponse(notFound()), nil
 	case err != nil:
@@ -190,8 +197,12 @@ func (s server) SignOutOtherDevices(ctx context.Context, req httpapi.SignOutOthe
 	if !ok {
 		return nil, errNoUser
 	}
+	// The raw header, not user.DeviceID: a removed phone must still get 410 to wipe itself.
+	// The service checks it belongs to the user and is active.
 	sids, err := s.devices.RemoveOthers(ctx, user.ID, req.Params.XDeviceId)
 	switch {
+	case errors.Is(err, devices.ErrNotActive):
+		return httpapi.SignOutOtherDevices403ApplicationProblemPlusJSONResponse(notActive()), nil
 	case errors.Is(err, devices.ErrNotFound):
 		return httpapi.SignOutOtherDevices404ApplicationProblemPlusJSONResponse(notFound()), nil
 	case errors.Is(err, devices.ErrRemoved):

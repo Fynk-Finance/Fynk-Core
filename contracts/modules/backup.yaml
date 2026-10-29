@@ -1,31 +1,824 @@
 # Contract of the backup module, owned by M2 (see CODEOWNERS).
 # Only M2 edits this file. Shared parts come from ../openapi.yaml.
-# The health path below is M0's example so generation works from day one.
-# Replace it with the real endpoints of docs/modules/00-shared-contracts.md, section 5.
 openapi: 3.1.0
 info:
   title: Fynk API · Backup
   version: 0.1.0
+  description: |
+    Encrypted backup records, the recovery key and device approvals (M2).
+    The server never sees collection field names or values: every record is ciphertext. It also never holds a key
+    that can decrypt anything: the wrapped keys it stores open only with the recovery code or with the new phone's private key.
 tags:
   - name: backup
     description: 'Encrypted backup records, recovery key and device approvals (M2).'
 paths:
-  /backup/health:
-    get:
+  /backup/records:
+    put:
       tags: [backup]
-      operationId: backupHealth
-      summary: Example health path of the backup module
-      description: Public. Answers while the module is a stub. Removed when the module adds real endpoints.
-      security: []
+      operationId: putBackupRecords
+      summary: Upload encrypted backup records
+      description: |
+        Up to 200 records per call. The batch is atomic: all records are stored or none. A record whose version is
+        lower than the stored one rejects the whole batch. The stored data of one user is limited to 5 MB.
+        Only an active device may call it.
+      parameters:
+        - $ref: '#/components/parameters/BackupDeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BackupRecordsUpload'
+            example:
+              records:
+                - collection: savings.goals
+                  recordId: 7d9c1b2e-4f3a-4e8b-a1c5-0b6d8e2f3a41
+                  version: 3
+                  deleted: false
+                  nonce: AAECAwQFBgcICQoL
+                  ciphertext: c2VhbGVkLWJ5dGVzLW9mLWEtcmVjb3Jk
       responses:
         '200':
-          description: The module is mounted.
+          description: Every record was stored.
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ModuleHealth'
+                $ref: '#/components/schemas/BackupAccepted'
               example:
-                module: backup
-                status: stub
+                accepted: 1
+        '400':
+          description: A field is invalid. The detail names the field, never its value. Code `invalid_request`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/invalid_request
+                title: Invalid request
+                status: 400
+                detail: The field records[0].collection is invalid.
+                code: invalid_request
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/BackupDeviceNotActive'
+        '409':
+          description: A record has a lower version than the stored one. The whole batch is rejected. Code `stale_version`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/stale_version
+                title: Stale version
+                status: 409
+                detail: A record has a lower version than the stored one.
+                code: stale_version
+        '413':
+          description: The batch would pass the 5 MB limit of the user. Code `quota_exceeded`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/quota_exceeded
+                title: Backup quota exceeded
+                status: 413
+                detail: The backup of this user would pass 5 MB.
+                code: quota_exceeded
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
+    get:
+      tags: [backup]
+      operationId: getBackupRecords
+      summary: Download encrypted backup records
+      description: |
+        Records changed after the cursor, oldest first. Repeat with `nextCursor` until it is null.
+        Deleted records come back with `deleted: true` so the restore can remove them.
+      parameters:
+        - $ref: '#/components/parameters/BackupDeviceId'
+        - name: updatedAfter
+          in: query
+          required: false
+          description: The `nextCursor` of the previous page. Opaque, it carries no personal data. Omit it for the first page.
+          schema:
+            type: string
+            maxLength: 128
+          example: MjAyNi0xMC0yN1QxNDowMzoxMVo
+        - name: limit
+          in: query
+          required: false
+          description: Records per page.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 200
+      responses:
+        '200':
+          description: A page of records.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupRecordsPage'
+              example:
+                records:
+                  - collection: savings.goals
+                    recordId: 7d9c1b2e-4f3a-4e8b-a1c5-0b6d8e2f3a41
+                    version: 3
+                    deleted: false
+                    nonce: AAECAwQFBgcICQoL
+                    ciphertext: c2VhbGVkLWJ5dGVzLW9mLWEtcmVjb3Jk
+                    updatedAt: '2026-10-27T14:03:11Z'
+                nextCursor: null
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/BackupDeviceNotActive'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /backup/recovery-key:
+    put:
+      tags: [backup]
+      operationId: putBackupRecoveryKey
+      summary: Store the DEK wrapped with the recovery code
+      description: |
+        The phone wraps the DEK with a key derived from the recovery code (Argon2id) and uploads the result.
+        It replaces any previous key: the old recovery code stops working. Only an active device may call it.
+        The proof hash lets a new phone prove it knows the DEK later; it cannot be used to derive the DEK.
+      parameters:
+        - $ref: '#/components/parameters/BackupDeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BackupRecoveryKeyUpload'
+            example:
+              wrappedDek: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4v
+              nonce: AAECAwQFBgcICQoL
+              salt: AAECAwQFBgcICQoLDA0ODw==
+              kdf: argon2id
+              kdfParams:
+                memoryKiB: 65536
+                iterations: 3
+                parallelism: 1
+              deviceProofHash: AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=
+      responses:
+        '204':
+          description: The recovery key was stored.
+        '400':
+          description: A field is invalid. The detail names the field, never its value. Code `invalid_request`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/invalid_request
+                title: Invalid request
+                status: 400
+                detail: The field wrappedDek is invalid.
+                code: invalid_request
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/BackupDeviceNotActive'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+    get:
+      tags: [backup]
+      operationId: getBackupRecoveryKey
+      summary: Get the wrapped DEK and the key derivation parameters
+      description: |
+        A pending device may call it: the wrapped key is useless without the recovery code.
+        The proof hash is never returned.
+      parameters:
+        - $ref: '#/components/parameters/BackupDeviceId'
+      responses:
+        '200':
+          description: The recovery key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupRecoveryKey'
+              example:
+                wrappedDek: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4v
+                nonce: AAECAwQFBgcICQoL
+                salt: AAECAwQFBgcICQoLDA0ODw==
+                kdf: argon2id
+                kdfParams:
+                  memoryKiB: 65536
+                  iterations: 3
+                  parallelism: 1
+                createdAt: '2026-10-27T14:03:11Z'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/BackupDeviceNotActive'
+        '404':
+          description: The person never set a recovery key, or the backup was reset. Code `recovery_key_not_found`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/recovery_key_not_found
+                title: Recovery key not found
+                status: 404
+                code: recovery_key_not_found
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /backup/recovery-key/activate:
+    post:
+      tags: [backup]
+      operationId: activateWithRecoveryKey
+      summary: Activate the calling pending device with proof of the recovery code
+      description: |
+        The new phone opens the wrapped DEK with the recovery code, derives the proof and sends it. The device becomes
+        active when SHA-256 of the proof equals the stored hash. Calling it on an already active device also answers 204.
+        Limited to 5 attempts per hour per user. The response carries nothing decryptable.
+      parameters:
+        - $ref: '#/components/parameters/BackupDeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BackupRecoveryActivation'
+            example:
+              deviceProof: AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=
+      responses:
+        '204':
+          description: The calling device is active.
+        '400':
+          description: The proof is malformed. Code `invalid_request`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/invalid_request
+                title: Invalid request
+                status: 400
+                detail: The field deviceProof is invalid.
+                code: invalid_request
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/BackupDeviceNotActive'
+        '404':
+          description: The person has no recovery key. Code `recovery_key_not_found`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/recovery_key_not_found
+                title: Recovery key not found
+                status: 404
+                code: recovery_key_not_found
+        '410':
+          description: The calling device was removed. Code `device_removed`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/device_removed
+                title: Device removed
+                status: 410
+                code: device_removed
+        '422':
+          description: The proof does not match, so the recovery code was wrong. Code `proof_mismatch`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/proof_mismatch
+                title: Proof mismatch
+                status: 422
+                code: proof_mismatch
+        '429':
+          description: More than 5 attempts in the last hour for this user. Code `too_many_attempts`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/too_many_attempts
+                title: Too many attempts
+                status: 429
+                detail: Try again later.
+                code: too_many_attempts
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /backup/reset:
+    post:
+      tags: [backup]
+      operationId: resetBackup
+      summary: Delete the backup after a password reset when nothing else can open it
+      description: |
+        Allowed only when the person reset the password with the email code in the last 10 minutes. It deletes every
+        backup record and the recovery key, removes every other device and revokes their sessions, and activates the
+        calling device. The phone then creates a new DEK and a new recovery code.
+      parameters:
+        - $ref: '#/components/parameters/BackupDeviceId'
+      responses:
+        '204':
+          description: The backup was deleted and the calling device is active.
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '403':
+          description: The password was not reset with the email code in the last 10 minutes. Code `reset_not_allowed`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/reset_not_allowed
+                title: Reset not allowed
+                status: 403
+                code: reset_not_allowed
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /device-approvals:
+    post:
+      tags: [backup]
+      operationId: createDeviceApproval
+      summary: Ask an active phone to approve the calling pending device
+      description: |
+        No body: the server takes the calling device and its public key from identity. The request expires after
+        10 minutes. Repeating the same Idempotency-Key returns the first approval.
+      parameters:
+        - $ref: '#/components/parameters/BackupDeviceId'
+        - $ref: '../openapi.yaml#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: The approval request was created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupDeviceApproval'
+              example:
+                id: 4a6e8c10-2b3d-4f5a-8c7e-9d1b3f5a7c20
+                status: pending
+                createdAt: '2026-10-27T14:03:11Z'
+                expiresAt: '2026-10-27T14:13:11Z'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '409':
+          description: The calling device is already active, so it needs no approval. Code `device_already_active`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/device_already_active
+                title: Device already active
+                status: 409
+                code: device_already_active
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /device-approvals/pending:
+    get:
+      tags: [backup]
+      operationId: listPendingDeviceApprovals
+      summary: List the open approval requests for the person
+      description: |
+        For an active old phone. The phone computes the 6 digit code itself from `newDevicePublicKey` and the person
+        compares it with the one on the new phone.
+      parameters:
+        - $ref: '#/components/parameters/BackupDeviceId'
+      responses:
+        '200':
+          description: The pending requests, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupPendingApprovalList'
+              example:
+                approvals:
+                  - id: 4a6e8c10-2b3d-4f5a-8c7e-9d1b3f5a7c20
+                    deviceName: Pixel de Camila
+                    platform: android
+                    newDevicePublicKey: AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=
+                    createdAt: '2026-10-27T14:03:11Z'
+                    expiresAt: '2026-10-27T14:13:11Z'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/BackupDeviceNotActive'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /device-approvals/{id}:
+    get:
+      tags: [backup]
+      operationId: getDeviceApproval
+      summary: Get the state of an approval request
+      description: |
+        Only the new device that created the request can read it. The key fields appear only when the status is
+        `approved`. The new phone polls it while it waits.
+      parameters:
+        - $ref: '#/components/parameters/BackupDeviceId'
+        - $ref: '#/components/parameters/BackupApprovalId'
+      responses:
+        '200':
+          description: The state of the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupDeviceApprovalStatus'
+              example:
+                id: 4a6e8c10-2b3d-4f5a-8c7e-9d1b3f5a7c20
+                status: approved
+                expiresAt: '2026-10-27T14:13:11Z'
+                ephemeralPublicKey: AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=
+                wrappedDek: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4v
+                nonce: AAECAwQFBgcICQoL
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/BackupApprovalNotFound'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /device-approvals/{id}/approve:
+    post:
+      tags: [backup]
+      operationId: approveDeviceApproval
+      summary: Approve a new device and hand it the wrapped DEK
+      description: |
+        The old active phone wraps the DEK for the new phone with an ephemeral X25519 key and sends the result.
+        The server stores it for the new phone and activates the device. It cannot open the wrapped DEK.
+      parameters:
+        - $ref: '#/components/parameters/BackupDeviceId'
+        - $ref: '#/components/parameters/BackupApprovalId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BackupApprovalGrant'
+            example:
+              ephemeralPublicKey: AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=
+              wrappedDek: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4v
+              nonce: AAECAwQFBgcICQoL
+      responses:
+        '200':
+          description: The request is approved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupDeviceApproval'
+              example:
+                id: 4a6e8c10-2b3d-4f5a-8c7e-9d1b3f5a7c20
+                status: approved
+                createdAt: '2026-10-27T14:03:11Z'
+                expiresAt: '2026-10-27T14:13:11Z'
+        '400':
+          description: A field is invalid. The detail names the field, never its value. Code `invalid_request`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/invalid_request
+                title: Invalid request
+                status: 400
+                detail: The field wrappedDek is invalid.
+                code: invalid_request
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/BackupDeviceNotActive'
+        '404':
+          $ref: '#/components/responses/BackupApprovalNotFound'
+        '409':
+          $ref: '#/components/responses/BackupApprovalNotPending'
+        '410':
+          $ref: '#/components/responses/BackupApprovalExpired'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /device-approvals/{id}/reject:
+    post:
+      tags: [backup]
+      operationId: rejectDeviceApproval
+      summary: Reject a new device
+      description: The old active phone refuses the request. The new device stays pending.
+      parameters:
+        - $ref: '#/components/parameters/BackupDeviceId'
+        - $ref: '#/components/parameters/BackupApprovalId'
+      responses:
+        '200':
+          description: The request is rejected.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupDeviceApproval'
+              example:
+                id: 4a6e8c10-2b3d-4f5a-8c7e-9d1b3f5a7c20
+                status: rejected
+                createdAt: '2026-10-27T14:03:11Z'
+                expiresAt: '2026-10-27T14:13:11Z'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/BackupDeviceNotActive'
+        '404':
+          $ref: '#/components/responses/BackupApprovalNotFound'
+        '409':
+          $ref: '#/components/responses/BackupApprovalNotPending'
+        '410':
+          $ref: '#/components/responses/BackupApprovalExpired'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+components:
+  parameters:
+    BackupDeviceId:
+      name: X-Device-Id
+      in: header
+      required: true
+      description: Id of the calling device, registered through POST /devices.
+      schema:
+        type: string
+        maxLength: 64
+    BackupApprovalId:
+      name: id
+      in: path
+      required: true
+      description: Id of the approval request.
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BackupDeviceNotActive:
+      description: The calling device is not active. Code `device_not_active`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/Problem'
+          example:
+            type: /problems/device_not_active
+            title: Device not active
+            status: 403
+            code: device_not_active
+    BackupApprovalNotFound:
+      description: The request does not exist, or it belongs to another device. Code `approval_not_found`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/Problem'
+          example:
+            type: /problems/approval_not_found
+            title: Approval not found
+            status: 404
+            code: approval_not_found
+    BackupApprovalNotPending:
+      description: The request was already approved or rejected. Code `approval_not_pending`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/Problem'
+          example:
+            type: /problems/approval_not_pending
+            title: Approval not pending
+            status: 409
+            code: approval_not_pending
+    BackupApprovalExpired:
+      description: The request expired after 10 minutes. Code `approval_expired`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../openapi.yaml#/components/schemas/Problem'
+          example:
+            type: /problems/approval_expired
+            title: Approval expired
+            status: 410
+            code: approval_expired
+  schemas:
+    BackupApprovalState:
+      type: string
+      enum: [pending, approved, rejected, expired]
+    BackupRecordEnvelope:
+      type: object
+      required: [collection, recordId, version, deleted, nonce, ciphertext]
+      properties:
+        collection:
+          type: string
+          pattern: '^[a-z]+\.[a-z_]+$'
+          maxLength: 64
+          description: Name of the vault collection, `<module>.<table>`. The record content stays encrypted.
+          examples: [savings.goals]
+        recordId:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Grows with every change of the record. The server keeps the highest one.
+          examples: [3]
+        deleted:
+          type: boolean
+          description: True for a tombstone. The ciphertext may then be an empty record.
+        nonce:
+          type: string
+          maxLength: 16
+          description: AES-GCM nonce, 12 bytes in standard base64 with padding.
+          examples: [AAECAwQFBgcICQoL]
+        ciphertext:
+          type: string
+          maxLength: 87384
+          description: AES-256-GCM ciphertext with its tag, up to 64 KiB in standard base64 with padding.
+          examples: [c2VhbGVkLWJ5dGVzLW9mLWEtcmVjb3Jk]
+    BackupStoredRecord:
+      allOf:
+        - $ref: '#/components/schemas/BackupRecordEnvelope'
+        - type: object
+          required: [updatedAt]
+          properties:
+            updatedAt:
+              type: string
+              format: date-time
+              description: When the server stored this version.
+    BackupRecordsUpload:
+      type: object
+      required: [records]
+      properties:
+        records:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/BackupRecordEnvelope'
+    BackupAccepted:
+      type: object
+      required: [accepted]
+      properties:
+        accepted:
+          type: integer
+          description: How many records were stored.
+          examples: [1]
+    BackupRecordsPage:
+      type: object
+      required: [records, nextCursor]
+      properties:
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/BackupStoredRecord'
+        nextCursor:
+          type:
+            - string
+            - 'null'
+          description: Pass it as `updatedAfter` for the next page. Null on the last page.
+    BackupKdfParams:
+      type: object
+      required: [memoryKiB, iterations, parallelism]
+      properties:
+        memoryKiB:
+          type: integer
+          const: 65536
+        iterations:
+          type: integer
+          const: 3
+        parallelism:
+          type: integer
+          const: 1
+    BackupRecoveryKeyUpload:
+      type: object
+      required: [wrappedDek, nonce, salt, kdf, kdfParams, deviceProofHash]
+      properties:
+        wrappedDek:
+          type: string
+          description: AES-256-GCM of the 32 byte DEK plus the 16 byte tag, 48 bytes in standard base64 with padding.
+          examples: [AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4v]
+        nonce:
+          type: string
+          description: AES-GCM nonce, 12 bytes in standard base64 with padding.
+          examples: [AAECAwQFBgcICQoL]
+        salt:
+          type: string
+          description: Argon2id salt, 16 bytes in standard base64 with padding.
+          examples: [AAECAwQFBgcICQoLDA0ODw==]
+        kdf:
+          type: string
+          enum: [argon2id]
+        kdfParams:
+          $ref: '#/components/schemas/BackupKdfParams'
+        deviceProofHash:
+          type: string
+          description: SHA-256 of HKDF-SHA256(DEK, info `fynk/device-proof/v1`), 32 bytes in standard base64 with padding.
+          examples: [AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=]
+    BackupRecoveryKey:
+      type: object
+      required: [wrappedDek, nonce, salt, kdf, kdfParams, createdAt]
+      properties:
+        wrappedDek:
+          type: string
+          description: 48 bytes in standard base64 with padding.
+        nonce:
+          type: string
+          description: 12 bytes in standard base64 with padding.
+        salt:
+          type: string
+          description: 16 bytes in standard base64 with padding.
+        kdf:
+          type: string
+          enum: [argon2id]
+        kdfParams:
+          $ref: '#/components/schemas/BackupKdfParams'
+        createdAt:
+          type: string
+          format: date-time
+    BackupRecoveryActivation:
+      type: object
+      required: [deviceProof]
+      properties:
+        deviceProof:
+          type: string
+          description: HKDF-SHA256(DEK, info `fynk/device-proof/v1`), 32 bytes in standard base64 with padding.
+          examples: [AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=]
+    BackupDeviceApproval:
+      type: object
+      required: [id, status, createdAt, expiresAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/BackupApprovalState'
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          description: 10 minutes after creation.
+    BackupPendingApproval:
+      type: object
+      required: [id, deviceName, platform, newDevicePublicKey, createdAt, expiresAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        deviceName:
+          type: string
+        platform:
+          type: string
+          enum: [ios, android]
+        newDevicePublicKey:
+          type: string
+          description: X25519 public key of the new device, 32 bytes in standard base64 with padding.
+          examples: [AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=]
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+    BackupPendingApprovalList:
+      type: object
+      required: [approvals]
+      properties:
+        approvals:
+          type: array
+          items:
+            $ref: '#/components/schemas/BackupPendingApproval'
+    BackupDeviceApprovalStatus:
+      type: object
+      required: [id, status, expiresAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/BackupApprovalState'
+        expiresAt:
+          type: string
+          format: date-time
+        ephemeralPublicKey:
+          type: string
+          description: X25519 public key of the old phone for this approval, 32 bytes in standard base64 with padding. Only when approved.
+        wrappedDek:
+          type: string
+          description: The DEK wrapped for the new phone, 48 bytes in standard base64 with padding. Only when approved.
+        nonce:
+          type: string
+          description: AES-GCM nonce, 12 bytes in standard base64 with padding. Only when approved.
+    BackupApprovalGrant:
+      type: object
+      required: [ephemeralPublicKey, wrappedDek, nonce]
+      properties:
+        ephemeralPublicKey:
+          type: string
+          description: Ephemeral X25519 public key, 32 bytes in standard base64 with padding.
+          examples: [AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=]
+        wrappedDek:
+          type: string
+          description: The DEK wrapped for the new phone, 48 bytes in standard base64 with padding.
+          examples: [AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4v]
+        nonce:
+          type: string
+          description: AES-GCM nonce, 12 bytes in standard base64 with padding.
+          examples: [AAECAwQFBgcICQoL]

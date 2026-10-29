@@ -115,6 +115,8 @@ create table backup.device_approvals (
 * `PUT /backup/records` accepts up to 200 records, rejects a version lower than the stored one with `409 stale_version`. Limit 5 MB per user.
 * `GET /backup/records` pages by `updatedAfter` cursor.
 * `PUT /backup/recovery-key` and `GET /backup/recovery-key`. Only a device with status `active` may call PUT.
+* `POST /backup/recovery-key/activate`: a pending device sends the proof `HKDF-SHA256(DEK, 'fynk/device-proof/v1')`, derived after opening the wrapped DEK with the recovery code; the server activates it when the SHA-256 of the proof matches the stored hash (5 attempts per hour).
+* `POST /backup/reset`: after a password reset with the email code (last 10 minutes), deletes the backup and the recovery key, removes the other devices and activates the calling one. Audit: `backup.reset`.
 * Device approvals: `POST /device-approvals` (new device, pending), `GET /device-approvals/pending` (old device, polled every 5 s while the approval screen is open), `GET /device-approvals/{id}` (new device polls), `POST /device-approvals/{id}/approve` (old active device sends ephemeral key, wrapped DEK, nonce, then calls identity `ActivateDevice`), `POST /device-approvals/{id}/reject`. Requests expire after 10 minutes.
 * Audit: `backup.uploaded` (count only), `backup.restored`, `recovery_key.set`, `device.approved`, `device.rejected`.
 
