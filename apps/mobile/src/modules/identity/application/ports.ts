@@ -41,6 +41,11 @@ export interface OidcPort {
    * Throws OidcError when the browser was closed or Keycloak could not be reached.
    */
   changePassword(): Promise<{ tokens: TokenSet; actionStatus: ActionStatus }>;
+  /**
+   * A fresh interactive login (`prompt=login`, `max_age=0`): Keycloak asks for the credentials
+   * even when it has a session, so the new id token has a new `auth_time`. Throws OidcError.
+   */
+  reauthenticate(): Promise<TokenSet>;
   refresh(current: TokenSet): Promise<TokenSet>;
   /** Ends the Keycloak session of these tokens. */
   endSession(tokens: TokenSet): Promise<void>;
@@ -72,9 +77,11 @@ export interface DeviceKeyPair {
   publicKey: string;
 }
 
-/** Makes a fresh X25519 key pair. */
+/** X25519: makes key pairs and agrees on shared secrets. */
 export interface KeyPairPort {
   generate(): DeviceKeyPair;
+  /** X25519 shared secret of a stored private key (base64) and a peer's public key. */
+  sharedSecret(privateKey: string, peerPublicKey: Uint8Array): Uint8Array;
 }
 
 /** Randomness for the service, so tests are deterministic. */

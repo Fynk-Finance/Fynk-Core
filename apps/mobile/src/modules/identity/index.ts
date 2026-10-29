@@ -19,6 +19,7 @@ import { createDevSession, shouldUseDevAuth } from './application/devSession';
 import {
   createSessionService,
   type ChangePasswordResult,
+  type ReauthenticateResult,
   type SessionState,
 } from './application/sessionService';
 import { createIdentityFlow } from './ui/IdentityFlow';
@@ -27,7 +28,7 @@ import { createSecurityScreen } from './ui/SecurityScreen';
 import { SECURITY_ROUTE } from './ui/miCuentaRows';
 import { useSessionState } from './ui/useSessionState';
 
-export type { SessionState };
+export type { ReauthenticateResult, SessionState };
 export { MiCuentaHeader, type MiCuentaHeaderProps } from './ui/MiCuentaHeader';
 
 // Development builds can skip Keycloak with EXPO_PUBLIC_DEV_AUTH=dev-token (apps/mobile/.env.example).
@@ -72,6 +73,38 @@ export const getAccessToken = () => session.getAccessToken();
 export const signIn = () => session.signIn();
 export const signUp = () => session.signUp();
 export const signOut = () => session.signOut();
+
+// What the vault (M2) needs from identity. It never sees tokens or the device private key.
+
+/** When the person last logged in interactively, from the id token. Null when signed out. */
+export const lastLoginAt = (): Date | null => session.lastLoginAt();
+
+/** Calls `listener` on every change of the session state, outside React. Returns the unsubscribe. */
+export const onSessionChange = (listener: (state: SessionState) => void): (() => void) =>
+  session.subscribe(() => listener(session.getState()));
+
+/**
+ * A fresh Keycloak login of the same account, to unlock the vault without biometrics, turn
+ * biometrics on, approve a device or make a new recovery code. In the dev session it answers `ok`.
+ */
+export const reauthenticate = (): Promise<ReauthenticateResult> => session.reauthenticate();
+
+/** This phone as the API knows it. Null when not registered, and in the dev session. */
+export const currentDevice = (): Promise<{ id: string; status: 'active' | 'pending' } | null> =>
+  device?.current() ?? Promise.resolve(null);
+
+/** The X25519 public key of this phone. Null before it has a key pair, and in the dev session. */
+export const devicePublicKey = (): Promise<Uint8Array | null> =>
+  device?.publicKey() ?? Promise.resolve(null);
+
+/**
+ * X25519 shared secret of this phone's private key and a peer's 32 byte public key. The private
+ * key stays in identity. Throws when the peer key is invalid or the phone has no key pair.
+ */
+export const deviceSharedSecret = (peerPublicKey: Uint8Array): Promise<Uint8Array> =>
+  device
+    ? device.sharedSecret(peerPublicKey)
+    : Promise.reject(new Error('the dev session has no device key'));
 
 /**
  * Keycloak's change password page. A new Keycloak session replaces the app's one, so the device

@@ -44,24 +44,42 @@ export function parseTokenSet(raw: string): TokenSet | null {
   };
 }
 
-/**
- * The account (`sub`) a JWT was issued to, or null when the token cannot be read. It only reads
- * the payload to compare accounts; the signature is checked by the API, not here.
- */
-export function subjectOf(jwt: string): string | null {
+/** The claims of a JWT payload, or null when the token cannot be read. The signature is not checked. */
+function claimsOf(jwt: string): Record<string, unknown> | null {
   const payload = jwt.split('.')[1];
   if (!payload) return null;
   const b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
   const bytes = fromBase64(b64.padEnd(Math.ceil(b64.length / 4) * 4, '='));
   if (!bytes) return null;
-  // Byte by byte is enough for `sub`, a UUID in Keycloak; other claims may decode wrong.
+  // Byte by byte is enough for `sub` and `auth_time`; other claims may decode wrong.
   let text = '';
   for (const b of bytes) text += String.fromCharCode(b);
   try {
     const claims: unknown = JSON.parse(text);
-    const sub = (claims as { sub?: unknown } | null)?.sub;
-    return typeof sub === 'string' && sub !== '' ? sub : null;
+    return typeof claims === 'object' && claims !== null
+      ? (claims as Record<string, unknown>)
+      : null;
   } catch {
     return null;
   }
+}
+
+/**
+ * The account (`sub`) a JWT was issued to, or null when the token cannot be read. It only reads
+ * the payload to compare accounts; the signature is checked by the API, not here.
+ */
+export function subjectOf(jwt: string): string | null {
+  const sub = claimsOf(jwt)?.sub;
+  return typeof sub === 'string' && sub !== '' ? sub : null;
+}
+
+/**
+ * When the person last typed their credentials: the `auth_time` of an id token, in seconds since
+ * the epoch. Keycloak keeps it across refreshes. Null when missing or not a positive integer.
+ */
+export function authTimeOf(jwt: string): number | null {
+  const authTime = claimsOf(jwt)?.auth_time;
+  return typeof authTime === 'number' && Number.isSafeInteger(authTime) && authTime > 0
+    ? authTime
+    : null;
 }

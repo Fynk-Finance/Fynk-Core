@@ -1,4 +1,5 @@
-import { toBase64, type DeviceRecord } from '../domain/device';
+import { createKeyPairGenerator } from '../adapters/crypto/x25519';
+import { fromBase64, toBase64, type DeviceRecord } from '../domain/device';
 import { createDeviceService, type DeviceServiceDeps } from './deviceService';
 import {
   DevicesError,
@@ -7,6 +8,10 @@ import {
   type DevicesErrorKind,
   type LinkedDevice,
 } from './ports';
+
+jest.mock('expo-crypto', () => ({ getRandomBytes: jest.fn(), randomUUID: jest.fn() }));
+
+const hex = (h: string) => Uint8Array.from(h.match(/../g)!.map((b) => parseInt(b, 16)));
 
 const pair = (n: number): DeviceKeyPair => ({
   privateKey: toBase64(new Uint8Array(32).fill(n)),
@@ -18,6 +23,8 @@ const linked = (id: string): LinkedDevice => ({
   platform: 'android',
   status: 'active',
 });
+
+const realKeys = createKeyPairGenerator();
 
 function setup(initial: DeviceRecord | null = null) {
   let stored = initial;
@@ -40,7 +47,7 @@ function setup(initial: DeviceRecord | null = null) {
       },
     },
     api: { register, current },
-    keys: { generate: () => pair(++pairs) },
+    keys: { generate: () => pair(++pairs), sharedSecret: realKeys.sharedSecret },
     random: { newIdempotencyKey: () => `key-${++uuids}` },
     info: { get: () => ({ name: 'Pixel 8', platform: 'android' as const }) },
     onRemoved,
@@ -186,4 +193,80 @@ it('a sync that reads the Keychain during a sign out keeps no id', async () => {
   expect(t.service.deviceId()).toBeNull();
   expect(t.current).not.toHaveBeenCalled();
   expect(t.stored()?.deviceId).toBeUndefined();
+});
+
+describe('current', () => {
+  it('asks the API about the stored device and returns its id and status', async () => {
+    const t = setup(registered('dev-9'));
+    t.current.mockResolvedValueOnce({ ...linked('dev-9'), status: 'pending' });
+    expect(await t.service.current()).toEqual({ id: 'dev-9', status: 'pending' });
+    expect(t.current).toHaveBeenCalledWith('dev-9');
+  });
+
+  it('is null without a registered device and does not call the API', async () => {
+    const none = setup();
+    expect(await none.service.current()).toBeNull();
+    const keysOnly = setup({ v: 1, ...pair(1) });
+    expect(await keysOnly.service.current()).toBeNull();
+    expect(none.current).not.toHaveBeenCalled();
+    expect(keysOnly.current).not.toHaveBeenCalled();
+  });
+
+  it('is null when the API does not know the device, and keeps the stored id for sync', async () => {
+    const t = setup(registered());
+    t.current.mockImplementationOnce(async () => fail('notFound'));
+    expect(await t.service.current()).toBeNull();
+    expect(t.stored()).toEqual(registered());
+    expect(t.onRemoved).not.toHaveBeenCalled();
+  });
+
+  it('removed: clears the id, calls onRemoved once and answers null', async () => {
+    const t = setup(registered());
+    t.current.mockImplementationOnce(async () => fail('removed'));
+    expect(await t.service.current()).toBeNull();
+    expect(t.onRemoved).toHaveBeenCalledTimes(1);
+    expect(t.service.deviceId()).toBeNull();
+    expect(t.stored()).toEqual({ v: 1, ...pair(1) });
+  });
+
+  it.each(['network', 'other'] as const)('%s throws and keeps everything', async (kind) => {
+    const t = setup(registered());
+    t.current.mockImplementationOnce(async () => fail(kind));
+    await expect(t.service.current()).rejects.toMatchObject({ kind });
+    expect(t.stored()).toEqual(registered());
+    expect(t.onRemoved).not.toHaveBeenCalled();
+  });
+});
+
+describe('publicKey', () => {
+  it('returns the stored public key as bytes, or null before there is a key pair', async () => {
+    expect(await setup(registered()).service.publicKey()).toEqual(new Uint8Array(32).fill(101));
+    expect(await setup().service.publicKey()).toBeNull();
+  });
+});
+
+describe('sharedSecret', () => {
+  // RFC 7748 section 6.1: Alice holds the stored key pair, Bob is the peer.
+  const alice: DeviceRecord = {
+    v: 1,
+    privateKey: toBase64(hex('77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a')),
+    publicKey: toBase64(hex('8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a')),
+  };
+  const bobPublic = hex('de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f');
+  const shared = hex('4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742');
+
+  it('is the X25519 secret of the stored private key and the peer key', async () => {
+    const t = setup(alice);
+    expect(await t.service.sharedSecret(bobPublic)).toEqual(shared);
+    expect(fromBase64(alice.publicKey)).toHaveLength(32);
+  });
+
+  it.each([0, 31, 33, 64])('rejects a peer key of %i bytes', async (length) => {
+    const t = setup(alice);
+    await expect(t.service.sharedSecret(new Uint8Array(length))).rejects.toThrow();
+  });
+
+  it('throws when there is no key pair', async () => {
+    await expect(setup().service.sharedSecret(bobPublic)).rejects.toThrow();
+  });
 });
