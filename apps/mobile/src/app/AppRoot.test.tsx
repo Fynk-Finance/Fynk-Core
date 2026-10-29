@@ -65,9 +65,8 @@ describe('AppRoot', () => {
     await fireEvent.press(screen.getByRole('tab', { name: 'Billetera' }));
 
     expect(screen.getByRole('tab', { name: 'Billetera' })).toBeSelected();
-    expect(
-      screen.getByText('La construye el módulo M9 · Gastos recurrentes y suscripciones.'),
-    ).toBeTruthy();
+    // M9's Billetera replaced the placeholder screen.
+    expect(screen.getByTestId('recurring.billetera')).toBeTruthy();
   });
 
   it('switches tabs with a horizontal swipe', async () => {
