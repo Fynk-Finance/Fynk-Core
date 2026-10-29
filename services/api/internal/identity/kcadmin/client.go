@@ -237,6 +237,32 @@ func (c *Client) EmailResetAt(ctx context.Context, id string) (time.Time, bool, 
 	return time.UnixMilli(ms).UTC(), true, nil
 }
 
+// SessionStart returns when the user's Keycloak session sid started. The bool is false when
+// the user has no session with that id (it ended, or it belongs to someone else). ErrNotFound
+// when the user does not exist.
+func (c *Client) SessionStart(ctx context.Context, id, sid string) (time.Time, bool, error) {
+	data, status, err := c.do(ctx, "get sessions", http.MethodGet, c.realmURL("/users/"+url.PathEscape(id)+"/sessions"), nil)
+	if status == http.StatusNotFound {
+		return time.Time{}, false, ErrNotFound
+	}
+	if err != nil {
+		return time.Time{}, false, err
+	}
+	var sessions []struct {
+		ID    string `json:"id"`
+		Start int64  `json:"start"`
+	}
+	if err := json.Unmarshal(data, &sessions); err != nil {
+		return time.Time{}, false, errors.New("kcadmin: get sessions: decode")
+	}
+	for _, s := range sessions {
+		if s.ID == sid && s.Start > 0 {
+			return time.UnixMilli(s.Start).UTC(), true, nil
+		}
+	}
+	return time.Time{}, false, nil
+}
+
 // UpdateNames changes only firstName and lastName. It reads the whole user and writes it
 // back without the attributes: Keycloak keeps the stored attributes (such as the terms
 // acceptance) when the PUT has none, whereas sending the read-only unmanaged ones back is
