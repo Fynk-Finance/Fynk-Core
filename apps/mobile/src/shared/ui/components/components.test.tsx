@@ -83,6 +83,13 @@ describe('TextField', () => {
     expect(screen.getByRole('button', { name: uiStrings.hidePassword })).toBeTruthy();
   });
 
+  it('shows a prefix before the value, hidden from screen readers', async () => {
+    await render(<TextField label="Efectivo" icon="cash" prefix="$" testID="cash" />);
+    expect(screen.getByText('$', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.queryByText('$')).toBeNull();
+    expect(screen.getByLabelText('Efectivo')).toBe(screen.getByTestId('cash'));
+  });
+
   it('shows the error instead of the helper', async () => {
     await render(<TextField label="Correo" helper="Ayuda" error="Escribe un correo válido." />);
     expect(screen.getByText('Escribe un correo válido.')).toBeTruthy();
