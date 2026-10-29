@@ -3,8 +3,8 @@
 // its ModuleScreen, when its inventory row says so. Pure, so the rules are tested on their own.
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
 
-import type { BackGesture, ScreenTransition } from '@shared/navigation';
-import { radius } from '@shared/ui';
+import { radius } from '../ui/tokens';
+import type { BackGesture, ScreenTransition } from './types';
 
 export interface MotionSettings {
   /** The phone's Reduce Motion setting: every animation becomes a fade. */
