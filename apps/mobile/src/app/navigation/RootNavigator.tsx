@@ -1,17 +1,17 @@
 // Root of the app: the first full-screen flow whose gate is open (sign in, unlock, onboarding),
 // otherwise the main tabs plus every module's pushed screens. Every screen gets the default
-// transition and back gesture of its kind (screenOptions.ts) unless its ModuleScreen says otherwise.
+// transition and back gesture of its kind (screenOptionsFor in @shared/navigation) unless its
+// ModuleScreen says otherwise.
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import type { ModuleName } from '@shared/domain/types';
-import { APPEARANCE_ROUTE } from '@shared/navigation';
+import { APPEARANCE_ROUTE, flowOptions, screenOptionsFor } from '@shared/navigation';
 import { CatalogScreen } from '@shared/ui/__catalog__/CatalogScreen';
 
 import { collectScreens, gateOrder, moduleRoutes } from '../registry';
 import { AppearanceScreen } from '../settings/AppearanceScreen';
 import { MainTabs } from './MainTabs';
-import { flowOptions, screenOptionsFor } from './screenOptions';
 
 const Stack = createNativeStackNavigator();
 const SCREENS = collectScreens();
