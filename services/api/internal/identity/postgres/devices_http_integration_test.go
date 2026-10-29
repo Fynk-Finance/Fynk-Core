@@ -114,13 +114,23 @@ func TestDevicesOverHTTP(t *testing.T) {
 	if rec := call("GET", "/v1/devices/current", "", first.ID); rec.Code != 200 || !strings.Contains(rec.Body.String(), `"current":true`) {
 		t.Fatalf("current: %d %s", rec.Code, rec.Body)
 	}
-	if rec := call("DELETE", "/v1/devices/"+second.ID, "", ""); rec.Code != 204 {
+	// A pending device cannot remove another one, nor a request without a device.
+	if rec := call("DELETE", "/v1/devices/"+first.ID, "", second.ID); rec.Code != 403 || !strings.Contains(rec.Body.String(), "device_not_active") {
+		t.Fatalf("pending removes active: %d %s", rec.Code, rec.Body)
+	}
+	if rec := call("POST", "/v1/devices/sign-out-others", "", second.ID); rec.Code != 403 {
+		t.Fatalf("pending signs out others: %d %s", rec.Code, rec.Body)
+	}
+	if rec := call("DELETE", "/v1/devices/"+second.ID, "", ""); rec.Code != 403 {
+		t.Fatalf("remove without a device: %d %s", rec.Code, rec.Body)
+	}
+	if rec := call("DELETE", "/v1/devices/"+second.ID, "", first.ID); rec.Code != 204 {
 		t.Fatalf("remove: %d %s", rec.Code, rec.Body)
 	}
 	if rec := call("GET", "/v1/devices/current", "", second.ID); rec.Code != 410 || !strings.Contains(rec.Body.String(), "device_removed") {
 		t.Fatalf("removed current: %d %s", rec.Code, rec.Body)
 	}
-	if rec := call("DELETE", "/v1/devices/3f8b2a54-6a1e-4c58-9d3b-7a1f0c2e9b11", "", ""); rec.Code != 404 {
+	if rec := call("DELETE", "/v1/devices/3f8b2a54-6a1e-4c58-9d3b-7a1f0c2e9b11", "", first.ID); rec.Code != 404 {
 		t.Fatalf("unknown device: %d", rec.Code)
 	}
 	// A removed key cannot come back.
@@ -130,6 +140,11 @@ func TestDevicesOverHTTP(t *testing.T) {
 	}
 
 	third := register("Celular nuevo", 3, http.StatusCreated)
+	// A pending device may always remove itself (sign out); a fourth one checks it.
+	fourth := register("Celular de prueba", 4, http.StatusCreated)
+	if rec := call("DELETE", "/v1/devices/"+fourth.ID, "", fourth.ID); rec.Code != 204 {
+		t.Fatalf("pending removes itself: %d %s", rec.Code, rec.Body)
+	}
 	if rec := call("POST", "/v1/devices/sign-out-others", "", first.ID); rec.Code != 204 {
 		t.Fatalf("sign out others: %d %s", rec.Code, rec.Body)
 	}

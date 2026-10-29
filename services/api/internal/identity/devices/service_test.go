@@ -185,7 +185,7 @@ func TestNewDeviceIsActiveAfterRemovingTheOnlyActiveOne(t *testing.T) {
 	e := setup()
 	ctx := context.Background()
 	a := mustRegister(t, e, user("u1"), 1)
-	if _, err := e.svc.Remove(ctx, "u1", a.ID); err != nil {
+	if _, err := e.svc.Remove(ctx, "u1", a.ID, a.ID); err != nil {
 		t.Fatal(err)
 	}
 	if b := mustRegister(t, e, user("u1"), 2); b.Status != devices.StatusActive {
@@ -255,7 +255,7 @@ func TestRemovedPublicKeyIsRejected(t *testing.T) {
 	e := setup()
 	ctx := context.Background()
 	a := mustRegister(t, e, user("u1"), 1)
-	if _, err := e.svc.Remove(ctx, "u1", a.ID); err != nil {
+	if _, err := e.svc.Remove(ctx, "u1", a.ID, a.ID); err != nil {
 		t.Fatal(err)
 	}
 	if _, _, err := e.svc.Register(ctx, user("u1"), in(1), ""); !errors.Is(err, devices.ErrKeyRemoved) {
@@ -299,13 +299,13 @@ func TestOtherUsersDeviceIsNotFound(t *testing.T) {
 	if _, err := e.svc.Current(ctx, user("u2"), a.ID); !errors.Is(err, devices.ErrNotFound) {
 		t.Errorf("Current: %v", err)
 	}
-	if _, err := e.svc.Remove(ctx, "u2", a.ID); !errors.Is(err, devices.ErrNotFound) {
+	if _, err := e.svc.Remove(ctx, "u2", a.ID, a.ID); !errors.Is(err, devices.ErrNotFound) {
 		t.Errorf("Remove: %v", err)
 	}
 	if _, err := e.svc.RemoveOthers(ctx, "u2", a.ID); !errors.Is(err, devices.ErrNotFound) {
 		t.Errorf("RemoveOthers: %v", err)
 	}
-	if _, err := e.svc.Remove(ctx, "u1", "missing"); !errors.Is(err, devices.ErrNotFound) {
+	if _, err := e.svc.Remove(ctx, "u1", "missing", "missing"); !errors.Is(err, devices.ErrNotFound) {
 		t.Errorf("missing: %v", err)
 	}
 }
@@ -318,7 +318,7 @@ func TestListHidesRemovedAndSortsByLastSeen(t *testing.T) {
 	b := mustRegister(t, e, user("u1"), 2)
 	e.clk.Advance(time.Minute)
 	c := mustRegister(t, e, user("u1"), 3)
-	if _, err := e.svc.Remove(ctx, "u1", b.ID); err != nil {
+	if _, err := e.svc.Remove(ctx, "u1", b.ID, b.ID); err != nil {
 		t.Fatal(err)
 	}
 	e.clk.Advance(time.Minute)
@@ -344,7 +344,7 @@ func TestCurrentUpdatesLastSeenAndSession(t *testing.T) {
 	if err != nil || d.SessionID != "new-sid" {
 		t.Fatalf("device = %+v, %v", d, err)
 	}
-	if _, err := e.svc.Remove(ctx, "u1", a.ID); err != nil {
+	if _, err := e.svc.Remove(ctx, "u1", a.ID, a.ID); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := e.svc.Current(ctx, user("u1"), a.ID); !errors.Is(err, devices.ErrRemoved) {
@@ -356,11 +356,11 @@ func TestRemoveTwiceAuditsOnce(t *testing.T) {
 	e := setup()
 	ctx := context.Background()
 	a := mustRegister(t, e, user("u1"), 1)
-	sid, err := e.svc.Remove(ctx, "u1", a.ID)
+	sid, err := e.svc.Remove(ctx, "u1", a.ID, a.ID)
 	if err != nil || sid != "sid-u1" {
 		t.Fatalf("sid=%q err=%v", sid, err)
 	}
-	sid, err = e.svc.Remove(ctx, "u1", a.ID)
+	sid, err = e.svc.Remove(ctx, "u1", a.ID, a.ID)
 	if err != nil || sid != "" {
 		t.Fatalf("second: sid=%q err=%v", sid, err)
 	}
@@ -425,7 +425,7 @@ func TestUsable(t *testing.T) {
 	ctx := context.Background()
 	a := mustRegister(t, e, user("u1"), 1)
 	b := mustRegister(t, e, user("u1"), 2) // pending
-	if _, err := e.svc.Remove(ctx, "u1", a.ID); err != nil {
+	if _, err := e.svc.Remove(ctx, "u1", a.ID, a.ID); err != nil {
 		t.Fatal(err)
 	}
 	for name, c := range map[string]struct {
@@ -459,7 +459,7 @@ func TestActivate(t *testing.T) {
 	if err := e.svc.Activate(ctx, a.ID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.svc.Remove(ctx, "u1", a.ID); err != nil {
+	if _, err := e.svc.Remove(ctx, "u1", a.ID, a.ID); err != nil {
 		t.Fatal(err)
 	}
 	if err := e.svc.Activate(ctx, a.ID); !errors.Is(err, devices.ErrRemoved) {

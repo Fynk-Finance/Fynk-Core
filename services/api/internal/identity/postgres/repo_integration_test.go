@@ -94,7 +94,7 @@ func TestDevicesOnPostgres(t *testing.T) {
 	if ok, err := svc.Usable(ctx, "u2", a.ID); err != nil || ok {
 		t.Fatalf("usable other user: %v %v", ok, err)
 	}
-	if _, err := svc.Remove(ctx, "u2", a.ID); !errors.Is(err, devices.ErrNotFound) {
+	if _, err := svc.Remove(ctx, "u2", a.ID, a.ID); !errors.Is(err, devices.ErrNotFound) {
 		t.Fatalf("remove other user: %v", err)
 	}
 	if _, err := svc.Current(ctx, u1, "not-a-uuid"); !errors.Is(err, devices.ErrNotFound) {
@@ -127,11 +127,11 @@ func TestDevicesOnPostgres(t *testing.T) {
 	}
 
 	// Remove, then ErrRemoved and ErrKeyRemoved.
-	sid, err := svc.Remove(ctx, "u1", a.ID)
+	sid, err := svc.Remove(ctx, "u1", a.ID, a.ID)
 	if err != nil || sid != "sid-1" {
 		t.Fatalf("remove: %q %v", sid, err)
 	}
-	if sid, err := svc.Remove(ctx, "u1", a.ID); err != nil || sid != "" {
+	if sid, err := svc.Remove(ctx, "u1", a.ID, a.ID); err != nil || sid != "" {
 		t.Fatalf("remove twice: %q %v", sid, err)
 	}
 	if _, err := svc.Current(ctx, u1, a.ID); !errors.Is(err, devices.ErrRemoved) {
@@ -149,6 +149,15 @@ func TestDevicesOnPostgres(t *testing.T) {
 
 	// RemoveOthers keeps only the current device.
 	c, _, _ := svc.Register(ctx, auth.User{ID: "u1", SessionID: "sid-c"}, reg(3), "")
+	if _, err := svc.RemoveOthers(ctx, "u1", c.ID); !errors.Is(err, devices.ErrNotActive) {
+		t.Fatalf("pending caller removing others: %v", err)
+	}
+	if _, err := svc.Remove(ctx, "u1", c.ID, b.ID); !errors.Is(err, devices.ErrNotActive) {
+		t.Fatalf("pending caller removing another device: %v", err)
+	}
+	if err := act.ActivateDevice(ctx, c.ID); err != nil {
+		t.Fatal(err)
+	}
 	sids, err := svc.RemoveOthers(ctx, "u1", c.ID)
 	if err != nil || len(sids) != 1 || sids[0] != "sid-new" {
 		t.Fatalf("remove others: %v %v", sids, err)
