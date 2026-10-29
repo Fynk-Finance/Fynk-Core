@@ -6,6 +6,9 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
+
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/app"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/migrate"
 )
 
 var quiet = slog.New(slog.NewJSONHandler(io.Discard, nil))
@@ -26,16 +29,30 @@ func TestRunNeedsConfig(t *testing.T) {
 	}
 }
 
-func TestRunSkipsModulesWithoutMigrations(t *testing.T) {
-	// Only identity has SQL so far (its error shows it was the first schema tried). The other
-	// modules are skipped without a connection. Update this when a second module gets SQL.
+func TestRunSkipsEveryModuleWithoutMigrations(t *testing.T) {
+	// The database cannot be reached, so exactly the schemas that have SQL fail, each with its
+	// own error line ("<schema>: ..."), and the schemas without SQL never try to connect.
 	vars := env(map[string]string{
 		"APP_ENV": "local", "DATABASE_URL": "postgres://unused", "REDIS_URL": "redis://unused",
 	})
 	for _, cmd := range []string{"up", "status"} {
 		err := run(context.Background(), []string{cmd}, vars, quiet)
-		if err == nil || !strings.Contains(err.Error(), "identity:") {
-			t.Errorf("%s: err = %v, want a connection error from identity", cmd, err)
+		failed := map[string]bool{}
+		if err != nil {
+			for _, line := range strings.Split(err.Error(), "\n") {
+				if schema, _, ok := strings.Cut(line, ": "); ok {
+					failed[schema] = true
+				}
+			}
+		}
+		for _, src := range app.MigrationSources(app.All(app.Deps{})) {
+			hasSQL, herr := migrate.HasSQL(src.FS)
+			if herr != nil {
+				t.Fatal(herr)
+			}
+			if failed[src.Schema] != hasSQL {
+				t.Errorf("%s: schema %s has SQL %v but tried to connect %v (%v)", cmd, src.Schema, hasSQL, failed[src.Schema], err)
+			}
 		}
 	}
 }
