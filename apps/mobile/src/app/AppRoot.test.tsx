@@ -36,8 +36,23 @@ jest.mock('@modules/vault', () => {
   };
 });
 
+// The real onboarding gate (M3) stays open until the setup saved in the vault ends. The shell
+// tests use a stand-in whose gate they set.
+let mockOnboardingGateOpen = false;
+jest.mock('@modules/onboarding', () => {
+  const { createPlaceholderScreen } = jest.requireActual('@shared/navigation');
+  return {
+    routes: {
+      module: 'onboarding',
+      flow: createPlaceholderScreen({ title: 'Configuración', owner: 'M3 · Configuración' }),
+      useGate: () => mockOnboardingGateOpen,
+    },
+  };
+});
+
 beforeEach(() => {
   mockSignInGateOpen = false;
+  mockOnboardingGateOpen = false;
 });
 
 describe('AppRoot', () => {
@@ -47,6 +62,23 @@ describe('AppRoot', () => {
 
     expect(screen.getByText('Inicio')).toBeTruthy();
     expect(screen.queryByRole('tab', { name: 'Dashboard' })).toBeNull();
+  });
+
+  it('shows the onboarding flow after sign in until the setup ends', async () => {
+    mockOnboardingGateOpen = true;
+    await render(<AppRoot />);
+
+    expect(screen.getByText('Configuración')).toBeTruthy();
+    expect(screen.queryByRole('tab', { name: 'Dashboard' })).toBeNull();
+  });
+
+  it('shows the sign-in flow first when both gates are open', async () => {
+    mockSignInGateOpen = true;
+    mockOnboardingGateOpen = true;
+    await render(<AppRoot />);
+
+    expect(screen.getByText('Inicio')).toBeTruthy();
+    expect(screen.queryByText('Configuración')).toBeNull();
   });
 
   it('opens on the Dashboard tab with the four tabs of the design', async () => {
