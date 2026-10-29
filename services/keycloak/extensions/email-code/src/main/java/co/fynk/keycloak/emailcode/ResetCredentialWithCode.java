@@ -110,6 +110,8 @@ public class ResetCredentialWithCode implements Authenticator {
                 // Owning the mailbox proves the address, so a pre-registered, unverified account
                 // is taken back by its real owner.
                 user.setEmailVerified(true);
+                // Only this flow stamps the time: the backup reset needs proof of the mailbox.
+                ResetStamp.stamp(user, clock.instant());
                 limits.clearFailures(LIMITS_PURPOSE, subject);
                 logoutOtherSessions(context, user);
                 // After the new password, show an info page; do not log the person in.

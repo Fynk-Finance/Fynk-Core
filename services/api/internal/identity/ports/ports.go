@@ -3,6 +3,8 @@ package ports
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -120,4 +122,26 @@ func (r deviceReader) RemoveOthers(ctx context.Context, userID, keepDeviceID str
 		_ = r.revoker.DeleteSession(ctx, sid)
 	}
 	return nil
+}
+
+// EmailResets lets M2 know when the person last reset the password with the email code, which
+// proves they own the mailbox. M2 allows the backup reset ("No tengo ninguno de los dos") only
+// shortly after. "Cambiar contraseña" in the app needs only the password and never counts.
+type EmailResets interface {
+	// EmailResetAt returns the time of the last reset by email code. The bool is false when the
+	// person never did one. ErrNotFound when the user does not exist in Keycloak.
+	EmailResetAt(ctx context.Context, userID string) (time.Time, bool, error)
+}
+
+// NewEmailResets returns the EmailResets port over the Keycloak admin client.
+func NewEmailResets(cfg config.Config) EmailResets { return emailResets{kc: kcadmin.New(cfg, nil)} }
+
+type emailResets struct{ kc *kcadmin.Client }
+
+func (r emailResets) EmailResetAt(ctx context.Context, userID string) (time.Time, bool, error) {
+	at, ok, err := r.kc.EmailResetAt(ctx, userID)
+	if errors.Is(err, kcadmin.ErrNotFound) {
+		return time.Time{}, false, ErrNotFound
+	}
+	return at, ok, err
 }

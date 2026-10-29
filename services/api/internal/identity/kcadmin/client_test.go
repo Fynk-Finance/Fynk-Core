@@ -24,6 +24,7 @@ type fakeKC struct {
 	expiresIn int
 	userBody  string
 	userCode  int
+	okBody    string // replaces the default user answer when set
 	puts      []map[string]any
 	deletes   []string
 	lastForm  string
@@ -47,6 +48,10 @@ func (f *fakeKC) handler() http.Handler {
 			if f.userCode != 0 {
 				w.WriteHeader(f.userCode)
 				_, _ = w.Write([]byte(f.userBody))
+				return
+			}
+			if f.okBody != "" {
+				_, _ = w.Write([]byte(f.okBody))
 				return
 			}
 			_, _ = w.Write([]byte(`{"id":"u1","email":"camila@correo.com","firstName":"Camila","lastName":"Rojas","emailVerified":true,"createdTimestamp":1793109791000,"attributes":{"terms_and_conditions":["1"]},"enabled":true}`))
@@ -229,5 +234,48 @@ func TestUnavailableWithoutSecretOrServer(t *testing.T) {
 	down := New(config.Config{KeycloakURL: "http://127.0.0.1:1", KeycloakRealm: "fynk", KeycloakAdminClientSecret: secret}, nil)
 	if _, err := down.GetUser(context.Background(), "u1"); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("unreachable: %v", err)
+	}
+}
+
+func TestEmailResetAt(t *testing.T) {
+	cases := []struct {
+		name string
+		body string
+		want time.Time
+		ok   bool
+	}{
+		{"set", `{"attributes":{"fynkEmailResetAt":["1793534400123"]}}`, time.UnixMilli(1793534400123).UTC(), true},
+		{"other attributes only", `{"attributes":{"terms_and_conditions":["1"]}}`, time.Time{}, false},
+		{"no attributes", `{"id":"u1"}`, time.Time{}, false},
+		{"empty list", `{"attributes":{"fynkEmailResetAt":[]}}`, time.Time{}, false},
+		{"not a number", `{"attributes":{"fynkEmailResetAt":["yesterday"]}}`, time.Time{}, false},
+		{"zero", `{"attributes":{"fynkEmailResetAt":["0"]}}`, time.Time{}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := setup(t, &fakeKC{expiresIn: 300, okBody: tc.body})
+			at, ok, err := c.EmailResetAt(context.Background(), "u1")
+			if err != nil || ok != tc.ok || !at.Equal(tc.want) {
+				t.Fatalf("got %v %v %v, want %v %v", at, ok, err, tc.want, tc.ok)
+			}
+		})
+	}
+}
+
+func TestEmailResetAtErrors(t *testing.T) {
+	f := &fakeKC{expiresIn: 300, userCode: http.StatusNotFound}
+	c := setup(t, f)
+	if _, _, err := c.EmailResetAt(context.Background(), "u1"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("404: %v", err)
+	}
+	f.mu.Lock()
+	f.userCode, f.userBody = http.StatusInternalServerError, "u1 secret-detail"
+	f.mu.Unlock()
+	_, _, err := c.EmailResetAt(context.Background(), "u1")
+	if err == nil || errors.Is(err, ErrNotFound) || strings.Contains(err.Error(), "u1") || strings.Contains(err.Error(), "secret-detail") {
+		t.Fatalf("500: %v", err)
+	}
+	if _, _, err := New(config.Config{}, nil).EmailResetAt(context.Background(), "u1"); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("unconfigured: %v", err)
 	}
 }

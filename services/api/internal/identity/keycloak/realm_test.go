@@ -583,3 +583,25 @@ func TestSMTPComesFromTheEnvironment(t *testing.T) {
 		}
 	}
 }
+
+// HU-005 / M2: fynkEmailResetAt records a password reset with the email code. The person must
+// not be able to see or write it: it stays an unmanaged attribute, which ADMIN_VIEW hides from
+// the account console, the account API and the forms. If it is ever declared, it is admin only.
+func TestEmailResetStampIsAdminOnly(t *testing.T) {
+	r, raw := loadRealm(t)
+	var up userProfile
+	if err := json.Unmarshal([]byte(r.Components["org.keycloak.userprofile.UserProfileProvider"][0].Config["kc.user.profile.config"][0]), &up); err != nil {
+		t.Fatalf("parse user profile: %v", err)
+	}
+	if up.UnmanagedAttributePolicy != "ADMIN_VIEW" {
+		t.Fatalf("unmanagedAttributePolicy = %q, want ADMIN_VIEW", up.UnmanagedAttributePolicy)
+	}
+	for _, a := range up.Attributes {
+		if a.Name == "fynkEmailResetAt" {
+			t.Fatal("fynkEmailResetAt must stay unmanaged, or be admin only in both view and edit")
+		}
+	}
+	if regexp.MustCompile(`fynkEmailResetAt`).Match(raw) {
+		t.Fatal("the realm file must not mention fynkEmailResetAt (no mapper may put it in a token)")
+	}
+}
