@@ -166,8 +166,8 @@ func TestNewRouterRejectsDuplicateModules(t *testing.T) {
 func TestGeneratedHealthPathsArePublicAndAnswerFromTheContract(t *testing.T) {
 	srv := newServer(t, nil)
 	for _, m := range All(Deps{}) {
-		if m.Name() == "identity" {
-			continue // identity replaced the example path with its real endpoints
+		if m.Name() == "identity" || m.Name() == "backup" {
+			continue // these modules replaced the example path with their real endpoints
 		}
 		res, body := get(t, srv.URL+"/v1/"+m.Name()+"/health", "")
 		if res.status != http.StatusOK {
