@@ -2,17 +2,29 @@
 import { randomUUID } from 'expo-crypto';
 
 import type { Clock, MoneyMinor } from '@shared/domain/types';
+import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
-import { NOTIFICATIONS_ROUTE, useUnreadCount } from '@modules/notifications';
+import {
+  getPaymentReminderLeadDays,
+  NOTIFICATIONS_ROUTE,
+  notificationsPort,
+  onNotificationSettingsChanged,
+  useUnreadCount,
+} from '@modules/notifications';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
 import { recurringMigrations } from './adapters/vault/migrations';
 import { createVaultRecurringStore } from './adapters/vault/vaultRecurringStore';
 import { createRecurringService } from './application/recurringService';
+import { createReminderScheduler } from './application/reminders';
 import type { SubscriptionsSummary } from './domain/amounts';
 import { createBilleteraScreen } from './ui/BilleteraScreen';
-import { createRecurringFormScreen, RECURRING_FORM_ROUTE } from './ui/RecurringFormScreen';
+import {
+  createRecurringFormScreen,
+  RECURRING_EDIT_ROUTE,
+  RECURRING_FORM_ROUTE,
+} from './ui/RecurringFormScreen';
 
 export type { SubscriptionsSummary };
 export { RECURRING_FORM_ROUTE };
@@ -25,7 +37,21 @@ const service = createRecurringService({
   store: () => createVaultRecurringStore(getVaultDb()),
   clock,
   newId: randomUUID,
+  reminders: createReminderScheduler({
+    notifications: notificationsPort,
+    leadDays: getPaymentReminderLeadDays,
+    clock,
+  }),
 });
+
+// Reminders only while the app is open: when the vault opens, after each sync and when the
+// person changes Ajustes de notificaciones, every item gets its next reminder again.
+const refreshReminders = () => {
+  void service.refreshReminders().catch(() => undefined);
+};
+appEvents.on('vault.unlocked', refreshReminders);
+appEvents.on('sync.completed', refreshReminders);
+onNotificationSettingsChanged(refreshReminders);
 
 /** "Gastos fijos de este mes": every active item counted by its charges in the current month. */
 export const getFixedExpensesThisMonth = (): Promise<MoneyMinor> =>
@@ -51,6 +77,12 @@ export const routes: ModuleRoutes = {
       name: RECURRING_FORM_ROUTE,
       component: createRecurringFormScreen({ service }),
       path: 'billetera/recurrentes/nuevo',
+    },
+    {
+      // A reminder opens its item: fynk://billetera/recurrentes/<id>.
+      name: RECURRING_EDIT_ROUTE,
+      component: createRecurringFormScreen({ service }),
+      path: 'billetera/recurrentes/:id',
     },
   ],
 };

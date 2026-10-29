@@ -70,6 +70,13 @@ export const NotificationSettingsScreen = createNotificationSettingsScreen({ ser
  */
 export const getPaymentReminderLeadDays = (): Promise<PaymentLeadDays> => service.paymentLeadDays();
 
+/**
+ * Called when the person changes Ajustes de notificaciones. M9 schedules its reminders again, so
+ * a new lead time or a kind turned back on applies at once. Returns a function that unsubscribes.
+ */
+export const onNotificationSettingsChanged = (listener: () => void): (() => void) =>
+  service.onSettingsChanged(listener);
+
 /** The inbox. The bell of every blue header opens it. */
 export const NOTIFICATIONS_ROUTE = 'notifications.Inbox' as const;
 

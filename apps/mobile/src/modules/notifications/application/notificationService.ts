@@ -38,6 +38,11 @@ export interface NotificationService extends NotificationsPort {
   /** Days before a payment for its reminder (M9 reads it when it schedules). */
   paymentLeadDays(): Promise<PaymentLeadDays>;
   setPaymentLeadDays(days: PaymentLeadDays): Promise<void>;
+  /**
+   * Called after a setting changes (a kind, "Permitir notificaciones" or the lead days), so the
+   * modules that schedule reminders schedule them again. Returns a function that unsubscribes.
+   */
+  onSettingsChanged(listener: () => void): () => void;
   /** Called after every change of the inbox. Returns a function that unsubscribes. */
   subscribe(listener: () => void): () => void;
 }
@@ -63,6 +68,10 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
     for (const listener of [...listeners]) listener();
   };
   const now = () => deps.clock.now().toISOString();
+  const settingsListeners = new Set<() => void>();
+  const settingsChanged = () => {
+    for (const listener of [...settingsListeners]) listener();
+  };
 
   const allowAll = async (store: InboxStore) => (await store.preference('allowAll')) !== '0';
 
@@ -176,6 +185,7 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
       await store.setEnabled(kind, on);
       // A kind turned off stops ringing at once: its pending reminders are dropped.
       if (!on) await dropDisabledReminders(store);
+      settingsChanged();
     },
 
     async settings() {
@@ -195,6 +205,7 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
       const store = deps.store();
       await store.setPreference('allowAll', on ? '1' : '0');
       if (!on) await dropDisabledReminders(store);
+      settingsChanged();
     },
 
     async paymentLeadDays() {
@@ -203,6 +214,14 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
 
     async setPaymentLeadDays(days) {
       await deps.store().setPreference('paymentLeadDays', String(parseLeadDays(String(days))));
+      settingsChanged();
+    },
+
+    onSettingsChanged(listener) {
+      settingsListeners.add(listener);
+      return () => {
+        settingsListeners.delete(listener);
+      };
     },
 
     async list() {
