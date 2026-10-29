@@ -70,6 +70,7 @@ export const routes: ModuleRoutes = {
     useUnreadCount,
     accountRoute: 'identity.Account',
     notificationsRoute: NOTIFICATIONS_ROUTE,
+    recommendationsRoute: 'Recomendaciones',
   }),
   screens: [
     {

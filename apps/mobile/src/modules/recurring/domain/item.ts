@@ -2,7 +2,7 @@
 // day it is charged. Pure validation; the form shows the errors next to each field.
 import type { CategoryId, Id, IsoDate, IsoDateTime, MoneyMinor } from '@shared/domain/types';
 
-import type { RecurringItem, Schedule } from './types';
+import type { RecurringItem, Schedule, Usage } from './types';
 
 /** The stored item: the fields Billetera and the reminders need besides the amounts. */
 export interface StoredRecurringItem extends RecurringItem {
@@ -24,6 +24,11 @@ export interface RecurringInput {
   categoryId: CategoryId;
   accountId?: Id | null;
   reminderEnabled?: boolean;
+  /**
+   * "¿Cuánto la usas?" (SCRUM-56), only for subscriptions. Left out, an edit keeps the current
+   * mark; null clears it. A fixed expense never has one.
+   */
+  usage?: Usage | null;
 }
 
 export type RecurringField = 'name' | 'amount' | 'schedule';

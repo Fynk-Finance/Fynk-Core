@@ -1,5 +1,6 @@
 // Billetera (SCRUM-54 "En Billetera"): "Gastos fijos de este mes", the recurring cards of the
 // design with their schedule and next charge, "+ Agregar", editing a card, empty state, themes.
+// SCRUM-56: "Otros gastos" with the subscriptions, "Poco uso" and the savings banner.
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
@@ -84,6 +85,7 @@ async function renderBilletera(preference: ThemePreference = 'light', unread = 0
     useUnreadCount: () => unread,
     accountRoute: 'identity.Account',
     notificationsRoute: 'notifications.Inbox',
+    recommendationsRoute: 'Recomendaciones',
   });
   await render(
     <ThemeProvider initialPreference={preference} store={noStore}>
@@ -93,6 +95,7 @@ async function renderBilletera(preference: ThemePreference = 'light', unread = 0
           <Stack.Screen name={RECURRING_FORM_ROUTE} component={Target} />
           <Stack.Screen name="notifications.Inbox" component={Target} />
           <Stack.Screen name="identity.Account" component={Target} />
+          <Stack.Screen name="Recomendaciones" component={Target} />
         </Stack.Navigator>
       </NavigationContainer>
     </ThemeProvider>,
@@ -101,6 +104,15 @@ async function renderBilletera(preference: ThemePreference = 'light', unread = 0
 
 async function addAll() {
   for (const item of billetera) await service.create(item);
+}
+
+/** Streaming de series (r6) and Almacenamiento (r8) marked "Casi nunca", as in the design. */
+async function markLowUse() {
+  for (const [id, i] of [
+    ['r6', 5],
+    ['r8', 7],
+  ] as const)
+    await service.update(id, { ...billetera[i]!, usage: 'low' });
 }
 
 describe('Billetera', () => {
@@ -127,6 +139,54 @@ describe('Billetera', () => {
     expect(screen.getByTestId('recurring.card.r4')).toHaveTextContent(
       /Transporte.*\$6\.500.*Diario.*Lun a vie.*En 2 días/,
     );
+  });
+
+  it('the cards are the fixed expenses; the subscriptions go to "Otros gastos"', async () => {
+    await addAll();
+    await renderBilletera();
+    const grid = await screen.findByTestId('recurring.billetera.grid');
+    expect(grid).not.toHaveTextContent(/Streaming/);
+    expect(screen.getByTestId('recurring.billetera.subscriptions')).toHaveTextContent(
+      /Otros gastos.*4 activas · \$112\.600\/mes/,
+    );
+    expect(screen.getByTestId('recurring.subscription.r5')).toHaveTextContent(
+      /Streaming de video.*Renueva 28 oct.*\$38\.900/,
+    );
+    expect(screen.getByTestId('recurring.subscription.r6')).toHaveTextContent(/Renueva 2 nov/);
+  });
+
+  it('no savings banner until a subscription is marked "Casi nunca"', async () => {
+    await addAll();
+    await renderBilletera();
+    await screen.findByTestId('recurring.billetera.subscriptions');
+    expect(screen.queryByTestId('recurring.billetera.savings')).toBeNull();
+    expect(screen.queryByText('Poco uso')).toBeNull();
+  });
+
+  it('shows "Ahorra $56.800 al mes" and "Poco uso", as in the design (SCRUM-56)', async () => {
+    await addAll();
+    await markLowUse();
+    await renderBilletera();
+    expect(await screen.findByTestId('recurring.billetera.savings')).toHaveTextContent(
+      /Oportunidad de ahorro.*Ahorra \$56\.800 al mes.*2 suscripciones que casi no usas/,
+    );
+    expect(screen.getByTestId('recurring.subscription.r6')).toHaveTextContent(/Poco uso/);
+    expect(screen.getByTestId('recurring.subscription.r5')).not.toHaveTextContent(/Poco uso/);
+  });
+
+  it('the savings banner opens Recomendaciones', async () => {
+    await addAll();
+    await markLowUse();
+    await renderBilletera();
+    await fireEvent.press(await screen.findByTestId('recurring.billetera.savings'));
+    expect(await screen.findByText('arrived:Recomendaciones:')).toBeTruthy();
+  });
+
+  it('tapping a subscription opens the form, where its usage is marked', async () => {
+    await addAll();
+    await renderBilletera();
+    await fireEvent.press(await screen.findByTestId('recurring.subscription.r7'));
+    expect(await screen.findByText(`arrived:${RECURRING_FORM_ROUTE}:r7`)).toBeTruthy();
   });
 
   it('"+ Agregar" opens the form', async () => {
@@ -165,7 +225,9 @@ describe('Billetera', () => {
 
   it('renders in the dark theme', async () => {
     await addAll();
+    await markLowUse();
     await renderBilletera('dark');
+    expect(await screen.findByTestId('recurring.billetera.savings')).toBeTruthy();
     expect(await screen.findByTestId('recurring.billetera.total')).toHaveTextContent('$1.930.600');
   });
 });

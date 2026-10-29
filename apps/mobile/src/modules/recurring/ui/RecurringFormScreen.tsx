@@ -24,6 +24,7 @@ import {
 } from '@shared/ui';
 
 import type { RecurringError, RecurringField } from '../domain/item';
+import type { Usage } from '../domain/types';
 import type { RecurringService } from '../application/recurringService';
 import {
   FORM_CATEGORIES,
@@ -39,6 +40,8 @@ import { recurringStrings } from './strings.es-CO';
 const t = recurringStrings.form;
 /** Monday first, as people read a week in Colombia. */
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
+
+const USAGES: readonly Usage[] = ['high', 'some', 'low'];
 
 export const RECURRING_FORM_ROUTE = 'recurring.Form' as const;
 /** The same form opened by a reminder's link, fynk://billetera/recurrentes/<id>. */
@@ -234,6 +237,26 @@ export function createRecurringFormScreen({ service }: { service: RecurringServi
               ) : null}
             </View>
           )}
+
+          {form.kind === 'subscription' ? (
+            <View style={styles.field}>
+              <AppText variant="label">{t.usage}</AppText>
+              <View style={styles.chips} accessibilityRole="radiogroup">
+                {USAGES.map((u) => (
+                  <Chip
+                    key={u}
+                    label={t.usages[u]}
+                    selected={form.usage === u}
+                    onPress={() => set({ usage: form.usage === u ? null : u })}
+                    testID={`recurring.form.usage.${u}`}
+                  />
+                ))}
+              </View>
+              <AppText variant="caption" color="textSecondary">
+                {t.usageHelper}
+              </AppText>
+            </View>
+          ) : null}
 
           <View style={styles.reminder}>
             <View style={styles.reminderText}>

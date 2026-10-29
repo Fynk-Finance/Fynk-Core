@@ -115,6 +115,26 @@ describe('RecurringFormScreen', () => {
     await waitFor(async () => expect((await service.get(id))?.amountMinor).toBe(2_500_000));
   });
 
+  it('marks how much a subscription is used, only for subscriptions (SCRUM-56)', async () => {
+    const id = await service.create({
+      kind: 'subscription',
+      name: 'Streaming de series',
+      amountMinor: 3_290_000,
+      schedule: { periodicity: 'monthly', anchorDay: 2 },
+      categoryId: 'subscriptions',
+    });
+    await renderForm({ id });
+    expect(await screen.findByText('¿Cuánto la usas?')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('recurring.form.usage.low'));
+    await fireEvent.press(screen.getByTestId('recurring.form.save'));
+    await waitFor(async () => expect((await service.get(id))?.usage).toBe('low'));
+  });
+
+  it('a fixed expense does not ask how much it is used', async () => {
+    await renderForm();
+    expect(screen.queryByText('¿Cuánto la usas?')).toBeNull();
+  });
+
   it('deletes after the confirmation', async () => {
     const id = await service.create({
       kind: 'fixed',

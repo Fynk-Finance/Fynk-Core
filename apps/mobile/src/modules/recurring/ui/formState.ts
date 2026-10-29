@@ -11,7 +11,13 @@ import {
   type RecurringInput,
   type StoredRecurringItem,
 } from '../domain/item';
-import { MON_TO_FRI, WEEKDAY, type RecurringKind, type Schedule } from '../domain/types';
+import {
+  MON_TO_FRI,
+  WEEKDAY,
+  type RecurringKind,
+  type Schedule,
+  type Usage,
+} from '../domain/types';
 
 export type FormPeriodicity = 'monthly' | 'weekly' | 'daily';
 
@@ -27,6 +33,8 @@ export interface RecurringForm {
   /** Weekly and daily: the weekday mask. */
   weekdaysMask: number;
   reminderEnabled: boolean;
+  /** "¿Cuánto la usas?", only kept for subscriptions. */
+  usage: Usage | null;
 }
 
 /** Categories the form offers, in this order. */
@@ -51,6 +59,7 @@ export const emptyForm = (): RecurringForm => ({
   day: '',
   weekdaysMask: WEEKDAY.mon,
   reminderEnabled: true,
+  usage: null,
 });
 
 /** Groups the digits of a peso amount: 1400000 → "$1.400.000". */
@@ -72,6 +81,7 @@ export function formFromItem(item: StoredRecurringItem): RecurringForm {
     weekdaysMask:
       s.periodicity === 'weekly' || s.periodicity === 'daily' ? s.weekdaysMask : WEEKDAY.mon,
     reminderEnabled: item.reminderEnabled,
+    usage: item.usage,
   };
 }
 
@@ -108,6 +118,7 @@ export function readForm(
     schedule: scheduleOf(form),
     categoryId: form.categoryId,
     reminderEnabled: form.reminderEnabled,
+    usage: form.kind === 'subscription' ? form.usage : null,
   };
   const errors = validateRecurring(input);
   return Object.keys(errors).length === 0 ? { ok: true, input } : { ok: false, errors };
