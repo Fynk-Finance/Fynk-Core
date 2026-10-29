@@ -1,31 +1,206 @@
 # Contract of the market module, owned by M15 (see CODEOWNERS).
 # Only M15 edits this file. Shared parts come from ../openapi.yaml.
-# The health path below is M0's example so generation works from day one.
-# Replace it with the real endpoints of docs/modules/00-shared-contracts.md, section 5.
+# Every answer is the same for every user: nothing here reads a balance or a profile
+# (Decreto 2555, art. 2.40.1.1.2 and 2.40.1.1.3).
 openapi: 3.1.0
 info:
   title: Fynk API · Market
-  version: 0.1.0
+  version: 0.2.0
 tags:
   - name: market
-    description: 'CDT catalog, reference rate and quotes (M15).'
+    description: 'CDT catalog, Banco de la República reference rate and US stock reference prices (M15). Informative only.'
 paths:
-  /market/health:
+  /market/cdt-products:
     get:
       tags: [market]
-      operationId: marketHealth
-      summary: Example health path of the market module
-      description: Public. Answers while the module is a stub. Removed when the module adds real endpoints.
-      security: []
+      operationId: getCdtProducts
+      summary: CDT catalog, the same for every user
+      description: Public CDT products of the connected banks (Banco Demo is simulated). Cached for 1 hour. Sorted by name; the app lets the person choose the order and the filters.
       responses:
         '200':
-          description: The module is mounted.
+          description: The catalog.
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ModuleHealth'
+                $ref: '#/components/schemas/MarketCdtCatalog'
               example:
-                module: market
-                status: stub
+                products:
+                  - {
+                      id: cdt-demo-180,
+                      name: CDT Digital Banco Demo 180 Días,
+                      issuer: Banco Demo,
+                      termDays: 180,
+                      rateEaBps: 1050,
+                      minAmountMinor: 50000000,
+                      risk: low,
+                      simulated: true,
+                    }
+                  - {
+                      id: cdt-demo-360,
+                      name: CDT Digital Banco Demo 360 Días,
+                      issuer: Banco Demo,
+                      termDays: 360,
+                      rateEaBps: 1085,
+                      minAmountMinor: 100000000,
+                      risk: low,
+                      simulated: true,
+                    }
+                fetchedAt: '2026-10-28T17:00:00Z'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '503':
+          description: No bank answered and nothing is cached. Code `market_unavailable`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/market_unavailable
+                title: Market data unavailable
+                status: 503
+                code: market_unavailable
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
+  /market/cdt-reference:
+    get:
+      tags: [market]
+      operationId: getCdtReference
+      summary: Average CDT rate at 360 days published by Banco de la República
+      description: Weekly average rate, downloaded at most once a day. When the download fails the last value is kept with its week, and `stale` is true when that week is more than 14 days old.
+      responses:
+        '200':
+          description: The reference rate.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketCdtReference'
+              example:
+                termDays: 360
+                rateEaBps: 985
+                week: '2026-10-19'
+                sourceUrl: https://www.banrep.gov.co/es/tasas-captacion-semanales-y-mensuales
+                fetchedAt: '2026-10-28T06:00:00Z'
+                stale: false
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '503':
+          description: The rate was never downloaded. Code `market_unavailable`. The app hides the reference box.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /market/quotes:
+    post:
+      tags: [market]
+      operationId: getMarketQuotes
+      summary: Reference prices of a fixed list of US stocks
+      description: |
+        The same 10 symbols for every user, defined in configuration. Alpaca market data, IEX feed,
+        delayed, cached for 15 minutes. Prices in US cents; times in UTC. POST with an empty body
+        so no query string is ever needed.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarketQuotesRequest'
+            example: {}
+      responses:
+        '200':
+          description: The board.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketQuotes'
+              example:
+                quotes:
+                  - {
+                      symbol: AAPL,
+                      name: Apple,
+                      lastPriceCents: 22750,
+                      dayChangeBps: 125,
+                      at: '2026-10-28T19:59:00Z',
+                    }
+                fetchedAt: '2026-10-28T20:00:00Z'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '503':
+          description: Alpaca is not configured or did not answer, and nothing is cached. Code `market_unavailable`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+components:
+  schemas:
+    MarketCdtProduct:
+      type: object
+      required: [id, name, issuer, termDays, rateEaBps, minAmountMinor, risk, simulated]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        issuer: { type: string }
+        termDays: { type: integer, minimum: 1 }
+        rateEaBps:
+          type: integer
+          description: Effective annual rate in basis points, 1050 = 10,50 % E.A.
+        minAmountMinor:
+          type: integer
+          format: int64
+          description: Minimum amount in COP centavos.
+        risk: { type: string, enum: [low, moderate, high] }
+        simulated:
+          type: boolean
+          description: True for Banco Demo. The app shows the "Simulado" badge.
+    MarketCdtCatalog:
+      type: object
+      required: [products, fetchedAt]
+      properties:
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/MarketCdtProduct'
+        fetchedAt: { type: string, format: date-time }
+    MarketCdtReference:
+      type: object
+      required: [termDays, rateEaBps, week, sourceUrl, fetchedAt, stale]
+      properties:
+        termDays: { type: integer }
+        rateEaBps: { type: integer }
+        week:
+          type: string
+          format: date
+          description: First day of the published week.
+        sourceUrl: { type: string }
+        fetchedAt: { type: string, format: date-time }
+        stale: { type: boolean }
+    MarketQuotesRequest:
+      type: object
+      additionalProperties: false
+      description: Empty. The list of symbols is fixed in configuration, the same for everyone.
+    MarketQuote:
+      type: object
+      required: [symbol, name, lastPriceCents, dayChangeBps, at]
+      properties:
+        symbol: { type: string }
+        name: { type: string }
+        lastPriceCents:
+          type: integer
+          format: int64
+          description: Last trade in US cents.
+        dayChangeBps:
+          type: integer
+          description: Change against the previous close in basis points, 125 = +1,25 %.
+        at: { type: string, format: date-time }
+    MarketQuotes:
+      type: object
+      required: [quotes, fetchedAt]
+      properties:
+        quotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/MarketQuote'
+        fetchedAt: { type: string, format: date-time }
