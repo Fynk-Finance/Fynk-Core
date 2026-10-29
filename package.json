@@ -12,6 +12,10 @@
     "format": "prettier --write",
     "format:check": "prettier --check ."
   },
+  "op-sqlite": {
+    "sqlcipher": true,
+    "fts5": true
+  },
   "devDependencies": {
     "@redocly/cli": "2.71.0",
     "@stoplight/prism-cli": "5.16.0",

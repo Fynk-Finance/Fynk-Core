@@ -8,7 +8,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fynkfinance.app"
+      "bundleIdentifier": "com.fynkfinance.app",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Fynk usa Face ID para desbloquear tu bóveda en este teléfono."
+      }
     },
     "android": {
       "adaptiveIcon": {
