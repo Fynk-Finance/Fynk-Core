@@ -95,6 +95,16 @@ func (s server) GetConsent(ctx context.Context, req httpapi.GetConsentRequestObj
 	return httpapi.GetConsent200JSONResponse(out), err
 }
 
+func (s server) RevokeConsent(ctx context.Context, req httpapi.RevokeConsentRequestObject) (httpapi.RevokeConsentResponseObject, error) {
+	user, _ := auth.UserFrom(ctx)
+	c, err := s.svc.Revoke(ctx, user.ID, req.Id.String())
+	if err != nil {
+		return nil, err
+	}
+	out, err := toAPI(c)
+	return httpapi.RevokeConsent200JSONResponse(out), err
+}
+
 func toAPI(c domain.Consent) (httpapi.ConsentsConsent, error) {
 	out := httpapi.ConsentsConsent{
 		Provider:    c.Provider,
@@ -107,6 +117,8 @@ func toAPI(c domain.Consent) (httpapi.ConsentsConsent, error) {
 		GrantedAt:   utc(c.GrantedAt),
 		ExpiresAt:   utc(c.ExpiresAt),
 		RevokedAt:   utc(c.RevokedAt),
+
+		ProviderNotifiedAt: utc(c.ProviderNotifiedAt),
 	}
 	if err := out.Id.UnmarshalText([]byte(c.ID)); err != nil {
 		return httpapi.ConsentsConsent{}, err
@@ -138,7 +150,7 @@ func errorHandler(fallback func(http.ResponseWriter, *http.Request, error)) func
 		switch rule {
 		case domain.ErrNotFound:
 			status = http.StatusNotFound
-		case domain.ErrNotPending:
+		case domain.ErrNotPending, domain.ErrNotRevocable:
 			status = http.StatusConflict
 		}
 		problem.Write(w, problem.New(status, rule.Code, http.StatusText(status), rule.Detail))

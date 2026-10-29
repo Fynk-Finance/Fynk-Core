@@ -24,7 +24,8 @@ type Postgres struct {
 func New(db *pgxpool.Pool) *Postgres { return &Postgres{db: db} }
 
 const consentColumns = `id::text, user_id, device_id::text, provider, scopes, purpose, term_days, status,
-	text_version, evidence, provider_consent_id, created_at, granted_at, expires_at, revoked_at, revoked_reason`
+	text_version, evidence, provider_consent_id, created_at, granted_at, expires_at, revoked_at, revoked_reason,
+	provider_notified_at, next_notify_at, notify_attempts`
 
 // CurrentText returns the latest published text.
 func (p *Postgres) CurrentText(ctx context.Context) (domain.Text, error) {
@@ -138,6 +139,50 @@ func (p *Postgres) ExpireDue(ctx context.Context, now time.Time) ([]domain.Conse
 	return list, nil
 }
 
+// MarkRevoked implements service.Store. The status check in the WHERE makes it safe against a
+// concurrent revoke, grant or expiry.
+func (p *Postgres) MarkRevoked(ctx context.Context, c domain.Consent) error {
+	tag, err := p.db.Exec(ctx, `UPDATE consents.consents
+		SET status = 'revoked', revoked_at = $2, revoked_reason = $3, next_notify_at = $4
+		WHERE id = $1 AND status IN ('active', 'pending')`, c.ID, c.RevokedAt, c.RevokedReason, c.NextNotifyAt)
+	if err != nil {
+		return fmt.Errorf("consents: revoke: %w", err)
+	}
+	if tag.RowsAffected() != 1 {
+		return domain.ErrNotRevocable
+	}
+	return nil
+}
+
+// SaveNotice implements service.Store.
+func (p *Postgres) SaveNotice(ctx context.Context, c domain.Consent) error {
+	_, err := p.db.Exec(ctx, `UPDATE consents.consents
+		SET provider_notified_at = $2, next_notify_at = $3, notify_attempts = $4
+		WHERE id = $1 AND status = 'revoked'`, c.ID, c.ProviderNotifiedAt, c.NextNotifyAt, c.NotifyAttempts)
+	if err != nil {
+		return fmt.Errorf("consents: save notice: %w", err)
+	}
+	return nil
+}
+
+// ClaimNotices implements service.Store. SKIP LOCKED lets several API instances share the work
+// without notifying the same entity twice at once.
+func (p *Postgres) ClaimNotices(ctx context.Context, now, lease time.Time, limit int) ([]domain.Consent, error) {
+	list, err := p.query(ctx, `UPDATE consents.consents SET next_notify_at = $2
+		WHERE id IN (
+			SELECT id FROM consents.consents
+			WHERE status = 'revoked' AND provider_notified_at IS NULL AND next_notify_at <= $1
+			  AND revoked_at > $1 - interval '24 hours'
+			ORDER BY next_notify_at
+			LIMIT $3
+			FOR UPDATE SKIP LOCKED)
+		RETURNING `+consentColumns, now, lease, limit)
+	if err != nil {
+		return nil, fmt.Errorf("consents: claim notices: %w", err)
+	}
+	return list, nil
+}
+
 func (p *Postgres) query(ctx context.Context, sql string, args ...any) ([]domain.Consent, error) {
 	rows, err := p.db.Query(ctx, sql, args...)
 	if err != nil {
@@ -158,7 +203,7 @@ func collect(rows pgx.Rows) ([]domain.Consent, error) {
 		)
 		err := row.Scan(&c.ID, &c.UserID, &c.DeviceID, &c.Provider, &scopes, &c.Purpose, &c.TermDays, &status,
 			&c.TextVersion, &evidence, &providerConsentID, &c.CreatedAt, &c.GrantedAt, &c.ExpiresAt,
-			&c.RevokedAt, &revokedReason)
+			&c.RevokedAt, &revokedReason, &c.ProviderNotifiedAt, &c.NextNotifyAt, &c.NotifyAttempts)
 		if err != nil {
 			return domain.Consent{}, err
 		}

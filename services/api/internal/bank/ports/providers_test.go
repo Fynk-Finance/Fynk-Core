@@ -1,6 +1,7 @@
 package ports
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -59,5 +60,29 @@ func TestBankErrorsKeepTheirCodeThroughWrapping(t *testing.T) {
 	}
 	if ErrProviderUnavailable.Code != "provider_unavailable" {
 		t.Fatal(ErrProviderUnavailable)
+	}
+}
+
+type recordingRevoker struct{ calls []string }
+
+func (r *recordingRevoker) RevokeConsent(_ context.Context, provider, id string) error {
+	r.calls = append(r.calls, provider+"/"+id)
+	return nil
+}
+
+// Until M5 installs the real revoker, M4's calls fail and its retry job keeps trying.
+func TestTheRevokerIsUnavailableUntilInstalled(t *testing.T) {
+	t.Cleanup(func() { InstallRevoker(nil) })
+	if err := InstalledRevoker().RevokeConsent(context.Background(), "banco-demo", "c1"); !errors.Is(err, ErrProviderUnavailable) {
+		t.Fatalf("before install: err = %v", err)
+	}
+	rec := &recordingRevoker{}
+	InstallRevoker(rec)
+	if err := InstalledRevoker().RevokeConsent(context.Background(), "banco-demo", "c1"); err != nil || len(rec.calls) != 1 || rec.calls[0] != "banco-demo/c1" {
+		t.Fatalf("after install: %v %v", err, rec.calls)
+	}
+	InstallRevoker(nil)
+	if err := InstalledRevoker().RevokeConsent(context.Background(), "banco-demo", "c1"); !errors.Is(err, ErrProviderUnavailable) {
+		t.Fatalf("after uninstall: err = %v", err)
 	}
 }

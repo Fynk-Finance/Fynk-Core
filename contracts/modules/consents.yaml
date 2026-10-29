@@ -1,6 +1,6 @@
 # Contract of the consents module, owned by M4 (see CODEOWNERS).
 # Only M4 edits this file. Shared parts come from ../openapi.yaml.
-# Endpoints of docs/modules/00-shared-contracts.md, section 5. Revocation lands in the next step.
+# Endpoints of docs/modules/00-shared-contracts.md, section 5.
 openapi: 3.1.0
 info:
   title: Fynk API · Consents
@@ -181,6 +181,63 @@ paths:
           $ref: '../openapi.yaml#/components/responses/Problem'
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
+  /consents/{id}/revoke:
+    post:
+      tags: [consents]
+      operationId: revokeConsent
+      summary: Revoke a consent at once and notify the entity
+      description: |
+        Fynk stops receiving data from that entity immediately: the next sync fails with
+        409 consent_revoked. The entity is then notified; if it cannot be reached, Fynk keeps
+        trying every 10 minutes for 24 hours (providerNotifiedAt stays absent until it answers).
+        The app asks for biometrics or the password first, and deletes the link's bank token when
+        this answers. Revoking an already revoked consent returns it unchanged.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The revoked consent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentsConsent'
+              example:
+                id: 01928c7e-5b1a-7c3d-9e2f-4a6b8c0d2e4f
+                provider: banco-demo
+                scopes: [balances, transactions, account_details]
+                purpose: Mostrarte tus finanzas y recomendaciones dentro de Fynk.
+                termDays: 365
+                status: revoked
+                textVersion: 2026-10-v1
+                createdAt: '2026-10-27T15:04:05Z'
+                acceptedAt: '2026-10-27T15:04:05Z'
+                grantedAt: '2026-10-27T15:05:10Z'
+                expiresAt: '2027-10-27T15:05:10Z'
+                revokedAt: '2026-11-02T09:30:00Z'
+                providerNotifiedAt: '2026-11-02T09:30:01Z'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '404':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '409':
+          description: The consent already ended (expired or failed), so there is nothing to revoke. Code consent_not_revocable.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/consent_not_revocable
+                title: Conflict
+                status: 409
+                detail: Only an active or pending consent can be revoked.
+                code: consent_not_revocable
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
 components:
   schemas:
     ConsentsScope:
@@ -282,6 +339,10 @@ components:
         revokedAt:
           type: string
           format: date-time
+        providerNotifiedAt:
+          type: string
+          format: date-time
+          description: When the entity confirmed the revocation. Absent while Fynk is still notifying it.
     ConsentsList:
       type: object
       required: [items]

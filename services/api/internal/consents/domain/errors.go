@@ -22,4 +22,6 @@ var (
 	ErrNotPending             = &Error{"consent_not_pending", "Only a pending consent can be granted."}
 	ErrNotFound               = &Error{"consent_not_found", "The consent does not exist."}
 	ErrIdempotencyConflict    = &Error{"idempotency_conflict", "The Idempotency-Key was used for a different consent."}
+	ErrNotRevocable           = &Error{"consent_not_revocable", "Only an active or pending consent can be revoked."}
+	ErrAlreadyRevoked         = &Error{"consent_already_revoked", "The consent is already revoked."}
 )
