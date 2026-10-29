@@ -107,27 +107,14 @@ func TestEveryRouteNeedsATokenBeforeTheRequestIsParsed(t *testing.T) {
 	}
 }
 
-// Without the bank link settings, starting a link fails closed with provider_unavailable.
-func TestTheLinkAnswersProviderUnavailableWithoutItsSettings(t *testing.T) {
+// Without the bank link settings, the link and the bank proxy fail closed with
+// provider_unavailable, and never echo the request.
+func TestTheLinkAndTheProxyAnswerProviderUnavailableWithoutTheirSettings(t *testing.T) {
 	srv := newAPI(t)
 	bodies := map[string]string{
 		"/v1/bank/authorizations": `{"provider":"banco-demo","consentId":"0192f0a0-0000-7000-8000-000000000001",` +
 			`"codeChallenge":"E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM","codeChallengeMethod":"S256","state":"9b2f6c1e4a7d"}`,
 		"/v1/bank/authorizations/0192f0a0-0000-7000-8000-000000000002/exchange": `{"code":"c","codeVerifier":"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"}`,
-	}
-	for path, body := range bodies {
-		res := call(t, http.MethodPost, srv.URL+path, auth.DevToken, body)
-		if res.status != http.StatusServiceUnavailable || code(t, res.body) != "provider_unavailable" {
-			t.Errorf("%s: %d %s", path, res.status, res.body)
-		}
-	}
-}
-
-// The query and refresh endpoints are in the contract (so the app can use the Prism mock) but
-// answer 501 until the next part of M5 step 2.
-func TestTheQueryAndRefreshEndpointsAnswer501UntilTheirPart(t *testing.T) {
-	srv := newAPI(t)
-	bodies := map[string]string{
 		"/v1/bank/accounts/query": `{"linkId":"0192f0a0-0000-7000-8000-000000000003","accessToken":"t"}`,
 		"/v1/bank/transactions/query": `{"linkId":"0192f0a0-0000-7000-8000-000000000003","accessToken":"t",` +
 			`"providerAccountId":"acc-1","since":"2026-01-01T00:00:00Z"}`,
@@ -135,7 +122,7 @@ func TestTheQueryAndRefreshEndpointsAnswer501UntilTheirPart(t *testing.T) {
 	}
 	for path, body := range bodies {
 		res := call(t, http.MethodPost, srv.URL+path, auth.DevToken, body)
-		if res.status != http.StatusNotImplemented || code(t, res.body) != "not_implemented" {
+		if res.status != http.StatusServiceUnavailable || code(t, res.body) != "provider_unavailable" {
 			t.Errorf("%s: %d %s", path, res.status, res.body)
 		}
 		if strings.Contains(string(res.body), `"t"`) || strings.Contains(string(res.body), "accessToken") {

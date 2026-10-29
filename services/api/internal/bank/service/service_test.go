@@ -36,6 +36,7 @@ type fakeProvider struct {
 	exchanges []ports.CodeExchange
 	refreshes []string
 	tokens    ports.TokenSet
+	accounts  []ports.Account
 	err       error
 }
 
@@ -61,7 +62,9 @@ func (f *fakeProvider) Refresh(_ context.Context, t string) (ports.TokenSet, err
 	f.refreshes = append(f.refreshes, t)
 	return f.tokens, f.err
 }
-func (f *fakeProvider) Accounts(context.Context, string) ([]ports.Account, error) { return nil, f.err }
+func (f *fakeProvider) Accounts(context.Context, string) ([]ports.Account, error) {
+	return f.accounts, f.err
+}
 func (f *fakeProvider) Transactions(context.Context, string, string, time.Time, string) (ports.TxPage, error) {
 	return ports.TxPage{}, f.err
 }
@@ -146,6 +149,7 @@ func setup(t *testing.T) *fixture {
 	f.svc = New(Deps{
 		Providers: ProviderMap{"banco-demo": f.bank}, Pending: f.consents, Consents: f.consents,
 		Links: f.links, Authorizations: store.NewMemoryAuthorizations(c), Fingerprints: fp,
+		Limiter: store.NewMemoryLimits(c), Nonces: store.NewMemoryLimits(c),
 		Audit: f.audit, Clock: c, Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
 		RedirectURI: "fynk://bank/callback",
 	})

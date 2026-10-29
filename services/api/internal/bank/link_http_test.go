@@ -3,11 +3,13 @@ package bank
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -41,6 +43,24 @@ func (httpBank) ExchangeCode(context.Context, ports.CodeExchange) (ports.TokenSe
 	return ports.TokenSet{AccessToken: "access-1", RefreshToken: "refresh-1", ExpiresIn: 300 * time.Second}, nil
 }
 
+func (httpBank) Refresh(context.Context, string) (ports.TokenSet, error) {
+	return ports.TokenSet{AccessToken: "access-2", RefreshToken: "refresh-2", ExpiresIn: 300 * time.Second}, nil
+}
+
+func (httpBank) Accounts(context.Context, string) ([]ports.Account, error) {
+	return []ports.Account{{
+		ProviderAccountID: "acc-1", Kind: ports.AccountSavings, DisplayName: "Banco Demo · Ahorros",
+		Last4: "4821", Currency: "COP", BalanceMinor: 320000000, IsSimulated: true,
+	}}, nil
+}
+
+func (httpBank) Transactions(context.Context, string, string, time.Time, string) (ports.TxPage, error) {
+	return ports.TxPage{Items: []ports.Transaction{{
+		ProviderTxID: "tx-1", BookedAt: time.Date(2026, 10, 28, 13, 0, 0, 0, time.UTC), AmountMinor: -1840000,
+		Description: "MERCADO DEMO", Status: ports.TxBooked,
+	}}, NextCursor: "next-1"}, nil
+}
+
 // httpConsents is M4 for the HTTP tests: one pending and one granted consent of dev-user.
 type httpConsents struct{}
 
@@ -65,6 +85,7 @@ func newLinkAPI(t *testing.T) *httptest.Server {
 	svc := service.New(service.Deps{
 		Providers: service.ProviderMap{"banco-demo": httpBank{}}, Pending: httpConsents{}, Consents: httpConsents{},
 		Links: store.NewMemory(), Authorizations: store.NewMemoryAuthorizations(c), Fingerprints: fp,
+		Limiter: store.NewMemoryLimits(c), Nonces: store.NewMemoryLimits(c),
 		Clock: c, Log: slog.New(slog.NewTextHandler(io.Discard, nil)), RedirectURI: "fynk://bank/callback",
 	})
 	r := chi.NewRouter()
@@ -74,9 +95,21 @@ func newLinkAPI(t *testing.T) *httptest.Server {
 	return srv
 }
 
+var nonces atomic.Int64
+
+func nextNonce() string { return fmt.Sprintf("nonce-%016d", nonces.Add(1)) }
+
 func post(t *testing.T, url, device, body string) (int, http.Header, []byte) {
 	t.Helper()
+	return postWithNonce(t, url, device, nextNonce(), body)
+}
+
+func postWithNonce(t *testing.T, url, device, nonce, body string) (int, http.Header, []byte) {
+	t.Helper()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, url, strings.NewReader(body))
+	if nonce != "" {
+		req.Header.Set("X-Request-Nonce", nonce)
+	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+auth.DevToken)
 	if device != "" {
@@ -156,3 +189,80 @@ func TestTheLinkErrorsHaveTheirCodes(t *testing.T) {
 }
 
 func modDeps() module.Deps { return module.Deps{Log: slog.New(slog.NewTextHandler(io.Discard, nil))} }
+
+// link starts and exchanges a link over HTTP and returns its id and refresh token.
+func linkOverHTTP(t *testing.T, srv string) (string, string) {
+	t.Helper()
+	_, _, body := post(t, srv+"/v1/bank/authorizations", devDevice, startBody(pendingID))
+	var started struct {
+		AuthorizationID string `json:"authorizationId"`
+	}
+	_ = json.Unmarshal(body, &started)
+	_, _, body = post(t, srv+"/v1/bank/authorizations/"+started.AuthorizationID+"/exchange", devDevice,
+		`{"code":"c","codeVerifier":"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"}`)
+	var linked struct {
+		LinkID       string `json:"linkId"`
+		RefreshToken string `json:"refreshToken"`
+	}
+	_ = json.Unmarshal(body, &linked)
+	if linked.LinkID == "" {
+		t.Fatalf("no link: %s", body)
+	}
+	return linked.LinkID, linked.RefreshToken
+}
+
+func TestQueriesAndRefreshOverHTTP(t *testing.T) {
+	srv := newLinkAPI(t)
+	linkID, refresh := linkOverHTTP(t, srv.URL)
+
+	status, _, body := post(t, srv.URL+"/v1/bank/accounts/query", devDevice, `{"linkId":"`+linkID+`","accessToken":"access-1"}`)
+	if status != http.StatusOK || !strings.Contains(string(body), `"last4":"4821"`) ||
+		!strings.Contains(string(body), `"kind":"savings"`) || !strings.Contains(string(body), `"status":"active"`) {
+		t.Fatalf("accounts: %d %s", status, body)
+	}
+	status, _, body = post(t, srv.URL+"/v1/bank/transactions/query", devDevice,
+		`{"linkId":"`+linkID+`","accessToken":"access-1","providerAccountId":"acc-1","since":"2025-10-29T00:00:00Z"}`)
+	if status != http.StatusOK || !strings.Contains(string(body), `"amountMinor":-1840000`) ||
+		!strings.Contains(string(body), `"nextCursor":"next-1"`) {
+		t.Fatalf("transactions: %d %s", status, body)
+	}
+	status, _, body = post(t, srv.URL+"/v1/bank/tokens/refresh", devDevice, `{"linkId":"`+linkID+`","refreshToken":"`+refresh+`"}`)
+	if status != http.StatusOK || !strings.Contains(string(body), `"refreshToken":"refresh-2"`) {
+		t.Fatalf("refresh: %d %s", status, body)
+	}
+	status, _, body = post(t, srv.URL+"/v1/bank/tokens/refresh", devDevice, `{"linkId":"`+linkID+`","refreshToken":"`+refresh+`"}`)
+	if status != http.StatusConflict || code(t, body) != "refresh_token_mismatch" {
+		t.Fatalf("old refresh token: %d %s", status, body)
+	}
+}
+
+func TestEveryBankPostNeedsANewNonce(t *testing.T) {
+	srv := newLinkAPI(t)
+	url := srv.URL + "/v1/bank/authorizations"
+	status, _, body := postWithNonce(t, url, devDevice, "", startBody(pendingID))
+	if status != http.StatusBadRequest || code(t, body) != "nonce_required" {
+		t.Fatalf("no nonce: %d %s", status, body)
+	}
+	if status, _, _ = postWithNonce(t, url, devDevice, "nonce-replayed-000001", startBody(pendingID)); status != http.StatusCreated {
+		t.Fatalf("first use: %d", status)
+	}
+	status, _, body = postWithNonce(t, url, devDevice, "nonce-replayed-000001", startBody(pendingID))
+	if status != http.StatusConflict || code(t, body) != "replayed_request" {
+		t.Fatalf("replay: %d %s", status, body)
+	}
+}
+
+func TestTheThirtyFirstQueryAMinuteGets429WithRetryAfter(t *testing.T) {
+	srv := newLinkAPI(t)
+	linkID, _ := linkOverHTTP(t, srv.URL)
+	body := `{"linkId":"` + linkID + `","accessToken":"access-1"}`
+	for i := range service.QueriesPerMinute {
+		if status, _, b := post(t, srv.URL+"/v1/bank/accounts/query", devDevice, body); status != http.StatusOK {
+			t.Fatalf("query %d: %d %s", i+1, status, b)
+		}
+	}
+	status, header, b := post(t, srv.URL+"/v1/bank/accounts/query", devDevice, body)
+	if status != http.StatusTooManyRequests || code(t, b) != "rate_limited" || header.Get("Retry-After") == "" {
+		t.Fatalf("31st: %d %v %s", status, header, b)
+	}
+}

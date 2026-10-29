@@ -26,8 +26,13 @@ func newService(d module.Deps) *service.Service {
 		return nil
 	}
 	var auths store.Authorizations = store.NewMemoryAuthorizations(d.Clock)
+	var limits interface {
+		store.Limiter
+		store.Nonces
+	} = store.NewMemoryLimits(d.Clock)
 	if d.Redis != nil {
 		auths = store.NewRedisAuthorizations(d.Redis)
+		limits = store.NewRedisLimits(d.Redis)
 	}
 	providers, fingerprints, err := bankDemoProviders(d)
 	if err != nil {
@@ -41,6 +46,8 @@ func newService(d module.Deps) *service.Service {
 		Links:          store.New(d.DB),
 		Authorizations: auths,
 		Fingerprints:   fingerprints,
+		Limiter:        limits,
+		Nonces:         limits,
 		Audit:          d.Audit,
 		Clock:          d.Clock,
 		Log:            d.Log,

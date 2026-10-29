@@ -61,6 +61,8 @@ type Deps struct {
 	Links          link.Store
 	Authorizations store.Authorizations
 	Fingerprints   keys.Fingerprinter
+	Limiter        store.Limiter
+	Nonces         store.Nonces
 	Audit          audit.Recorder
 	Clock          clock.Clock
 	Log            *slog.Logger
