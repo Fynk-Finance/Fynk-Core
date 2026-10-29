@@ -1,0 +1,58 @@
+// Copy of the investment module (Spanish, Colombia). Informative wording only: a unit test scans
+// this file for words that suggest a product suits the person (Decreto 2555).
+export const investmentStrings = {
+  headerLabel: 'Inversión · Tus CDT',
+  chartLabel: (total: string) => `Saldo de tus CDT en el tiempo, hoy ${total}`,
+  periods: { '1M': '1M', '3M': '3M', '1A': '1A', Todo: 'Todo' },
+  periodLabel: 'Periodo del gráfico',
+  tiles: {
+    yearInterest: (year: number) => `Intereses estimados ${year}`,
+    averageRate: 'Tasa promedio de tus CDT',
+    nextMaturity: 'Próximo vencimiento',
+    none: '—',
+  },
+  holdings: {
+    title: 'Tus inversiones',
+    invest: '+ Invertir',
+    investHint: 'Abre el portal del Banco Demo en el navegador. Fynk no hace inversiones.',
+    row: (term: string, date: string) => `${term} · vence ${date}`,
+    empty: 'Aún no tienes CDT en tus cuentas conectadas.',
+  },
+  explore: {
+    title: 'Explorar',
+    segment: { cdt: 'CDT', stocks: 'Acciones' },
+    segmentLabel: 'Tipo de producto',
+    term: 'Plazo',
+    risk: 'Riesgo',
+    sort: 'Ordenar por',
+    all: 'Todos',
+    days: (n: number) => `${n} días`,
+    risks: { low: 'Bajo', moderate: 'Moderado', high: 'Alto' },
+    sorts: { name: 'Nombre', rate: 'Tasa', term: 'Plazo' },
+    simulated: 'Simulado',
+    productRow: (term: string, rate: string) => `${term} · ${rate}`,
+    useInCalculator: 'Usar esta tasa en la calculadora',
+    empty: 'No hay productos con esos filtros.',
+    unavailable: 'No pudimos cargar el catálogo. Intenta más tarde.',
+    stocksNote: 'Precios de referencia del mercado de EE. UU., con demora.',
+    stocksUnavailable: 'Los precios de referencia no están disponibles ahora.',
+    stockAt: (time: string) => `Último precio a las ${time}`,
+  },
+  calculator: {
+    title: 'Calculadora',
+    amount: 'Monto',
+    amountHelper: 'Escribe el monto que quieres simular.',
+    days: 'Plazo en días',
+    rate: 'Tasa E.A. (%)',
+    rateHelper: 'Escríbela o toca un CDT del catálogo.',
+    result: (interest: string) => `Recibirías aproximadamente ${interest} en intereses.`,
+    total: (total: string) => `Total al vencimiento: ${total}.`,
+    invalid: 'Completa monto, plazo y tasa para ver el resultado.',
+  },
+  reference: (rate: string, week: string) =>
+    `Tasa promedio CDT a 360 días en Colombia: ${rate} (Banco de la República, semana del ${week}).`,
+  referenceStale: 'Es el último dato publicado que tenemos.',
+  disclaimer:
+    'La información de esta sección es general e informativa. No es una recomendación ni asesoría de inversión. Las decisiones de inversión son tuyas.',
+  guestName: 'Invitado',
+} as const;
