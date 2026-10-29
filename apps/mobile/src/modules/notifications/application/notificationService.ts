@@ -2,15 +2,15 @@
 // inbox actions of the Notificaciones screen. Everything lives in the vault. There is no server
 // push: modules call notify() after a sync with the app open, and schedule() for reminders.
 //
-// schedule() stores the reminder; deliverDue() moves the ones whose time has passed into the
+// schedule() stores the reminder and asks the phone for a local notification at its time, which
+// fires even with the app closed. deliverDue() moves the ones whose time has passed into the
 // inbox when the app opens, so they appear even if the person never tapped the OS notification.
-// The OS notification itself comes with feature/local-scheduled-notifications.
 import type { Clock, Id, IsoDateTime } from '@shared/domain/types';
 import type { NotificationKind, NotificationsPort, NotifyInput } from '@shared/ports';
 
 import { idsOverLimit, INBOX_LIMIT, type InboxItem } from '../domain/inbox';
 import { ALWAYS_ON } from '../domain/kinds';
-import type { InboxStore } from './ports';
+import type { InboxStore, LocalNotifier } from './ports';
 
 export interface NotificationServiceDeps {
   /** The vault store. Throws VaultLockedError while the vault is locked. */
@@ -18,6 +18,8 @@ export interface NotificationServiceDeps {
   clock: Clock;
   newId: () => Id;
   inboxLimit?: number;
+  /** The phone's local notifications. Without it, reminders only reach the inbox. */
+  notifier?: LocalNotifier;
 }
 
 export interface NotificationService extends NotificationsPort {
@@ -67,6 +69,44 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
     return inserted;
   };
 
+  /**
+   * The OS notification of a reminder. Permission is asked the first time something is
+   * scheduled, after a short explanation. Without permission, or if the OS fails, the reminder
+   * still reaches the inbox through deliverDue when the app opens.
+   */
+  const scheduleOs = async (r: {
+    id: Id;
+    title: string;
+    body: string;
+    deepLink: string;
+    fireAt: Date;
+  }): Promise<string | null> => {
+    const notifier = deps.notifier;
+    if (!notifier) return null;
+    try {
+      const permission = await notifier.permission();
+      const allowed =
+        permission === 'granted' ||
+        (permission === 'undetermined' && (await notifier.askPermission()));
+      if (!allowed) return null;
+      return await notifier.schedule({
+        title: r.title,
+        body: r.body,
+        fireAt: r.fireAt,
+        data: { scheduledId: r.id, deepLink: r.deepLink },
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  const cancelOs = async (store: InboxStore, id: Id) => {
+    const osId = deps.notifier ? await store.scheduledOsId(id) : null;
+    if (!osId || !deps.notifier) return;
+    await deps.notifier.cancel(osId).catch(() => undefined);
+    await store.setScheduledOsId(id, null);
+  };
+
   return {
     async notify(n) {
       const store = deps.store();
@@ -78,16 +118,24 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
       const store = deps.store();
       if (!(await enabled(store, n.kind))) return;
       const { kind, title, body, deepLink, dedupeKey } = n;
+      const fireAt = normalize(n.fireAt);
+      // Scheduling the same id again replaces the reminder, so its old OS notification goes.
+      await cancelOs(store, n.id);
       await store.saveScheduled({
         id: n.id,
         kind,
-        fireAt: normalize(n.fireAt),
+        fireAt,
         payload: { kind, title, body, deepLink, dedupeKey },
       });
+      if (Date.parse(fireAt) <= deps.clock.now().getTime()) return; // deliverDue takes it
+      const osId = await scheduleOs({ title, body, fireAt: new Date(fireAt), deepLink, id: n.id });
+      if (osId) await store.setScheduledOsId(n.id, osId);
     },
 
     async cancel(id) {
-      await deps.store().deleteScheduled(id);
+      const store = deps.store();
+      await cancelOs(store, id);
+      await store.deleteScheduled(id);
     },
 
     async isEnabled(kind) {
@@ -96,7 +144,14 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
 
     async setEnabled(kind, on) {
       if (ALWAYS_ON.has(kind) && !on) return;
-      await deps.store().setEnabled(kind, on);
+      const store = deps.store();
+      await store.setEnabled(kind, on);
+      if (on) return;
+      // A kind turned off stops ringing at once: its pending reminders are dropped.
+      for (const id of await store.listScheduledIds(kind)) {
+        await cancelOs(store, id);
+        await store.deleteScheduled(id);
+      }
     },
 
     async list() {

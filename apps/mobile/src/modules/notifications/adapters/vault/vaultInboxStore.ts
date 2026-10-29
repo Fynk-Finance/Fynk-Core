@@ -125,6 +125,23 @@ function storeOn(tx: VaultTx, transaction: InboxStore['transaction']): InboxStor
         payload: JSON.parse(r.payload_json) as NotifyInput,
       }));
     },
+    async listScheduledIds(kind) {
+      const rows = await tx.query<{ id: string }>(
+        'SELECT id FROM notifications_scheduled WHERE kind = ? ORDER BY fire_at, id',
+        [kind],
+      );
+      return rows.map((r) => r.id);
+    },
+    async scheduledOsId(id) {
+      const [row] = await tx.query<{ os_id: string | null }>(
+        'SELECT os_id FROM notifications_scheduled WHERE id = ?',
+        [id],
+      );
+      return row?.os_id ?? null;
+    },
+    async setScheduledOsId(id, osId) {
+      await tx.execute('UPDATE notifications_scheduled SET os_id = ? WHERE id = ?', [osId, id]);
+    },
     transaction,
   };
 }
