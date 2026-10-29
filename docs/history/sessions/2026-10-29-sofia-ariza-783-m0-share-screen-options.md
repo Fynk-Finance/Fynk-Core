@@ -26,12 +26,13 @@ Sofia gave Claude Code the M3 onboarding prompt ("You are building module M3 Gui
   * Each segment now has a clipped track for the fill, with the burst drawn outside it on the current segment.
   * The gap between segments is 8 px, as in the design (it was 6).
 * `motion.test.tsx`: two new tests. The burst shows once on the current segment, and Reduce Motion removes it while the bar stays.
+* `catalog.test.tsx.snap`: the four StepProgress snapshots (light and dark) were updated for the new track and gap.
 
 ## Result
 
 * Tests:
   * Navigation and app shell: 5 suites, 31 tests pass.
-  * Shared components: 3 suites, 39 tests pass.
+  * Shared components: 3 suites, 39 tests pass. Catalog: 119 tests, 4 snapshots updated.
   * ESLint and `tsc` are clean.
 * Pull request: not opened yet. It goes at the bottom of the onboarding stack.
 
