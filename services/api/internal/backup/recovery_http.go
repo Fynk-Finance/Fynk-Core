@@ -30,6 +30,7 @@ type server struct {
 	recovery  recoveryService
 	records   recordsService
 	approvals approvalsService
+	reset     resetService
 }
 
 func prob(status int, code, title, detail string) httpapi.Problem {
