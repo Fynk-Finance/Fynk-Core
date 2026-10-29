@@ -10,6 +10,7 @@ import { ThemeProvider, useTheme, type ColorScheme, type Palette } from '@shared
 
 import { scopesOf, type Consent, type ConsentProvider, type ConsentText } from '../domain/consent';
 import type { ConsentsApiPort } from '../application/ports';
+import { fakeConsentsApi } from '../testing/fakeConsentsApi';
 import { createConsentAcceptance } from './ConsentAcceptance';
 import { ConsentScopeCard } from './ConsentScopeCard';
 import { consentsStrings } from './strings.es-CO';
@@ -65,10 +66,10 @@ const themeColors = (): Palette =>
 
 // A small host like M5's Conectar banco: the cards plus the acceptance, and a provider switch.
 async function renderConsent(options: Options = {}) {
-  const api = {
-    currentText: jest.fn(async () => text),
-    create: jest.fn(options.create ?? (async () => pending)),
-  };
+  const api = fakeConsentsApi({
+    currentText: async () => text,
+    create: options.create ?? (async () => pending),
+  });
   const Acceptance = createConsentAcceptance({
     api,
     appVersion: '0.1.0',

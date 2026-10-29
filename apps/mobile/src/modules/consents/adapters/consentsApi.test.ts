@@ -99,3 +99,75 @@ it('throws the problem code of a refused consent', async () => {
   const error = await api.create(request, 'key-1').catch((e: unknown) => e);
   expect(isApiError(error) && error.code).toBe('device_required');
 });
+
+const consentBody = {
+  id: '01928c7e-5b1a-7c3d-9e2f-4a6b8c0d2e4f',
+  ...request,
+  status: 'active',
+  createdAt: '2026-10-27T15:04:05Z',
+  acceptedAt: '2026-10-27T15:04:05Z',
+  grantedAt: '2026-10-27T15:05:10Z',
+  expiresAt: '2027-10-27T15:05:10Z',
+};
+
+it('lists the consents', async () => {
+  const { api, fetch } = setup(json(200, { items: [consentBody] }));
+  const [consent] = await api.list();
+  expect(consent).toMatchObject({
+    id: consentBody.id,
+    status: 'active',
+    expiresAt: consentBody.expiresAt,
+  });
+  expect(fetch.mock.calls[0]![0].url).toBe('http://api.test/v1/consents');
+});
+
+it('reads one consent by id', async () => {
+  const { api, fetch } = setup(json(200, consentBody));
+  await expect(api.get(consentBody.id)).resolves.toMatchObject({ id: consentBody.id });
+  expect(fetch.mock.calls[0]![0].url).toBe(`http://api.test/v1/consents/${consentBody.id}`);
+});
+
+it('revokes with a POST and returns the revoked consent', async () => {
+  const { api, fetch } = setup(
+    json(200, { ...consentBody, status: 'revoked', revokedAt: '2026-10-29T15:00:00Z' }),
+  );
+  await expect(api.revoke(consentBody.id)).resolves.toMatchObject({
+    status: 'revoked',
+    revokedAt: '2026-10-29T15:00:00Z',
+  });
+  const sent = fetch.mock.calls[0]![0];
+  expect(sent.method).toBe('POST');
+  expect(sent.url).toBe(`http://api.test/v1/consents/${consentBody.id}/revoke`);
+});
+
+it('throws consent_not_revocable for an ended consent', async () => {
+  const { api } = setup(
+    json(409, {
+      type: '/problems/consent_not_revocable',
+      title: 'Conflict',
+      status: 409,
+      code: 'consent_not_revocable',
+    }),
+  );
+  const error = await api.revoke(consentBody.id).catch((e: unknown) => e);
+  expect(isApiError(error) && error.code).toBe('consent_not_revocable');
+});
+
+it('reads the entity names from GET /providers', async () => {
+  const { api, fetch } = setup(
+    json(200, {
+      items: [
+        {
+          id: 'banco-demo',
+          displayName: 'Banco Demo',
+          kind: 'bank',
+          isSimulated: true,
+          supportedScopes: ['balances'],
+          logoKey: 'banco-demo',
+        },
+      ],
+    }),
+  );
+  await expect(api.entityNames()).resolves.toEqual({ 'banco-demo': 'Banco Demo' });
+  expect(fetch.mock.calls[0]![0].url).toBe('http://api.test/v1/providers');
+});

@@ -8,6 +8,7 @@ import type { Consent, ConsentProvider, ConsentText } from '../domain/consent';
 import { createConsent, useCreateConsent } from './createConsent';
 import type { ConsentsApiPort, ConsentsDeps } from './ports';
 import { CONSENT_TEXT_QUERY_KEY, useConsentText } from './useConsentText';
+import { fakeConsentsApi } from '../testing/fakeConsentsApi';
 
 const text: ConsentText = {
   version: '2026-10-v1',
@@ -38,7 +39,7 @@ const pending: Consent = {
 
 function fakeDeps(create: ConsentsApiPort['create'] = async () => pending) {
   let n = 0;
-  const api = { currentText: jest.fn(async () => text), create: jest.fn(create) };
+  const api = fakeConsentsApi({ currentText: async () => text, create });
   const deps: ConsentsDeps = { api, appVersion: '0.1.0', newIdempotencyKey: () => `key-${++n}` };
   return { api, deps };
 }

@@ -6,6 +6,14 @@ export interface ConsentsApiPort {
   currentText(): Promise<ConsentText>;
   /** `POST /consents`: records the acceptance as a pending consent. The same key returns it again. */
   create(request: CreateConsentRequest, idempotencyKey: string): Promise<Consent>;
+  /** `GET /consents`: every consent of the person, with its status as of now. */
+  list(): Promise<Consent[]>;
+  /** `GET /consents/{id}`. */
+  get(id: string): Promise<Consent>;
+  /** `POST /consents/{id}/revoke`: ends it at once. Revoking twice returns it unchanged. */
+  revoke(id: string): Promise<Consent>;
+  /** Entity names by provider id, from M5's `GET /providers`. */
+  entityNames(): Promise<Record<string, string>>;
 }
 
 export interface ConsentsDeps {
