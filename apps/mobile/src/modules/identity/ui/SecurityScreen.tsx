@@ -101,6 +101,8 @@ export function createSecurityScreen(deps: SecurityDeps) {
       ]);
 
     const devices = list.query.data;
+    // A pending phone cannot close other devices: the API answers 403 device_not_active.
+    const thisPending = devices?.some((d) => d.current && d.status === 'pending') ?? false;
     const hasOthers = devices ? otherDevices(devices).length > 0 : false;
 
     return (
@@ -178,12 +180,18 @@ export function createSecurityScreen(deps: SecurityDeps) {
                           now={now}
                           divided={i > 0}
                           disabled={list.busy}
+                          canClose={!thisPending}
                           onClose={() => confirmClose(device.id, device.name)}
                         />
                       ))}
                     </Card>
                   ) : null}
-                  {hasOthers ? (
+                  {thisPending ? (
+                    <AppText variant="caption" color="textSecondary" style={styles.footer}>
+                      {t.pendingHint}
+                    </AppText>
+                  ) : null}
+                  {hasOthers && !thisPending ? (
                     <Pressable
                       onPress={confirmCloseAll}
                       disabled={list.busy}

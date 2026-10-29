@@ -28,6 +28,9 @@ export function createDevSession(): SessionService {
     signOut: async () => set('signedOut'),
     // There is no Keycloak to change a password in.
     changePassword: async () => 'cancelled',
+    // There is no login to repeat: the dev session counts as just logged in, always.
+    reauthenticate: async () => 'ok',
+    lastLoginAt: () => (state.status === 'signedIn' ? new Date() : null),
     getAccessToken: async () => (state.status === 'signedIn' ? DEV_TOKEN : null),
     refreshAccessToken: async () => false,
   };

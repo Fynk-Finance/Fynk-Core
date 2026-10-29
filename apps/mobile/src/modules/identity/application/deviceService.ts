@@ -1,7 +1,8 @@
 // Registers this phone as a linked device after sign in and detects that it was removed.
-import type { DeviceRecord } from '../domain/device';
+import { fromBase64, type DeviceRecord } from '../domain/device';
 import {
   isDevicesError,
+  type LinkedDevice,
   type DeviceInfoPort,
   type DevicesApiPort,
   type DeviceStorePort,
@@ -14,6 +15,19 @@ export interface DeviceService {
   deviceId(): string | null;
   /** Registers the device, or checks it is still linked. Concurrent calls share one run. */
   sync(): Promise<void>;
+  /**
+   * This phone as the API knows it (`GET /devices/current`). Null when it is not registered
+   * yet or the API does not know it. A removed device is handled as in sync(). Throws a
+   * DevicesError when the API cannot be reached.
+   */
+  current(): Promise<Pick<LinkedDevice, 'id' | 'status'> | null>;
+  /** The X25519 public key of this phone, or null before the key pair exists. */
+  publicKey(): Promise<Uint8Array | null>;
+  /**
+   * X25519 shared secret of this phone's private key and a peer's public key. The private key
+   * never leaves this service. Throws when the peer key is not 32 bytes or there is no key pair.
+   */
+  sharedSecret(peerPublicKey: Uint8Array): Promise<Uint8Array>;
   /** Sign out: forgets the device id and keeps the key pair. */
   forget(): Promise<void>;
 }
@@ -66,6 +80,13 @@ export function createDeviceService(deps: DeviceServiceDeps): DeviceService {
     }
   };
 
+  /** This phone was removed from the account: forget the id, then sign out and wipe. */
+  const handleRemoved = async (record: DeviceRecord) => {
+    currentId = null;
+    await store.save(withoutId(record));
+    await deps.onRemoved();
+  };
+
   const run = async (): Promise<void> => {
     const gen = generation;
     let record = await store.load();
@@ -81,9 +102,7 @@ export function createDeviceService(deps: DeviceServiceDeps): DeviceService {
         return;
       } catch (e) {
         if (isDevicesError(e, 'removed')) {
-          currentId = null;
-          await store.save(withoutId(record));
-          await deps.onRemoved();
+          await handleRemoved(record);
           return;
         }
         if (!isDevicesError(e, 'notFound')) return; // offline or server trouble: next time
@@ -102,6 +121,31 @@ export function createDeviceService(deps: DeviceServiceDeps): DeviceService {
         running = null;
       });
       return running;
+    },
+    async current() {
+      const record = await store.load();
+      if (!record?.deviceId) return null;
+      try {
+        const device = await api.current(record.deviceId);
+        return { id: device.id, status: device.status };
+      } catch (e) {
+        if (isDevicesError(e, 'removed')) {
+          await handleRemoved(record);
+          return null;
+        }
+        if (isDevicesError(e, 'notFound')) return null; // the next sync registers it again
+        throw e;
+      }
+    },
+    async publicKey() {
+      const record = await store.load();
+      return record ? fromBase64(record.publicKey) : null;
+    },
+    async sharedSecret(peerPublicKey) {
+      if (peerPublicKey.length !== 32) throw new Error('peer public key must be 32 bytes');
+      const record = await store.load();
+      if (!record) throw new Error('no device key pair');
+      return keys.sharedSecret(record.privateKey, peerPublicKey);
     },
     async forget() {
       generation += 1;
