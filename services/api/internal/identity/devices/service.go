@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -171,15 +172,43 @@ func (s *Service) Current(ctx context.Context, user auth.User, deviceID string) 
 	return dev, err
 }
 
-// Remove removes one device and returns its Keycloak session id for the caller to revoke.
+// activeCaller checks, inside tx, that the caller device is active. A missing, foreign,
+// removed or pending caller (or a blank id: no trusted device) gets ErrNotActive.
+func activeCaller(ctx context.Context, tx Tx, userID, callerID string) error {
+	if callerID == "" {
+		return ErrNotActive
+	}
+	c, err := tx.Get(ctx, userID, callerID)
+	if errors.Is(err, ErrNotFound) {
+		return ErrNotActive
+	}
+	if err != nil {
+		return err
+	}
+	if c.Status != StatusActive {
+		return ErrNotActive
+	}
+	return nil
+}
+
+// Remove removes the device deviceID on behalf of callerDeviceID and returns its Keycloak
+// session id for the caller to revoke. A device may always remove itself. Removing another
+// device needs an active caller (ErrNotActive otherwise, also for a blank caller id); the
+// check runs in the same transaction as the removal.
 // Removing a removed device is not an error: it returns an empty session id and audits nothing.
-func (s *Service) Remove(ctx context.Context, userID, deviceID string) (string, error) {
+func (s *Service) Remove(ctx context.Context, userID, callerDeviceID, deviceID string) (string, error) {
 	var (
 		sid     string
 		removed bool
 	)
+	self := callerDeviceID != "" && strings.EqualFold(callerDeviceID, deviceID)
 	err := s.repo.InTx(ctx, userID, func(tx Tx) error {
 		sid, removed = "", false
+		if !self {
+			if err := activeCaller(ctx, tx, userID, callerDeviceID); err != nil {
+				return err
+			}
+		}
 		d, err := tx.Get(ctx, userID, deviceID)
 		if err != nil {
 			return err
@@ -204,17 +233,34 @@ func (s *Service) Remove(ctx context.Context, userID, deviceID string) (string, 
 }
 
 // RemoveOthers removes every device of the user except currentDeviceID, which must be
-// usable. It returns the Keycloak session ids of the removed devices (blank ones left out).
+// active (ErrNotActive when pending or blank). It returns the Keycloak session ids of the
+// removed devices (blank ones left out).
 func (s *Service) RemoveOthers(ctx context.Context, userID, currentDeviceID string) ([]string, error) {
+	return s.removeOthers(ctx, userID, currentDeviceID, true)
+}
+
+// RemoveOthersTrusted is RemoveOthers without the active check, for M2 after its own
+// checks. The kept device must still exist and not be removed.
+func (s *Service) RemoveOthersTrusted(ctx context.Context, userID, keepDeviceID string) ([]string, error) {
+	return s.removeOthers(ctx, userID, keepDeviceID, false)
+}
+
+func (s *Service) removeOthers(ctx context.Context, userID, currentDeviceID string, needActive bool) ([]string, error) {
 	var sids, ids []string
 	err := s.repo.InTx(ctx, userID, func(tx Tx) error {
 		sids, ids = nil, nil
+		if needActive && currentDeviceID == "" {
+			return ErrNotActive
+		}
 		cur, err := tx.Get(ctx, userID, currentDeviceID)
 		if err != nil {
 			return err
 		}
 		if cur.Status == StatusRemoved {
 			return ErrRemoved
+		}
+		if needActive && cur.Status != StatusActive {
+			return ErrNotActive
 		}
 		all, err := tx.List(ctx, userID)
 		if err != nil {
@@ -244,6 +290,18 @@ func (s *Service) RemoveOthers(ctx context.Context, userID, currentDeviceID stri
 		}
 	}
 	return sids, nil
+}
+
+// Get returns the user's device (see ports.Devices). ErrRemoved for a removed one.
+func (s *Service) Get(ctx context.Context, userID, deviceID string) (Device, error) {
+	d, err := s.repo.Get(ctx, userID, deviceID)
+	if err != nil {
+		return Device{}, err
+	}
+	if d.Status == StatusRemoved {
+		return Device{}, ErrRemoved
+	}
+	return d, nil
 }
 
 // Usable reports whether the device exists, belongs to the user and is not removed.

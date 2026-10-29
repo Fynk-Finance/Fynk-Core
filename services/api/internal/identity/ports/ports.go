@@ -8,12 +8,14 @@ import (
 
 	audit "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/devices"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/kcadmin"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/postgres"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/token"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/clock"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/config"
 )
 
-// Errors ActivateDevice returns.
+// Errors the ports return.
 var (
 	ErrNotFound = devices.ErrNotFound
 	ErrRemoved  = devices.ErrRemoved
@@ -49,3 +51,73 @@ func (a activator) ActivateDevice(ctx context.Context, deviceID string) error {
 type noAudit struct{}
 
 func (noAudit) Record(context.Context, audit.Event) error { return nil }
+
+// DeviceInfo is a device as M2 sees it. It has no session id.
+type DeviceInfo struct {
+	ID        string
+	Name      string
+	Platform  string // ios | android
+	PublicKey []byte
+	Status    string // pending | active
+}
+
+// Devices lets M2 read a device and reset the others for the backup reset.
+type Devices interface {
+	// Get returns the user's device. ErrNotFound for a missing or another user's device,
+	// ErrRemoved for a removed one.
+	Get(ctx context.Context, userID, deviceID string) (DeviceInfo, error)
+	// RemoveOthers removes every device of the user except keepDeviceID and revokes their
+	// Keycloak sessions, like POST /devices/sign-out-others but without the active check:
+	// M2 calls it only after its own checks, for the backup reset. It records device.removed
+	// audit events like the HTTP path. keepDeviceID must exist and not be removed
+	// (ErrNotFound, ErrRemoved). Revoking sessions is best effort, as in the HTTP path.
+	RemoveOthers(ctx context.Context, userID, keepDeviceID string) error
+}
+
+// SessionRevoker ends Keycloak sessions. A nil revoker leaves sessions alone.
+type SessionRevoker interface {
+	DeleteSession(ctx context.Context, sid string) error
+}
+
+// NewSessionRevoker returns the Keycloak admin client as a SessionRevoker, the same one
+// the identity module uses for POST /devices/sign-out-others.
+func NewSessionRevoker(cfg config.Config) SessionRevoker { return kcadmin.New(cfg, nil) }
+
+// NewDeviceReader returns the Devices port over identity.devices in pool. rec receives the
+// device.removed events; revoker may be nil.
+func NewDeviceReader(pool *pgxpool.Pool, clk clock.Clock, rec audit.Recorder, revoker SessionRevoker) Devices {
+	return deviceReader{svc: devices.NewService(postgres.New(pool), clk, rec, nil), revoker: revoker}
+}
+
+type deviceReader struct {
+	svc     *devices.Service
+	revoker SessionRevoker
+}
+
+func (r deviceReader) Get(ctx context.Context, userID, deviceID string) (DeviceInfo, error) {
+	d, err := r.svc.Get(ctx, userID, deviceID)
+	if err != nil {
+		return DeviceInfo{}, err
+	}
+	return DeviceInfo{
+		ID: d.ID, Name: d.Name, Platform: string(d.Platform),
+		PublicKey: append([]byte(nil), d.PublicKey...), Status: string(d.Status),
+	}, nil
+}
+
+func (r deviceReader) RemoveOthers(ctx context.Context, userID, keepDeviceID string) error {
+	sids, err := r.svc.RemoveOthersTrusted(ctx, userID, keepDeviceID)
+	if err != nil {
+		return err
+	}
+	if r.revoker == nil {
+		return nil
+	}
+	// The devices are already removed: a caller that hangs up must not cancel the revocation.
+	ctx = context.WithoutCancel(ctx)
+	for _, sid := range sids {
+		// Best effort, like the HTTP path. The error is dropped: it may carry ids.
+		_ = r.revoker.DeleteSession(ctx, sid)
+	}
+	return nil
+}

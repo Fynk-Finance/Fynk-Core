@@ -275,6 +275,18 @@ paths:
       responses:
         '204':
           description: The other devices were removed.
+        '403':
+          description: The calling device is not active (it is pending, or the request has no trusted `X-Device-Id`). Only an active device can sign out the others. Code `device_not_active`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/device_not_active
+                title: Device not active
+                status: 403
+                code: device_not_active
+                detail: Only an active device can close other sessions.
         '404':
           description: The calling device does not exist. Code `device_not_found`.
           content:
@@ -304,6 +316,18 @@ paths:
       responses:
         '204':
           description: The device was removed (also when it already was).
+        '403':
+          description: The calling device is not active (it is pending, or the request has no trusted `X-Device-Id`). Only an active device can remove another device (any device can remove itself). Code `device_not_active`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../openapi.yaml#/components/schemas/Problem'
+              example:
+                type: /problems/device_not_active
+                title: Device not active
+                status: 403
+                code: device_not_active
+                detail: Only an active device can close other sessions.
         '404':
           description: The device does not exist or belongs to another user. Code `device_not_found`.
           content:

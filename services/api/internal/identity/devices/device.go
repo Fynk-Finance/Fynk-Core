@@ -41,7 +41,10 @@ var (
 	// ErrNotFound is also returned for a device of another user, so its existence is not revealed.
 	ErrNotFound = errors.New("device not found")
 	ErrRemoved  = errors.New("device removed")
-	ErrInvalid  = errors.New("invalid device")
+	// ErrNotActive: the calling device is not active (pending, or no trusted device id), so it
+	// cannot remove other devices or sign them out.
+	ErrNotActive = errors.New("device not active")
+	ErrInvalid   = errors.New("invalid device")
 	// ErrKeyRemoved: the public key belongs to a removed device. The phone makes a new key pair.
 	ErrKeyRemoved = errors.New("device public key was removed")
 	// ErrDuplicate is returned by a Repo when a unique constraint is hit by a race.
