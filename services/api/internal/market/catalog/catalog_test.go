@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/adapters/bankdemo"
 	bankports "github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports"
 )
 
@@ -60,7 +61,7 @@ func TestUnavailableWithoutSources(t *testing.T) {
 	}
 }
 
-func TestBankDemoProductsThroughM5sProductType(t *testing.T) {
+func TestBankDemoCatalogThroughM5sAdapter(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/banco-demo/open-finance/v1/products/cdt" || r.Header.Get("Authorization") != "" {
 			t.Errorf("public catalog through the egress without a user token, got %s %q", r.URL.Path, r.Header.Get("Authorization"))
@@ -68,7 +69,11 @@ func TestBankDemoProductsThroughM5sProductType(t *testing.T) {
 		_, _ = w.Write([]byte(`{"data":[{"id":"cdt-demo-180","name":"CDT Digital Banco Demo 180 Días","termDays":180,"rateEa":10.5,"rateEaBps":1050,"minAmount":"500000.00","minAmountMinor":50000000,"risk":"BAJO"},{"id":"","name":"sin id","termDays":0}]}`))
 	}))
 	defer ts.Close()
-	src := FromProvider{Lister: BankDemoProducts{BaseURL: ts.URL + "/banco-demo/"}, Issuer: "Banco Demo", Simulated: true}
+	adapter, err := bankdemo.New(bankdemo.Config{Provider: "banco-demo", BaseURL: ts.URL + "/banco-demo", HTTP: ts.Client()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := FromProvider{Lister: adapter, Issuer: "Banco Demo", Simulated: true}
 	ps, err := src.Products(context.Background())
 	if err != nil {
 		t.Fatal(err)

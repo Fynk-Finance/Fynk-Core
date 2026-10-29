@@ -40,9 +40,9 @@ The module downloads the published weekly rates at most once a day, when the tab
 
 ### 2.3 CDT catalog through the bank port, calls through the egress
 
-The catalog is built from M5's bank port: `catalog.FromProvider` takes anything with `Products(ctx) ([]bankports.Product, error)`, which every M5 provider adapter has (shared contracts 4.4, rule 7). M5 has the port but not yet its Banco Demo adapter, so `catalog.BankDemoProducts` reads Banco Demo's public catalog (`GET /open-finance/v1/products/cdt`, no user token) and answers with M5's `bankports.Product`. When M5 adds the adapter, the module passes it to `FromProvider` and `BankDemoProducts` is deleted. Cached for 1 hour.
+The catalog is built from M5's bank port: `catalog.FromProvider` takes anything with `Products(ctx) ([]bankports.Product, error)`, which every M5 provider adapter has (shared contracts 4.4, rule 7). The module passes M5's Banco Demo adapter (`bank/adapters/bankdemo`) to `FromProvider`; its `Products()` reads Banco Demo's public catalog (`GET /open-finance/v1/products/cdt`, no user token). The market module has no bank client of its own. Cached for 1 hour.
 
-Banco Demo and Alpaca are called through the Caddy egress of the shared config (`EGRESS_URL`, `EGRESS_CA_FILE`, M0 #53), at `<EGRESS_URL>/banco-demo` and `<EGRESS_URL>/alpaca`, with the egress CA trusted. Without `EGRESS_URL` both fail closed (503). The Banco de la República file is not behind the egress yet: M14 has to add a route for it, or the download has to come from outside the private subnets.
+Banco Demo and Alpaca are called through the Caddy egress of the shared config (`EGRESS_URL`, `EGRESS_CA_FILE`, M0 #53), at `<EGRESS_URL>/banco-demo` and `<EGRESS_URL>/alpaca`, with M5's egress client (`bank/egress.NewClient` and `egress.BaseURL`), which trusts only the egress CA and never follows redirects. Without `EGRESS_URL` both fail closed (503). The Banco de la República file is not behind the egress yet: M14 has to add a route for it, or the download has to come from outside the private subnets.
 
 ### 2.4 "+ Invertir"
 

@@ -9,6 +9,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/adapters/bankdemo"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/egress"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/market/catalog"
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/market/http"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/market/migrations"
@@ -49,13 +51,15 @@ func New(d module.Deps) module.Module {
 	if log == nil {
 		log = slog.Default()
 	}
-	client, err := egressClient(d.Config.EgressCAFile)
+	// M5's egress client: TLS to the Caddy egress (M14), which adds Fynk's mTLS certificate.
+	client, err := egress.NewClient(d.Config.EgressCAFile)
 	if err != nil {
 		log.Warn("market: the egress CA could not be read, calls to Banco Demo and Alpaca will fail", "error", err)
-		client = &http.Client{Timeout: 10 * time.Second}
+		client = &http.Client{Timeout: egress.Timeout}
 	}
-	bankDemoURL := egressPath(d.Config.EgressURL, "banco-demo")
-	alpacaURL := egressPath(d.Config.EgressURL, "alpaca")
+	// Without EGRESS_URL both base URLs stay empty and the endpoints answer 503 (fail closed).
+	bankDemoURL, _ := egress.BaseURL(d.Config.EgressURL, "banco-demo")
+	alpacaURL, _ := egress.BaseURL(d.Config.EgressURL, "alpaca")
 
 	var cache interface {
 		catalog.Cache
@@ -65,14 +69,18 @@ func New(d module.Deps) module.Module {
 		cache = redisCache{rdb: d.Redis}
 	}
 
+	// The catalog comes from M5's provider port (rule 7): the Banco Demo adapter's Products(),
+	// the public CDT catalog read without a user token.
 	var sources []catalog.Source
 	if bankDemoURL != "" {
-		// Until M5 exports its Banco Demo provider, its Products() is read here (ADR 0006).
-		sources = append(sources, catalog.FromProvider{
-			Lister:    catalog.BankDemoProducts{BaseURL: bankDemoURL, Client: client},
-			Issuer:    "Banco Demo",
-			Simulated: true,
+		adapter, err := bankdemo.New(bankdemo.Config{
+			Provider: "banco-demo", BaseURL: bankDemoURL, HTTP: client, Clock: d.Clock,
 		})
+		if err != nil {
+			log.Warn("market: the Banco Demo adapter could not be built, the CDT catalog is unavailable", "error", err)
+		} else {
+			sources = append(sources, catalog.FromProvider{Lister: adapter, Issuer: "Banco Demo", Simulated: true})
+		}
 	}
 	srv := server{
 		catalog:   catalog.NewService(cache, now, sources...),
