@@ -1,5 +1,8 @@
 // Public API of the vault module. Other modules import only from this file.
 import { createPlaceholderScreen, type ModuleRoutes } from '@shared/navigation';
+import type { GetVaultDb, RegisterVaultMigrations } from '@shared/ports/vault';
+
+import { vault } from './adapters/defaultVault';
 
 // Placeholder routes from M0 (M2 replaces them with the real screens).
 export const routes: ModuleRoutes = {
@@ -19,11 +22,16 @@ export const routes: ModuleRoutes = {
   ],
 };
 
+export const registerVaultMigrations: RegisterVaultMigrations = (module, migrations) =>
+  vault.registerVaultMigrations(module, migrations);
+
+export const getVaultDb: GetVaultDb = () => vault.getVaultDb();
+
 /**
- * Placeholder until M2 builds the vault: there is nothing to erase yet.
- * M2 replaces it. M1 calls it when this device was removed from the account.
+ * Erases the vault: closes it, deletes the file and both copies of the key.
+ * M1 calls it when this device was removed from the account. Safe when nothing was ever created.
  */
-export async function wipe(): Promise<void> {}
+export const wipe = (): Promise<void> => vault.wipe();
 
 /** Placeholder: M2's row on M1's Seguridad screen (app unlock setting). Renders nothing yet. */
 export function UnlockSetting(): null {
