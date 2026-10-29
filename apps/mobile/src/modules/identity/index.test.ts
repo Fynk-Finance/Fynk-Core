@@ -80,14 +80,15 @@ describe('onSessionChange', () => {
 });
 
 describe('with the dev session (EXPO_PUBLIC_DEV_AUTH)', () => {
-  it('counts as just logged in, reauthenticates with ok and has no device', async () => {
+  it('counts as just logged in, reauthenticates with ok and has an active phone without keys', async () => {
     const identity = load('dev-token');
     const before = Date.now();
     const at = identity.lastLoginAt();
     expect(at).toBeInstanceOf(Date);
     expect(at!.getTime()).toBeGreaterThanOrEqual(before);
     expect(await identity.reauthenticate()).toBe('ok');
-    expect(await identity.currentDevice()).toBeNull();
+    // No API in the dev session: the vault treats its phone as the account's first.
+    expect(await identity.currentDevice()).toEqual({ id: 'dev', status: 'active' });
     expect(await identity.devicePublicKey()).toBeNull();
     await expect(identity.deviceSharedSecret(new Uint8Array(32))).rejects.toThrow();
   });
