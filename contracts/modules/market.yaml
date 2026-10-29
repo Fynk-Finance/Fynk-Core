@@ -25,8 +25,26 @@ paths:
                 $ref: '#/components/schemas/MarketCdtCatalog'
               example:
                 products:
-                  - { id: cdt-demo-180, name: CDT Digital Banco Demo 180 Días, issuer: Banco Demo, termDays: 180, rateEaBps: 1050, minAmountMinor: 50000000, risk: low, simulated: true }
-                  - { id: cdt-demo-360, name: CDT Digital Banco Demo 360 Días, issuer: Banco Demo, termDays: 360, rateEaBps: 1085, minAmountMinor: 100000000, risk: low, simulated: true }
+                  - {
+                      id: cdt-demo-180,
+                      name: CDT Digital Banco Demo 180 Días,
+                      issuer: Banco Demo,
+                      termDays: 180,
+                      rateEaBps: 1050,
+                      minAmountMinor: 50000000,
+                      risk: low,
+                      simulated: true,
+                    }
+                  - {
+                      id: cdt-demo-360,
+                      name: CDT Digital Banco Demo 360 Días,
+                      issuer: Banco Demo,
+                      termDays: 360,
+                      rateEaBps: 1085,
+                      minAmountMinor: 100000000,
+                      risk: low,
+                      simulated: true,
+                    }
                 fetchedAt: '2026-10-28T17:00:00Z'
         '401':
           $ref: '../openapi.yaml#/components/responses/Problem'
@@ -98,7 +116,13 @@ paths:
                 $ref: '#/components/schemas/MarketQuotes'
               example:
                 quotes:
-                  - { symbol: AAPL, name: Apple, lastPriceCents: 22750, dayChangeBps: 125, at: '2026-10-28T19:59:00Z' }
+                  - {
+                      symbol: AAPL,
+                      name: Apple,
+                      lastPriceCents: 22750,
+                      dayChangeBps: 125,
+                      at: '2026-10-28T19:59:00Z',
+                    }
                 fetchedAt: '2026-10-28T20:00:00Z'
         '401':
           $ref: '../openapi.yaml#/components/responses/Problem'
