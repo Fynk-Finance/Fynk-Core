@@ -1,5 +1,5 @@
 // The recurring cards of the design's Billetera: periodicity, schedule and next charge labels.
-import { chargeLabel, chargeState, scheduleLabel } from './card';
+import { chargeLabel, chargeState, dayMonth, scheduleLabel } from './card';
 import { MON_TO_FRI, WEEKDAY } from './types';
 
 describe('scheduleLabel', () => {
@@ -55,5 +55,12 @@ describe('chargeState and chargeLabel', () => {
     expect(chargeState({ periodicity: 'weekly', weekdaysMask: 0 }, '2026-10-28')).toEqual({
       kind: 'none',
     });
+  });
+});
+
+describe('dayMonth', () => {
+  it('writes "28 sep" and "2 oct", as the subscription rows of the design', () => {
+    expect(dayMonth('2026-09-28')).toBe('28 sep');
+    expect(dayMonth('2026-10-02')).toBe('2 oct');
   });
 });

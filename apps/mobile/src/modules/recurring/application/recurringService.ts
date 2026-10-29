@@ -98,7 +98,7 @@ export function createRecurringService(deps: RecurringServiceDeps): RecurringSer
         id: deps.newId(),
         ...editable(input),
         status: 'active',
-        usage: null,
+        usage: input.kind === 'subscription' ? (input.usage ?? null) : null,
         merchantKey: null,
         source: 'manual',
         createdAt: deps.clock.now().toISOString(),
@@ -113,7 +113,12 @@ export function createRecurringService(deps: RecurringServiceDeps): RecurringSer
       const store = deps.store();
       const current = await store.get(id);
       if (!current) throw new RecurringNotFoundError();
-      const item: StoredRecurringItem = { ...current, ...editable(input) };
+      const usage = input.usage === undefined ? current.usage : input.usage;
+      const item: StoredRecurringItem = {
+        ...current,
+        ...editable(input),
+        usage: input.kind === 'subscription' ? usage : null,
+      };
       await store.save(item);
       changed();
       await remind((r) => r.plan(item));

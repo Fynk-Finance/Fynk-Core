@@ -68,10 +68,12 @@ beforeEach(async () => {
 afterEach(() => vault.close());
 
 async function addAll(items: RecurringInput[]) {
+  const ids: string[] = [];
   for (const item of items) {
-    await service.create(item);
+    ids.push(await service.create(item));
     clock.advance(1000);
   }
+  return ids;
 }
 
 describe('recurring items in the vault', () => {
@@ -167,6 +169,27 @@ describe('Billetera totals', () => {
     await addAll(billetera);
     const s = await service.subscriptionsSummary();
     expect([s.count, formatCop(s.monthlyMinor)]).toEqual([4, '$112.600']);
+  });
+
+  it('SCRUM-56: "Ahorra $56.800 al mes" from the 2 subscriptions marked "Casi nunca"', async () => {
+    const ids = await addAll(billetera);
+    for (const i of [5, 7]) {
+      const item = billetera[i]!;
+      await service.update(ids[i]!, { ...item, usage: 'low' });
+    }
+    await service.update(ids[4]!, { ...billetera[4]!, usage: 'high' });
+    const s = await service.subscriptionsSummary();
+    expect([s.lowUseCount, formatCop(s.lowUseMonthlyMinor)]).toEqual([2, '$56.800']);
+  });
+
+  it('SCRUM-56: an edit without a usage mark keeps it; a fixed expense never has one', async () => {
+    const id = await service.create({ ...billetera[5]!, usage: 'low' });
+    await service.update(id, { ...billetera[5]!, amountMinor: pesos(33_900) });
+    expect((await service.get(id))?.usage).toBe('low');
+    await service.update(id, { ...billetera[5]!, usage: null });
+    expect((await service.get(id))?.usage).toBeNull();
+    await service.update(id, { ...billetera[5]!, kind: 'fixed', usage: 'low' });
+    expect((await service.get(id))?.usage).toBeNull();
   });
 
   it('gives the onboarding total $1.453.900', async () => {
