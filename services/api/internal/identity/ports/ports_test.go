@@ -35,3 +35,37 @@ func TestEmailResetsMapsAMissingUserToErrNotFound(t *testing.T) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
 }
+
+func TestSessionsMapsAMissingUserToErrNotFound(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/realms/fynk/protocol/openid-connect/token" {
+			_, _ = w.Write([]byte(`{"access_token":"tok","expires_in":300}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(srv.Close)
+	s := NewSessions(config.Config{KeycloakURL: srv.URL, KeycloakRealm: "fynk", KeycloakAdminClientSecret: "s"})
+	if _, _, err := s.SessionStart(context.Background(), "nobody", "sid"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("err = %v, want ErrNotFound", err)
+	}
+}
+
+func TestSessionsReturnsTheStartOfTheSession(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/realms/fynk/protocol/openid-connect/token" {
+			_, _ = w.Write([]byte(`{"access_token":"tok","expires_in":300}`))
+			return
+		}
+		_, _ = w.Write([]byte(`[{"id":"sid","start":1793534400000}]`))
+	}))
+	t.Cleanup(srv.Close)
+	s := NewSessions(config.Config{KeycloakURL: srv.URL, KeycloakRealm: "fynk", KeycloakAdminClientSecret: "s"})
+	at, ok, err := s.SessionStart(context.Background(), "u1", "sid")
+	if err != nil || !ok || at.UnixMilli() != 1793534400000 {
+		t.Fatalf("got %v %v %v", at, ok, err)
+	}
+	if _, ok, _ := s.SessionStart(context.Background(), "u1", "other"); ok {
+		t.Fatal("unknown sid found")
+	}
+}

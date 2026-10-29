@@ -145,3 +145,24 @@ func (r emailResets) EmailResetAt(ctx context.Context, userID string) (time.Time
 	}
 	return at, ok, err
 }
+
+// Sessions lets M2 know when a Keycloak session started. The backup reset needs the caller's
+// session to be newer than the email-code reset, so an older stolen session cannot use it.
+type Sessions interface {
+	// SessionStart returns the start time of the user's session sid. The bool is false when
+	// the user has no such session. ErrNotFound when the user does not exist in Keycloak.
+	SessionStart(ctx context.Context, userID, sid string) (time.Time, bool, error)
+}
+
+// NewSessions returns the Sessions port over the Keycloak admin client.
+func NewSessions(cfg config.Config) Sessions { return sessions{kc: kcadmin.New(cfg, nil)} }
+
+type sessions struct{ kc *kcadmin.Client }
+
+func (s sessions) SessionStart(ctx context.Context, userID, sid string) (time.Time, bool, error) {
+	at, ok, err := s.kc.SessionStart(ctx, userID, sid)
+	if errors.Is(err, kcadmin.ErrNotFound) {
+		return time.Time{}, false, ErrNotFound
+	}
+	return at, ok, err
+}
