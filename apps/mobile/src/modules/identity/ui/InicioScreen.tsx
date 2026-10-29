@@ -3,7 +3,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AccentButton, AppText, colors } from '@shared/ui';
+import { AccentButton, AppText, useTheme } from '@shared/ui';
 
 import type { SessionState } from '../application/sessionService';
 import { InicioIllustration } from './InicioIllustration';
@@ -26,12 +26,17 @@ export interface InicioScreenProps {
 
 export function InicioScreen({ state, onStart, onSignIn }: InicioScreenProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   return (
     <View
       testID="identity.inicio"
       style={[
         styles.root,
-        { paddingTop: insets.top + PAD_TOP, paddingBottom: insets.bottom + PAD_BOTTOM },
+        {
+          backgroundColor: colors.background,
+          paddingTop: insets.top + PAD_TOP,
+          paddingBottom: insets.bottom + PAD_BOTTOM,
+        },
       ]}
     >
       <View style={styles.art}>
@@ -95,7 +100,7 @@ export function InicioScreen({ state, onStart, onSignIn }: InicioScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background, paddingHorizontal: PAD_SIDE, gap: GAP },
+  root: { flex: 1, paddingHorizontal: PAD_SIDE, gap: GAP },
   // The design lets the illustration bleed to the screen edges.
   art: { flex: 1, marginHorizontal: -PAD_SIDE, alignItems: 'center', justifyContent: 'center' },
   copy: { gap: 12, alignItems: 'center' },

@@ -20,7 +20,7 @@ func keycloakConfig(env config.Env) config.Config {
 }
 
 func TestVerifierAcceptsDevTokenOnlyInLocal(t *testing.T) {
-	local, err := newVerifier(keycloakConfig(config.EnvLocal), quiet)
+	local, err := newVerifier(keycloakConfig(config.EnvLocal), quiet, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func TestVerifierAcceptsDevTokenOnlyInLocal(t *testing.T) {
 		t.Fatalf("local dev-token: %+v, %v", u, err)
 	}
 	for _, env := range []config.Env{config.EnvStaging, config.EnvProd} {
-		v, err := newVerifier(keycloakConfig(env), quiet)
+		v, err := newVerifier(keycloakConfig(env), quiet, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -43,16 +43,16 @@ func TestVerifierNeedsKeycloakOutsideLocal(t *testing.T) {
 	for _, env := range []config.Env{config.EnvStaging, config.EnvProd} {
 		cfg := keycloakConfig(env)
 		cfg.KeycloakURL = ""
-		if _, err := newVerifier(cfg, quiet); err == nil {
+		if _, err := newVerifier(cfg, quiet, nil); err == nil {
 			t.Fatalf("%s started without KEYCLOAK_URL", env)
 		}
 		cfg = keycloakConfig(env)
 		cfg.KeycloakIssuer = ""
-		if _, err := newVerifier(cfg, quiet); err == nil {
+		if _, err := newVerifier(cfg, quiet, nil); err == nil {
 			t.Fatalf("%s started without KEYCLOAK_ISSUER", env)
 		}
 	}
-	v, err := newVerifier(config.Config{AppEnv: config.EnvLocal}, quiet)
+	v, err := newVerifier(config.Config{AppEnv: config.EnvLocal}, quiet, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
