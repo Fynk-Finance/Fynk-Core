@@ -10,7 +10,7 @@ pr: none
 status: done
 ---
 
-# Rebuild the M10, M11 and M15 branches on the latest develop and use M5's Banco Demo adapter
+# Rebuild the M10, M11 and M15 branches on the latest develop and fix the Go linter
 
 ## Instruction
 
@@ -19,18 +19,21 @@ The chained pull requests were squash merged into each other instead of into `de
 ## What was done
 
 * Rebuilt the work as six branches from the current `develop`, each one opened against `develop` after the one before it merges: `feature/recommendations-endpoint-v2`, `feature/analytics-core-functions-v2`, `feature/spending-caps-v2`, `feature/recommendations-screen-v2`, `feature/market-backend-v2`, `feature/investment-tab-v2`. No conflicts.
-* `services/api/internal/market`: the CDT catalog now comes from M5's Banco Demo adapter (`bank/adapters/bankdemo`, merged in #55) through `catalog.FromProvider`. Banco Demo and Alpaca are called with M5's egress client (`bank/egress`). The interim `BankDemoProducts` reader and the module's own `egress.go` were deleted.
-* `catalog_test.go`: the Banco Demo test now goes through `bankdemo.New` against a fake simulator and checks the path through the egress and that no user token is sent.
-* ADR 0006, section 2.3, updated.
+* Rebased the six branches again in the afternoon, after 52 new commits in `develop` (backup, notifications, Billetera). The only conflict was in M0's `app_test.go`: the stub list now has M2's `/v1/backup/unknown`, and the health test skips `identity`, `backup`, `recommendations` and `market`.
+* The Go CI job of #149 failed on golangci-lint. Fixed:
+  * `misspell` read Spanish words (`proteccion`, `productos`, `Restaurantes`) as English typos: marked with `//nolint:misspell` on those lines.
+  * `errcheck`: the three deferred `resp.Body.Close()` of the market now ignore the error explicitly.
+  * `depguard`: the market had switched to M5's Banco Demo adapter (`bank/adapters/bankdemo`, #55) and egress client (`bank/egress`), but the module isolation rule lets `internal/market` import only `internal/bank/ports`. That change was reverted: the market keeps its own `BankDemoProducts` reader and egress client. ADR 0006, section 2.3, explains it.
 
 ## Result
 
-* Go: `go vet` and `go test -race` pass for market, recommendations, bank and app.
+* Mobile: 1,139 tests, tsc, ESLint and Prettier pass.
+* Go: `go vet`, `go test -race` and golangci-lint (with the repository config) pass for market, recommendations, bank and app.
 * Pull requests: opened one at a time against `develop`, none merged.
 
 ## Decisions and problems
 
-* The earlier session log of `feature/market-backend` says the interim reader stays until M5 adds its adapter. That is now done; this log records the change instead of editing the old one.
+* To use M5's catalog, M5 has to expose it in `bank/ports`, the same way it exposes `InstalledRevoker`. Ask Juan Carlos (M5).
 * Still open: the Banco de la República download has no egress route (ask Juan Pablo, M14).
 
 ## Next step
