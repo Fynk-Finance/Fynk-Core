@@ -76,6 +76,7 @@
 | expo-crypto | 58.0.7 | Added for M1. `getRandomBytes` from the phone's secure random source, for the device's X25519 private key and the registration Idempotency-Key. M2 reuses it. The version `npx expo install` picks for SDK 58 |
 | expo-device | 58.0.5 | Added for M1. The phone's model name for the linked devices list ("iPhone 15"), never a hardware id. The version `npx expo install` picks for SDK 58 |
 | @noble/curves | 2.4.0 | Added for M1. X25519 public key of the device key pair, sent with `POST /devices` and used by M2's device approval. Audited pure JavaScript, no native code, runs on Hermes. It ships only ES modules, so `jest.config.js` adds `@noble` to jest-expo's transform list |
+| expo-notifications | 58.1.6 | Added for M12. Local notifications scheduled on the phone (payment and renewal reminders, goal milestones) that fire with the app closed. Never used for push: no push token is ever requested (architecture rule 4). The version in Expo SDK 58's `bundledNativeModules.json`; 58.1.7 was a few hours old and is held back by the release age policy |
 
 The aliases `@shared/*` and `@modules/*` are declared once in `tsconfig.json`. Metro reads them from there (Expo's built-in tsconfig paths support), and Jest maps them in `jest.config.js`. No Babel alias plugin is needed.
 
