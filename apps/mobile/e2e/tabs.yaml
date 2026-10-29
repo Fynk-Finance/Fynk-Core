@@ -5,6 +5,16 @@
 appId: com.fynkfinance.app
 ---
 - launchApp
+# A fresh install opens M3's guided setup first: skip it (onboarding-complete.yaml walks it).
+- runFlow:
+    when:
+      visible: 'Configuremos tu cuenta'
+    commands:
+      - tapOn: 'Omitir por ahora'
+      - tapOn: 'Omitir de todos modos'
+- extendedWaitUntil:
+    visible: 'Dashboard'
+    timeout: 20000
 - assertVisible: 'Dashboard'
 - assertVisible: 'Billetera'
 - assertVisible: 'Recomendaciones'
