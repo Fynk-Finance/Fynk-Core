@@ -15,6 +15,9 @@ import { createConnectBankScreen } from './ui/ConnectBankScreen';
 
 export type { BankProvider, ProviderKind } from './domain/provider';
 export type { BankLink, LinkStatus } from './domain/link';
+export { BankLinkList, type BankLinkListItem } from './ui/BankLinkList';
+/** "Agregar otra cuenta": opens Conectar banco. For onboarding step 3 (M3) and Billetera (M6). */
+export { CONNECT_BANK_ROUTE, ConnectBankButton } from './ui/ConnectBankButton';
 
 registerVaultMigrations('bank', bankMigrations);
 

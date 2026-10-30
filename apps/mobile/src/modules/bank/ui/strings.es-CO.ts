@@ -18,6 +18,18 @@ export const bankStrings = {
       ok: 'Entendido',
     },
   },
+  // OnbCuentas.html, the rows of the connected accounts and "Agregar otra cuenta".
+  list: {
+    connected: 'Conectada',
+    addAccount: 'Agregar otra cuenta',
+    kind: {
+      savings: 'Cuenta de ahorros',
+      checking: 'Cuenta corriente',
+      wallet: 'Billetera digital',
+      credit_card: 'Tarjeta de crédito',
+      cdt: 'CDT',
+    },
+  },
   // ConectarBanco.html, the entity selector (M5).
   selector: {
     label: 'Banco o billetera digital',
