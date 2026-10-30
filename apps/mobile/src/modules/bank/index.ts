@@ -1,11 +1,34 @@
 // Public API of the bank module. Other modules import only from this file.
+import type { Clock } from '@shared/domain/types';
 import type { ModuleRoutes } from '@shared/navigation';
 
+import { onConsentRevoked } from '@modules/consents';
+import { getVaultDb, registerVaultMigrations } from '@modules/vault';
+
 import { createProvidersApi } from './adapters/providersApi';
+import { bankMigrations } from './adapters/vault/migrations';
+import { createVaultLinkStore } from './adapters/vault/vaultLinkStore';
+import { revokeLinksOfConsent } from './application/linkRevocation';
 import { useProviders as useProvidersWith } from './application/useProviders';
+import type { BankLink } from './domain/link';
 import { createConnectBankScreen } from './ui/ConnectBankScreen';
 
 export type { BankProvider, ProviderKind } from './domain/provider';
+export type { BankLink, LinkStatus } from './domain/link';
+
+registerVaultMigrations('bank', bankMigrations);
+
+const clock: Clock = { now: () => new Date() };
+// Read on every call: the vault may be locked when the module loads.
+const links = () => createVaultLinkStore(getVaultDb());
+
+// HU-008: a revoked consent ends its links on the phone at once and deletes their tokens.
+onConsentRevoked(async (event) => {
+  await revokeLinksOfConsent({ store: links, clock }, event);
+});
+
+/** Every bank link, active or revoked, oldest first. Never includes tokens. */
+export const getLinks = (): Promise<BankLink[]> => links().getLinks();
 
 const providersApi = createProvidersApi();
 
