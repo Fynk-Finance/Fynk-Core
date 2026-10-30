@@ -19,14 +19,18 @@ package bankdemo
 import (
 	"context"
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"math/big"
 	"net/http"
 	"os"
 	"strings"
@@ -218,6 +222,11 @@ func TestSimulatorDirectListenerNeedsTheClientCertificate(t *testing.T) {
 	if err := get(nil); err == nil {
 		t.Fatal("the bank answered a client without a certificate")
 	}
+	// A certificate from a CA the bank does not trust is refused too (HU-031: tráfico no
+	// autorizado rechazado), even with the right subject.
+	if err := get([]tls.Certificate{untrustedClientCert(t)}); err == nil {
+		t.Fatal("the bank answered a client certificate from another CA")
+	}
 	cert, err := tls.LoadX509KeyPair(os.Getenv("BANKDEMO_CLIENT_CERT"), os.Getenv("BANKDEMO_CLIENT_KEY"))
 	if err != nil {
 		t.Fatal(err)
@@ -225,6 +234,29 @@ func TestSimulatorDirectListenerNeedsTheClientCertificate(t *testing.T) {
 	if err := get([]tls.Certificate{cert}); err != nil {
 		t.Fatalf("with Fynk's client certificate: %v", err)
 	}
+}
+
+// untrustedClientCert is a client certificate signed by a CA made here, not by the CA that
+// signed Fynk's certificate.
+func untrustedClientCert(t *testing.T) tls.Certificate {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(time.Now().UnixNano()),
+		Subject:      pkix.Name{CommonName: "fynk-client"},
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}
 }
 
 // HU-008 and Gate C: after the revocation reaches the bank, the next query is consent_revoked.
