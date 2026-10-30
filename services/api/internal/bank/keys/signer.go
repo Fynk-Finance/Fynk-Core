@@ -80,27 +80,34 @@ func parseRSA(der []byte) (*rsa.PrivateKey, error) {
 // ClientAssertion implements ports.AssertionSigner: iss and sub are Fynk's client id, aud the
 // bank, a random jti so the bank can refuse a replay, and exp 60 s after iat.
 func (s *LocalSigner) ClientAssertion(_ context.Context, audience string) (string, error) {
-	if audience == "" {
-		return "", errors.New("keys: a client assertion needs an audience")
-	}
-	jti, err := randomID()
+	claims, err := assertionClaims(s.clientID, audience, s.clock.Now())
 	if err != nil {
 		return "", err
-	}
-	now := s.clock.Now()
-	claims := jwt.RegisteredClaims{
-		Issuer:    s.clientID,
-		Subject:   s.clientID,
-		Audience:  jwt.ClaimStrings{audience},
-		ID:        jti,
-		IssuedAt:  jwt.NewNumericDate(now),
-		ExpiresAt: jwt.NewNumericDate(now.Add(AssertionLifetime)),
 	}
 	signed, err := jwt.NewWithClaims(jwt.SigningMethodPS256, claims).SignedString(s.key)
 	if err != nil {
 		return "", fmt.Errorf("keys: sign client assertion: %w", err)
 	}
 	return signed, nil
+}
+
+// assertionClaims are the claims of every client assertion, local or KMS.
+func assertionClaims(clientID, audience string, now time.Time) (jwt.RegisteredClaims, error) {
+	if audience == "" {
+		return jwt.RegisteredClaims{}, errors.New("keys: a client assertion needs an audience")
+	}
+	jti, err := randomID()
+	if err != nil {
+		return jwt.RegisteredClaims{}, err
+	}
+	return jwt.RegisteredClaims{
+		Issuer:    clientID,
+		Subject:   clientID,
+		Audience:  jwt.ClaimStrings{audience},
+		ID:        jti,
+		IssuedAt:  jwt.NewNumericDate(now),
+		ExpiresAt: jwt.NewNumericDate(now.Add(AssertionLifetime)),
+	}, nil
 }
 
 func randomID() (string, error) {

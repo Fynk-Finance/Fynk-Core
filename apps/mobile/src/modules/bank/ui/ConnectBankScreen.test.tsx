@@ -8,6 +8,7 @@ import { Text } from 'react-native';
 
 import { ThemeProvider, uiStrings, useTheme, type ColorScheme, type Palette } from '@shared/ui';
 
+import type { LinkOutcome } from '../application/linkBank';
 import type { BankProvider } from '../domain/provider';
 import { createProvidersApi } from '../adapters/providersApi';
 import { createConnectBankScreen } from './ConnectBankScreen';
@@ -100,9 +101,29 @@ function Start() {
 
 const Stack = createNativeStackNavigator();
 
-async function renderScreen(scheme: ColorScheme = 'light') {
-  const onConsentReady = jest.fn();
-  const ConnectBank = createConnectBankScreen({ providers: createProvidersApi(), onConsentReady });
+const linked: LinkOutcome = {
+  kind: 'linked',
+  linkId: 'link-1',
+  accounts: [
+    {
+      providerAccountId: 'acc-1',
+      kind: 'savings',
+      displayName: 'Banco Demo · Ahorros',
+      last4: '4321',
+      currency: 'COP',
+      balanceMinor: 320_000_000,
+      status: 'active',
+      isSimulated: true,
+    },
+  ],
+};
+
+async function renderScreen(
+  scheme: ColorScheme = 'light',
+  outcome: LinkOutcome | (() => Promise<LinkOutcome>) = linked,
+) {
+  const link = jest.fn(typeof outcome === 'function' ? outcome : async () => outcome);
+  const ConnectBank = createConnectBankScreen({ providers: createProvidersApi(), link });
   const client = new QueryClient({
     defaultOptions: {
       queries: { retryDelay: 0, gcTime: Infinity },
@@ -125,7 +146,13 @@ async function renderScreen(scheme: ColorScheme = 'light') {
     </ThemeProvider>,
   );
   await waitFor(() => expect(screen.queryByLabelText(uiStrings.loading)).toBeNull());
-  return { onConsentReady };
+  return { link };
+}
+
+/** Checks the box and presses "Ir al portal de <Entidad>". */
+async function goToPortal() {
+  await fireEvent.press(screen.getByTestId('consents.checkbox'));
+  await fireEvent.press(screen.getByTestId('consents.goToPortal'));
 }
 
 afterEach(async () => {
@@ -162,15 +189,14 @@ it('moves the consent part to the entity the person chooses (HU-009: elige la en
   expect(screen.getByTestId('consents.checkbox')).not.toBeChecked();
 });
 
-it('records the consent for the chosen entity with what was shown, then stops', async () => {
+it('records the consent for the chosen entity with what was shown, then links that consent', async () => {
   const { posted } = fakeApi();
-  const { onConsentReady } = await renderScreen();
+  const { link } = await renderScreen();
   await fireEvent.press(screen.getByTestId('bank.selector'));
   await fireEvent.press(screen.getByTestId('bank.selector.option.billetera-demo'));
-  await fireEvent.press(screen.getByTestId('consents.checkbox'));
-  await fireEvent.press(button());
+  await goToPortal();
 
-  await waitFor(() => expect(onConsentReady).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(link).toHaveBeenCalledTimes(1));
   expect(posted).toHaveLength(1);
   expect(posted[0]!.key).toBe('idempotency-key-1');
   expect(posted[0]!.body).toEqual({
@@ -183,9 +209,84 @@ it('records the consent for the chosen entity with what was shown, then stops', 
     appVersion: '0.1.0',
     locale: 'es-CO',
   });
-  const [consent, provider] = onConsentReady.mock.calls[0]!;
-  expect(consent).toMatchObject({ provider: 'billetera-demo', status: 'pending' });
-  expect(provider).toMatchObject({ id: 'billetera-demo' });
+  expect(link).toHaveBeenCalledWith({
+    provider: 'billetera-demo',
+    consentId: '01928c7e-5b1a-7c3d-9e2f-4a6b8c0d2e4f',
+  });
+});
+
+it('waits for the portal, then shows the accounts the bank returned and Listo (HU-009)', async () => {
+  fakeApi();
+  let finish: (o: LinkOutcome) => void = () => undefined;
+  await renderScreen('light', () => new Promise((resolve) => (finish = resolve)));
+  await goToPortal();
+
+  expect(await screen.findByText('Conectando con Banco Demo')).toBeOnTheScreen();
+  expect(screen.getByText('Termina la autorización en el portal de Banco Demo.')).toBeOnTheScreen();
+  expect(screen.queryByTestId('consents.goToPortal')).toBeNull();
+
+  await act(async () => finish(linked));
+  expect(await screen.findByText('Banco Demo conectada')).toBeOnTheScreen();
+  expect(screen.getByText('Banco Demo · Ahorros')).toBeOnTheScreen();
+  expect(screen.getByText('Cuenta de ahorros · ')).toBeOnTheScreen();
+  expect(screen.getByText('Conectada')).toBeOnTheScreen();
+  expect(screen.getByText('$3.200.000')).toBeOnTheScreen();
+
+  await fireEvent.press(screen.getByTestId('bank.link.done'));
+  expect(await screen.findByText('Billetera')).toBeOnTheScreen();
+});
+
+it('says so when the bank returned no accounts, or they will come with the next update', async () => {
+  fakeApi();
+  await renderScreen('light', { kind: 'linked', linkId: 'link-1', accounts: [] });
+  await goToPortal();
+  expect(
+    await screen.findByText('Banco Demo no tiene cuentas para compartir con Fynk.'),
+  ).toBeOnTheScreen();
+  await screen.unmount();
+
+  fakeApi();
+  await renderScreen('light', { kind: 'linked', linkId: 'link-1', accounts: null });
+  await goToPortal();
+  expect(await screen.findByText(bankStrings.link.accountsLater)).toBeOnTheScreen();
+  expect(screen.getByText('Banco Demo conectada')).toBeOnTheScreen();
+});
+
+it('goes back to the form when the person closes the portal', async () => {
+  fakeApi();
+  const { link } = await renderScreen('light', { kind: 'cancelled' });
+  await goToPortal();
+  await waitFor(() => expect(link).toHaveBeenCalled());
+  expect(await screen.findByTestId('consents.goToPortal')).toBeOnTheScreen();
+  expect(screen.getByText('Banco Demo compartirá con Fynk')).toBeOnTheScreen();
+});
+
+it('explains a denied authorization and lets the person try again', async () => {
+  fakeApi();
+  await renderScreen('light', { kind: 'denied' });
+  await goToPortal();
+  expect(await screen.findByText('No autorizaste la conexión')).toBeOnTheScreen();
+  expect(screen.getByText('En el portal de Banco Demo no se aprobó el acceso.')).toBeOnTheScreen();
+  await fireEvent.press(screen.getByRole('button', { name: uiStrings.retry }));
+  expect(await screen.findByTestId('consents.goToPortal')).toBeOnTheScreen();
+});
+
+it.each([
+  [
+    'state_mismatch',
+    'No pudimos confirmar que la respuesta venga de Banco Demo. Intenta de nuevo.',
+  ],
+  ['expired', 'La autorización tardó demasiado. Empieza de nuevo.'],
+  ['already_linked', 'Esta autorización ya se usó. Empieza de nuevo.'],
+  ['unavailable', 'Banco Demo no está disponible en este momento.'],
+  ['offline', 'No tienes conexión a internet. Revísala e intenta de nuevo.'],
+] as const)('shows a clear message when linking fails with %s', async (reason, message) => {
+  fakeApi();
+  await renderScreen('light', { kind: 'failed', reason });
+  await goToPortal();
+  expect(await screen.findByText('No pudimos conectar tu cuenta')).toBeOnTheScreen();
+  expect(screen.getByText(message)).toBeOnTheScreen();
+  expect(screen.queryByTestId('bank.link.done')).toBeNull();
 });
 
 it('shows an error with a retry when the entities cannot be loaded', async () => {

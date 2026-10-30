@@ -121,12 +121,28 @@ func TestLoadReadsTheBankLinkSettings(t *testing.T) {
 	}
 }
 
+func TestLoadReadsTheBankKMSKeys(t *testing.T) {
+	c, err := Load(env(map[string]string{
+		"APP_ENV": "staging", "DATABASE_URL": "d", "REDIS_URL": "r",
+		"BANK_SIGNER_KMS_KEY_ID":      "alias/fynk-staging-bank-signer",
+		"BANK_FINGERPRINT_KMS_KEY_ID": "arn:aws:kms:us-east-1:111122223333:key/abcd",
+	}))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if c.BankSignerKMSKeyID != "alias/fynk-staging-bank-signer" ||
+		c.BankFingerprintKMSKeyID != "arn:aws:kms:us-east-1:111122223333:key/abcd" {
+		t.Fatalf("KMS keys not read: %+v", c)
+	}
+}
+
 func TestLoadLeavesTheBankLinkOffAndDefaultsTheRedirect(t *testing.T) {
 	c, err := Load(env(map[string]string{"APP_ENV": "prod", "DATABASE_URL": "d", "REDIS_URL": "r"}))
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if c.BankSignerKeyFile != "" || c.BankFingerprintKeyFile != "" || c.BancoDemoClientID != "" {
+	if c.BankSignerKeyFile != "" || c.BankFingerprintKeyFile != "" || c.BancoDemoClientID != "" ||
+		c.BankSignerKMSKeyID != "" || c.BankFingerprintKMSKeyID != "" {
 		t.Fatalf("bank settings should be empty: %+v", c)
 	}
 	if c.BankRedirectURI != "fynk://bank/callback" {
