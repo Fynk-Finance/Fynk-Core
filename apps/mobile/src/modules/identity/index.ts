@@ -79,6 +79,9 @@ export const signOut = () => session.signOut();
 /** When the person last logged in interactively, from the id token. Null when signed out. */
 export const lastLoginAt = (): Date | null => session.lastLoginAt();
 
+/** The account id (`sub`) of the current session, the owner of the backup. Null when signed out. */
+export const userId = (): string | null => session.userId();
+
 /** Calls `listener` on every change of the session state, outside React. Returns the unsubscribe. */
 export const onSessionChange = (listener: (state: SessionState) => void): (() => void) =>
   session.subscribe(() => listener(session.getState()));
