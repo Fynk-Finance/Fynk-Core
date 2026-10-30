@@ -22,6 +22,8 @@ import {
   useThemedStyles,
 } from '@shared/ui';
 
+import { MisCuentasBilletera } from '@modules/accounts';
+
 import type { RecurringService } from '../application/recurringService';
 import type { StoredRecurringItem } from '../domain/item';
 import { RecurringCard } from './RecurringCard';
@@ -91,6 +93,7 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
         gap={spacing.md}
         testID="recurring.billetera"
       >
+        <MisCuentasBilletera />
         <SectionHeader title={t.recurring} actionLabel={t.add} onAction={add} />
         {state.status === 'loading' ? (
           <View style={styles.grid}>
