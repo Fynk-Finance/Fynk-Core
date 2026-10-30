@@ -21,6 +21,7 @@ import { monthSummary } from './domain/dashboard';
 import type { ConnectedAccountsSummary } from './domain/netWorth';
 import { ACCOUNT_DETAIL_ROUTE, createAccountDetailScreen } from './ui/AccountDetailScreen';
 import { createDashboardScreen } from './ui/DashboardScreen';
+import { createMisCuentasBilletera, createMisCuentasMiCuenta } from './ui/MisCuentas';
 
 export type { AccountsOverview, BalancePoint, Cash, ConnectedAccountsSummary };
 export type { CashInputProps } from './ui/CashInput';
@@ -102,6 +103,14 @@ export const getCash = (): Promise<Cash | null> => cash.getCash();
 
 /** Registers or updates cash. Throws InvalidCashAmountError below zero or with decimals. */
 export const setCash = (amountMinor: MoneyMinor): Promise<void> => cash.setCash(amountMinor);
+
+// ---- Mis cuentas, rendered by other modules ----
+
+/** "Mis cuentas" of Billetera (M9): rendered above "Gastos recurrentes". */
+export const MisCuentasBilletera = createMisCuentasBilletera({ useAccounts });
+
+/** "Mis cuentas" of Mi cuenta (M1): rendered after "Información Básica". */
+export const MisCuentasMiCuenta = createMisCuentasMiCuenta({ useAccounts });
 
 // TODO(M10) take Ingresos and Gastos from M10's useMonthSummary(). Until then the temporary
 // monthSummary runs on this month's movements, and M7 has none to give yet (TODO(M7)).
