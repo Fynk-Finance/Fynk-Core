@@ -11,6 +11,7 @@ import {
   type StoredRecoveryKey,
 } from './ports';
 import type { PreparedRecoveryCode } from './recoveryCode';
+import type { ApprovalCheck, ApprovalStart } from './restoreWithApproval';
 import type { RestoreResult } from './restoreWithCode';
 import type { Vault } from './vault';
 
@@ -40,6 +41,9 @@ function setup(
     commit?: Error;
     /** What the restore with the code answers. Default `restored`. */
     restoreResult?: RestoreResult;
+    /** What the approval restore answers on the next check. Default `waiting`. */
+    approvalCheck?: ApprovalCheck;
+    approvalStart?: ApprovalStart;
   } = {},
 ) {
   const clock = createFixedClock(START);
@@ -142,6 +146,21 @@ function setup(
     return options.restoreResult ?? 'restored';
   });
   const resumePending = jest.fn(async () => undefined);
+  const approvalStart = jest.fn(
+    async (): Promise<ApprovalStart> =>
+      options.approvalStart ?? {
+        status: 'started',
+        id: 'req-1',
+        code: '048291',
+        expiresAt: '2026-11-03T15:10:00Z',
+      },
+  );
+  // Like the real service: the hook runs when a grant arrives, which only these results imply.
+  const approvalCheck = jest.fn(async (_id: string, onRestoring?: () => void) => {
+    const result = options.approvalCheck ?? 'waiting';
+    if (['restored', 'partial', 'failed'].includes(result)) onRestoring?.();
+    return result;
+  });
 
   let nowMs = 1_000_000;
   const newDek = jest.fn(() => Uint8Array.from({ length: 32 }, () => 7));
@@ -157,12 +176,15 @@ function setup(
     recoveryKey: { get: recoveryGet },
     recoveryCode: { prepare },
     restoreWithCode: { restore, resumePending },
+    restoreWithApproval: { start: approvalStart, check: approvalCheck },
   });
   return {
     controller,
     recoveryGet,
     restore,
     resumePending,
+    approvalStart,
+    approvalCheck,
     prepare,
     commits,
     setRecoveryKey: (next: 'exists' | 'missing' | 'offline') => {
@@ -219,7 +241,7 @@ describe('first phone of the account', () => {
   it('asks the server before making a key, and never makes one for an account with a backup', async () => {
     const t = setup({ dek: null, recoveryKey: 'exists' });
     await t.controller.unlock();
-    expect(t.controller.getState()).toEqual({ status: 'pendingDevice' });
+    expect(t.controller.getState()).toEqual({ status: 'pendingDevice', deviceStatus: 'active' });
     expect(t.vault.wipe).not.toHaveBeenCalled();
     expect(t.newDek).not.toHaveBeenCalled();
     expect(t.dekStore.write).not.toHaveBeenCalled();
@@ -258,7 +280,7 @@ describe('first phone of the account', () => {
   it('waits for approval when this phone is pending', async () => {
     const t = setup({ dek: null, device: { id: 'd1', status: 'pending' } });
     await t.controller.unlock();
-    expect(t.controller.getState()).toEqual({ status: 'pendingDevice' });
+    expect(t.controller.getState()).toEqual({ status: 'pendingDevice', deviceStatus: 'pending' });
     expect(t.newDek).not.toHaveBeenCalled();
     expect(t.vault.open).not.toHaveBeenCalled();
   });
@@ -865,7 +887,11 @@ describe('restore with the recovery code', () => {
       const t = setup({ dek: null, recoveryKey: 'exists', restoreResult: result });
       await t.controller.unlock();
       expect(await t.controller.restoreWithCode('x')).toBe(result);
-      expect(t.controller.getState()).toEqual({ status: 'pendingDevice', restoreError: result });
+      expect(t.controller.getState()).toEqual({
+        status: 'pendingDevice',
+        deviceStatus: 'active',
+        restoreError: result,
+      });
       // Another try is allowed.
       await t.controller.restoreWithCode('y');
       expect(t.restore).toHaveBeenCalledTimes(2);
@@ -915,6 +941,124 @@ describe('restore with the recovery code', () => {
     expect(t.vault.open).not.toHaveBeenCalled();
     expect(t.resumePending).not.toHaveBeenCalled();
     expect(t.dekStore.write).not.toHaveBeenCalled();
+  });
+});
+
+describe('restore with approval from the old phone', () => {
+  const pendingPhone = (options: Parameters<typeof setup>[0] = {}) =>
+    setup({ dek: null, device: { id: 'd1', status: 'pending' }, ...options });
+
+  it('starts a request for a pending phone and stays on the screen', async () => {
+    const t = pendingPhone();
+    await t.controller.unlock();
+    expect(await t.controller.startApproval()).toEqual({
+      status: 'started',
+      id: 'req-1',
+      code: '048291',
+      expiresAt: '2026-11-03T15:10:00Z',
+    });
+    expect(t.controller.getState()).toEqual({ status: 'pendingDevice', deviceStatus: 'pending' });
+  });
+
+  it('does not ask for an active phone, which the server refuses', async () => {
+    const t = setup({ dek: null, recoveryKey: 'exists' });
+    await t.controller.unlock();
+    expect(await t.controller.startApproval()).toEqual({ status: 'alreadyActive' });
+    expect(t.approvalStart).not.toHaveBeenCalled();
+  });
+
+  it('learns from the server that the phone is already active', async () => {
+    const t = pendingPhone({ approvalStart: { status: 'alreadyActive' } });
+    await t.controller.unlock();
+    expect(await t.controller.startApproval()).toEqual({ status: 'alreadyActive' });
+    expect(t.controller.getState()).toEqual({ status: 'pendingDevice', deviceStatus: 'active' });
+  });
+
+  it('does nothing outside the pending device state', async () => {
+    const t = setup();
+    await t.controller.unlock();
+    expect(await t.controller.startApproval()).toEqual({ status: 'failed' });
+    expect(await t.controller.checkApproval('req-1')).toBe('failed');
+    expect(t.approvalCheck).not.toHaveBeenCalled();
+  });
+
+  it.each(['waiting', 'rejected', 'expired', 'offline'] as const)(
+    'stays pending on %s, so the person can try again',
+    async (approvalCheck) => {
+      const t = pendingPhone({ approvalCheck });
+      await t.controller.unlock();
+      const seen: string[] = [];
+      t.controller.subscribe(() => seen.push(t.controller.getState().status));
+      expect(await t.controller.checkApproval('req-1')).toBe(approvalCheck);
+      expect(seen).toEqual([]);
+      expect(t.controller.getState()).toEqual({ status: 'pendingDevice', deviceStatus: 'pending' });
+    },
+  );
+
+  it('shows restoring while the grant is restored and unlocks at the end', async () => {
+    const t = pendingPhone({ approvalCheck: 'restored' });
+    await t.controller.unlock();
+    const seen: string[] = [];
+    t.controller.subscribe(() => seen.push(t.controller.getState().status));
+    expect(await t.controller.checkApproval('req-1')).toBe('restored');
+    expect(t.approvalCheck).toHaveBeenCalledWith('req-1', expect.any(Function));
+    expect(seen).toEqual(['restoring', 'unlocked']);
+  });
+
+  it('unlocks on a partial restore too (the retry is on the next open)', async () => {
+    const t = pendingPhone({ approvalCheck: 'partial' });
+    await t.controller.unlock();
+    await t.controller.checkApproval('req-1');
+    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+  });
+
+  it('leaves an active phone that can only use the code after a failed restore', async () => {
+    const t = pendingPhone({ approvalCheck: 'failed' });
+    await t.controller.unlock();
+    expect(await t.controller.checkApproval('req-1')).toBe('failed');
+    expect(t.controller.getState()).toEqual({ status: 'pendingDevice', deviceStatus: 'active' });
+    expect(await t.controller.startApproval()).toEqual({ status: 'alreadyActive' });
+  });
+
+  it('leaves an active phone when the grant was lost', async () => {
+    const t = pendingPhone({ approvalCheck: 'grantLost' });
+    await t.controller.unlock();
+    expect(await t.controller.checkApproval('req-1')).toBe('grantLost');
+    expect(t.controller.getState()).toEqual({ status: 'pendingDevice', deviceStatus: 'active' });
+  });
+
+  it('answers waiting to a poll that overlaps the restore, and ignores unlock calls', async () => {
+    const t = pendingPhone();
+    await t.controller.unlock();
+    let finish!: (r: ApprovalCheck) => void;
+    t.approvalCheck.mockImplementationOnce((_id, onRestoring) => {
+      onRestoring?.();
+      return new Promise<ApprovalCheck>((r) => (finish = r));
+    });
+    const first = t.controller.checkApproval('req-1');
+    expect(t.controller.getState()).toEqual({ status: 'restoring' });
+    expect(await t.controller.checkApproval('req-1')).toBe('waiting');
+    await t.controller.unlock();
+    expect(t.controller.getState()).toEqual({ status: 'restoring' });
+    finish('restored');
+    await first;
+    expect(t.approvalCheck).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes the vault again when the phone was locked while restoring', async () => {
+    const t = pendingPhone();
+    await t.controller.unlock();
+    let finish!: (r: ApprovalCheck) => void;
+    t.approvalCheck.mockImplementationOnce((_id, onRestoring) => {
+      onRestoring?.();
+      return new Promise<ApprovalCheck>((r) => (finish = r));
+    });
+    const restoring = t.controller.checkApproval('req-1');
+    await t.controller.lock();
+    finish('restored');
+    await restoring;
+    expect(t.vault.close).toHaveBeenCalledTimes(2);
+    expect(t.controller.getState().status).toBe('locked');
   });
 });
 

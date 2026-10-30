@@ -16,6 +16,7 @@ import {
   type PreparedRecoveryCode,
   type RecoveryCodeService,
 } from './recoveryCode';
+import type { ApprovalCheck, ApprovalStart, RestoreWithApproval } from './restoreWithApproval';
 import type { RestoreFailure, RestoreResult, RestoreWithCode } from './restoreWithCode';
 import type { Vault } from './vault';
 
@@ -28,6 +29,11 @@ export interface LockState {
   status:
     'locked' | 'unlocking' | 'unlocked' | 'pendingDevice' | 'restoring' | 'recoveryCode' | 'error';
   error?: LockError;
+  /**
+   * Pending device only: `pending` can ask the old phone for approval; `active` (the server
+   * already activated this phone) can only use the recovery code.
+   */
+  deviceStatus?: 'pending' | 'active';
   /** Pending device only: why the last try with the recovery code did not work. */
   restoreError?: RestoreFailure;
   /** Recovery code only: the groups to show once. The code lives in memory while it is shown. */
@@ -67,6 +73,8 @@ export interface LockControllerDeps {
   recoveryCode: RecoveryCodeService;
   /** The restore on a new phone, and the retry of one that was cut short. */
   restoreWithCode: RestoreWithCode;
+  /** The restore with the old phone's approval. */
+  restoreWithApproval: RestoreWithApproval;
   /** False in the dev session: no registered device and no API, so no backup to protect. */
   backupEnabled: () => boolean;
 }
@@ -100,6 +108,17 @@ export interface LockController {
    * back to `pendingDevice` with `restoreError`, so the person can try again.
    */
   restoreWithCode(typed: string): Promise<RestoreResult>;
+  /**
+   * New phone (pending device): asks the old phone for approval. The caller polls
+   * `checkApproval`. A phone the server already activated is told `alreadyActive`.
+   */
+  startApproval(): Promise<ApprovalStart>;
+  /**
+   * One poll of the request. `restoring` is shown while a granted restore runs and the vault is
+   * unlocked at the end. After `grantLost` or `failed` the phone is active and only the recovery
+   * code is left.
+   */
+  checkApproval(id: string): Promise<ApprovalCheck>;
   /**
    * A new code that replaces the current one once confirmed. Needs a login of the last 5
    * minutes, else asks for the password first. The vault must be unlocked.
@@ -212,8 +231,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
       return;
     }
     if (device?.status === 'pending') {
-      // The restore from another phone arrives in a later PR.
-      set({ status: 'pendingDevice' });
+      set({ status: 'pendingDevice', deviceStatus: 'pending' });
       return;
     }
     if (device?.status !== 'active') {
@@ -233,8 +251,8 @@ export function createLockController(deps: LockControllerDeps): LockController {
         return;
       }
       if (existing) {
-        // The person restores with the recovery code (restoreWithCode).
-        set({ status: 'pendingDevice' });
+        // Active, so the person restores with the recovery code (restoreWithCode).
+        set({ status: 'pendingDevice', deviceStatus: 'active' });
         return;
       }
     }
@@ -374,6 +392,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
     async restoreWithCode(typed) {
       if (state.status !== 'pendingDevice') return 'failed';
       const mine = generation;
+      const before = state;
       set({ status: 'restoring' });
       const result = await deps.restoreWithCode.restore(typed);
       const opened = result === 'restored' || result === 'partial';
@@ -382,7 +401,45 @@ export function createLockController(deps: LockControllerDeps): LockController {
         if (opened) await vault.close();
         return result;
       }
-      set(opened ? { status: 'unlocked' } : { status: 'pendingDevice', restoreError: result });
+      set(
+        opened
+          ? { status: 'unlocked' }
+          : { status: 'pendingDevice', deviceStatus: before.deviceStatus, restoreError: result },
+      );
+      return result;
+    },
+    async startApproval() {
+      if (state.status !== 'pendingDevice') return { status: 'failed' };
+      // The server refuses an approval for an active phone, so there is nothing to ask.
+      if (state.deviceStatus !== 'pending') return { status: 'alreadyActive' };
+      const result = await deps.restoreWithApproval.start();
+      if (result.status === 'alreadyActive' && state.status === 'pendingDevice') {
+        set({ status: 'pendingDevice', deviceStatus: 'active' });
+      }
+      return result;
+    },
+    async checkApproval(id) {
+      // A poll that overlaps a restore changes nothing.
+      if (state.status === 'restoring') return 'waiting';
+      if (state.status !== 'pendingDevice') return 'failed';
+      const mine = generation;
+      let spent = false;
+      const result = await deps.restoreWithApproval.check(id, () => {
+        spent = true;
+        set({ status: 'restoring' });
+      });
+      const opened = result === 'restored' || result === 'partial';
+      if (mine !== generation) {
+        // Locked or reset while restoring: the vault opened behind that, so close it again.
+        if (opened) await vault.close();
+        return result;
+      }
+      if (opened) {
+        set({ status: 'unlocked' });
+      } else if (spent || result === 'grantLost') {
+        // The server read the grant out: this phone is active and has no key.
+        set({ status: 'pendingDevice', deviceStatus: 'active' });
+      }
       return result;
     },
     async prepareNewRecoveryCode() {
