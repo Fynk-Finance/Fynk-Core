@@ -4,7 +4,7 @@ import { randomUUID } from 'expo-crypto';
 
 import type { Account, Clock, Id, IsoDate, MoneyMinor } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
-import type { ModuleRoutes } from '@shared/navigation';
+import { registerSlot, type ModuleRoutes } from '@shared/navigation';
 import type { MarkDirty } from '@shared/ports';
 
 import { NOTIFICATIONS_ROUTE, useUnreadCount } from '@modules/notifications';
@@ -109,8 +109,11 @@ export const setCash = (amountMinor: MoneyMinor): Promise<void> => cash.setCash(
 /** "Mis cuentas" of Billetera (M9): rendered above "Gastos recurrentes". */
 export const MisCuentasBilletera = createMisCuentasBilletera({ useAccounts });
 
-/** "Mis cuentas" of Mi cuenta (M1): rendered after "Información Básica". */
+/** "Mis cuentas" of Mi cuenta (M1), shown through the slot after "Información Básica". */
 export const MisCuentasMiCuenta = createMisCuentasMiCuenta({ useAccounts });
+// M1 renders <Slot name="miCuenta.misCuentas" />: importing this module from identity would
+// close an import cycle (vault imports identity).
+registerSlot('miCuenta.misCuentas', MisCuentasMiCuenta);
 
 // TODO(M10) take Ingresos and Gastos from M10's useMonthSummary(). Until then the temporary
 // monthSummary runs on this month's movements, and M7 has none to give yet (TODO(M7)).
