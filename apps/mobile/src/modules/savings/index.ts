@@ -9,7 +9,9 @@ import { notificationsPort } from '@modules/notifications';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
 import { savingsMigrations } from './adapters/vault/migrations';
+import { createVaultContributionStore } from './adapters/vault/vaultContributionStore';
 import { createVaultGoalStore } from './adapters/vault/vaultGoalStore';
+import { createContributionService } from './application/contributionService';
 import { createGoalService } from './application/goalService';
 import { createMilestoneNotifier } from './application/milestoneNotifier';
 import { createVaultMilestoneStore } from './adapters/vault/vaultMilestoneStore';
@@ -31,6 +33,17 @@ const service = createGoalService({
   store: () => createVaultGoalStore(getVaultDb()),
   clock,
   newId: randomUUID,
+  // Deleting a goal frees the movements linked to it first.
+  beforeRemove: (goalId) => contributions.unlinkGoal(goalId),
+});
+
+// SCRUM-52. Movements can be linked once M7 exports setTransactionGoal (`movements`).
+const contributions = createContributionService({
+  store: () => createVaultContributionStore(getVaultDb()),
+  goals: () => createVaultGoalStore(getVaultDb()),
+  clock,
+  newId: randomUUID,
+  onChange: () => service.notifyChanged(),
 });
 
 // SCRUM-53: notices at 50 %, 75 % and 100 %, with the app open only: when the vault opens and
