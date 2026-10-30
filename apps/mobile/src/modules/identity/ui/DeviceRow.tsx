@@ -27,10 +27,20 @@ export interface DeviceRowProps {
   disabled: boolean;
   /** False while this phone waits for approval: the API refuses it to close other devices. */
   canClose: boolean;
+  /** Pending device that this (active) phone may approve. Absent: no button. */
+  onApprove?: () => void;
   onClose: () => void;
 }
 
-export function DeviceRow({ device, now, divided, disabled, canClose, onClose }: DeviceRowProps) {
+export function DeviceRow({
+  device,
+  now,
+  divided,
+  disabled,
+  canClose,
+  onClose,
+  onApprove,
+}: DeviceRowProps) {
   const styles = useThemedStyles(createStyles);
   const seen = lastSeenText(device, now);
   const pending = device.status === 'pending';
@@ -70,6 +80,24 @@ export function DeviceRow({ device, now, divided, disabled, canClose, onClose }:
       ) : (
         <>
           {pending ? <Badge tone="neutral" size="lg" label={t.pending} /> : null}
+          {pending && onApprove ? (
+            // Not in the design: new, needs design review. M2 owns the approval screen.
+            <Pressable
+              onPress={onApprove}
+              disabled={disabled}
+              accessibilityRole="button"
+              accessibilityLabel={t.approveDevice(device.name)}
+              testID={`identity.security.device.${device.id}.approve`}
+              style={({ pressed }) => [
+                styles.approve,
+                pressed || disabled ? styles.closePressed : null,
+              ]}
+            >
+              <AppText variant="small" color="primaryDark" style={styles.closeText}>
+                {t.approve}
+              </AppText>
+            </Pressable>
+          ) : null}
           {canClose ? (
             <Pressable
               onPress={onClose}
@@ -114,6 +142,16 @@ const createStyles = ({ colors }: Theme) =>
       borderWidth: 1.5,
       borderColor: colors.dangerBorder,
       backgroundColor: colors.dangerSurface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    approve: {
+      height: 32,
+      paddingHorizontal: 8,
+      borderRadius: 11,
+      borderWidth: 1.5,
+      borderColor: colors.primary,
+      backgroundColor: colors.surfaceBlue,
       alignItems: 'center',
       justifyContent: 'center',
     },

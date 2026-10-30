@@ -60,6 +60,7 @@ function ProbeColors() {
 }
 
 const Stack = createNativeStackNavigator();
+const ApproveStub = () => <Text>approve screen</Text>;
 
 interface Options {
   profile?: () => Promise<Profile>;
@@ -102,6 +103,7 @@ async function renderScreen(options: Options = {}) {
         <NavigationContainer>
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="identity.Security" component={Security} />
+            <Stack.Screen name="vault.ApproveDevice" component={ApproveStub} />
           </Stack.Navigator>
         </NavigationContainer>
       </QueryClientProvider>
@@ -313,6 +315,33 @@ it('uses different colors in light and dark', async () => {
   await screen.unmount();
   await renderScreen({ preference: 'dark' });
   expect(background()).not.toBe(light);
+});
+
+describe('approving a pending device from an active phone', () => {
+  const approveButton = () => screen.getByTestId('identity.security.device.dev-pending.approve');
+
+  it.each(['light', 'dark'] as const)(
+    'shows Aprobar on a pending row and opens the vault screen in %s',
+    async (preference) => {
+      await renderScreen({ preference, list: async () => [thisPhone, tablet, pendingPhone] });
+      expect(screen.getByRole('button', { name: t.approveDevice('Pixel 8') })).toBeOnTheScreen();
+      expect(screen.queryByTestId('identity.security.device.dev-tab.approve')).toBeNull();
+      expect(screen.queryByTestId('identity.security.device.dev-this.approve')).toBeNull();
+      await fireEvent.press(approveButton());
+      expect(await screen.findByText('approve screen')).toBeOnTheScreen();
+    },
+  );
+
+  it('shows no Aprobar when this phone is the pending one', async () => {
+    const pendingThis: LinkedDeviceItem = { ...thisPhone, status: 'pending' };
+    await renderScreen({ list: async () => [pendingThis, pendingPhone] });
+    expect(screen.queryByTestId('identity.security.device.dev-pending.approve')).toBeNull();
+  });
+
+  it('shows no Aprobar when no device is pending', async () => {
+    await renderScreen();
+    expect(screen.queryByText(t.approve)).toBeNull();
+  });
 });
 
 describe('when this phone is pending', () => {
