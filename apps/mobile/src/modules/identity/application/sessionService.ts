@@ -45,6 +45,8 @@ export interface SessionService {
   reauthenticate(): Promise<ReauthenticateResult>;
   /** When the person last logged in interactively (id token `auth_time`). Null when signed out. */
   lastLoginAt(): Date | null;
+  /** The account id (`sub` of the id token). Null when signed out or the token has none. */
+  userId(): string | null;
   /** The access token, refreshed first when it expires within 60 s. Null when signed out. */
   getAccessToken(): Promise<string | null>;
   /** Refreshes now. Resolves true when a new access token is available. */
@@ -248,6 +250,7 @@ export function createSessionService({ oidc, store, clock }: SessionDeps): Sessi
       const seconds = tokens ? authTimeOf(tokens.idToken) : null;
       return seconds === null ? null : new Date(seconds * 1000);
     },
+    userId: () => (tokens ? subjectOf(tokens.idToken) : null),
     async signOut() {
       const current = tokens;
       await forget();
