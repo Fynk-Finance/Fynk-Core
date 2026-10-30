@@ -293,3 +293,34 @@ describe('Abonar a esta meta (SCRUM-52)', () => {
     }
   });
 });
+
+describe('pace in the open card (SCRUM-53)', () => {
+  it('"Vas a tiempo" when the aportes of this month reach the suggested amount', async () => {
+    await addDesignGoals();
+    await renderMetas();
+    // Viaje a Cartagena, created today: $3.200.000 this month ≥ the suggested $225.000.
+    await fireEvent.press(await screen.findByTestId('savings.goal.g1.head'));
+    expect(screen.getByTestId('savings.goal.g1.pace')).toHaveTextContent('Vas a tiempo');
+  });
+
+  it('warns a goal that is behind', async () => {
+    const id = await service.create(goal('Portátil nuevo', 'other', 4_200_000, '2027-08'));
+    await vault.db.execute(`UPDATE savings_goals SET created_at = '2026-08-01T15:00:00.000Z'`);
+    await contribute(id, 60_000, '2026-10-02', 'p1');
+    await renderMetas();
+    await fireEvent.press(await screen.findByTestId(`savings.goal.${id}.head`));
+    // 4.140.000 over 10 months = $414.000; average of 3 months 20.000 → $394.000 short.
+    expect(screen.getByTestId(`savings.goal.${id}.pace`)).toHaveTextContent(
+      'Te faltan $394.000 al mes para llegar',
+    );
+  });
+
+  it('nudges a goal with no aporte yet instead of warning it', async () => {
+    await service.create(goal('Viaje a Cartagena', 'travel', 5_000_000, '2027-06'));
+    await renderMetas();
+    await fireEvent.press(await screen.findByTestId('savings.goal.g1.head'));
+    expect(screen.getByTestId('savings.goal.g1.pace')).toHaveTextContent(
+      'Abona $625.000 al mes para llegar a tiempo',
+    );
+  });
+});

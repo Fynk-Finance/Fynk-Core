@@ -11,6 +11,7 @@ import {
   InvalidGoalError,
   bogotaToday,
   createGoalService,
+  paceWindowStart,
   type GoalService,
 } from './goalService';
 
@@ -196,6 +197,57 @@ describe('overview (Metas stats card)', () => {
     });
     expect((await service.get(done))?.completedOn).toBe('2026-08-20');
     expect((await service.get(tripId))?.completedOn).toBeNull();
+  });
+});
+
+describe('pace (SCRUM-53: "Indica si el ritmo permite cumplir")', () => {
+  // Regalos de Navidad: $800.000 for Dec 2026, created on 1 Aug. Today is 28 Oct.
+  async function gifts3Months(amounts: [string, number][]) {
+    const id = await service.create(gifts);
+    await vault.db.execute(`UPDATE savings_goals SET created_at = '2026-08-01T15:00:00.000Z'`);
+    for (const [on, amount] of amounts) await contribute(id, amount, `c-${on}`, on);
+    return (await service.get(id))!;
+  }
+
+  it('is on track when the last 3 months average at least the suggested amount', async () => {
+    // 520.000 saved → $140.000 a month for 2 months; average (180 + 170 + 170) / 3 = 173.333.
+    const g = await gifts3Months([
+      ['2026-08-10', 180_000],
+      ['2026-09-10', 170_000],
+      ['2026-10-10', 170_000],
+    ]);
+    expect(g.pace).toEqual({ status: 'on_track' });
+  });
+
+  it('says how much more a month is needed', async () => {
+    // 300.000 saved → $250.000 a month; average 100.000 → "Te faltan $150.000 al mes".
+    const g = await gifts3Months([
+      ['2026-08-10', 100_000],
+      ['2026-09-10', 100_000],
+      ['2026-10-10', 100_000],
+    ]);
+    expect(g.pace).toEqual({ status: 'behind', missingMonthlyMinor: pesos(150_000) });
+  });
+
+  it('only counts the current month and the two before it', async () => {
+    const g = await gifts3Months([
+      ['2026-07-31', 600_000],
+      ['2026-10-10', 100_000],
+    ]);
+    // 700.000 saved → $50.000 a month; average of Aug-Oct is 33.334 → behind by $17.000.
+    expect(g.pace).toEqual({ status: 'behind', missingMonthlyMinor: pesos(17_000) });
+  });
+
+  it('a reached goal is done', async () => {
+    const g = await gifts3Months([['2026-10-10', 800_000]]);
+    expect(g.pace).toEqual({ status: 'done' });
+  });
+});
+
+describe('paceWindowStart', () => {
+  it('starts two months before the current one, across the year', () => {
+    expect(paceWindowStart('2026-10-28')).toBe('2026-08-01');
+    expect(paceWindowStart('2027-01-05')).toBe('2026-11-01');
   });
 });
 

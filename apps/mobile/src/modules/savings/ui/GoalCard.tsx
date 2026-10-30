@@ -33,6 +33,7 @@ import { GOAL_ICONS } from './goalIcons';
 import { monthLabel, savingsStrings } from './strings.es-CO';
 
 const t = savingsStrings.metas;
+const tp = savingsStrings.pace;
 
 export interface GoalCardProps {
   goal: GoalSummary;
@@ -115,6 +116,7 @@ export function GoalCard({ goal, expanded, onToggle, onEdit, abonar }: GoalCardP
               <AmountText amountMinor={goal.remainingMinor} size={14} />
             </View>
           </View>
+          <PaceLine goal={goal} />
           {abonar}
           <GhostButton
             label={t.edit}
@@ -124,6 +126,35 @@ export function GoalCard({ goal, expanded, onToggle, onEdit, abonar }: GoalCardP
           />
         </Open>
       ) : null}
+    </View>
+  );
+}
+
+/**
+ * "Vas a tiempo" (green check) or "Te faltan $X al mes para llegar" (red warning). A goal with no
+ * aporte yet gets a neutral nudge instead of a warning.
+ */
+function PaceLine({ goal }: { goal: GoalSummary }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const p = goal.pace;
+  if (p.status === 'done') return null;
+  const [icon, color, text] =
+    p.status === 'on_track'
+      ? (['check', colors.accentText, tp.onTrack] as const)
+      : !goal.started
+        ? ([
+            'calendar',
+            colors.textSecondary,
+            tp.notStarted(formatCop(goal.suggestedMonthlyMinor)),
+          ] as const)
+        : (['warning', colors.danger, tp.behind(formatCop(p.missingMonthlyMinor))] as const);
+  return (
+    <View style={styles.pace} testID={`savings.goal.${goal.id}.pace`}>
+      <Icon name={icon} size={16} color={color} strokeWidth={2.4} />
+      <AppText variant="captionStrong" style={{ color }}>
+        {text}
+      </AppText>
     </View>
   );
 }
@@ -180,4 +211,5 @@ const createStyles = ({ colors, shadow }: Theme) =>
     },
     inline: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
     small: { fontSize: 11, lineHeight: 14 },
+    pace: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   });

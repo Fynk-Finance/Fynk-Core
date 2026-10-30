@@ -75,6 +75,13 @@ export function bogotaToday(now: Date): IsoDate {
   return new Date(now.getTime() + BOGOTA_OFFSET_MS).toISOString().slice(0, 10);
 }
 
+/** The first day of the month two months before today's: 2026-10-28 gives 2026-08-01. */
+export function paceWindowStart(today: IsoDate): IsoDate {
+  const [year, month] = today.split('-').map(Number) as [number, number];
+  const index = year * 12 + (month - 1) - 2;
+  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, '0')}-01`;
+}
+
 export function createGoalService(deps: GoalServiceDeps): GoalService {
   const listeners = new Set<() => void>();
   const changed = () => {
@@ -98,11 +105,17 @@ export function createGoalService(deps: GoalServiceDeps): GoalService {
 
   const list = async () => {
     const store = deps.store();
-    const [goals, saved] = await Promise.all([store.list(), store.savedByGoal()]);
     const day = today();
+    const [goals, saved, recent] = await Promise.all([
+      store.list(),
+      store.savedByGoal(),
+      // The pace looks at the current month and the two before it.
+      store.contributionsSince(paceWindowStart(day)),
+    ]);
     return [...goals].sort(byDeadline).map((g) => {
       const s = saved.get(g.id);
-      return summarizeGoal(g, s?.savedMinor ?? 0, day, s?.lastOn ?? null);
+      const own = recent.filter((c) => c.goalId === g.id);
+      return summarizeGoal(g, s?.savedMinor ?? 0, day, s?.lastOn ?? null, own);
     });
   };
 

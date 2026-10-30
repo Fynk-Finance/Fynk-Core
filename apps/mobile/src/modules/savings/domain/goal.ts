@@ -4,10 +4,13 @@ import type { Id, IsoDate, IsoDateTime, MoneyMinor } from '@shared/domain/types'
 
 import {
   monthsLeft,
+  pace,
   progressPercent,
   remaining,
   suggestedMonthly,
+  type Contribution,
   type GoalCategory,
+  type Pace,
   type YearMonthText,
 } from './goals';
 
@@ -43,6 +46,10 @@ export interface GoalSummary extends Goal {
   done: boolean;
   /** "Cumplida en ago 2026": the day of the last contribution of a goal already reached. */
   completedOn: IsoDate | null;
+  /** "Vas a tiempo" or "Te faltan $X al mes para llegar" (SCRUM-53). */
+  pace: Pace;
+  /** Whether the goal has any contribution yet. */
+  started: boolean;
 }
 
 export type GoalField = 'name' | 'target' | 'deadline';
@@ -82,11 +89,26 @@ export function validateGoal(
   return errors;
 }
 
+// America/Bogota is UTC-5 all year (Colombia has no daylight saving time).
+const BOGOTA_OFFSET_MS = -5 * 60 * 60 * 1000;
+
+/** The day a goal was created, in Bogotá; today for a goal that is not saved yet. */
+function createdOn(goal: Goal, today: IsoDate): IsoDate {
+  const time = Date.parse(goal.createdAt);
+  if (Number.isNaN(time)) return today;
+  return new Date(time + BOGOTA_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/**
+ * The numbers of a goal. `recent` are its contributions of the last months, for the pace; with
+ * none, the pace counts nothing saved lately.
+ */
 export function summarizeGoal(
   goal: Goal,
   savedMinor: MoneyMinor,
   today: IsoDate,
   lastContributionOn: IsoDate | null = null,
+  recent: readonly Contribution[] = [],
 ): GoalSummary {
   const months = monthsLeft(today, goal.deadline);
   const missing = remaining(goal.targetMinor, savedMinor);
@@ -99,6 +121,15 @@ export function summarizeGoal(
     suggestedMonthlyMinor: suggestedMonthly(goal.targetMinor, savedMinor, months),
     done: missing === 0,
     completedOn: missing === 0 ? lastContributionOn : null,
+    pace: pace({
+      target: goal.targetMinor,
+      saved: savedMinor,
+      contributions: recent,
+      createdOn: createdOn(goal, today),
+      deadline: goal.deadline,
+      today,
+    }),
+    started: lastContributionOn !== null,
   };
 }
 
