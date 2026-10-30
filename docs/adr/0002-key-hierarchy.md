@@ -142,5 +142,6 @@ Each event carries ids and counts, never content or key material.
 * **Losing both the phone and the code loses the manual data.** That is the price of zero knowledge. The app says so clearly at sign up and in the restore screen. Bank data is rebuilt from the bank.
 * **The server learns some metadata:** collection names, record ids, versions, counts, sizes and times. It does not learn field names or values. This is why the audit of an upload carries only a count.
 * **Replacing the recovery code** invalidates the old one at once, but it does not re-encrypt the backup. The records stay under BK, which comes from the DEK, and the DEK does not change.
+* **"Copiar" puts the recovery code on the system clipboard,** where other apps on the phone may read it. The button exists because people save the code in a password manager or a note. The screen still asks them to type the last group back, and the app never reads the clipboard. Clearing the clipboard after a while is not reliable on iOS or Android, so it is not promised.
 * **A DEK rotation is not designed in the MVP.** If the DEK leaked, the fix would be a backup reset with a new DEK.
 * **The hierarchy is versioned** through the info strings (`/v1`). A change of algorithm adds a new string and a migration. It does not edit the old one.
