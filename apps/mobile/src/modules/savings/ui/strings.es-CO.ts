@@ -18,6 +18,11 @@ export const MONTHS_SHORT = [
 ] as const;
 
 export const savingsStrings = {
+  // Milestone notices (design Notificaciones: "Viaje a Cartagena · Llegaste al 64 % de tu meta.").
+  milestones: {
+    reached: (percent: number) => `Llegaste al ${percent} % de tu meta.`,
+    done: (target: string) => `Cumpliste tu meta de ${target}. ¡Bien hecho!`,
+  },
   categories: {
     travel: 'Viaje',
     emergency: 'Fondo de emergencia',
@@ -26,6 +31,15 @@ export const savingsStrings = {
     vehicle: 'Vehículo',
     other: 'Otro',
   } satisfies Record<GoalCategory, string>,
+  // Dashboard carousel (design Dashboard, "Planes de ahorro").
+  carousel: {
+    title: 'Planes de ahorro',
+    seeAll: 'Ver todos',
+    cardLabel: (name: string, percent: number) => `${name}, ${percent} % ahorrado. Ver en Metas`,
+    // No goals yet: new copy, needs design review.
+    emptyTitle: 'Crea tu primera meta',
+    emptyMessage: 'Te decimos cuánto apartar al mes.',
+  },
   metas: {
     title: 'Metas de ahorro',
     subtitle: 'Cada abono te acerca a lo que quieres.',

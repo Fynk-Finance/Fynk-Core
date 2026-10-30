@@ -2,8 +2,10 @@
 import { randomUUID } from 'expo-crypto';
 
 import type { Clock, MoneyMinor } from '@shared/domain/types';
+import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
+import { notificationsPort } from '@modules/notifications';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
 import { savingsMigrations } from './adapters/vault/migrations';
@@ -11,8 +13,11 @@ import { createVaultContributionStore } from './adapters/vault/vaultContribution
 import { createVaultGoalStore } from './adapters/vault/vaultGoalStore';
 import { createContributionService } from './application/contributionService';
 import { createGoalService } from './application/goalService';
+import { createMilestoneNotifier } from './application/milestoneNotifier';
+import { createVaultMilestoneStore } from './adapters/vault/vaultMilestoneStore';
 import type { GoalSummary } from './domain/goal';
 import { createGoalFormScreen, GOAL_FORM_ROUTE } from './ui/GoalFormScreen';
+import { createGoalsCarousel, GoalCardCompact } from './ui/GoalsCarousel';
 import { createMetasScreen, METAS_ROUTE } from './ui/MetasScreen';
 
 export type { GoalSummary };
@@ -42,6 +47,20 @@ const contributions = createContributionService({
   onChange: () => service.notifyChanged(),
 });
 
+// SCRUM-53: notices at 50 %, 75 % and 100 %, with the app open only: when the vault opens and
+// after every change of the goals or their contributions.
+const milestones = createMilestoneNotifier({
+  goals: () => service.list(),
+  store: () => createVaultMilestoneStore(getVaultDb()),
+  notifications: notificationsPort,
+  clock,
+});
+const checkMilestones = () => {
+  void milestones.check().catch(() => undefined);
+};
+appEvents.on('vault.unlocked', checkMilestones);
+service.subscribe(checkMilestones);
+
 /** Goals with saved amount, percent and suggested monthly, nearest deadline first. */
 export const getGoals = (): Promise<GoalSummary[]> => service.list();
 
@@ -64,3 +83,10 @@ export const routes: ModuleRoutes = {
     },
   ],
 };
+
+/**
+ * "Planes de ahorro" for the Dashboard (M6 places it): title, "Ver todos" (opens Metas) and the
+ * carousel of goals not reached yet. Render `<GoalsCarousel />` inside a navigator.
+ */
+export const GoalsCarousel = createGoalsCarousel({ service });
+export { GoalCardCompact };
