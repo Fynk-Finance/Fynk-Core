@@ -13,4 +13,13 @@ export const vaultMigrations: VaultMigration[] = [
       PRIMARY KEY (collection, record_id)
     )`,
   },
+  {
+    version: 2,
+    // Small flags of the vault itself. `restore_pending`: a restore from the backup started on
+    // this phone and did not finish, so the next open runs it again.
+    up: `CREATE TABLE vault_state (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )`,
+  },
 ];
