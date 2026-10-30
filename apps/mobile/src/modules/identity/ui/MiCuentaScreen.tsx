@@ -3,6 +3,7 @@
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { Alert, StyleSheet, View } from 'react-native';
 
+import { Slot } from '@shared/navigation';
 import {
   AppText,
   Card,
@@ -63,6 +64,7 @@ export function createMiCuentaScreen({ profile: port, signOut }: MiCuentaDeps) {
             <>
               <SectionHeader title={t.basicInfo} />
               <BasicInfo profile={profile} />
+              <Slot name="miCuenta.misCuentas" />
               <SectionHeader title={t.management} />
               <View style={styles.rows}>
                 {miCuentaRows.map((row) => (
