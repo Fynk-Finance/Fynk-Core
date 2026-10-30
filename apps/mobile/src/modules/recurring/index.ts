@@ -19,12 +19,16 @@ import { createVaultRecurringStore } from './adapters/vault/vaultRecurringStore'
 import { createRecurringService } from './application/recurringService';
 import { createReminderScheduler } from './application/reminders';
 import type { SubscriptionsSummary } from './domain/amounts';
-import { createBilleteraScreen } from './ui/BilleteraScreen';
+import { bogotaToday, createBilleteraScreen } from './ui/BilleteraScreen';
 import {
   createRecurringFormScreen,
   RECURRING_EDIT_ROUTE,
   RECURRING_FORM_ROUTE,
 } from './ui/RecurringFormScreen';
+import {
+  createSubscriptionDetailScreen,
+  SUBSCRIPTION_DETAIL_ROUTE,
+} from './ui/SubscriptionDetailScreen';
 
 export type { SubscriptionsSummary };
 export { RECURRING_FORM_ROUTE };
@@ -84,6 +88,15 @@ export const routes: ModuleRoutes = {
       name: RECURRING_EDIT_ROUTE,
       component: createRecurringFormScreen({ service }),
       path: 'billetera/recurrentes/:id',
+    },
+    {
+      // Detalle de suscripción, from a row of "Otros gastos" (SCRUM-58).
+      name: SUBSCRIPTION_DETAIL_ROUTE,
+      component: createSubscriptionDetailScreen({
+        service,
+        today: () => bogotaToday(clock.now()),
+      }),
+      path: 'billetera/suscripciones/:id',
     },
   ],
 };

@@ -1,6 +1,6 @@
 // Ports of the recurring module. The vault adapter implements RecurringStore
 // (adapters/vault/vaultRecurringStore.ts).
-import type { Id } from '@shared/domain/types';
+import type { Id, IsoDateTime } from '@shared/domain/types';
 
 import type { StoredRecurringItem } from '../domain/item';
 
@@ -11,4 +11,6 @@ export interface RecurringStore {
   /** Inserts, or replaces the editable fields of an item with the same id. */
   save(item: StoredRecurringItem): Promise<void>;
   remove(id: Id): Promise<void>;
+  /** "Ya la cancelé": the item stays as a record with status cancelled and the time. */
+  markCancelled(id: Id, at: IsoDateTime): Promise<void>;
 }

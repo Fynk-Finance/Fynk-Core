@@ -203,6 +203,52 @@ describe('Billetera totals', () => {
   });
 });
 
+describe('subscription detail (SCRUM-58, SCRUM-56, SCRUM-57)', () => {
+  it('"Ya la cancelé": it stops counting in Billetera and stays as a record', async () => {
+    const ids = await addAll(billetera);
+    await service.cancel(ids[4]!); // Streaming de video, $38.900
+    expect(await service.list()).toHaveLength(7);
+    const s = await service.subscriptionsSummary();
+    expect([s.count, formatCop(s.monthlyMinor)]).toEqual([3, '$73.700']);
+    expect(formatCop(await service.fixedExpensesThisMonth())).toBe('$1.891.700');
+    expect(
+      await vault.db.query('SELECT status, cancelled_at FROM recurring_items WHERE id = ?', [
+        ids[4],
+      ]),
+    ).toEqual([{ status: 'cancelled', cancelled_at: '2026-10-28T15:00:08.000Z' }]);
+  });
+
+  it('marks and clears the usage of a subscription, never of a fixed expense', async () => {
+    const ids = await addAll(billetera);
+    await service.setUsage(ids[5]!, 'low');
+    expect((await service.get(ids[5]!))?.usage).toBe('low');
+    await service.setUsage(ids[5]!, null);
+    expect((await service.get(ids[5]!))?.usage).toBeNull();
+    await service.setUsage(ids[0]!, 'low');
+    expect((await service.get(ids[0]!))?.usage).toBeNull();
+  });
+
+  it('turns the reminder off and on', async () => {
+    const [id] = await addAll([billetera[4]!]);
+    await service.setReminder(id!, false);
+    expect((await service.get(id!))?.reminderEnabled).toBe(false);
+    await service.setReminder(id!, true);
+    expect((await service.get(id!))?.reminderEnabled).toBe(true);
+  });
+
+  it('"No es una suscripción" turns it into a fixed expense without a usage mark', async () => {
+    const [id] = await addAll([{ ...billetera[5]!, usage: 'low' }]);
+    await service.markNotSubscription(id!);
+    expect(await service.get(id!)).toMatchObject({ kind: 'fixed', usage: null });
+    expect((await service.subscriptionsSummary()).count).toBe(0);
+  });
+
+  it('refuses a missing item', async () => {
+    await expect(service.cancel('nope')).rejects.toThrow(RecurringNotFoundError);
+    await expect(service.setUsage('nope', 'low')).rejects.toThrow(RecurringNotFoundError);
+  });
+});
+
 describe('bogotaMonth', () => {
   it('uses the calendar month in Bogotá: 1 Nov 03:00 UTC is still October', () => {
     expect(bogotaMonth(new Date('2026-11-01T03:00:00Z'))).toEqual({ year: 2026, month: 10 });

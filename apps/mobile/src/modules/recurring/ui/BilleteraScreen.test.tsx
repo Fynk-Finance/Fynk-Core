@@ -16,6 +16,7 @@ import type { RecurringInput } from '../domain/item';
 import { MON_TO_FRI, WEEKDAY } from '../domain/types';
 import { bogotaToday, createBilleteraScreen } from './BilleteraScreen';
 import { RECURRING_FORM_ROUTE } from './RecurringFormScreen';
+import { SUBSCRIPTION_DETAIL_ROUTE } from './SubscriptionDetailScreen';
 
 const noStore = { load: async () => 'system' as const, save: async () => undefined };
 const Stack = createNativeStackNavigator();
@@ -96,6 +97,7 @@ async function renderBilletera(preference: ThemePreference = 'light', unread = 0
           <Stack.Screen name="notifications.Inbox" component={Target} />
           <Stack.Screen name="identity.Account" component={Target} />
           <Stack.Screen name="Recomendaciones" component={Target} />
+          <Stack.Screen name={SUBSCRIPTION_DETAIL_ROUTE} component={Target} />
         </Stack.Navigator>
       </NavigationContainer>
     </ThemeProvider>,
@@ -182,11 +184,11 @@ describe('Billetera', () => {
     expect(await screen.findByText('arrived:Recomendaciones:')).toBeTruthy();
   });
 
-  it('tapping a subscription opens the form, where its usage is marked', async () => {
+  it('tapping a subscription opens its detail', async () => {
     await addAll();
     await renderBilletera();
     await fireEvent.press(await screen.findByTestId('recurring.subscription.r7'));
-    expect(await screen.findByText(`arrived:${RECURRING_FORM_ROUTE}:r7`)).toBeTruthy();
+    expect(await screen.findByText(`arrived:${SUBSCRIPTION_DETAIL_ROUTE}:r7`)).toBeTruthy();
   });
 
   it('"+ Agregar" opens the form', async () => {

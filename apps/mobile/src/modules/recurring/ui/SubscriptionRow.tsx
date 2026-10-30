@@ -1,5 +1,5 @@
 // One row of "Otros gastos" (design Billetera, `.row`): lime icon tile, name with the "Poco uso"
-// pill, "Renueva 28 sep" and the amount. Tapping it opens the form, where the usage is marked.
+// pill, "Renueva 28 sep" and the amount. Tapping it opens Detalle de suscripción.
 // The design also shows the account or card ("Tarjeta de crédito · renueva 28 sep"); it comes
 // when M6 exports the accounts.
 import { Pressable, StyleSheet, View } from 'react-native';

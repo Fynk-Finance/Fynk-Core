@@ -121,5 +121,11 @@ export function createVaultRecurringStore(db: VaultDb): RecurringStore {
     async remove(id) {
       await db.execute('DELETE FROM recurring_items WHERE id = ?', [id]);
     },
+    async markCancelled(id, at) {
+      await db.execute(
+        `UPDATE recurring_items SET status = 'cancelled', cancelled_at = ? WHERE id = ?`,
+        [at, id],
+      );
+    },
   };
 }
