@@ -49,9 +49,18 @@ it('registers the new recovery code screen and exports the Seguridad rows', () =
   const { vault } = loadBoth('vault');
   expect(vault.routes.screens?.map((s) => [s.name, s.path, s.transition])).toEqual([
     ['vault.RecoveryCode', 'boveda/recuperacion', undefined],
+    ['vault.ApproveDevice', 'boveda/aprobar', 'push'],
   ]);
   expect(typeof vault.UnlockSetting).toBe('function');
   expect(typeof vault.RecoveryCodeRow).toBe('function');
+});
+
+it('registers the approval screen under the vault prefix with a push transition', () => {
+  const { vault } = loadBoth('vault');
+  const screen = vault.routes.screens?.find((s) => s.name === 'vault.ApproveDevice');
+  expect(screen?.path).toBe('boveda/aprobar');
+  expect(screen?.transition).toBe('push');
+  expect(typeof screen?.component).toBe('function');
 });
 
 describe('backup port', () => {

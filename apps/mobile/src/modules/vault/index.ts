@@ -6,18 +6,31 @@ import type { GetVaultDb, RegisterVaultMigrations } from '@shared/ports/vault';
 import { useSession } from '@modules/identity';
 
 import { watchAppState } from './adapters/appStateLock';
+import { approveDevice, startApprovalNotifier } from './adapters/defaultApproval';
 import { backupRegistry, backupSync } from './adapters/defaultBackup';
 import { lockController } from './adapters/defaultLock';
 import { copyText } from './adapters/clipboard';
 import { vault } from './adapters/defaultVault';
 import { createNewRecoveryCodeScreen } from './ui/NewRecoveryCodeScreen';
 import { RECOVERY_CODE_ROUTE, RecoveryCodeRow } from './ui/RecoveryCodeRow';
+import { createApproveDeviceScreen } from './ui/ApproveDeviceScreen';
 import { createUnlockSetting } from './ui/UnlockSetting';
 import { createVaultFlow } from './ui/VaultFlow';
 import { createUseVaultGate } from './ui/useVaultGate';
 
 // identity/index.ts imports this file (wipe) and this file imports identity. The cycle works
 // because identity is only called inside functions, hooks and effects, never while loading.
+
+// Route name of identity's Seguridad screen. A literal, because identity is still loading when
+// this file loads (import cycle), so a constant imported from it could be undefined here.
+const SECURITY_ROUTE = 'identity.Security';
+
+const ApproveDeviceScreen = createApproveDeviceScreen({
+  service: approveDevice,
+  clock: { now: () => new Date() },
+  securityRoute: SECURITY_ROUTE,
+});
+
 export const routes: ModuleRoutes = {
   module: 'vault',
   // Lock screen and the recovery code of a new account, shown with a fade and no back gesture
@@ -36,8 +49,18 @@ export const routes: ModuleRoutes = {
       component: createNewRecoveryCodeScreen({ controller: lockController, copyText }),
       path: 'boveda/recuperacion',
     },
+    {
+      // Old phone: approve a new device (HU-046). Pushed with the default transition.
+      name: 'vault.ApproveDevice',
+      component: ApproveDeviceScreen,
+      path: 'boveda/aprobar',
+      transition: 'push',
+    },
   ],
 };
+
+// The in-app notice for a new device waiting for approval; it only runs while the app is open.
+startApprovalNotifier();
 
 export const registerVaultMigrations: RegisterVaultMigrations = (module, migrations) =>
   vault.registerVaultMigrations(module, migrations);
