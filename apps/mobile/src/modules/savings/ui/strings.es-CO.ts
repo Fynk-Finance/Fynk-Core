@@ -111,6 +111,22 @@ export const savingsStrings = {
       deadline_past: 'Elige este mes o uno futuro.',
     } satisfies Record<GoalError, string>,
   },
+  // "Abonar a esta meta" in the open goal card (design Metas). The design's "Se descuenta de
+  // Bancolombia · Ahorros" changes: Fynk never moves money, an aporte is a record (inventory 15).
+  abonar: {
+    title: 'Abonar a esta meta',
+    amounts: 'Monto del abono',
+    other: 'Otro monto',
+    button: 'Abonar',
+    buttonLabel: (amount: string, goal: string) => `Abonar ${amount} a ${goal}`,
+    note: 'Es un registro de lo que apartaste. Fynk no mueve tu dinero.',
+    invalid: 'Elige o escribe un monto mayor a $0.',
+    failed: 'No pudimos registrar el abono. Intenta de nuevo.',
+    // Toast after an aporte: new, needs design review (the design animates `.fb-toast`).
+    done: (amount: string, goal: string) => `Abonaste ${amount} a ${goal}`,
+    undo: 'Deshacer',
+    undone: 'Abono deshecho',
+  },
 } as const;
 
 /** "Jun 2027" from '2027-06'. */

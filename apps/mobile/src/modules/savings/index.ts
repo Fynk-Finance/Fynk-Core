@@ -73,7 +73,7 @@ export const routes: ModuleRoutes = {
     {
       name: METAS_ROUTE,
       // "23 % de tus ingresos" needs the monthly income of M10, not exported yet.
-      component: createMetasScreen({ service, monthlyIncome: async () => null }),
+      component: createMetasScreen({ service, monthlyIncome: async () => null, contributions }),
       path: 'metas',
     },
     {

@@ -4,7 +4,7 @@
 // with the reached ones, and the extended "Nueva meta" FAB that opens the goal form.
 // The design's "Ver todas las metas (5)" link is left out: the list already shows every goal.
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -26,17 +26,21 @@ import {
   type Theme,
 } from '@shared/ui';
 
+import type { ContributionService } from '../application/contributionService';
 import type { GoalService } from '../application/goalService';
 import type { GoalSummary } from '../domain/goal';
+import { AbonarBox } from './AbonarBox';
 import { GoalCard } from './GoalCard';
 import { GOAL_FORM_ROUTE } from './GoalFormScreen';
 import { GOAL_ICONS } from './goalIcons';
 import { MetasHeader } from './MetasHeader';
 import { MetasStats } from './MetasStats';
 import { MONTHS_SHORT, savingsStrings } from './strings.es-CO';
+import { UndoToast } from './UndoToast';
 import { useGoals } from './useGoals';
 
 const t = savingsStrings.metas;
+const ta = savingsStrings.abonar;
 
 export const METAS_ROUTE = 'savings.Goals' as const;
 
@@ -44,19 +48,41 @@ export interface MetasDeps {
   service: GoalService;
   /** Monthly income for "23 % de tus ingresos" (M10). Null until it is available. */
   monthlyIncome: () => Promise<MoneyMinor | null>;
+  /** "Abonar a esta meta" and its "Deshacer" (SCRUM-52). */
+  contributions: Pick<ContributionService, 'add' | 'undo'>;
 }
+
+type Toast = { message: string; undoId: string | null };
 
 /** "ago 2026" from '2026-08-20'. */
 const doneMonth = (date: string) =>
   `${MONTHS_SHORT[Number(date.slice(5, 7)) - 1]!.toLowerCase()} ${date.slice(0, 4)}`;
 
-export function createMetasScreen({ service, monthlyIncome }: MetasDeps) {
+export function createMetasScreen({ service, monthlyIncome, contributions }: MetasDeps) {
   return function MetasScreen() {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();
     const styles = useThemedStyles(createStyles);
     const insets = useSafeAreaInsets();
     const { state, reload } = useGoals(service, monthlyIncome);
     const [open, setOpen] = useState<string | null>(null);
+    const [toast, setToast] = useState<Toast | null>(null);
+    const hideToast = useCallback(() => setToast(null), []);
+
+    /** Today's aporte of a goal; the toast offers to undo it. */
+    const abonar = async (goal: GoalSummary, amountMinor: MoneyMinor) => {
+      const id = await contributions.add(goal.id, {
+        amountMinor,
+        contributedOn: service.today(),
+      });
+      setToast({ message: ta.done(formatCop(amountMinor), goal.name), undoId: id });
+    };
+    const undo = (id: string) => {
+      setToast(null);
+      void contributions
+        .undo(id)
+        .then(() => setToast({ message: ta.undone, undoId: null }))
+        .catch(() => setToast({ message: ta.failed, undoId: null }));
+    };
 
     const create = () => navigation.navigate(GOAL_FORM_ROUTE);
     const edit = (goal: GoalSummary) => navigation.navigate(GOAL_FORM_ROUTE, { id: goal.id });
@@ -111,6 +137,13 @@ export function createMetasScreen({ service, monthlyIncome }: MetasDeps) {
                       expanded={open === goal.id}
                       onToggle={() => setOpen((id) => (id === goal.id ? null : goal.id))}
                       onEdit={() => edit(goal)}
+                      abonar={
+                        <AbonarBox
+                          goalId={goal.id}
+                          goalName={goal.name}
+                          onAbonar={(amount) => abonar(goal, amount)}
+                        />
+                      }
                     />
                   ))}
                 </View>
@@ -128,6 +161,14 @@ export function createMetasScreen({ service, monthlyIncome }: MetasDeps) {
           style={{ ...styles.fab, bottom: insets.bottom + 24 }}
           testID="savings.metas.fab"
         />
+
+        {toast ? (
+          <UndoToast
+            message={toast.message}
+            onUndo={toast.undoId ? () => undo(toast.undoId!) : undefined}
+            onHide={hideToast}
+          />
+        ) : null}
       </View>
     );
   };
