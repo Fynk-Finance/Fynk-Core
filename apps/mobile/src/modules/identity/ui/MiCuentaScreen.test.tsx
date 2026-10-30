@@ -9,6 +9,8 @@ import { ApiError } from '@shared/api';
 import { APPEARANCE_ROUTE } from '@shared/navigation';
 import { ThemeProvider, useTheme, uiStrings, type ThemePreference } from '@shared/ui';
 
+import { CONSENTS_ROUTE } from '@modules/consents';
+
 import type { ProfilePort } from '../application/ports';
 import type { Profile } from '../domain/profile';
 import { createMiCuentaScreen } from './MiCuentaScreen';
@@ -58,6 +60,7 @@ async function renderScreen(
             <Stack.Screen name="identity.Account" component={MiCuenta} />
             <Stack.Screen name="identity.Security" component={Target} />
             <Stack.Screen name={APPEARANCE_ROUTE} component={Target} />
+            <Stack.Screen name={CONSENTS_ROUTE} component={Target} />
           </Stack.Navigator>
         </NavigationContainer>
       </QueryClientProvider>
@@ -95,7 +98,7 @@ it('uses a neutral name and avatar when the profile has no name', async () => {
   expect(screen.getByTestId('identity.miCuenta.avatar')).toBeOnTheScreen();
 });
 
-it('lists Seguridad, Apariencia and Cerrar sesión in that order', async () => {
+it('lists Seguridad, Apariencia, Consentimientos and Cerrar sesión in that order', async () => {
   await renderScreen(async () => profile);
   const ids = screen
     .getAllByTestId(/^identity\.miCuenta\.row\./)
@@ -103,6 +106,7 @@ it('lists Seguridad, Apariencia and Cerrar sesión in that order', async () => {
   expect(ids).toEqual([
     'identity.miCuenta.row.security',
     'identity.miCuenta.row.appearance',
+    'identity.miCuenta.row.consents',
     'identity.miCuenta.row.signOut',
   ]);
   expect(screen.getByRole('button', { name: /^Seguridad\./ })).toBeOnTheScreen();
@@ -119,6 +123,12 @@ it('opens Apariencia', async () => {
   await renderScreen(async () => profile);
   await fireEvent.press(screen.getByRole('button', { name: /^Apariencia\./ }));
   expect(await screen.findByText(`arrived:${APPEARANCE_ROUTE}`)).toBeOnTheScreen();
+});
+
+it('opens Consentimientos (M4)', async () => {
+  await renderScreen(async () => profile);
+  await fireEvent.press(screen.getByRole('button', { name: /^Consentimientos\./ }));
+  expect(await screen.findByText(`arrived:${CONSENTS_ROUTE}`)).toBeOnTheScreen();
 });
 
 it('asks before signing out and signs out only on confirm', async () => {
