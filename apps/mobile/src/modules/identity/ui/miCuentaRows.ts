@@ -3,6 +3,8 @@
 import { APPEARANCE_ROUTE } from '@shared/navigation';
 import type { IconName } from '@shared/ui';
 
+import { consentsMiCuentaRow } from '@modules/consents';
+
 import { identityStrings } from './strings.es-CO';
 
 const rows = identityStrings.miCuenta.rows;
@@ -32,5 +34,7 @@ export const miCuentaRows: readonly MiCuentaRow[] = [
     icon: 'monitor',
     target: { kind: 'navigate', route: APPEARANCE_ROUTE },
   },
+  // M4. Until M13's Privacidad y datos exists, consents open from here.
+  consentsMiCuentaRow,
   { id: 'signOut', ...rows.signOut, icon: 'logout', target: { kind: 'signOut' } },
 ];
