@@ -41,6 +41,8 @@ export interface GoalSummary extends Goal {
   monthsLeft: number;
   suggestedMonthlyMinor: MoneyMinor;
   done: boolean;
+  /** "Cumplida en ago 2026": the day of the last contribution of a goal already reached. */
+  completedOn: IsoDate | null;
 }
 
 export type GoalField = 'name' | 'target' | 'deadline';
@@ -80,7 +82,12 @@ export function validateGoal(
   return errors;
 }
 
-export function summarizeGoal(goal: Goal, savedMinor: MoneyMinor, today: IsoDate): GoalSummary {
+export function summarizeGoal(
+  goal: Goal,
+  savedMinor: MoneyMinor,
+  today: IsoDate,
+  lastContributionOn: IsoDate | null = null,
+): GoalSummary {
   const months = monthsLeft(today, goal.deadline);
   const missing = remaining(goal.targetMinor, savedMinor);
   return {
@@ -91,6 +98,7 @@ export function summarizeGoal(goal: Goal, savedMinor: MoneyMinor, today: IsoDate
     monthsLeft: months,
     suggestedMonthlyMinor: suggestedMonthly(goal.targetMinor, savedMinor, months),
     done: missing === 0,
+    completedOn: missing === 0 ? lastContributionOn : null,
   };
 }
 
