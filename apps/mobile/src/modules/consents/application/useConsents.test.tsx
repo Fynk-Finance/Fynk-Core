@@ -27,9 +27,13 @@ function wrapperWith(client: QueryClient) {
     return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
   };
 }
+// gcTime Infinity: no cleanup timer outlives the test once the hooks unmount, so Jest can exit.
 const newClient = () =>
   new QueryClient({
-    defaultOptions: { queries: { retryDelay: 0 }, mutations: { gcTime: Infinity } },
+    defaultOptions: {
+      queries: { retryDelay: 0, gcTime: Infinity },
+      mutations: { gcTime: Infinity },
+    },
   });
 
 it('lists the consents and fetches them again each time a screen shows them (HU-007)', async () => {
