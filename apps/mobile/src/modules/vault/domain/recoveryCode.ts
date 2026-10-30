@@ -33,13 +33,21 @@ export function formatRecoveryCode(code: string): string {
   }).join(' ');
 }
 
-/** The canonical 26 character code, or null when the input is not a valid code. */
-export function parseRecoveryCode(input: string): string | null {
-  const code = input
+// What a person types is forgiven: spaces and dashes, lowercase, and the look-alikes I, L and O.
+const normalize = (input: string) =>
+  input
     .replace(/[\s-]+/g, '')
     .toUpperCase()
     .replace(/[IL]/g, '1')
     .replace(/O/g, '0');
+
+/** True when what the person typed is the given group of the code, ignoring the same slips. */
+export const matchesRecoveryGroup = (typed: string, group: string): boolean =>
+  group !== '' && normalize(typed) === normalize(group);
+
+/** The canonical 26 character code, or null when the input is not a valid code. */
+export function parseRecoveryCode(input: string): string | null {
+  const code = normalize(input);
   if (code.length !== LENGTH) return null;
   for (const char of code) if (!ALPHABET.includes(char)) return null;
   // The last character carries 3 data bits and 2 padding bits, which must be zero.

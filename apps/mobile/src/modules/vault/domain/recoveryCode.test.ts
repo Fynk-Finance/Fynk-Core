@@ -2,6 +2,7 @@ import {
   decodeRecoveryCode,
   encodeRecoveryCode,
   formatRecoveryCode,
+  matchesRecoveryGroup,
   parseRecoveryCode,
 } from './recoveryCode';
 
@@ -93,5 +94,23 @@ describe('decodeRecoveryCode', () => {
   it('refuses a code that is not canonical', () => {
     expect(() => decodeRecoveryCode('abc')).toThrow(RangeError);
     expect(() => decodeRecoveryCode('0'.repeat(25) + '1')).toThrow(RangeError);
+  });
+});
+
+describe('matchesRecoveryGroup', () => {
+  it('forgives case, spaces, dashes and the look-alikes I, L and O', () => {
+    expect(matchesRecoveryGroup('ab12cd', 'AB12CD')).toBe(true);
+    expect(matchesRecoveryGroup(' AB1 2CD ', 'AB12CD')).toBe(true);
+    expect(matchesRecoveryGroup('AB-12-CD', 'AB12CD')).toBe(true);
+    expect(matchesRecoveryGroup('ABl2CD', 'AB12CD')).toBe(true);
+    expect(matchesRecoveryGroup('ABi2CD', 'AB12CD')).toBe(true);
+    expect(matchesRecoveryGroup('OB12CD', '0B12CD')).toBe(true);
+  });
+
+  it('rejects another group, a partial group and an empty one', () => {
+    expect(matchesRecoveryGroup('AB12CE', 'AB12CD')).toBe(false);
+    expect(matchesRecoveryGroup('AB12C', 'AB12CD')).toBe(false);
+    expect(matchesRecoveryGroup('', '')).toBe(false);
+    expect(matchesRecoveryGroup('', 'AB12CD')).toBe(false);
   });
 });
