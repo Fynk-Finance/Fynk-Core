@@ -11,8 +11,6 @@ export const vaultStrings = {
     passwordHint: 'Abre el inicio de sesión de Fynk en el navegador',
     unlocking: 'Abriendo tu bóveda',
     passwordFailed: 'No pudimos verificar tu contraseña. Intenta de nuevo.',
-    pendingTitle: 'Este teléfono espera aprobación',
-    pendingMessage: 'Lo configuras en el siguiente paso.',
     notices: {
       biometricsOff:
         'Cambiaron las huellas o el rostro del teléfono. Desactivamos la biometría de Fynk: ingresa con tu contraseña.',
@@ -58,6 +56,28 @@ export const vaultStrings = {
       title: 'Nuevo dispositivo',
       body: (deviceName: string) =>
         `${deviceName} quiere acceder a tu cuenta. Revisa el código antes de aprobar.`,
+    },
+  },
+  // Not in the design: new screen, needs design review. The code input follows OnbCorreo.html.
+  restore: {
+    title: 'Restaurar en un teléfono nuevo',
+    message:
+      'Para ver tus metas y gastos manuales en este teléfono, usa tu código de recuperación o aprueba desde tu otro teléfono.',
+    codeOption: 'Usar mi código de recuperación',
+    codeOptionHint: 'Escribe el código de 26 letras y números que guardaste',
+    inputLabel: 'Código de recuperación',
+    inputPlaceholder: 'XXXXX XXXXX XXXXX XXXXX XXXXXX',
+    submit: 'Restaurar',
+    restoring: 'Restaurando tus datos…',
+    signOut: 'Cerrar sesión',
+    errors: {
+      invalid: 'Revisa el código: son 26 letras y números.',
+      wrongCode: 'El código no es correcto.',
+      tooMany: 'Hiciste demasiados intentos. Intenta de nuevo en una hora.',
+      noBackup: 'Esta cuenta no tiene un respaldo con código.',
+      removed: 'Este teléfono fue retirado de tu cuenta.',
+      offline: 'No pudimos conectarnos. Intenta de nuevo.',
+      failed: 'No pudimos restaurar tus datos. Intenta de nuevo.',
     },
   },
   // Not in the design: needs design review. The row texts are those of CfgSeguridad.html.

@@ -93,18 +93,6 @@ function SheetContent({ state, onPassword, onBiometric, onRetry }: LockScreenPro
       </View>
     );
   }
-  if (state.status === 'pendingDevice') {
-    return (
-      <View style={styles.center} testID="vault.lock.pending">
-        <AppText variant="section" align="center">
-          {t.pendingTitle}
-        </AppText>
-        <AppText variant="small" color="textSecondary" align="center">
-          {t.pendingMessage}
-        </AppText>
-      </View>
-    );
-  }
   if (state.status === 'error') {
     const reason = state.error ?? 'unknown';
     return (
