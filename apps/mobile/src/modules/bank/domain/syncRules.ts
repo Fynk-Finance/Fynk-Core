@@ -45,3 +45,11 @@ export function syncSince(lastSyncedAt: IsoDateTime | null, now: Date): IsoDateT
 export function needsRefresh(tokens: { accessExpiresAt: IsoDateTime }, now: Date): boolean {
   return ms(tokens.accessExpiresAt) - now.getTime() < REFRESH_MARGIN_MS;
 }
+
+// America/Bogota is UTC-5 all year (Colombia has no daylight saving time).
+const BOGOTA_OFFSET_MS = -5 * 60 * 60_000;
+
+/** The calendar day in Bogotá, for the once-a-day sync notice. */
+export function bogotaDay(now: Date): string {
+  return new Date(now.getTime() + BOGOTA_OFFSET_MS).toISOString().slice(0, 10);
+}

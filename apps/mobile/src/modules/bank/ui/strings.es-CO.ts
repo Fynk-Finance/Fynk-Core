@@ -40,6 +40,13 @@ export const bankStrings = {
       unknown: () => 'Algo salió mal. Intenta de nuevo.',
     },
   },
+  // The sync notice of M12 (M5 prompt, Sync engine).
+  sync: {
+    notice: {
+      title: (entity: string) => `${entity} sincronizada`,
+      body: 'Tus movimientos están al día.',
+    },
+  },
   // OnbCuentas.html, the rows of the connected accounts and "Agregar otra cuenta".
   list: {
     connected: 'Conectada',

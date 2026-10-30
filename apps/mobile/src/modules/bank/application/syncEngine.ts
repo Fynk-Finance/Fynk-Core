@@ -33,7 +33,8 @@ export interface LinkSyncResult {
 }
 
 export interface SyncReport {
-  status: 'done' | 'locked';
+  /** unavailable: the engine is not wired yet, so nothing was asked. */
+  status: 'done' | 'locked' | 'unavailable';
   links: LinkSyncResult[];
 }
 
