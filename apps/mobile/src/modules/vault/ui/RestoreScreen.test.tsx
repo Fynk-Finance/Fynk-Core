@@ -5,6 +5,7 @@ import { Text } from 'react-native';
 import { ThemeProvider, useTheme, type ThemePreference } from '@shared/ui';
 
 import type { ApprovalCheck, ApprovalStart } from '../application/restoreWithApproval';
+import type { ResetResult } from '../application/resetBackup';
 import type { RestoreFailure } from '../application/restoreWithCode';
 import { RestoreScreen } from './RestoreScreen';
 import { vaultStrings } from './strings.es-CO';
@@ -31,6 +32,8 @@ interface Props {
   start?: ApprovalStart;
   /** Each poll takes the next answer; the last one repeats. */
   checks?: ApprovalCheck[];
+  /** What the server answers to the reset. Default `ok`. */
+  reset?: ResetResult;
 }
 
 interface Handlers {
@@ -38,6 +41,7 @@ interface Handlers {
   onSignOut: jest.Mock;
   onStartApproval: jest.Mock<Promise<ApprovalStart>, []>;
   onCheckApproval: jest.Mock<Promise<ApprovalCheck>, [string]>;
+  onReset: jest.Mock<Promise<ResetResult>, []>;
 }
 
 function build(props: Props, preference: ThemePreference, handlers: Handlers) {
@@ -51,6 +55,7 @@ function build(props: Props, preference: ThemePreference, handlers: Handlers) {
         onRestore={handlers.onRestore}
         onStartApproval={handlers.onStartApproval}
         onCheckApproval={handlers.onCheckApproval}
+        onReset={handlers.onReset}
         onSignOut={handlers.onSignOut}
       />
     </ThemeProvider>
@@ -62,6 +67,7 @@ async function renderScreen(props: Props = {}, preference: ThemePreference = 'li
   const handlers: Handlers = {
     onRestore: jest.fn(),
     onSignOut: jest.fn(),
+    onReset: jest.fn(async () => props.reset ?? 'ok'),
     onStartApproval: jest.fn(async () => props.start ?? STARTED),
     onCheckApproval: jest.fn(async (_id: string) =>
       checks.length > 1 ? checks.shift()! : checks[0]!,
@@ -88,9 +94,10 @@ describe.each(['light', 'dark'] as const)('in %s', (theme) => {
     expect(screen.getByText(t.codeOption)).toBeOnTheScreen();
     expect(screen.getByRole('link', { name: t.signOut })).toBeOnTheScreen();
     expect(screen.getByText(t.approvalOption)).toBeOnTheScreen();
-    // The input waits for the option. The last option arrives in the next branch.
+    expect(screen.getByText(t.resetOption)).toBeOnTheScreen();
+    // The input waits for the option.
     expect(screen.queryByTestId('vault.restore.codeInput')).toBeNull();
-    expect(screen.queryByText('No tengo ninguno de los dos')).toBeNull();
+    expect(screen.queryByTestId('vault.restore.reset')).toBeNull();
   });
 
   it('opens the input with the code settings and sends what was typed', async () => {
@@ -300,5 +307,86 @@ describe.each(['light', 'dark'] as const)('approval from the other phone, in %s'
     await act(async () => answer(STARTED));
     expect(h.onStartApproval).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('vault.restore.approvalCode')).toBeOnTheScreen();
+  });
+});
+
+const R = t.reset;
+const openReset = async () => fireEvent.press(screen.getByTestId('vault.restore.resetOption'));
+const startFromZero = async () => {
+  await fireEvent.press(screen.getByTestId('vault.restore.resetStart'));
+  await act(async () => undefined);
+};
+
+describe.each(['light', 'dark'] as const)('start from zero, in %s', (theme) => {
+  it('offers the option to a pending phone and to an active one', async () => {
+    await renderScreen({ deviceStatus: 'active' }, theme);
+    expect(screen.getByText(t.resetOption)).toBeOnTheScreen();
+  });
+
+  it('explains what is lost, what comes back and how to confirm', async () => {
+    await renderScreen({}, theme);
+    await openReset();
+    expect(screen.getByText(R.lost)).toBeOnTheScreen();
+    expect(screen.getByText(R.reload)).toBeOnTheScreen();
+    expect(screen.getByText(R.confirm)).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: R.start })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: R.back })).toBeOnTheScreen();
+    // The options give way to the explanation.
+    expect(screen.queryByTestId('vault.restore.codeOption')).toBeNull();
+  });
+
+  it('goes back to the options with "Volver" without calling the server', async () => {
+    const h = await renderScreen({}, theme);
+    await openReset();
+    await fireEvent.press(screen.getByRole('button', { name: R.back }));
+    expect(screen.getByTestId('vault.restore.codeOption')).toBeOnTheScreen();
+    expect(screen.queryByTestId('vault.restore.reset')).toBeNull();
+    expect(h.onReset).not.toHaveBeenCalled();
+  });
+
+  it('asks the server first when "Empezar de cero" is pressed', async () => {
+    const h = await renderScreen({}, theme);
+    await openReset();
+    await startFromZero();
+    expect(h.onReset).toHaveBeenCalledTimes(1);
+    expect(h.onSignOut).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('vault.restore.resetMessage')).toBeNull();
+  });
+
+  it('asks for the password reset when the server says notAllowed, and signs out from there', async () => {
+    const h = await renderScreen({ reset: 'notAllowed' }, theme);
+    await openReset();
+    await startFromZero();
+    expect(screen.getByText(R.messages.notAllowed)).toBeOnTheScreen();
+    expect(screen.queryByTestId('vault.restore.resetStart')).toBeNull();
+    expect(h.onSignOut).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: R.resetPassword }));
+    expect(h.onSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['notActive', 'offline', 'failed'] as const)(
+    'shows %s and lets the person retry',
+    async (reset) => {
+      const h = await renderScreen({ reset }, theme);
+      await openReset();
+      await startFromZero();
+      expect(screen.getByText(R.messages[reset])).toBeOnTheScreen();
+      expect(screen.queryByTestId('vault.restore.resetPassword')).toBeNull();
+      await startFromZero();
+      expect(h.onReset).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it('shows a busy button and ignores another press while the server works', async () => {
+    const h = await renderScreen({}, theme);
+    let answer!: (r: ResetResult) => void;
+    h.onReset.mockImplementationOnce(() => new Promise<ResetResult>((r) => (answer = r)));
+    await openReset();
+    await fireEvent.press(screen.getByTestId('vault.restore.resetStart'));
+    await fireEvent.press(screen.getByTestId('vault.restore.resetStart'));
+    expect(screen.getByTestId('vault.restore.resetStart')).toBeBusy();
+    await act(async () => answer('offline'));
+    expect(h.onReset).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(R.messages.offline)).toBeOnTheScreen();
   });
 });

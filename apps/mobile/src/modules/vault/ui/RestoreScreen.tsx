@@ -23,8 +23,10 @@ import {
 } from '@shared/ui';
 
 import type { ApprovalCheck, ApprovalStart } from '../application/restoreWithApproval';
+import type { ResetResult } from '../application/resetBackup';
 import type { RestoreFailure } from '../application/restoreWithCode';
 import { ApprovalWaiting } from './ApprovalWaiting';
+import { ResetExplanation } from './ResetExplanation';
 import { vaultStrings } from './strings.es-CO';
 import { useApprovalRestore } from './useApprovalRestore';
 
@@ -44,6 +46,8 @@ export interface RestoreScreenProps {
   /** Asks the old phone. The screen polls `onCheckApproval` while it waits. */
   onStartApproval: () => Promise<ApprovalStart>;
   onCheckApproval: (id: string) => Promise<ApprovalCheck>;
+  /** "Empezar de cero": the server deletes the backup if the email code reset was just done. */
+  onReset: () => Promise<ResetResult>;
   onSignOut: () => void;
 }
 
@@ -54,11 +58,13 @@ export function RestoreScreen({
   onRestore,
   onStartApproval,
   onCheckApproval,
+  onReset,
   onSignOut,
 }: RestoreScreenProps) {
   const styles = useThemedStyles(createStyles);
   const { colors } = useTheme();
   const [codeOpen, setCodeOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
   const [typed, setTyped] = useState('');
   const [focused, setFocused] = useState(false);
   // The error belongs to the code that was typed: editing it clears the message.
@@ -108,6 +114,12 @@ export function RestoreScreen({
           offline={approval.offline}
           onCancel={approval.cancel}
         />
+      ) : resetOpen ? (
+        <ResetExplanation
+          onReset={onReset}
+          onResetPassword={onSignOut}
+          onBack={() => setResetOpen(false)}
+        />
       ) : (
         <>
           {approval.message ? (
@@ -151,7 +163,16 @@ export function RestoreScreen({
               />
             </Card>
           ) : null}
-          {/* Next branch (SCRUM-63): the option "No tengo ninguno de los dos" goes here. */}
+          <Card>
+            <ListRow
+              title={t.resetOption}
+              icon="warning"
+              trailing={{ kind: 'chevron' }}
+              onPress={() => setResetOpen(true)}
+              accessibilityLabel={t.resetOption}
+              testID="vault.restore.resetOption"
+            />
+          </Card>
 
           {codeOpen ? (
             <View style={styles.form}>
