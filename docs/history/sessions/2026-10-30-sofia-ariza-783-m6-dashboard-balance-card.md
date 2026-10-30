@@ -6,7 +6,7 @@ module: M6
 jira: [SCRUM-28]
 branch: feature/dashboard-balance-card
 tool: Claude Code
-pr: none
+pr: 201
 status: done
 ---
 
@@ -28,8 +28,8 @@ status: done
 
 ## Result
 
-* Tests: 1139 of 1139 in the app on this stack. Lint, typecheck and Prettier clean.
-* Pull request: in stack #168 above #200.
+* Tests: 1126 of 1126 in the app on this stack. Lint, typecheck and Prettier clean.
+* Pull request: #201, in stack #168 above #200.
 
 ## Decisions and problems
 
