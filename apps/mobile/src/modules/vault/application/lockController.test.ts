@@ -11,6 +11,7 @@ import {
   type StoredRecoveryKey,
 } from './ports';
 import type { PreparedRecoveryCode } from './recoveryCode';
+import type { RestoreResult } from './restoreWithCode';
 import type { Vault } from './vault';
 
 const START = '2026-11-03T15:00:00Z';
@@ -37,6 +38,8 @@ function setup(
     /** False in the dev session. Default true. */
     backup?: boolean;
     commit?: Error;
+    /** What the restore with the code answers. Default `restored`. */
+    restoreResult?: RestoreResult;
   } = {},
 ) {
   const clock = createFixedClock(START);
@@ -135,6 +138,11 @@ function setup(
     };
   });
 
+  const restore = jest.fn(async (_typed: string): Promise<RestoreResult> => {
+    return options.restoreResult ?? 'restored';
+  });
+  const resumePending = jest.fn(async () => undefined);
+
   let nowMs = 1_000_000;
   const newDek = jest.fn(() => Uint8Array.from({ length: 32 }, () => 7));
   const controller: LockController = createLockController({
@@ -148,10 +156,13 @@ function setup(
     backupEnabled: () => options.backup ?? true,
     recoveryKey: { get: recoveryGet },
     recoveryCode: { prepare },
+    restoreWithCode: { restore, resumePending },
   });
   return {
     controller,
     recoveryGet,
+    restore,
+    resumePending,
     prepare,
     commits,
     setRecoveryKey: (next: 'exists' | 'missing' | 'offline') => {
@@ -824,5 +835,107 @@ describe('dev session (no backup)', () => {
     await t.controller.unlock();
     expect(await t.controller.prepareNewRecoveryCode()).toEqual({ status: 'failed' });
     expect(t.prepare).not.toHaveBeenCalled();
+  });
+});
+
+describe('restore with the recovery code', () => {
+  const pending = () => setup({ dek: null, recoveryKey: 'exists' });
+
+  it('shows restoring while it works and unlocks when it is done', async () => {
+    const t = pending();
+    await t.controller.unlock();
+    const seen: string[] = [];
+    t.controller.subscribe(() => seen.push(t.controller.getState().status));
+    expect(await t.controller.restoreWithCode('typed code')).toBe('restored');
+    expect(t.restore).toHaveBeenCalledWith('typed code');
+    expect(seen).toEqual(['restoring', 'unlocked']);
+    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+  });
+
+  it('unlocks too when only part of the backup came (offline), the retry is on the next open', async () => {
+    const t = setup({ dek: null, recoveryKey: 'exists', restoreResult: 'partial' });
+    await t.controller.unlock();
+    expect(await t.controller.restoreWithCode('x')).toBe('partial');
+    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+  });
+
+  it.each(['invalid', 'wrongCode', 'tooMany', 'noBackup', 'removed', 'offline', 'failed'] as const)(
+    'goes back to pendingDevice with restoreError %s',
+    async (result) => {
+      const t = setup({ dek: null, recoveryKey: 'exists', restoreResult: result });
+      await t.controller.unlock();
+      expect(await t.controller.restoreWithCode('x')).toBe(result);
+      expect(t.controller.getState()).toEqual({ status: 'pendingDevice', restoreError: result });
+      // Another try is allowed.
+      await t.controller.restoreWithCode('y');
+      expect(t.restore).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it('does nothing unless the phone is pending', async () => {
+    const t = setup();
+    await t.controller.unlock();
+    expect(await t.controller.restoreWithCode('x')).toBe('failed');
+    expect(t.restore).not.toHaveBeenCalled();
+    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+  });
+
+  it('ignores a second call while restoring and an unlock in that time', async () => {
+    const t = pending();
+    await t.controller.unlock();
+    let finish!: (r: RestoreResult) => void;
+    t.restore.mockImplementationOnce(() => new Promise<RestoreResult>((r) => (finish = r)));
+    const first = t.controller.restoreWithCode('x');
+    expect(t.controller.getState()).toEqual({ status: 'restoring' });
+    expect(await t.controller.restoreWithCode('x')).toBe('failed');
+    await t.controller.unlock();
+    await t.controller.unlockWithPassword();
+    expect(t.controller.getState()).toEqual({ status: 'restoring' });
+    finish('restored');
+    await first;
+    expect(t.restore).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes the vault again when the phone was locked while restoring', async () => {
+    const t = pending();
+    await t.controller.unlock();
+    let finish!: (r: RestoreResult) => void;
+    t.restore.mockImplementationOnce(() => new Promise<RestoreResult>((r) => (finish = r)));
+    const restoring = t.controller.restoreWithCode('x');
+    await t.controller.lock();
+    finish('restored');
+    await restoring;
+    expect(t.vault.close).toHaveBeenCalledTimes(2);
+    expect(t.controller.getState().status).toBe('locked');
+  });
+
+  it('never opens the vault or reads records on its own while pending', async () => {
+    const t = pending();
+    await t.controller.unlock();
+    expect(t.vault.open).not.toHaveBeenCalled();
+    expect(t.resumePending).not.toHaveBeenCalled();
+    expect(t.dekStore.write).not.toHaveBeenCalled();
+  });
+});
+
+describe('restore that was cut short', () => {
+  it('resumes in the background after an open when the backup is on', async () => {
+    const t = setup();
+    await t.controller.unlock();
+    expect(t.resumePending).toHaveBeenCalledTimes(1);
+  });
+
+  it('resumes after a password or biometric open too', async () => {
+    const t = setup({ loginAgoMs: 60 * MIN, copyB: DEK });
+    await t.controller.unlock();
+    expect(t.resumePending).not.toHaveBeenCalled();
+    await t.controller.unlockWithBiometrics();
+    expect(t.resumePending).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not resume in the dev session (no backup)', async () => {
+    const t = setup({ backup: false });
+    await t.controller.unlock();
+    expect(t.resumePending).not.toHaveBeenCalled();
   });
 });
