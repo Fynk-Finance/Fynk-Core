@@ -22,13 +22,14 @@ Daniel (M1) and Karol (M9) agreed to have "Mis cuentas" on their screens, with o
   * Billetera (design `Billetera.html`): "Mis cuentas" with "+ Conectar" (opens `bank.Connect`, M5) and the 162×104 blue cards with initials, chevron, "Banco Demo · Ahorros" and the amount.
   * Mi cuenta (new section, needs design review): outlined cards with entity, "Activa", "Simulado", "Cuenta de ahorros · •• 4821", "Saldo disponible" and the amount. Credit cards show "Cupo disponible", then "Cupo total $5.000.000 · Pago el 5 nov" (HU-019).
   * A card opens Detalle de cuenta. No CDTs, as in Detalle de cuentas. Loading and empty states.
+* Mi cuenta gets its section through the M0 slot `miCuenta.misCuentas` (`feature/shared-screen-slots`): `index.ts` registers `MisCuentasMiCuenta` there. Importing `@modules/accounts` from identity closed an import cycle (vault imports identity) and broke 3 suites in identity, notifications and vault. Billetera keeps the direct import, which has no cycle.
 * `rowDetail` now takes only the kind and last 4, so it serves both the panel rows and these cards.
 * Tests: 14 in `MisCuentas.test.tsx`.
 
 ## Result
 
 * Tests: 1166 of 1166 in the app. Lint, typecheck and Prettier clean.
-* Pull request: in stack #168 above #203. 410 changed lines.
+* Pull request: in stack #168 above the slot PR (`feature/shared-screen-slots`), which sits above #203. 410 changed lines.
 
 ## Decisions and problems
 
