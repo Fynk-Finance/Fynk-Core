@@ -79,5 +79,22 @@ export function createVaultGoalStore(db: VaultDb): GoalStore {
       );
       return row?.total ?? 0;
     },
+
+    async contributionsSince(from) {
+      const rows = await db.query<{
+        goal_id: string;
+        amount_minor: number;
+        contributed_on: string;
+      }>(
+        `SELECT goal_id, amount_minor, contributed_on FROM savings_contributions
+         WHERE deleted_at IS NULL AND contributed_on >= ?`,
+        [from],
+      );
+      return rows.map((r) => ({
+        goalId: r.goal_id,
+        amountMinor: r.amount_minor,
+        contributedOn: r.contributed_on,
+      }));
+    },
   };
 }

@@ -19,4 +19,8 @@ export interface GoalStore {
   savedByGoal(): Promise<Map<Id, { savedMinor: MoneyMinor; lastOn: IsoDate }>>;
   /** Sum of the contributions made between two days, both included ("Abonado este mes"). */
   contributedBetween(from: IsoDate, to: IsoDate): Promise<MoneyMinor>;
+  /** Contributions of every goal made on or after a day, for the pace (SCRUM-53). */
+  contributionsSince(
+    from: IsoDate,
+  ): Promise<{ goalId: Id; amountMinor: MoneyMinor; contributedOn: IsoDate }[]>;
 }

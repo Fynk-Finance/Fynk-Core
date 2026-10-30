@@ -127,6 +127,13 @@ export const savingsStrings = {
     undo: 'Deshacer',
     undone: 'Abono deshecho',
   },
+  // Pace of a goal in its open card (SCRUM-53). New copy, needs design review: the design does
+  // not show it on Metas; the M8 prompt puts it in the goal detail.
+  pace: {
+    onTrack: 'Vas a tiempo',
+    behind: (amount: string) => `Te faltan ${amount} al mes para llegar`,
+    notStarted: (amount: string) => `Abona ${amount} al mes para llegar a tiempo`,
+  },
 } as const;
 
 /** "Jun 2027" from '2027-06'. */
