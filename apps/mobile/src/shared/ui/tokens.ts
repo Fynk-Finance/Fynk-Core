@@ -56,12 +56,16 @@ export const lightColors = {
   onPrimaryMuted: 'rgba(255, 255, 255, 0.72)', // inactive tab (Dashboard)
   onPrimaryTrack: 'rgba(255, 255, 255, 0.32)', // onboarding step track (OnbNombre)
   onPrimaryOverlay: 'rgba(255, 255, 255, 0.2)', // back button on blue (OnbNombre)
-  onPrimarySubtle: 'rgba(255, 255, 255, 0.22)', // income and spending boxes (Dashboard)
   onPrimaryBadge: 'rgba(255, 255, 255, 0.28)', // "Mayor impacto" pill (Recomendaciones)
   onPrimaryFaint: 'rgba(255, 255, 255, 0.18)', // period control track (Estadisticas)
   onPrimaryPressed: 'rgba(255, 255, 255, 0.14)', // period option pressed (Estadisticas)
   onPrimaryDot: 'rgba(255, 255, 255, 0.5)', // inactive page dot (CuentaDetalle)
   fabShadow: '#1F7FA8', // FAB shadow, rgba(31,127,168,.8) (Dashboard, Metas)
+  balanceCard: '#55C2EA', // "Balance total" card (Dashboard, DashboardDetalles)
+  balanceCardPill: 'rgba(31, 147, 194, 0.4)', // Ingresos and Gastos boxes, #1F93C266 (Dashboard)
+
+  // From the design code, with a dark twin below
+  accountsPanel: '#30A9D9', // Detalle de cuentas panel and its tab (DashboardDetalles)
 } as const;
 
 export type PaletteToken = keyof typeof lightColors;
@@ -99,6 +103,9 @@ export const darkColors: Palette = {
   background: '#13212D',
   canvas: '#0B1620',
   shadow: '#000000',
+  // In dark the panel has no fill and shows the header (#4392B2) and its tab is #4290B0: the
+  // same tone as headerDashboard, rounded to one value like the README does.
+  accountsPanel: '#428FAF',
 };
 
 export type ColorScheme = 'light' | 'dark';
@@ -256,6 +263,14 @@ export function makeShadows(colors: Palette) {
       shadowOpacity: 0.8,
       shadowRadius: 10,
       elevation: 8,
+    },
+    // "Balance total" card, 0 16px 32px -18px rgba(80,193,235,.9), the same in dark (Dashboard)
+    balanceCard: {
+      shadowColor: colors.primaryLight,
+      shadowOffset: { width: 0, height: 16 },
+      shadowOpacity: 0.9,
+      shadowRadius: 10,
+      elevation: 6,
     },
     ...limeShadows,
   } as const;

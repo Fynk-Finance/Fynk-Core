@@ -85,6 +85,25 @@ describe('design tokens', () => {
     });
   });
 
+  it('has the balance card colors of the Dashboard design in both themes', () => {
+    // docs/design/sources/{light,dark}/Dashboard.html and DashboardDetalles.html
+    for (const colors of [lightColors, darkColors]) {
+      expect(colors.balanceCard).toBe('#55C2EA');
+      expect(colors.balanceCardPill).toBe('rgba(31, 147, 194, 0.4)'); // #1F93C266
+    }
+    expect(lightColors.accountsPanel).toBe('#30A9D9');
+    expect(darkColors.accountsPanel).toBe(darkColors.headerDashboard);
+  });
+
+  it('keeps the balance card shadow the same in dark', () => {
+    expect(shadows.light.balanceCard).toEqual(shadows.dark.balanceCard);
+    expect(shadows.light.balanceCard).toMatchObject({
+      shadowColor: '#50C1EB', // rgba(80, 193, 235, 0.9)
+      shadowOpacity: 0.9,
+      shadowOffset: { width: 0, height: 16 },
+    });
+  });
+
   it('uses one font family per design weight', () => {
     expect(Object.keys(fonts.body)).toEqual(['regular', 'medium', 'semibold', 'bold']);
     expect(Object.keys(fonts.heading)).toEqual(['medium', 'bold']);
