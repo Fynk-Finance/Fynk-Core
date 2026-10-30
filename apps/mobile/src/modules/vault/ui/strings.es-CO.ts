@@ -27,6 +27,39 @@ export const vaultStrings = {
       unknown: 'Algo salió mal al abrir tu bóveda. Intenta de nuevo.',
     },
   },
+  // Not in the design: new screen, needs design review. Old phone side of a device approval (HU-046).
+  approve: {
+    title: 'Aprobar nuevo dispositivo',
+    subtitle: 'Aprueba solo si el código es el mismo que ves en tu otro teléfono.',
+    back: 'Volver',
+    prompt: {
+      title: 'Aprueba el nuevo dispositivo',
+      subtitle: 'Usa tu huella o tu rostro',
+      cancel: 'Cancelar',
+    },
+    platform: { ios: 'iPhone', android: 'Android' },
+    codeLabel: 'Verifica que tu otro teléfono muestre este código',
+    expiresIn: (minutes: number) => `Vence en ${minutes} min`,
+    approve: 'Aprobar',
+    approveHint: 'Comparte tu bóveda cifrada con este teléfono',
+    reject: 'Rechazar',
+    busy: 'Aprobando…',
+    empty: 'No hay solicitudes pendientes.',
+    devices: 'Ver dispositivos vinculados',
+    messages: {
+      approved: 'Listo. Tu nuevo teléfono ya puede ver tus datos.',
+      rejected: 'Rechazaste la solicitud.',
+      expired: 'La solicitud venció. Pide una nueva desde el otro teléfono.',
+      notPending: 'Esta solicitud ya no está disponible.',
+      offline: 'No pudimos conectarnos. Intenta de nuevo.',
+      failed: 'No pudimos completar la aprobación. Intenta de nuevo.',
+    },
+    notification: {
+      title: 'Nuevo dispositivo',
+      body: (deviceName: string) =>
+        `${deviceName} quiere acceder a tu cuenta. Revisa el código antes de aprobar.`,
+    },
+  },
   // Not in the design: needs design review. The row texts are those of CfgSeguridad.html.
   biometric: {
     prompt: {
