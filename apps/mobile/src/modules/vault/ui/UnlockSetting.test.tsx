@@ -70,6 +70,7 @@ async function renderSetting(
     recoveryCode: { prepare: jest.fn() },
     restoreWithCode: { restore: jest.fn(), resumePending: jest.fn() },
     restoreWithApproval: { start: jest.fn(), check: jest.fn() },
+    resetBackup: { reset: jest.fn() },
   });
   const UnlockSetting = createUnlockSetting(controller);
   await render(
