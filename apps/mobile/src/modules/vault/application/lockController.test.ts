@@ -12,6 +12,7 @@ import {
 } from './ports';
 import type { PreparedRecoveryCode } from './recoveryCode';
 import type { ApprovalCheck, ApprovalStart } from './restoreWithApproval';
+import type { ResetResult } from './resetBackup';
 import type { RestoreResult } from './restoreWithCode';
 import type { Vault } from './vault';
 
@@ -44,6 +45,8 @@ function setup(
     /** What the approval restore answers on the next check. Default `waiting`. */
     approvalCheck?: ApprovalCheck;
     approvalStart?: ApprovalStart;
+    /** What the server answers to the reset. Default `ok`. */
+    resetResult?: ResetResult;
   } = {},
 ) {
   const clock = createFixedClock(START);
@@ -146,6 +149,15 @@ function setup(
     return options.restoreResult ?? 'restored';
   });
   const resumePending = jest.fn(async () => undefined);
+  // Like the server on a reset: the recovery key is deleted and this phone becomes active.
+  const reset = jest.fn(async (): Promise<ResetResult> => {
+    const result = options.resetResult ?? 'ok';
+    if (result === 'ok') {
+      recoveryKey = 'missing';
+      device = ACTIVE;
+    }
+    return result;
+  });
   const approvalStart = jest.fn(
     async (): Promise<ApprovalStart> =>
       options.approvalStart ?? {
@@ -177,6 +189,7 @@ function setup(
     recoveryCode: { prepare },
     restoreWithCode: { restore, resumePending },
     restoreWithApproval: { start: approvalStart, check: approvalCheck },
+    resetBackup: { reset },
   });
   return {
     controller,
@@ -185,6 +198,7 @@ function setup(
     resumePending,
     approvalStart,
     approvalCheck,
+    reset,
     prepare,
     commits,
     setRecoveryKey: (next: 'exists' | 'missing' | 'offline') => {
@@ -1059,6 +1073,81 @@ describe('restore with approval from the old phone', () => {
     await restoring;
     expect(t.vault.close).toHaveBeenCalledTimes(2);
     expect(t.controller.getState().status).toBe('locked');
+  });
+});
+
+describe('start from zero (no other phone, no code)', () => {
+  it.each([
+    ['a pending phone', { device: { id: 'd1', status: 'pending' } }],
+    ['an active phone whose account has a backup', {}],
+  ] as const)('makes a new key and shows a new recovery code for %s', async (_name, device) => {
+    const t = setup({ dek: null, recoveryKey: 'exists', ...device });
+    await t.controller.unlock();
+    expect(t.controller.getState().status).toBe('pendingDevice');
+    expect(t.newDek).not.toHaveBeenCalled();
+
+    expect(await t.controller.resetBackup()).toBe('ok');
+    expect(t.reset).toHaveBeenCalledTimes(1);
+    // The normal first phone path: wipe, a new DEK in copy A, open, a new code to show.
+    expect(t.vault.wipe).toHaveBeenCalledTimes(1);
+    expect(t.newDek).toHaveBeenCalledTimes(1);
+    expect(t.dekStore.write).toHaveBeenCalledWith(Uint8Array.from({ length: 32 }, () => 7));
+    expect(t.vault.open).toHaveBeenCalledWith(t.storedDek());
+    expect(t.prepare).toHaveBeenCalledWith(Uint8Array.from({ length: 32 }, () => 7));
+    expect(t.controller.getState()).toEqual({
+      status: 'recoveryCode',
+      recovery: { groups: ['AAAAA', 'BBBBB', 'CCCCC', 'DDDDD', 'EEEE1X'] },
+    });
+    // Nothing is uploaded until the person confirms the new code.
+    expect(t.commits[0]).not.toHaveBeenCalled();
+  });
+
+  it.each(['notAllowed', 'notActive', 'offline', 'failed'] as const)(
+    'stays on the screen when the server answers %s',
+    async (resetResult) => {
+      const t = setup({ dek: null, recoveryKey: 'exists', resetResult });
+      await t.controller.unlock();
+      expect(await t.controller.resetBackup()).toBe(resetResult);
+      expect(t.controller.getState()).toEqual({ status: 'pendingDevice', deviceStatus: 'active' });
+      expect(t.newDek).not.toHaveBeenCalled();
+      expect(t.vault.wipe).not.toHaveBeenCalled();
+      // Another try is allowed, for example after the password reset.
+      expect(await t.controller.resetBackup()).toBe(resetResult);
+      expect(t.reset).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it('works on the second try, after the email code reset and a new sign in', async () => {
+    const t = setup({ dek: null, recoveryKey: 'exists', resetResult: 'notAllowed' });
+    await t.controller.unlock();
+    expect(await t.controller.resetBackup()).toBe('notAllowed');
+    t.reset.mockImplementationOnce(async () => {
+      t.setRecoveryKey('missing');
+      return 'ok';
+    });
+    expect(await t.controller.resetBackup()).toBe('ok');
+    expect(t.controller.getState().status).toBe('recoveryCode');
+  });
+
+  it('does nothing unless the phone is pending', async () => {
+    const t = setup();
+    await t.controller.unlock();
+    expect(await t.controller.resetBackup()).toBe('failed');
+    expect(t.reset).not.toHaveBeenCalled();
+    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+  });
+
+  it('does not set the phone up when it was locked while the server worked', async () => {
+    const t = setup({ dek: null, recoveryKey: 'exists' });
+    await t.controller.unlock();
+    let finish!: (r: ResetResult) => void;
+    t.reset.mockImplementationOnce(() => new Promise<ResetResult>((r) => (finish = r)));
+    const resetting = t.controller.resetBackup();
+    await t.controller.lock();
+    finish('ok');
+    expect(await resetting).toBe('ok');
+    expect(t.controller.getState().status).toBe('locked');
+    expect(t.newDek).not.toHaveBeenCalled();
   });
 });
 
