@@ -17,6 +17,7 @@ import { createMilestoneNotifier } from './application/milestoneNotifier';
 import { createVaultMilestoneStore } from './adapters/vault/vaultMilestoneStore';
 import type { GoalSummary } from './domain/goal';
 import { createGoalFormScreen, GOAL_FORM_ROUTE } from './ui/GoalFormScreen';
+import { createGoalsCarousel, GoalCardCompact } from './ui/GoalsCarousel';
 import { createMetasScreen, METAS_ROUTE } from './ui/MetasScreen';
 
 export type { GoalSummary };
@@ -82,3 +83,10 @@ export const routes: ModuleRoutes = {
     },
   ],
 };
+
+/**
+ * "Planes de ahorro" for the Dashboard (M6 places it): title, "Ver todos" (opens Metas) and the
+ * carousel of goals not reached yet. Render `<GoalsCarousel />` inside a navigator.
+ */
+export const GoalsCarousel = createGoalsCarousel({ service });
+export { GoalCardCompact };
