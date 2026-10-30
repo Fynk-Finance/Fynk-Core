@@ -1,5 +1,5 @@
 // GoalStore on the SQLCipher vault (tables in ./migrations.ts).
-import type { Id, MoneyMinor } from '@shared/domain/types';
+import type { Id, IsoDate, MoneyMinor } from '@shared/domain/types';
 import type { VaultDb } from '@shared/ports';
 
 import type { Goal } from '../../domain/goal';
@@ -61,11 +61,22 @@ export function createVaultGoalStore(db: VaultDb): GoalStore {
     },
 
     async savedByGoal() {
-      const rows = await db.query<{ goal_id: string; saved: number }>(
-        `SELECT goal_id, SUM(amount_minor) AS saved FROM savings_contributions
-         WHERE deleted_at IS NULL GROUP BY goal_id`,
+      const rows = await db.query<{ goal_id: string; saved: number; last_on: string }>(
+        `SELECT goal_id, SUM(amount_minor) AS saved, MAX(contributed_on) AS last_on
+         FROM savings_contributions WHERE deleted_at IS NULL GROUP BY goal_id`,
       );
-      return new Map<Id, MoneyMinor>(rows.map((r) => [r.goal_id, r.saved]));
+      return new Map<Id, { savedMinor: MoneyMinor; lastOn: IsoDate }>(
+        rows.map((r) => [r.goal_id, { savedMinor: r.saved, lastOn: r.last_on }]),
+      );
+    },
+
+    async contributedBetween(from, to) {
+      const [row] = await db.query<{ total: number | null }>(
+        `SELECT SUM(amount_minor) AS total FROM savings_contributions
+         WHERE deleted_at IS NULL AND contributed_on BETWEEN ? AND ?`,
+        [from, to],
+      );
+      return row?.total ?? 0;
     },
   };
 }
