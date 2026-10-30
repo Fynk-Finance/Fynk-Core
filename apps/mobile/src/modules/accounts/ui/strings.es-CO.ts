@@ -51,4 +51,21 @@ export const accountsStrings = {
     updatedOn: (day: string) => `Actualizado el ${day}`,
     gone: 'Esta cuenta ya no está conectada.',
   },
+  misCuentas: {
+    // Billetera and Mi cuenta
+    title: 'Mis cuentas',
+    connect: '+ Conectar',
+    view: (entity: string) => `Ver cuenta ${entity}`,
+    active: 'Activa',
+    creditLine: (limit: string, day: string | null) =>
+      day ? `Cupo total ${limit} · Pago el ${day}` : `Cupo total ${limit}`,
+    short: {
+      savings: 'Ahorros',
+      checking: 'Corriente',
+      wallet: 'Digital',
+      credit_card: 'Crédito',
+      cdt: 'CDT',
+      cash: 'Manual',
+    } satisfies Record<AccountKind, string>,
+  },
 } as const;

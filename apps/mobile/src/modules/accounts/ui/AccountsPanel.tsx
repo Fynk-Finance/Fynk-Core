@@ -25,7 +25,7 @@ import { accountsStrings } from './strings.es-CO';
 const t = accountsStrings.dashboard;
 
 /** "Cuenta de ahorros · •• 4821", or "Registrado manualmente" for cash. Never more than 4 digits. */
-export function rowDetail(row: AccountRow): string {
+export function rowDetail(row: Pick<AccountRow, 'kind' | 'last4'>): string {
   if (row.kind === 'cash') return t.cashDetail;
   const masked = maskedNumber(row.last4);
   return [accountsStrings.kinds[row.kind], masked].filter(Boolean).join(' · ');
