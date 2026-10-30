@@ -7,7 +7,9 @@ import { createPlaceholderScreen, type ModuleRoutes } from '@shared/navigation';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
 import { savingsMigrations } from './adapters/vault/migrations';
+import { createVaultContributionStore } from './adapters/vault/vaultContributionStore';
 import { createVaultGoalStore } from './adapters/vault/vaultGoalStore';
+import { createContributionService } from './application/contributionService';
 import { createGoalService } from './application/goalService';
 import type { GoalSummary } from './domain/goal';
 import { createGoalFormScreen, GOAL_FORM_ROUTE } from './ui/GoalFormScreen';
@@ -24,6 +26,17 @@ const service = createGoalService({
   store: () => createVaultGoalStore(getVaultDb()),
   clock,
   newId: randomUUID,
+  // Deleting a goal frees the movements linked to it first.
+  beforeRemove: (goalId) => contributions.unlinkGoal(goalId),
+});
+
+// SCRUM-52. Movements can be linked once M7 exports setTransactionGoal (`movements`).
+const contributions = createContributionService({
+  store: () => createVaultContributionStore(getVaultDb()),
+  goals: () => createVaultGoalStore(getVaultDb()),
+  clock,
+  newId: randomUUID,
+  onChange: () => service.notifyChanged(),
 });
 
 /** Goals with saved amount, percent and suggested monthly, nearest deadline first. */

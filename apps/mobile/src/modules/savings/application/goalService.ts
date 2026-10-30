@@ -18,6 +18,11 @@ export interface GoalServiceDeps {
   store: () => GoalStore;
   clock: Clock;
   newId: () => Id;
+  /**
+   * Runs before a goal is deleted, so its linked movements stop pointing to it (SCRUM-52:
+   * contributionService.unlinkGoal). A failure stops the delete.
+   */
+  beforeRemove?: (goalId: Id) => Promise<void>;
 }
 
 export interface GoalService {
@@ -34,6 +39,8 @@ export interface GoalService {
   today(): IsoDate;
   /** Called after every change. Returns a function that unsubscribes. */
   subscribe(listener: () => void): () => void;
+  /** Tells the subscribers that saved amounts changed: a contribution was added or undone. */
+  notifyChanged(): void;
 }
 
 export class InvalidGoalError extends Error {
@@ -110,6 +117,7 @@ export function createGoalService(deps: GoalServiceDeps): GoalService {
     },
 
     async remove(id) {
+      await deps.beforeRemove?.(id);
       await deps.store().remove(id);
       changed();
     },
@@ -127,5 +135,7 @@ export function createGoalService(deps: GoalServiceDeps): GoalService {
         listeners.delete(listener);
       };
     },
+
+    notifyChanged: changed,
   };
 }
