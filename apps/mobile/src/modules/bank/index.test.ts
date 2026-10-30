@@ -48,8 +48,10 @@ afterEach(() => vault.close());
 it('registers its vault tables and deletes the token of a revoked consent (HU-008)', async () => {
   // Loaded here, after the mocks exist: index.ts registers its tables and listener on load.
   const bank = jest.requireActual<typeof import('./index')>('./index');
-  const [module, migrations] = mockVault.register.mock.calls[0] as [string, never];
-  expect(module).toBe('bank');
+  // Other modules it imports (M12) register their own tables too.
+  const calls = mockVault.register.mock.calls as [string, never][];
+  const [, migrations] = calls.find(([module]) => module === 'bank')!;
+  expect(calls.filter(([module]) => module === 'bank')).toHaveLength(1);
   vault.registerMigrations('bank', migrations);
   await vault.migrate();
   await vault.db.execute(
@@ -75,4 +77,12 @@ it('never registers bank links or tokens for backup', () => {
     /registerBackupCollection|markDirty/.test(readFileSync(file, 'utf8')),
   );
   expect(offenders).toEqual([]);
+});
+
+it('asks no bank until M6 and M7 can take what a sync brings', async () => {
+  const fetch = jest.spyOn(globalThis, 'fetch');
+  const bank = jest.requireActual<typeof import('./index')>('./index');
+  expect(await bank.syncNow()).toEqual({ status: 'unavailable', links: [] });
+  expect(fetch).not.toHaveBeenCalled();
+  fetch.mockRestore();
 });
