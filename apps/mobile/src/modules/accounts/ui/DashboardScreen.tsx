@@ -11,6 +11,7 @@ import { ErrorState, HeaderBlue, Screen, motion, spacing } from '@shared/ui';
 
 import type { AccountsOverview } from '../application/accountsService';
 import { accountRows, type MonthSummary } from '../domain/dashboard';
+import { ACCOUNT_DETAIL_ROUTE } from './AccountDetailScreen';
 import { AccountsPanel, DetailsTab } from './AccountsPanel';
 import { DashboardBalanceCard } from './DashboardBalanceCard';
 import { accountsStrings } from './strings.es-CO';
@@ -57,7 +58,12 @@ export function createDashboardScreen(deps: DashboardDeps) {
                 entering={FadeIn.duration(motion.slow)}
                 exiting={FadeOut.duration(motion.fast)}
               >
-                <AccountsPanel rows={accountRows(overview?.accounts ?? [])} />
+                <AccountsPanel
+                  rows={accountRows(overview?.accounts ?? [])}
+                  onPressRow={(accountId) =>
+                    navigation.navigate(ACCOUNT_DETAIL_ROUTE, { accountId })
+                  }
+                />
               </Animated.View>
             ) : null}
           </Animated.View>

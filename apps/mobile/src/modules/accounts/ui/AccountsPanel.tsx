@@ -31,7 +31,14 @@ export function rowDetail(row: AccountRow): string {
   return [accountsStrings.kinds[row.kind], masked].filter(Boolean).join(' · ');
 }
 
-export function AccountsPanel({ rows }: { rows: AccountRow[] }) {
+export function AccountsPanel({
+  rows,
+  onPressRow,
+}: {
+  rows: AccountRow[];
+  /** Opens Detalle de cuenta. */
+  onPressRow: (id: AccountRow['id']) => void;
+}) {
   const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.panel} testID="accounts.panel">
@@ -41,7 +48,13 @@ export function AccountsPanel({ rows }: { rows: AccountRow[] }) {
         </AppText>
       ) : null}
       {rows.map((row) => (
-        <View key={row.id} style={styles.row} accessible testID={`accounts.row.${row.id}`}>
+        <Pressable
+          key={row.id}
+          onPress={() => onPressRow(row.id)}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+          testID={`accounts.row.${row.id}`}
+        >
           <View style={styles.names}>
             <View style={styles.entity}>
               <AppText
@@ -61,7 +74,7 @@ export function AccountsPanel({ rows }: { rows: AccountRow[] }) {
             </AppText>
           </View>
           <AmountText amountMinor={row.amountMinor} size={13} color="onPrimary" />
-        </View>
+        </Pressable>
       ))}
     </View>
   );
@@ -125,4 +138,5 @@ const createStyles = ({ colors }: Theme) =>
     tab: { alignSelf: 'center', width: 148, height: 24, zIndex: 2, elevation: 2 },
     chevron: { position: 'absolute', left: 66, top: 4 },
     flipped: { transform: [{ rotate: '180deg' }] },
+    pressed: { opacity: 0.8 },
   });
