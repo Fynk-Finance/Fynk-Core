@@ -50,6 +50,11 @@ type Config struct {
 	// BankFingerprintKeyFile holds the HMAC key, at least 32 bytes, of the refresh token
 	// fingerprints kept with each bank link. In AWS a KMS HMAC key replaces it (M14).
 	BankFingerprintKeyFile string
+	// BankSignerKMSKeyID and BankFingerprintKMSKeyID are the AWS KMS keys (id, ARN or alias)
+	// that replace the two files in AWS: an RSA_3072 key that signs with RSASSA_PSS_SHA_256 and
+	// an HMAC_256 key (M14's KMS module). When one is set, it is used instead of its file.
+	BankSignerKMSKeyID      string
+	BankFingerprintKMSKeyID string
 	// BankRedirectURI is where a bank sends the authorization code: the app's deep link.
 	BankRedirectURI string
 	// BancoDemoClientID is Fynk's client at the simulated bank (M16), BancoDemoIssuer the
@@ -80,12 +85,14 @@ func Load(getenv func(string) string) (Config, error) {
 
 		KeycloakAdminClientSecret: getenv("FYNK_ADMIN_CLIENT_SECRET"),
 
-		BankSignerKeyFile:      getenv("BANK_SIGNER_KEY_FILE"),
-		BankFingerprintKeyFile: getenv("BANK_FINGERPRINT_KEY_FILE"),
-		BankRedirectURI:        getenv("BANK_REDIRECT_URI"),
-		BancoDemoClientID:      getenv("BANCO_DEMO_CLIENT_ID"),
-		BancoDemoIssuer:        getenv("BANCO_DEMO_ISSUER"),
-		BancoDemoAuthorizeURL:  getenv("BANCO_DEMO_AUTHORIZE_URL"),
+		BankSignerKeyFile:       getenv("BANK_SIGNER_KEY_FILE"),
+		BankFingerprintKeyFile:  getenv("BANK_FINGERPRINT_KEY_FILE"),
+		BankSignerKMSKeyID:      getenv("BANK_SIGNER_KMS_KEY_ID"),
+		BankFingerprintKMSKeyID: getenv("BANK_FINGERPRINT_KMS_KEY_ID"),
+		BankRedirectURI:         getenv("BANK_REDIRECT_URI"),
+		BancoDemoClientID:       getenv("BANCO_DEMO_CLIENT_ID"),
+		BancoDemoIssuer:         getenv("BANCO_DEMO_ISSUER"),
+		BancoDemoAuthorizeURL:   getenv("BANCO_DEMO_AUTHORIZE_URL"),
 	}
 	if c.Port == "" {
 		c.Port = "8080"
