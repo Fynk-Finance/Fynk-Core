@@ -65,6 +65,8 @@ async function renderSetting(
     clock,
     nowMs: () => 0,
     biometricPrompt: t.prompt,
+    recoveryKey: { get: jest.fn() },
+    recoveryCode: { prepare: jest.fn() },
   });
   const UnlockSetting = createUnlockSetting(controller);
   await render(
