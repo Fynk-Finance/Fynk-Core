@@ -30,6 +30,7 @@ function setup() {
   const uploads: RecoveryKeyUpload[] = [];
   const api: RecoveryKeyApi = {
     get: jest.fn(async () => null),
+    activate: jest.fn(async () => undefined),
     put: jest.fn(async (u) => {
       uploads.push(u);
     }),

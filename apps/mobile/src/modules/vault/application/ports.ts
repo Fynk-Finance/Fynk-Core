@@ -98,10 +98,19 @@ export interface RecoveryKeyApi {
   get(): Promise<StoredRecoveryKey | null>;
   /** Replaces any previous recovery key: the old code stops working. */
   put(upload: RecoveryKeyUpload): Promise<void>;
+  /**
+   * Makes this pending phone active, with the proof derived from the DEK (HU-045). Answers also
+   * when the phone is already active. Throws RecoveryError: `mismatch`, `tooMany`, `removed`, `noKey`.
+   */
+  activate(proof: Uint8Array): Promise<void>;
 }
 
-/** `offline`: no connection. `notActive`: this phone is not an active device. */
-export type RecoveryErrorKind = 'offline' | 'notActive' | 'unknown';
+/**
+ * `offline`: no connection. `notActive`: this phone is not an active device. Of the activation:
+ * `mismatch` (422), `tooMany` (429), `removed` (410) and `noKey` (404).
+ */
+export type RecoveryErrorKind =
+  'offline' | 'notActive' | 'mismatch' | 'tooMany' | 'removed' | 'noKey' | 'unknown';
 
 /** Carries only a kind: no key, code or payload ever goes into an error. */
 export class RecoveryError extends Error {
