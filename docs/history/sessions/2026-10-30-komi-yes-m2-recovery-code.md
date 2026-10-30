@@ -35,6 +35,7 @@ Build HU-045 on the finished backend (`PUT` and `GET /backup/recovery-key`): mak
 * **The password step of "Generar un código nuevo" runs when the screen opens**, not on the row's tap, so the `boveda/recuperacion` deep link cannot skip it. `UnlockSetting` asks inside the controller on the action; this one asks inside `prepareNewRecoveryCode`.
 * **`react-native-argon2` is loaded on first use** (`require` inside `argon2Kdf`). Its native module is read while the library loads, which broke the identity tests that import the vault index.
 * The shared `fonts` token has no "mono" family; the code uses `fonts.amount.semibold` (IBM Plex Mono).
+* **The dev session has no backup.** With `EXPO_PUBLIC_DEV_AUTH` there is no registered device and no API, so asking the server for the recovery key failed and the vault never opened (dev builds and `make e2e`). Identity now exports `backupEnabled()` (false in the dev session) and the lock controller takes it as a dep: when it is false the first phone opens as before with no recovery code, the check after an open returns at once, and "Generar un código nuevo" fails.
 * The Argon2 password is the canonical 26 character code. The parameters are the contract's and were not changed.
 
 ## Next step
