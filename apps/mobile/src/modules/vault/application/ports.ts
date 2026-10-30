@@ -221,3 +221,31 @@ export interface DeviceApprovalsApiPort {
   /** Old phone: refuses. The new phone stays pending. */
   reject(id: string): Promise<ApprovalRequest>;
 }
+
+/** POST /backup/reset: "No tengo ninguno de los dos" (HU-045, ADR 0002 "Lost phone and lost code"). */
+export interface BackupResetApi {
+  /**
+   * Deletes the backup and the recovery key, removes the other devices and activates this one.
+   * Throws ResetError. Calling it again after a failure is safe.
+   */
+  reset(): Promise<void>;
+}
+
+/**
+ * `notAllowed`: the password was not reset with the email code in the last 10 minutes, or this
+ * session is older than that reset (403 reset_not_allowed). `notActive`: 403 device_not_active.
+ */
+export type ResetErrorKind = 'notAllowed' | 'notActive' | 'offline' | 'unknown';
+
+/** Carries only a kind. */
+export class ResetError extends Error {
+  readonly kind: ResetErrorKind;
+  constructor(kind: ResetErrorKind) {
+    super(`backup reset failed: ${kind}`);
+    this.name = 'ResetError';
+    this.kind = kind;
+  }
+}
+
+export const isResetError = (e: unknown, kind?: ResetErrorKind): e is ResetError =>
+  e instanceof ResetError && (kind === undefined || e.kind === kind);
