@@ -34,6 +34,8 @@ function setup(
     /** What the server holds. Default `exists`: the account already has its recovery code. */
     recoveryKey?: 'exists' | 'missing' | 'offline';
     prepareError?: Error;
+    /** False in the dev session. Default true. */
+    backup?: boolean;
     commit?: Error;
   } = {},
 ) {
@@ -143,6 +145,7 @@ function setup(
     clock,
     nowMs: () => nowMs,
     biometricPrompt: PROMPT,
+    backupEnabled: () => options.backup ?? true,
     recoveryKey: { get: recoveryGet },
     recoveryCode: { prepare },
   });
@@ -793,5 +796,33 @@ describe('prepareNewRecoveryCode', () => {
     expect(await t.controller.prepareNewRecoveryCode()).toEqual({ status: 'failed' });
     t.prepare.mockRejectedValueOnce(new Error('argon2'));
     expect(await t.controller.prepareNewRecoveryCode()).toEqual({ status: 'failed' });
+  });
+});
+
+describe('dev session (no backup)', () => {
+  it('sets up the first phone without asking the server or showing a code', async () => {
+    const t = setup({ dek: null, backup: false, recoveryKey: 'offline' });
+    await t.controller.unlock();
+    expect(t.recoveryGet).not.toHaveBeenCalled();
+    expect(t.prepare).not.toHaveBeenCalled();
+    expect(t.vault.wipe).toHaveBeenCalledTimes(1);
+    expect(t.dekStore.write).toHaveBeenCalledTimes(1);
+    expect(t.vault.open).toHaveBeenCalledWith(t.storedDek());
+    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+  });
+
+  it('opens with an existing DEK and never checks for a recovery key', async () => {
+    const t = setup({ backup: false, recoveryKey: 'missing' });
+    await t.controller.unlock();
+    expect(t.recoveryGet).not.toHaveBeenCalled();
+    expect(t.identity.currentDevice).not.toHaveBeenCalled();
+    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+  });
+
+  it('refuses to prepare a new recovery code', async () => {
+    const t = setup({ backup: false });
+    await t.controller.unlock();
+    expect(await t.controller.prepareNewRecoveryCode()).toEqual({ status: 'failed' });
+    expect(t.prepare).not.toHaveBeenCalled();
   });
 });

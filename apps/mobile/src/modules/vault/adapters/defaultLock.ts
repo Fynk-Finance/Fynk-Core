@@ -4,6 +4,7 @@
 import { getRandomBytes } from 'expo-crypto';
 
 import {
+  backupEnabled,
   currentDevice,
   deviceId,
   lastLoginAt,
@@ -35,6 +36,7 @@ export const lockController = createLockController({
   clock: { now: () => new Date() },
   nowMs: () => Date.now(),
   biometricPrompt: vaultStrings.biometric.prompt,
+  backupEnabled: () => backupEnabled(),
   recoveryKey: recoveryKeyApi,
   // The code and the key made from it never leave this process; only the wrapped DEK is sent.
   recoveryCode: createRecoveryCodeService({

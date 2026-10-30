@@ -61,6 +61,8 @@ export interface LockControllerDeps {
   /** Asks the server whether this account already has a recovery key. */
   recoveryKey: Pick<RecoveryKeyApi, 'get'>;
   recoveryCode: RecoveryCodeService;
+  /** False in the dev session: no registered device and no API, so no backup to protect. */
+  backupEnabled: () => boolean;
 }
 
 export interface LockController {
@@ -166,6 +168,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
   // for this account. It needs the network, so an offline phone stays unlocked and the next open
   // asks again. It runs only after an open, never on a plain return to the foreground.
   async function offerMissingRecoveryCode(dek: Uint8Array, mine: number): Promise<void> {
+    if (!deps.backupEnabled()) return;
     try {
       const device = await identity.currentDevice();
       if (device?.status !== 'active') return;
@@ -206,17 +209,20 @@ export function createLockController(deps: LockControllerDeps): LockController {
     }
     // A recovery key on the server means this account already has a backup, and a new DEK here
     // would orphan it. Without an answer we cannot know, so we make no key.
-    let existing: Awaited<ReturnType<RecoveryKeyApi['get']>>;
-    try {
-      existing = await deps.recoveryKey.get();
-    } catch {
-      set({ status: 'error', error: 'offline' });
-      return;
-    }
-    if (existing) {
-      // The restore with the recovery code arrives in a later PR.
-      set({ status: 'pendingDevice' });
-      return;
+    const backup = deps.backupEnabled();
+    if (backup) {
+      let existing: Awaited<ReturnType<RecoveryKeyApi['get']>>;
+      try {
+        existing = await deps.recoveryKey.get();
+      } catch {
+        set({ status: 'error', error: 'offline' });
+        return;
+      }
+      if (existing) {
+        // The restore with the recovery code arrives in a later PR.
+        set({ status: 'pendingDevice' });
+        return;
+      }
     }
     let fresh: Uint8Array;
     try {
@@ -229,6 +235,11 @@ export function createLockController(deps: LockControllerDeps): LockController {
       return;
     }
     if (!(await openVault(fresh))) return;
+    if (!backup) {
+      // Dev session: no recovery code to show.
+      if (mine === generation) set({ status: 'unlocked' });
+      return;
+    }
     try {
       const prepared = await deps.recoveryCode.prepare(fresh);
       if (mine === generation) showRecoveryCode(prepared);
@@ -344,6 +355,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
       return result;
     },
     async prepareNewRecoveryCode() {
+      if (!deps.backupEnabled()) return { status: 'failed' };
       if (!isFreshLogin(identity.lastLoginAt(), clock.now())) {
         const result = await identity.reauthenticate();
         if (result !== 'ok') return { status: result === 'cancelled' ? 'cancelled' : 'failed' };

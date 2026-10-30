@@ -65,6 +65,7 @@ async function renderSetting(
     clock,
     nowMs: () => 0,
     biometricPrompt: t.prompt,
+    backupEnabled: () => true,
     recoveryKey: { get: jest.fn() },
     recoveryCode: { prepare: jest.fn() },
   });

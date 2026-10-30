@@ -103,6 +103,9 @@ export const currentDevice = async (): Promise<{
   return device.current();
 };
 
+/** False in the dev session, which has no registered device and no API: there is no backup to protect. */
+export const backupEnabled = (): boolean => device !== null;
+
 /** The X25519 public key of this phone. Null before it has a key pair, and in the dev session. */
 export const devicePublicKey = (): Promise<Uint8Array | null> =>
   device?.publicKey() ?? Promise.resolve(null);
