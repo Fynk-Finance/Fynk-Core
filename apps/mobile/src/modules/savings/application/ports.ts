@@ -1,6 +1,6 @@
 // Ports of the savings module. The vault adapter implements GoalStore
 // (adapters/vault/vaultGoalStore.ts).
-import type { Id, MoneyMinor } from '@shared/domain/types';
+import type { Id, IsoDate, MoneyMinor } from '@shared/domain/types';
 
 import type { Goal } from '../domain/goal';
 
@@ -12,6 +12,11 @@ export interface GoalStore {
   save(goal: Goal): Promise<void>;
   /** Deletes the goal and its contributions. */
   remove(id: Id): Promise<void>;
-  /** Saved amount of each goal: the sum of its contributions that are not deleted. */
-  savedByGoal(): Promise<Map<Id, MoneyMinor>>;
+  /**
+   * Saved amount of each goal (the sum of its contributions that are not deleted) and the day
+   * of its last contribution.
+   */
+  savedByGoal(): Promise<Map<Id, { savedMinor: MoneyMinor; lastOn: IsoDate }>>;
+  /** Sum of the contributions made between two days, both included ("Abonado este mes"). */
+  contributedBetween(from: IsoDate, to: IsoDate): Promise<MoneyMinor>;
 }

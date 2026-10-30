@@ -2,7 +2,7 @@
 import { randomUUID } from 'expo-crypto';
 
 import type { Clock, MoneyMinor } from '@shared/domain/types';
-import { createPlaceholderScreen, type ModuleRoutes } from '@shared/navigation';
+import type { ModuleRoutes } from '@shared/navigation';
 
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
@@ -11,10 +11,13 @@ import { createVaultGoalStore } from './adapters/vault/vaultGoalStore';
 import { createGoalService } from './application/goalService';
 import type { GoalSummary } from './domain/goal';
 import { createGoalFormScreen, GOAL_FORM_ROUTE } from './ui/GoalFormScreen';
+import { createMetasScreen, METAS_ROUTE } from './ui/MetasScreen';
 
 export type { GoalSummary };
 /** Create a goal; with { id } it edits one. Onboarding step 4 (M3) and Metas push it. */
 export { GOAL_FORM_ROUTE };
+/** Metas de ahorro. The Dashboard's "Ver todos" opens it. */
+export { METAS_ROUTE };
 
 registerVaultMigrations('savings', savingsMigrations);
 
@@ -32,16 +35,13 @@ export const getGoals = (): Promise<GoalSummary[]> => service.list();
 /** "2 metas $840.000/mes": suggested monthly amounts of the goals not reached yet (M3). */
 export const getGoalsMonthlyTotal = (): Promise<MoneyMinor> => service.monthlyTotal();
 
-// The Metas route is M0's placeholder until the Metas screen lands (next pull request).
 export const routes: ModuleRoutes = {
   module: 'savings',
   screens: [
     {
-      name: 'savings.Goals',
-      component: createPlaceholderScreen({
-        title: 'Planes de ahorro',
-        owner: 'M8 · Metas de ahorro',
-      }),
+      name: METAS_ROUTE,
+      // "23 % de tus ingresos" needs the monthly income of M10, not exported yet.
+      component: createMetasScreen({ service, monthlyIncome: async () => null }),
       path: 'metas',
     },
     {

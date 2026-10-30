@@ -55,11 +55,16 @@ beforeEach(async () => {
 afterEach(() => vault.close());
 
 /** A contribution as SCRUM-52 will record it (manual, a record: Fynk never moves money). */
-async function contribute(goalId: string, amount: number, id = `c-${goalId}-${amount}`) {
+async function contribute(
+  goalId: string,
+  amount: number,
+  id = `c-${goalId}-${amount}`,
+  on = '2026-10-20',
+) {
   await vault.db.execute(
     `INSERT INTO savings_contributions (id, goal_id, amount_minor, contributed_on, source)
-     VALUES (?, ?, ?, '2026-10-20', 'manual')`,
-    [id, goalId, pesos(amount)],
+     VALUES (?, ?, ?, ?, 'manual')`,
+    [id, goalId, pesos(amount), on],
   );
 }
 
@@ -173,6 +178,24 @@ describe('monthly total', () => {
     const done = await service.create(gifts);
     await contribute(done, 800_000);
     expect(formatCop(await service.monthlyTotal())).toBe('$625.000');
+  });
+});
+
+describe('overview (Metas stats card)', () => {
+  it('gives Ahorrado, Abonado este mes and Cumplidas', async () => {
+    const tripId = await service.create(trip);
+    const done = await service.create(gifts);
+    await contribute(tripId, 2_000_000, 'old', '2026-09-15');
+    await contribute(tripId, 940_000, 'oct', '2026-10-05');
+    await contribute(done, 800_000, 'gifts', '2026-08-20');
+    expect(await service.overview()).toEqual({
+      savedMinor: pesos(3_740_000),
+      contributedThisMonthMinor: pesos(940_000),
+      doneCount: 1,
+      monthlyMinor: (await service.get(tripId))!.suggestedMonthlyMinor,
+    });
+    expect((await service.get(done))?.completedOn).toBe('2026-08-20');
+    expect((await service.get(tripId))?.completedOn).toBeNull();
   });
 });
 

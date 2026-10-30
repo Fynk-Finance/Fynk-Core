@@ -30,10 +30,21 @@ export interface GoalService {
   remove(id: Id): Promise<void>;
   /** "2 metas $840.000/mes": suggested monthly amounts of the goals not reached yet. */
   monthlyTotal(): Promise<MoneyMinor>;
+  /** The stats card of Metas: "Ahorrado", "Abonado este mes", "Cumplidas". */
+  overview(): Promise<GoalsOverview>;
   /** Today's date in Bogotá, for the form's live suggested amount. */
   today(): IsoDate;
   /** Called after every change. Returns a function that unsubscribes. */
   subscribe(listener: () => void): () => void;
+}
+
+export interface GoalsOverview {
+  /** Saved in every goal, reached or not. */
+  savedMinor: MoneyMinor;
+  contributedThisMonthMinor: MoneyMinor;
+  doneCount: number;
+  /** "$1.309.000 al mes": suggested monthly amounts of the goals not reached yet. */
+  monthlyMinor: MoneyMinor;
 }
 
 export class InvalidGoalError extends Error {
@@ -82,7 +93,10 @@ export function createGoalService(deps: GoalServiceDeps): GoalService {
     const store = deps.store();
     const [goals, saved] = await Promise.all([store.list(), store.savedByGoal()]);
     const day = today();
-    return [...goals].sort(byDeadline).map((g) => summarizeGoal(g, saved.get(g.id) ?? 0, day));
+    return [...goals].sort(byDeadline).map((g) => {
+      const s = saved.get(g.id);
+      return summarizeGoal(g, s?.savedMinor ?? 0, day, s?.lastOn ?? null);
+    });
   };
 
   return {
@@ -117,6 +131,20 @@ export function createGoalService(deps: GoalServiceDeps): GoalService {
     async monthlyTotal() {
       const goals = await list();
       return goalsMonthlyTotal(goals.filter((g) => !g.done).map((g) => g.suggestedMonthlyMinor));
+    },
+
+    async overview() {
+      const goals = await list();
+      const month = today().slice(0, 7);
+      const open = goals.filter((g) => !g.done);
+      return {
+        savedMinor: goals.reduce((sum, g) => sum + g.savedMinor, 0),
+        contributedThisMonthMinor: await deps
+          .store()
+          .contributedBetween(`${month}-01`, `${month}-31`),
+        doneCount: goals.length - open.length,
+        monthlyMinor: goalsMonthlyTotal(open.map((g) => g.suggestedMonthlyMinor)),
+      };
     },
 
     today,
