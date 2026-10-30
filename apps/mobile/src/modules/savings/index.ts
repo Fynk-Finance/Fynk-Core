@@ -10,8 +10,11 @@ import { savingsMigrations } from './adapters/vault/migrations';
 import { createVaultGoalStore } from './adapters/vault/vaultGoalStore';
 import { createGoalService } from './application/goalService';
 import type { GoalSummary } from './domain/goal';
+import { createGoalFormScreen, GOAL_FORM_ROUTE } from './ui/GoalFormScreen';
 
 export type { GoalSummary };
+/** Create a goal; with { id } it edits one. Onboarding step 4 (M3) and Metas push it. */
+export { GOAL_FORM_ROUTE };
 
 registerVaultMigrations('savings', savingsMigrations);
 
@@ -29,7 +32,7 @@ export const getGoals = (): Promise<GoalSummary[]> => service.list();
 /** "2 metas $840.000/mes": suggested monthly amounts of the goals not reached yet (M3). */
 export const getGoalsMonthlyTotal = (): Promise<MoneyMinor> => service.monthlyTotal();
 
-// Placeholder route from M0 until the Metas screen lands (next pull request of SCRUM-51).
+// The Metas route is M0's placeholder until the Metas screen lands (next pull request).
 export const routes: ModuleRoutes = {
   module: 'savings',
   screens: [
@@ -40,6 +43,11 @@ export const routes: ModuleRoutes = {
         owner: 'M8 · Metas de ahorro',
       }),
       path: 'metas',
+    },
+    {
+      name: GOAL_FORM_ROUTE,
+      component: createGoalFormScreen({ service }),
+      path: 'metas/nueva',
     },
   ],
 };
