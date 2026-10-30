@@ -1,8 +1,8 @@
 // One goal of "Próximas metas" (design Metas, `.goal`): blue tile with the category icon, name,
 // "Viaje · Jun 2027" and a chevron; the 8 px lime progress bar; "$3.200.000 de $5.000.000",
 // "Faltan 8 meses" (lime when 2 months or less) and "64%". Tapping the head expands it
-// (`mt-open .28s ease-out`) to "Aporte sugerido $625.000/mes" and "Te falta $1.800.000", plus
-// "Editar meta". "Abonar a esta meta" comes with SCRUM-52.
+// (`mt-open .28s ease-out`) to "Aporte sugerido $625.000/mes" and "Te falta $1.800.000",
+// "Abonar a esta meta" (SCRUM-52, given by the screen as `abonar`) and "Editar meta".
 import { useEffect, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -39,9 +39,11 @@ export interface GoalCardProps {
   expanded: boolean;
   onToggle: () => void;
   onEdit: () => void;
+  /** "Abonar a esta meta", shown in the open card. */
+  abonar?: ReactNode;
 }
 
-export function GoalCard({ goal, expanded, onToggle, onEdit }: GoalCardProps) {
+export function GoalCard({ goal, expanded, onToggle, onEdit, abonar }: GoalCardProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const soon = goal.monthsLeft <= 2;
@@ -113,6 +115,7 @@ export function GoalCard({ goal, expanded, onToggle, onEdit }: GoalCardProps) {
               <AmountText amountMinor={goal.remainingMinor} size={14} />
             </View>
           </View>
+          {abonar}
           <GhostButton
             label={t.edit}
             icon="chevronRight"

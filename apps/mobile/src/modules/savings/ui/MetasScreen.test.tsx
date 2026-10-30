@@ -1,9 +1,10 @@
 // Metas de ahorro (SCRUM-51, design Metas): several goals by deadline with the numbers of the
 // design, expanding a goal, editing it, "Nueva meta", the stats card, "Metas cumplidas", the
-// empty state and both themes.
+// empty state and both themes. SCRUM-52: "Abonar a esta meta" with its chips, a typed amount
+// and "Deshacer".
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
 import type { MoneyMinor } from '@shared/domain/types';
@@ -11,7 +12,12 @@ import { createFixedClock, createInMemoryVault, type InMemoryVault } from '@shar
 import { ThemeProvider, type ThemePreference } from '@shared/ui';
 
 import { savingsMigrations } from '../adapters/vault/migrations';
+import { createVaultContributionStore } from '../adapters/vault/vaultContributionStore';
 import { createVaultGoalStore } from '../adapters/vault/vaultGoalStore';
+import {
+  createContributionService,
+  type ContributionService,
+} from '../application/contributionService';
 import { createGoalService, type GoalService } from '../application/goalService';
 import type { GoalInput } from '../domain/goal';
 import { GOAL_FORM_ROUTE } from './GoalFormScreen';
@@ -25,6 +31,7 @@ const pesos = (n: number) => n * 100;
 
 let vault: InMemoryVault;
 let service: GoalService;
+let contributions: ContributionService;
 
 beforeEach(async () => {
   vault = await createInMemoryVault();
@@ -35,6 +42,14 @@ beforeEach(async () => {
     store: () => createVaultGoalStore(vault.db),
     clock,
     newId: () => `g${++n}`,
+  });
+  let c = 0;
+  contributions = createContributionService({
+    store: () => createVaultContributionStore(vault.db),
+    goals: () => createVaultGoalStore(vault.db),
+    clock,
+    newId: () => `a${++c}`,
+    onChange: () => service.notifyChanged(),
   });
 });
 
@@ -71,7 +86,11 @@ async function renderMetas(
   preference: ThemePreference = 'light',
   income: MoneyMinor | null = null,
 ) {
-  const Metas = createMetasScreen({ service, monthlyIncome: async () => income });
+  const Metas = createMetasScreen({
+    service,
+    monthlyIncome: async () => income,
+    contributions,
+  });
   await render(
     <ThemeProvider initialPreference={preference} store={noStore}>
       <NavigationContainer>
@@ -192,5 +211,85 @@ describe('Metas', () => {
     await renderMetas('dark');
     expect(await screen.findByTestId('savings.metas.stats')).toBeTruthy();
     expect(screen.getByText('Metas de ahorro')).toBeTruthy();
+  });
+});
+
+describe('Abonar a esta meta (SCRUM-52)', () => {
+  it('shows the three amounts of the design and says Fynk does not move money', async () => {
+    await addDesignGoals();
+    await renderMetas();
+    await fireEvent.press(await screen.findByTestId('savings.goal.g1.head'));
+    expect(screen.getByTestId('savings.abonar.g1')).toHaveTextContent(
+      /Abonar a esta meta.*\$50\.000.*\$100\.000.*\$200\.000.*Abonar.*Fynk no mueve tu dinero/,
+    );
+  });
+
+  it("a chip records today's aporte, the card updates and a toast confirms it", async () => {
+    await addDesignGoals();
+    await renderMetas();
+    await fireEvent.press(await screen.findByTestId('savings.goal.g1.head'));
+    await fireEvent.press(screen.getByTestId('savings.abonar.g1.chip.10000000'));
+    await fireEvent.press(screen.getByTestId('savings.abonar.g1.submit'));
+    expect(await screen.findByTestId('savings.toast')).toHaveTextContent(
+      /Abonaste \$100\.000 a Viaje a Cartagena.*Deshacer/,
+    );
+    expect(await contributions.list('g1')).toMatchObject([
+      { amountMinor: pesos(100_000), contributedOn: '2026-10-28', source: 'manual' },
+      { amountMinor: pesos(3_200_000) },
+    ]);
+    await waitFor(() =>
+      expect(screen.getByTestId('savings.goal.g1')).toHaveTextContent(/\$3\.300\.000.*66%/),
+    );
+  });
+
+  it('a typed amount works too, and a goal it completes moves to "Metas cumplidas"', async () => {
+    await addDesignGoals();
+    await renderMetas();
+    await fireEvent.press(await screen.findByTestId('savings.goal.g2.head'));
+    await fireEvent.changeText(screen.getByTestId('savings.abonar.g2.other'), '280.000');
+    await fireEvent.press(screen.getByTestId('savings.abonar.g2.submit'));
+    await waitFor(() =>
+      expect(screen.getByTestId('savings.done.g2')).toHaveTextContent(
+        /Regalos de Navidad.*Cumplida en oct 2026.*\$800\.000/,
+      ),
+    );
+  });
+
+  it('"Deshacer" removes the aporte', async () => {
+    await addDesignGoals();
+    await renderMetas();
+    await fireEvent.press(await screen.findByTestId('savings.goal.g1.head'));
+    await fireEvent.press(screen.getByTestId('savings.abonar.g1.chip.5000000'));
+    await fireEvent.press(screen.getByTestId('savings.abonar.g1.submit'));
+    await fireEvent.press(await screen.findByTestId('savings.toast.undo'));
+    expect(await screen.findByText('Abono deshecho')).toBeTruthy();
+    expect((await contributions.list('g1')).map((x) => x.amountMinor)).toEqual([pesos(3_200_000)]);
+  });
+
+  it('asks for an amount before recording anything', async () => {
+    await addDesignGoals();
+    await renderMetas();
+    await fireEvent.press(await screen.findByTestId('savings.goal.g1.head'));
+    await fireEvent.press(screen.getByTestId('savings.abonar.g1.submit'));
+    expect(screen.getByText('Elige o escribe un monto mayor a $0.')).toBeTruthy();
+    expect(await contributions.list('g1')).toHaveLength(1);
+  });
+
+  it('the toast goes away after 5 seconds', async () => {
+    jest.useFakeTimers();
+    try {
+      await addDesignGoals();
+      await renderMetas();
+      await fireEvent.press(await screen.findByTestId('savings.goal.g1.head'));
+      await fireEvent.press(screen.getByTestId('savings.abonar.g1.chip.5000000'));
+      await fireEvent.press(screen.getByTestId('savings.abonar.g1.submit'));
+      await screen.findByTestId('savings.toast');
+      await act(async () => {
+        jest.advanceTimersByTime(5000);
+      });
+      expect(screen.queryByTestId('savings.toast')).toBeNull();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
