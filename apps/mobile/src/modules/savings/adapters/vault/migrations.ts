@@ -35,4 +35,17 @@ export const savingsMigrations: VaultMigration[] = [
         WHERE transaction_id IS NOT NULL AND deleted_at IS NULL;
     `,
   },
+  {
+    // SCRUM-53: the milestones (50, 75, 100) each goal already reached, so each one is noticed
+    // once, and a big contribution that jumps two of them gives a single notice.
+    version: 2,
+    up: `
+      CREATE TABLE savings_milestones (
+        goal_id TEXT NOT NULL REFERENCES savings_goals (id),
+        milestone INTEGER NOT NULL CHECK (milestone IN (50, 75, 100)),
+        reached_at TEXT NOT NULL,
+        PRIMARY KEY (goal_id, milestone)
+      );
+    `,
+  },
 ];
