@@ -110,5 +110,13 @@ export function createVaultLinkStore(db: VaultDb): LinkStore {
         return rows.map((r) => r.id);
       });
     },
+
+    async markAttempt(linkId, at) {
+      await db.execute('UPDATE bank_links SET last_attempt_at = ? WHERE id = ?', [at, linkId]);
+    },
+
+    async markSynced(linkId, at) {
+      await db.execute('UPDATE bank_links SET last_synced_at = ? WHERE id = ?', [at, linkId]);
+    },
   };
 }
