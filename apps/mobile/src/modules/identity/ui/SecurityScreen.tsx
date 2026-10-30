@@ -35,6 +35,9 @@ import { identityStrings } from './strings.es-CO';
 
 const t = identityStrings.security;
 
+// M2's approval screen. Navigated by name: identity does not import the vault's screens.
+const APPROVE_DEVICE_ROUTE = 'vault.ApproveDevice';
+
 export interface SecurityDeps {
   profile: ProfilePort;
   devices: LinkedDevicesApiPort;
@@ -181,6 +184,12 @@ export function createSecurityScreen(deps: SecurityDeps) {
                           divided={i > 0}
                           disabled={list.busy}
                           canClose={!thisPending}
+                          // Only an active phone may approve another one (the API says 403 otherwise).
+                          onApprove={
+                            !thisPending && !device.current && device.status === 'pending'
+                              ? () => navigation.navigate(APPROVE_DEVICE_ROUTE)
+                              : undefined
+                          }
                           onClose={() => confirmClose(device.id, device.name)}
                         />
                       ))}
