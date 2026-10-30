@@ -56,6 +56,7 @@ export function createVaultGoalStore(db: VaultDb): GoalStore {
     async remove(id) {
       await db.transaction(async (tx) => {
         await tx.execute('DELETE FROM savings_contributions WHERE goal_id = ?', [id]);
+        await tx.execute('DELETE FROM savings_milestones WHERE goal_id = ?', [id]);
         await tx.execute('DELETE FROM savings_goals WHERE id = ?', [id]);
       });
     },

@@ -18,6 +18,11 @@ export const MONTHS_SHORT = [
 ] as const;
 
 export const savingsStrings = {
+  // Milestone notices (design Notificaciones: "Viaje a Cartagena · Llegaste al 64 % de tu meta.").
+  milestones: {
+    reached: (percent: number) => `Llegaste al ${percent} % de tu meta.`,
+    done: (target: string) => `Cumpliste tu meta de ${target}. ¡Bien hecho!`,
+  },
   categories: {
     travel: 'Viaje',
     emergency: 'Fondo de emergencia',
