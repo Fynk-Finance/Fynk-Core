@@ -56,7 +56,7 @@ describe('AppRoot', () => {
       expect(screen.getByRole('tab', { name: label })).toBeTruthy();
     }
     expect(screen.getByRole('tab', { name: 'Dashboard' })).toBeSelected();
-    expect(screen.getByText('La construye el módulo M6 · Cuentas.')).toBeTruthy();
+    expect(screen.getByText('Balance total')).toBeTruthy();
   });
 
   it('switches tabs from the tab bar', async () => {

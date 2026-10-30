@@ -4,9 +4,10 @@ import { randomUUID } from 'expo-crypto';
 
 import type { Account, Clock, Id, IsoDate, MoneyMinor } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
-import { createPlaceholderScreen, type ModuleRoutes } from '@shared/navigation';
+import type { ModuleRoutes } from '@shared/navigation';
 import type { MarkDirty } from '@shared/ports';
 
+import { NOTIFICATIONS_ROUTE, useUnreadCount } from '@modules/notifications';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
 import { accountsMigrations } from './adapters/vault/migrations';
@@ -16,7 +17,9 @@ import { createAccountsService, type AccountsOverview } from './application/acco
 import { createCashService } from './application/cashService';
 import type { BalancePoint, Cash } from './application/ports';
 import { ACCOUNTS_QUERY_KEY, createUseAccounts } from './application/useAccounts';
+import { monthSummary } from './domain/dashboard';
 import type { ConnectedAccountsSummary } from './domain/netWorth';
+import { createDashboardScreen } from './ui/DashboardScreen';
 
 export type { AccountsOverview, BalancePoint, Cash, ConnectedAccountsSummary };
 export type { CashInputProps } from './ui/CashInput';
@@ -98,8 +101,20 @@ export const getCash = (): Promise<Cash | null> => cash.getCash();
 /** Registers or updates cash. Throws InvalidCashAmountError below zero or with decimals. */
 export const setCash = (amountMinor: MoneyMinor): Promise<void> => cash.setCash(amountMinor);
 
-// Placeholder routes from M0 (the Dashboard comes with feature/dashboard-balance-and-account-detail).
+// TODO(M10) take Ingresos and Gastos from M10's useMonthSummary(). Until then the temporary
+// monthSummary runs on this month's movements, and M7 has none to give yet (TODO(M7)).
+const useMonthSummary = () => monthSummary([], clock.now());
+
 export const routes: ModuleRoutes = {
   module: 'accounts',
-  tab: createPlaceholderScreen({ title: 'Dashboard', owner: 'M6 · Cuentas', withHeader: true }),
+  // The Dashboard tab (tabOwners in src/app/registry.ts).
+  tab: createDashboardScreen({
+    useAccounts,
+    useMonthSummary,
+    useUnreadCount,
+    // TODO(M3) the name typed in onboarding, once M3 exports it.
+    useDisplayName: () => null,
+    accountRoute: 'identity.Account',
+    notificationsRoute: NOTIFICATIONS_ROUTE,
+  }),
 };
