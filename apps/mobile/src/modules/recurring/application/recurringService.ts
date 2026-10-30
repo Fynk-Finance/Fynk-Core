@@ -9,7 +9,7 @@ import {
   type SubscriptionsSummary,
 } from '../domain/amounts';
 import { isValidRecurring, type RecurringInput, type StoredRecurringItem } from '../domain/item';
-import type { YearMonth } from '../domain/types';
+import type { Usage, YearMonth } from '../domain/types';
 import type { RecurringStore } from './ports';
 import type { ReminderScheduler } from './reminders';
 
@@ -33,6 +33,17 @@ export interface RecurringService {
   /** "Gastos fijos de este mes" of Billetera: every active item, counted in the current month. */
   fixedExpensesThisMonth(): Promise<MoneyMinor>;
   subscriptionsSummary(): Promise<SubscriptionsSummary>;
+  /** "¿Cuánto la usas?" of a subscription (SCRUM-56), from its detail; null clears it. */
+  setUsage(id: Id, usage: Usage | null): Promise<void>;
+  /** The reminder switch of an item (SCRUM-57). */
+  setReminder(id: Id, enabled: boolean): Promise<void>;
+  /**
+   * "Ya la cancelé" (SCRUM-58): the person cancelled it outside Fynk. It stops counting in
+   * Billetera and its reminder goes; the item stays in the vault as a record.
+   */
+  cancel(id: Id): Promise<void>;
+  /** "No es una suscripción": it becomes a fixed expense and loses its usage mark. */
+  markNotSubscription(id: Id): Promise<void>;
   /** Schedules the next reminder of every item again: when the vault opens and after a sync. */
   refreshReminders(): Promise<void>;
   /** Called after every change. Returns a function that unsubscribes. */
@@ -70,6 +81,16 @@ export function createRecurringService(deps: RecurringServiceDeps): RecurringSer
   // A reminder that cannot be scheduled never blocks saving: the next refresh tries again.
   const remind = async (task: (r: ReminderScheduler) => Promise<void>) => {
     if (deps.reminders) await task(deps.reminders).catch(() => undefined);
+  };
+  /** Changes one stored item, then tells the listeners and plans its reminder again. */
+  const patch = async (id: Id, change: (item: StoredRecurringItem) => StoredRecurringItem) => {
+    const store = deps.store();
+    const current = await store.get(id);
+    if (!current) throw new RecurringNotFoundError();
+    const item = change(current);
+    await store.save(item);
+    changed();
+    await remind((r) => r.plan(item));
   };
   const active = async () => (await deps.store().list()).filter((i) => i.status === 'active');
 
@@ -128,6 +149,27 @@ export function createRecurringService(deps: RecurringServiceDeps): RecurringSer
       await deps.store().remove(id);
       changed();
       await remind((r) => r.cancel(id));
+    },
+
+    async setUsage(id, usage) {
+      await patch(id, (item) => ({ ...item, usage: item.kind === 'subscription' ? usage : null }));
+    },
+
+    async setReminder(id, enabled) {
+      await patch(id, (item) => ({ ...item, reminderEnabled: enabled }));
+    },
+
+    async cancel(id) {
+      const store = deps.store();
+      const current = await store.get(id);
+      if (!current) throw new RecurringNotFoundError();
+      await store.markCancelled(id, deps.clock.now().toISOString());
+      changed();
+      await remind((r) => r.cancel(id));
+    },
+
+    async markNotSubscription(id) {
+      await patch(id, (item) => ({ ...item, kind: 'fixed', usage: null }));
     },
 
     async fixedExpensesThisMonth() {

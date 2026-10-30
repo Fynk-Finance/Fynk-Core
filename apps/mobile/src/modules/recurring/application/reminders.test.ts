@@ -117,6 +117,27 @@ describe('payment reminders', () => {
     expect(scheduled.has('recurring.reminder.r1')).toBe(false);
   });
 
+  it('"Ya la cancelé" cancels the renewal notice (SCRUM-58)', async () => {
+    const { port, scheduled } = fakePort();
+    const service = serviceWith(port);
+    const id = await service.create(video);
+    await service.cancel(id);
+    expect(scheduled.size).toBe(0);
+    // A refresh does not bring it back.
+    await service.refreshReminders();
+    expect(scheduled.size).toBe(0);
+  });
+
+  it('the reminder switch of the detail schedules and cancels', async () => {
+    const { port, scheduled } = fakePort();
+    const service = serviceWith(port);
+    const id = await service.create(video);
+    await service.setReminder(id, false);
+    expect(scheduled.size).toBe(0);
+    await service.setReminder(id, true);
+    expect(scheduled.has('recurring.reminder.r1')).toBe(true);
+  });
+
   it('deleting the item cancels its reminder', async () => {
     const { port, scheduled } = fakePort();
     const service = serviceWith(port);

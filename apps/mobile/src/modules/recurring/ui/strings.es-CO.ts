@@ -83,6 +83,31 @@ export const recurringStrings = {
       `Se renueva ${leadDays === 0 ? 'hoy' : `el ${date}`} por ${amount}.`,
     months: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
   },
+  // Detalle de suscripción (M9 prompt, new screen, needs design review).
+  detail: {
+    back: 'Volver a Billetera',
+    renews: (date: string) => `Se renueva el ${date}`,
+    usage: '¿Cuánto la usas?',
+    usageHelper: 'Si casi no la usas, suma a tu oportunidad de ahorro.',
+    reminder: 'Recordatorio de renovación',
+    reminderOn: 'Te avisaremos antes de cada cobro',
+    reminderOff: 'Desactivado',
+    howToCancel: 'Cómo cancelarla',
+    // Until the merchant catalog (SCRUM-58 backend) gives the steps and the link.
+    howToCancelGeneric:
+      'Entra a la app o página del servicio y cancela desde tu cuenta. Fynk no cancela nada por ti.',
+    cancelled: 'Ya la cancelé',
+    confirmCancel: {
+      title: (name: string) => `¿Ya cancelaste ${name}?`,
+      message: 'Dejará de contar en tus gastos y no te recordaremos su renovación.',
+      no: 'Todavía no',
+      yes: 'Sí, ya la cancelé',
+    },
+    notSubscription: 'No es una suscripción',
+    edit: 'Editar',
+    failed: 'No pudimos guardar. Intenta de nuevo.',
+    notFound: 'Esta suscripción ya no existe.',
+  },
   // Lun, Mar… in the order of the weekday mask bits (Sunday first).
   weekdayShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
 } as const;

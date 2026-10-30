@@ -26,6 +26,7 @@ import type { RecurringService } from '../application/recurringService';
 import type { StoredRecurringItem } from '../domain/item';
 import { RecurringCard } from './RecurringCard';
 import { RECURRING_FORM_ROUTE } from './RecurringFormScreen';
+import { SUBSCRIPTION_DETAIL_ROUTE } from './SubscriptionDetailScreen';
 import { SavingsBanner } from './SavingsBanner';
 import { recurringStrings } from './strings.es-CO';
 import { SubscriptionRow } from './SubscriptionRow';
@@ -141,7 +142,14 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
                 {state.items
                   .filter((item) => item.kind === 'subscription')
                   .map((item) => (
-                    <SubscriptionRow key={item.id} item={item} today={today} onPress={edit} />
+                    <SubscriptionRow
+                      key={item.id}
+                      item={item}
+                      today={today}
+                      onPress={() =>
+                        navigation.navigate(SUBSCRIPTION_DETAIL_ROUTE, { id: item.id })
+                      }
+                    />
                   ))}
               </View>
             ) : null}
