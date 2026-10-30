@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/keys"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/clock"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/config"
@@ -90,6 +91,67 @@ func TestAMissingSettingDisablesTheLinkAndKeepsTheUnavailableRevoker(t *testing.
 		if p, _, err := bankDemoProviders(deps(c)); err == nil || p != nil {
 			t.Errorf("%s: want the link disabled, got %v %v", name, p, err)
 		}
+	}
+	if err := ports.InstalledRevoker().RevokeConsent(context.Background(), "banco-demo", "x"); !errors.Is(err, ports.ErrProviderUnavailable) {
+		t.Fatalf("revoker: got %v, want provider_unavailable", err)
+	}
+}
+
+// stubKMS stands in for AWS KMS in the wiring tests; it is never called to sign here.
+type stubKMS struct{}
+
+func (stubKMS) SignDigest(context.Context, string, []byte) ([]byte, error)  { return nil, nil }
+func (stubKMS) GenerateMac(context.Context, string, []byte) ([]byte, error) { return nil, nil }
+
+func useKMS(t *testing.T, load func(context.Context) (keys.KMS, error)) *int {
+	t.Helper()
+	calls := 0
+	old := loadKMS
+	loadKMS = func(ctx context.Context) (keys.KMS, error) {
+		calls++
+		return load(ctx)
+	}
+	t.Cleanup(func() { loadKMS = old; ports.InstallRevoker(nil) })
+	return &calls
+}
+
+func TestTheKMSKeysReplaceTheFilesInAWS(t *testing.T) {
+	calls := useKMS(t, func(context.Context) (keys.KMS, error) { return stubKMS{}, nil })
+	c := linkSettings(t)
+	c.BankSignerKeyFile, c.BankFingerprintKeyFile = "", ""
+	c.BankSignerKMSKeyID, c.BankFingerprintKMSKeyID = "alias/signer", "alias/fingerprint"
+	providers, fingerprints, err := bankDemoProviders(deps(c))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := providers.Provider("banco-demo"); !ok {
+		t.Fatal("no Banco Demo")
+	}
+	if _, ok := fingerprints.(*keys.KMSFingerprinter); !ok {
+		t.Fatalf("fingerprints = %T, want the KMS fingerprinter", fingerprints)
+	}
+	if *calls != 1 {
+		t.Fatalf("KMS client built %d times, want once", *calls)
+	}
+}
+
+func TestLocalKeyFilesNeverLoadAWS(t *testing.T) {
+	calls := useKMS(t, func(context.Context) (keys.KMS, error) { return stubKMS{}, nil })
+	_, fingerprints, err := bankDemoProviders(deps(linkSettings(t)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := fingerprints.(*keys.LocalHMAC); !ok || *calls != 0 {
+		t.Fatalf("fingerprints = %T, KMS calls = %d: want the local key and no AWS", fingerprints, *calls)
+	}
+}
+
+func TestAKMSClientThatCannotLoadKeepsTheLinkOff(t *testing.T) {
+	useKMS(t, func(context.Context) (keys.KMS, error) { return nil, errors.New("no region") })
+	c := linkSettings(t)
+	c.BankSignerKMSKeyID = "alias/signer"
+	if p, _, err := bankDemoProviders(deps(c)); err == nil || p != nil {
+		t.Fatalf("want the link disabled, got %v %v", p, err)
 	}
 	if err := ports.InstalledRevoker().RevokeConsent(context.Background(), "banco-demo", "x"); !errors.Is(err, ports.ErrProviderUnavailable) {
 		t.Fatalf("revoker: got %v, want provider_unavailable", err)
