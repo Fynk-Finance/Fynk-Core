@@ -139,3 +139,76 @@ export interface BackupRecordsApiPort {
     cursor: string | null,
   ): Promise<{ records: SealedBackupRecord[]; nextCursor: string | null }>;
 }
+
+/**
+ * Why a device approval call failed. `notFound`: the request does not exist or is not yours.
+ * `notPending`: it was already approved or rejected. `expired`: more than 10 minutes old.
+ * `alreadyActive`: this phone needs no approval. `notActive`: this phone may not approve.
+ */
+export type ApprovalErrorKind =
+  'notFound' | 'notPending' | 'expired' | 'alreadyActive' | 'notActive' | 'offline' | 'unknown';
+
+/** Carries only a kind: no key, grant or device name may travel in an error. */
+export class ApprovalError extends Error {
+  constructor(readonly kind: ApprovalErrorKind) {
+    super(`device approval failed: ${kind}`);
+    this.name = 'ApprovalError';
+  }
+}
+
+export function isApprovalError(value: unknown, kind?: ApprovalErrorKind): value is ApprovalError {
+  return value instanceof ApprovalError && (kind === undefined || value.kind === kind);
+}
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired';
+
+/** An approval request as the create, approve and reject calls answer it. */
+export interface ApprovalRequest {
+  id: string;
+  status: ApprovalStatus;
+  createdAt: string;
+  expiresAt: string;
+}
+
+/** A request waiting for this (old) phone. */
+export interface PendingApproval {
+  id: string;
+  deviceName: string;
+  platform: 'ios' | 'android';
+  /** X25519 public key of the new phone, 32 bytes. */
+  newDevicePublicKey: Uint8Array;
+  createdAt: string;
+  expiresAt: string;
+}
+
+/** What the old phone hands the new one: the sealed DEK and the key to open it. */
+export interface ApprovalGrant {
+  /** 32 bytes. */
+  ephemeralPublicKey: Uint8Array;
+  /** 48 bytes: the DEK and the GCM tag. */
+  wrappedDek: Uint8Array;
+  /** 12 bytes. */
+  nonce: Uint8Array;
+}
+
+/** `grant` shows once, when the new phone first reads an approved request. */
+export interface ApprovalState {
+  id: string;
+  status: ApprovalStatus;
+  expiresAt: string;
+  grant?: ApprovalGrant;
+}
+
+/** The /device-approvals calls, with the binary fields already decoded. */
+export interface DeviceApprovalsApiPort {
+  /** New (pending) phone: asks the active phones to approve it. */
+  create(idempotencyKey: string): Promise<ApprovalRequest>;
+  /** New phone: the state of its request. The grant comes back once. */
+  get(id: string): Promise<ApprovalState>;
+  /** Old (active) phone: the open requests, newest first. */
+  listPending(): Promise<PendingApproval[]>;
+  /** Old phone: stores the grant and activates the new phone. */
+  approve(id: string, grant: ApprovalGrant): Promise<ApprovalRequest>;
+  /** Old phone: refuses. The new phone stays pending. */
+  reject(id: string): Promise<ApprovalRequest>;
+}
