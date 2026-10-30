@@ -26,6 +26,15 @@ export const savingsStrings = {
     vehicle: 'Vehículo',
     other: 'Otro',
   } satisfies Record<GoalCategory, string>,
+  // Dashboard carousel (design Dashboard, "Planes de ahorro").
+  carousel: {
+    title: 'Planes de ahorro',
+    seeAll: 'Ver todos',
+    cardLabel: (name: string, percent: number) => `${name}, ${percent} % ahorrado. Ver en Metas`,
+    // No goals yet: new copy, needs design review.
+    emptyTitle: 'Crea tu primera meta',
+    emptyMessage: 'Te decimos cuánto apartar al mes.',
+  },
   metas: {
     title: 'Metas de ahorro',
     subtitle: 'Cada abono te acerca a lo que quieres.',
