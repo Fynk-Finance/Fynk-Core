@@ -85,6 +85,24 @@ export const vaultStrings = {
         failed: 'No pudimos restaurar tus datos. Si no funciona, usa tu código de recuperación.',
       },
     },
+    resetOption: 'No tengo ninguno de los dos',
+    reset: {
+      lost: 'Sin tu otro teléfono ni tu código, no podemos recuperar tus metas, gastos manuales, topes ni marcas de uso. Nadie puede: están cifrados con una llave que solo tú tenías.',
+      reload:
+        'Tus cuentas y movimientos se vuelven a cargar desde tu banco (los últimos 12 meses).',
+      confirm:
+        'Para empezar de cero, primero confirma que eres tú: restablece tu contraseña con el código que te enviamos por correo y vuelve a iniciar sesión.',
+      start: 'Empezar de cero',
+      back: 'Volver',
+      resetPassword: 'Restablecer contraseña',
+      messages: {
+        notAllowed:
+          'Primero restablece tu contraseña. Cerraremos tu sesión para que lo hagas desde «¿Olvidaste tu contraseña?».',
+        notActive: 'Este teléfono fue retirado de tu cuenta.',
+        offline: 'No pudimos conectarnos. Intenta de nuevo.',
+        failed: 'No pudimos empezar de cero. Intenta de nuevo.',
+      },
+    },
     inputLabel: 'Código de recuperación',
     inputPlaceholder: 'XXXXX XXXXX XXXXX XXXXX XXXXXX',
     submit: 'Restaurar',
