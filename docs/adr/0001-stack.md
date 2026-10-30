@@ -81,6 +81,7 @@
 | react-native-argon2 | 4.0.0 | Added for M2. Argon2id turns the recovery code into the key that wraps the vault key for the cloud, in native code (the pure JavaScript Argon2 in @noble/hashes is too slow on Hermes). A legacy bridge module with no Expo config plugin: React Native 0.88 loads it through the New Architecture interop layer. M2 wraps it in a port and tests it on a real device before Gate B |
 | @noble/ciphers | 2.4.0 | Added for M2. AES-256-GCM for the encrypted backup records and the device approval payload. Audited pure JavaScript, same author as @noble/curves. ES modules only, covered by the `@noble` entry of `jest.config.js` |
 | @noble/hashes | 2.4.0 | Added for M2. HKDF-SHA256 and SHA-256 for key derivation and fingerprints, plus an Argon2id reference used in Jest, where the native module is not available |
+| expo-clipboard | 58.0.4 | Added for M2. The "Copiar" button of the recovery code screen writes the code to the clipboard once, on tap. The app never reads the clipboard. The version in Expo SDK 58's `bundledNativeModules.json` |
 
 The aliases `@shared/*` and `@modules/*` are declared once in `tsconfig.json`. Metro reads them from there (Expo's built-in tsconfig paths support), and Jest maps them in `jest.config.js`. No Babel alias plugin is needed.
 
