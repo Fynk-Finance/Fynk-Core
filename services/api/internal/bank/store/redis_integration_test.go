@@ -25,3 +25,17 @@ func TestRedisAuthorizations(t *testing.T) {
 	id := fmt.Sprintf("it-%d", time.Now().UnixNano())
 	testAuthorizations(t, NewRedisAuthorizations(rdb), id, func() { time.Sleep(1100 * time.Millisecond) })
 }
+
+func TestRedisLimits(t *testing.T) {
+	url := os.Getenv("REDIS_URL")
+	if url == "" {
+		t.Skip("REDIS_URL is not set")
+	}
+	rdb, err := redis.Open(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = rdb.Close() })
+	user := fmt.Sprintf("it-%d", time.Now().UnixNano())
+	testLimits(t, NewRedisLimits(rdb), user, time.Sleep)
+}
