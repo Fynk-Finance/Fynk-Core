@@ -1,6 +1,6 @@
 // Ports of the bank module. Adapters call the Fynk API or the vault; tests use fakes.
 import type { components } from '@shared/api';
-import type { Id, IsoDateTime } from '@shared/domain/types';
+import type { Account, Id, IsoDateTime, Transaction } from '@shared/domain/types';
 
 import type { BankLink, BankTokens, NewBankLink } from '../domain/link';
 import type { BankProvider } from '../domain/provider';
@@ -45,6 +45,25 @@ export interface BankApiPort {
   refresh(linkId: Id, refreshToken: string): Promise<TokenSet>;
 }
 
+/** M6's write API for M5 (M6 prompt: upsertFromSync, markLinkRevoked). */
+export interface AccountsSink {
+  upsertFromSync(accounts: Account[]): Promise<void>;
+  markLinkRevoked(linkId: Id): Promise<void>;
+}
+
+/**
+ * The writer M5 needs from M7 for the movements of one account (M7 has none yet). Upserts by
+ * (accountId, providerTxId), deletes the pending movements since `since` that the bank no longer
+ * returns, and gives the ids that were not in the vault before.
+ */
+export interface TransactionsSink {
+  upsertFromSync(input: {
+    accountId: Id;
+    since: IsoDateTime;
+    transactions: Transaction[];
+  }): Promise<{ newIds: Id[] }>;
+}
+
 /** Links and their tokens in the vault (tables bank_links and bank_tokens). */
 export interface LinkStore {
   /** A new active link with its first tokens. One link per consent: a second one is refused. */
@@ -59,4 +78,8 @@ export interface LinkStore {
   revokeLink(linkId: Id, at: IsoDateTime): Promise<void>;
   /** Same for every link of a consent. Returns their ids (none when it was never linked). */
   revokeByConsent(consentId: Id, at: IsoDateTime): Promise<Id[]>;
+  /** A sync of the link started: the 60 second cooldown counts from here. */
+  markAttempt(linkId: Id, at: IsoDateTime): Promise<void>;
+  /** A sync of the link finished: the "last update" date and the start of the next overlap. */
+  markSynced(linkId: Id, at: IsoDateTime): Promise<void>;
 }

@@ -118,3 +118,14 @@ it('never gives the tokens of a revoked link, even if a refresh lands after the 
   await store.updateTokens('link-1', tokens);
   expect(await store.getTokens('link-1')).toBeNull();
 });
+
+it('keeps when the last sync started and when it finished', async () => {
+  await store.saveLink(link, tokens);
+  await store.markAttempt('link-1', '2026-10-30T10:00:00Z');
+  expect((await store.getLinks())[0]).toMatchObject({
+    lastAttemptAt: '2026-10-30T10:00:00Z',
+    lastSyncedAt: null,
+  });
+  await store.markSynced('link-1', '2026-10-30T10:00:00Z');
+  expect((await store.getLinks())[0]).toMatchObject({ lastSyncedAt: '2026-10-30T10:00:00Z' });
+});
