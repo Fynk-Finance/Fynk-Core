@@ -4,6 +4,7 @@
 // activates this phone, and nothing here logs: results carry only a kind.
 import { VaultCryptoError, deriveDeviceProof } from '../domain/crypto';
 import { parseRecoveryCode } from '../domain/recoveryCode';
+import { createCompleteRestore } from './completeRestore';
 import { unwrapDek } from '../domain/recoveryKey';
 import {
   isRecoveryError,
@@ -67,18 +68,9 @@ function apiFailure(error: unknown): RestoreFailure {
 }
 
 export function createRestoreWithCode(deps: RestoreWithCodeDeps): RestoreWithCode {
-  const { recoveryKey, vault, restoreState } = deps;
-
-  // Back to a phone with no key. The server already activated this phone, so the next try
-  // activates again (204) and starts clean.
-  async function undo(): Promise<void> {
-    try {
-      await vault.close();
-      await deps.dekStore.remove();
-    } catch {
-      // The next try wipes the file again.
-    }
-  }
+  const { recoveryKey, restoreState } = deps;
+  // If it fails, the server already activated this phone, so the next try activates again (204).
+  const completeRestore = createCompleteRestore(deps);
 
   return {
     async restore(typed) {
@@ -111,24 +103,8 @@ export function createRestoreWithCode(deps: RestoreWithCodeDeps): RestoreWithCod
           return apiFailure(error);
         }
 
-        // Active now. A left-over file cannot be read with this key, so it goes first.
-        try {
-          await vault.wipe();
-          await deps.dekStore.write(dek);
-          await vault.open(dek);
-          await restoreState.mark();
-        } catch {
-          await undo();
-          return 'failed';
-        }
-        try {
-          await deps.restoreAll();
-          await restoreState.clear();
-          return 'restored';
-        } catch {
-          // The vault stays open with the mark on; the next open retries.
-          return 'partial';
-        }
+        // Active now: the shared steps write the key, open the vault and download.
+        return await completeRestore(dek);
       } finally {
         rk?.fill(0);
         proof?.fill(0);
