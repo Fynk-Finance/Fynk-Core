@@ -53,3 +53,36 @@ it('registers the new recovery code screen and exports the Seguridad rows', () =
   expect(typeof vault.UnlockSetting).toBe('function');
   expect(typeof vault.RecoveryCodeRow).toBe('function');
 });
+
+describe('backup port', () => {
+  const collection = {
+    module: 'savings' as const,
+    collection: 'savings.goals',
+    exportAll: async () => [],
+    importAll: async () => undefined,
+  };
+
+  it('exports the registry, markDirty and exportAll, but not restoreAll', () => {
+    const { vault } = loadBoth('vault');
+    expect(typeof vault.registerBackupCollection).toBe('function');
+    expect(typeof vault.markDirty).toBe('function');
+    expect(typeof vault.exportAll).toBe('function');
+    expect(Object.keys(vault)).not.toContain('restoreAll');
+  });
+
+  it('registers a collection, accepts marks while locked and exports it', async () => {
+    const { vault } = loadBoth('vault');
+    expect(() => vault.markDirty('savings.goals', 'g1')).toThrow(/not registered/);
+    vault.registerBackupCollection(collection);
+    expect(() => vault.registerBackupCollection(collection)).toThrow(/already registered/);
+    expect(() => vault.markDirty('savings.goals', 'g1')).not.toThrow();
+    expect(await vault.exportAll()).toEqual({ 'savings.goals': [] });
+  });
+
+  it('keeps the registered collections after a wipe', async () => {
+    const { vault } = loadBoth('vault');
+    vault.registerBackupCollection(collection);
+    await vault.wipe().catch(() => undefined);
+    expect(await vault.exportAll()).toEqual({ 'savings.goals': [] });
+  });
+});

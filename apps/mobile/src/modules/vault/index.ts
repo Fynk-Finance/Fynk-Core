@@ -1,10 +1,12 @@
 // Public API of the vault module. Other modules import only from this file.
 import type { ModuleRoutes } from '@shared/navigation';
+import type { MarkDirty, RegisterBackupCollection } from '@shared/ports/backup';
 import type { GetVaultDb, RegisterVaultMigrations } from '@shared/ports/vault';
 
 import { useSession } from '@modules/identity';
 
 import { watchAppState } from './adapters/appStateLock';
+import { backupRegistry, backupSync } from './adapters/defaultBackup';
 import { lockController } from './adapters/defaultLock';
 import { copyText } from './adapters/clipboard';
 import { vault } from './adapters/defaultVault';
@@ -42,14 +44,27 @@ export const registerVaultMigrations: RegisterVaultMigrations = (module, migrati
 
 export const getVaultDb: GetVaultDb = () => vault.getVaultDb();
 
+/** M2's backup port: modules register their collections once, at load. */
+export const registerBackupCollection: RegisterBackupCollection = (c) =>
+  backupRegistry.registerBackupCollection(c);
+
+/** Call after every local write of a registered collection. Uploads 5 s later, app open only. */
+export const markDirty: MarkDirty = (collection, id) => backupRegistry.markDirty(collection, id);
+
+/** Every registered collection's records, for M13's data export. Bank data is not included. */
+export const exportAll = () => backupSync.exportAll();
+
 /**
  * Erases the vault: closes it, deletes the file and both copies of the key.
  * M1 calls it when this device was removed from the account. Safe when nothing was ever created.
  */
 export const wipe = async (): Promise<void> => {
   try {
+    // First, so no upload starts while the vault is being erased.
+    backupSync.reset();
     await vault.wipe();
   } finally {
+    backupSync.reset();
     lockController.reset();
   }
 };
