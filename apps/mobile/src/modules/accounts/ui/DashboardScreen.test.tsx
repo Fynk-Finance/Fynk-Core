@@ -12,6 +12,7 @@ import { ThemeProvider, type ThemePreference } from '@shared/ui';
 import type { AccountsOverview } from '../application/accountsService';
 import { connectedAccountsSummary, isActive, sortAccounts } from '../domain/netWorth';
 import { account, card, cash, cdt, savings, wallet } from '../testing/fixtures';
+import { ACCOUNT_DETAIL_ROUTE } from './AccountDetailScreen';
 import { dragIntent } from './AccountsPanel';
 import { createDashboardScreen } from './DashboardScreen';
 
@@ -27,8 +28,8 @@ const overviewOf = (accounts = [savings, wallet, cash, card, cdt]): AccountsOver
   };
 };
 
-function Target({ route }: { route: { name: string } }) {
-  return <Text>{`arrived:${route.name}`}</Text>;
+function Target({ route }: { route: { name: string; params?: { accountId?: string } } }) {
+  return <Text>{`arrived:${route.name}:${route.params?.accountId ?? ''}`}</Text>;
 }
 
 async function renderDashboard(
@@ -61,6 +62,7 @@ async function renderDashboard(
             <Stack.Screen name="Dashboard" component={Dashboard} />
             <Stack.Screen name="identity.Account" component={Target} />
             <Stack.Screen name="notifications.Inbox" component={Target} />
+            <Stack.Screen name={ACCOUNT_DETAIL_ROUTE} component={Target} />
           </Stack.Navigator>
         </NavigationContainer>
       </ThemeProvider>
@@ -120,7 +122,7 @@ describe('Dashboard balance card', () => {
   it('opens Mi cuenta from the avatar', async () => {
     await renderDashboard();
     await fireEvent.press(screen.getByLabelText(/Mi cuenta/));
-    expect(await screen.findByText('arrived:identity.Account')).toBeTruthy();
+    expect(await screen.findByText('arrived:identity.Account:')).toBeTruthy();
   });
 
   it('offers to retry when the accounts cannot load', async () => {
@@ -165,6 +167,13 @@ describe('Detalle de cuentas', () => {
     await openDetails();
     const row = screen.getByTestId('accounts.row.acc-cash');
     expect(row).toHaveTextContent(/^Efectivo\s*Registrado manualmente\s*\$600\.000$/);
+  });
+
+  it('opens Detalle de cuenta from a row', async () => {
+    await renderDashboard();
+    await openDetails();
+    await fireEvent.press(screen.getByTestId('accounts.row.acc-wallet'));
+    expect(await screen.findByText('arrived:accounts.AccountDetail:acc-wallet')).toBeTruthy();
   });
 
   it('leaves out CDTs (HU-014, no investment data)', async () => {

@@ -35,4 +35,20 @@ export const accountsStrings = {
     noAccounts: 'Aún no tienes cuentas conectadas.',
     loadError: 'No pudimos cargar tus cuentas.',
   },
+  detail: {
+    // CuentaDetalle
+    title: 'Mis cuentas',
+    close: 'Cerrar detalle de cuenta',
+    show: (entity: string) => `Ver ${entity}`,
+    available: 'Saldo disponible',
+    creditAvailable: 'Cupo disponible',
+    creditLimit: 'Cupo total',
+    paymentDue: (day: string) => `Pago el ${day}`,
+    months: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+    updatedNow: 'Actualizado hace un momento',
+    updatedMinutes: (n: number) => `Actualizado hace ${n} min`,
+    updatedHours: (n: number) => `Actualizado hace ${n} h`,
+    updatedOn: (day: string) => `Actualizado el ${day}`,
+    gone: 'Esta cuenta ya no está conectada.',
+  },
 } as const;

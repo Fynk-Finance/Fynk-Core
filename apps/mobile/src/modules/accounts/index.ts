@@ -19,11 +19,13 @@ import type { BalancePoint, Cash } from './application/ports';
 import { ACCOUNTS_QUERY_KEY, createUseAccounts } from './application/useAccounts';
 import { monthSummary } from './domain/dashboard';
 import type { ConnectedAccountsSummary } from './domain/netWorth';
+import { ACCOUNT_DETAIL_ROUTE, createAccountDetailScreen } from './ui/AccountDetailScreen';
 import { createDashboardScreen } from './ui/DashboardScreen';
 
 export type { AccountsOverview, BalancePoint, Cash, ConnectedAccountsSummary };
 export type { CashInputProps } from './ui/CashInput';
-export { ACCOUNTS_QUERY_KEY };
+export { ACCOUNTS_QUERY_KEY, ACCOUNT_DETAIL_ROUTE };
+export type { AccountDetailParams } from './ui/AccountDetailScreen';
 export { maskedNumber } from './domain/masking';
 export { InvalidCashAmountError } from './domain/cash';
 export { InvalidSyncedAccountError } from './domain/syncedAccounts';
@@ -117,4 +119,14 @@ export const routes: ModuleRoutes = {
     accountRoute: 'identity.Account',
     notificationsRoute: NOTIFICATIONS_ROUTE,
   }),
+  screens: [
+    {
+      // Detalle de cuenta, from a row of Detalle de cuentas: { accountId }.
+      name: ACCOUNT_DETAIL_ROUTE,
+      // TODO(M7) renderTransactions: M7's TransactionList filtered by the account.
+      component: createAccountDetailScreen({ useAccounts, clock }),
+      path: 'cuentas/:accountId',
+      transition: 'modal',
+    },
+  ],
 };
