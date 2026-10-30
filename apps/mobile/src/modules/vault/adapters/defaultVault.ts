@@ -4,6 +4,7 @@ import { appEvents } from '@shared/events/appEvents';
 import { createVault } from '../application/vault';
 import { createDekStore } from './keychain/dekStore';
 import { createOpSqliteDriver } from './sqlite/opSqliteDriver';
+import { vaultMigrations } from './vault/migrations';
 
 export const vault = createVault({
   driver: createOpSqliteDriver(),
@@ -11,3 +12,6 @@ export const vault = createVault({
   events: appEvents,
   clock: { now: () => new Date() },
 });
+
+// The vault's own tables are registered once, where the vault is built.
+vault.registerVaultMigrations('vault', vaultMigrations);

@@ -1,4 +1,5 @@
 // Ports of the vault engine. The adapters are in adapters/.
+import type { SealedBackupRecord } from '../domain/backupEnvelope';
 import type { RECOVERY_KDF } from '../domain/recoveryKey';
 
 export type Row = Record<string, unknown>;
@@ -114,3 +115,27 @@ export class RecoveryError extends Error {
 
 export const isRecoveryError = (e: unknown, kind?: RecoveryErrorKind): e is RecoveryError =>
   e instanceof RecoveryError && (kind === undefined || e.kind === kind);
+/** Why a backup call failed. `noKey`: the backup key or the account id is not available. */
+export type BackupErrorKind = 'stale' | 'notActive' | 'quota' | 'offline' | 'noKey' | 'unknown';
+
+/** Carries only a kind: nothing about the records may travel in an error. */
+export class BackupError extends Error {
+  constructor(readonly kind: BackupErrorKind) {
+    super(`backup failed: ${kind}`);
+    this.name = 'BackupError';
+  }
+}
+
+export function isBackupError(value: unknown, kind?: BackupErrorKind): value is BackupError {
+  return value instanceof BackupError && (kind === undefined || value.kind === kind);
+}
+
+/** PUT and GET /backup/records, with the binary fields already decoded. */
+export interface BackupRecordsApiPort {
+  /** At most 200 records. Atomic: all stored or none (`stale` when one is behind the server). */
+  put(records: SealedBackupRecord[]): Promise<void>;
+  /** One page. Pass the previous `nextCursor`, or null for the first page. */
+  list(
+    cursor: string | null,
+  ): Promise<{ records: SealedBackupRecord[]; nextCursor: string | null }>;
+}

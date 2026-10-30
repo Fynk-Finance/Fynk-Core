@@ -196,7 +196,7 @@ export function createVault({ driver, dekStore, events, clock }: VaultDeps): Vau
         } finally {
           // Even if the file stays, without its key it can never be read again.
           await dekStore.removeAll();
-          // The backup PR also clears the backup state here.
+          // index.ts wipe() also clears the backup state (timers, marks in memory, the key).
           events.emit({ type: 'vault.locked' });
         }
       }),
