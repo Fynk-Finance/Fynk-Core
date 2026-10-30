@@ -4,7 +4,18 @@
 import type { Clock } from '@shared/domain/types';
 
 import { isFreshLogin, shouldLock } from '../domain/lockPolicy';
-import { VaultNotEncryptedError, type BiometricPrompt, type DekStore } from './ports';
+import {
+  VaultNotEncryptedError,
+  type BiometricPrompt,
+  type DekStore,
+  type RecoveryKeyApi,
+} from './ports';
+import {
+  confirmRecoveryCode,
+  type ConfirmResult,
+  type PreparedRecoveryCode,
+  type RecoveryCodeService,
+} from './recoveryCode';
 import type { Vault } from './vault';
 
 export type LockError = 'notEncrypted' | 'keychain' | 'offline' | 'unknown';
@@ -13,14 +24,20 @@ export type LockError = 'notEncrypted' | 'keychain' | 'offline' | 'unknown';
 export type LockNotice = 'biometricsOff' | 'biometricFailed';
 
 export interface LockState {
-  status: 'locked' | 'unlocking' | 'unlocked' | 'pendingDevice' | 'error';
+  status: 'locked' | 'unlocking' | 'unlocked' | 'pendingDevice' | 'recoveryCode' | 'error';
   error?: LockError;
+  /** Recovery code only: the groups to show once. The code lives in memory while it is shown. */
+  recovery?: { groups: string[] };
   /** Locked only: copy B exists and the phone has biometrics, so the button may show. */
   biometric?: boolean;
   notice?: LockNotice;
 }
 
 export type EnableBiometricsResult = 'enabled' | 'cancelled' | 'failed';
+
+/** A new recovery code for "Generar un código nuevo". Nothing is uploaded until it is confirmed. */
+export type NewRecoveryCode =
+  { status: 'ready'; prepared: PreparedRecoveryCode } | { status: 'cancelled' | 'failed' };
 
 /** What the controller needs from identity (M1). The wiring passes lazy calls. */
 export interface LockIdentity {
@@ -41,6 +58,9 @@ export interface LockControllerDeps {
   nowMs: () => number;
   /** Texts of the system biometric prompt. */
   biometricPrompt: BiometricPrompt;
+  /** Asks the server whether this account already has a recovery key. */
+  recoveryKey: Pick<RecoveryKeyApi, 'get'>;
+  recoveryCode: RecoveryCodeService;
 }
 
 export interface LockController {
@@ -61,6 +81,16 @@ export interface LockController {
   enableBiometrics(): Promise<EnableBiometricsResult>;
   /** Turns biometrics off by deleting copy B. */
   disableBiometrics(): Promise<void>;
+  /**
+   * Step 2 of the recovery code screen: the typed last group must match, then the wrapped DEK is
+   * uploaded and the vault is unlocked. `mismatch` and `offline` can be retried on the same code.
+   */
+  confirmRecoveryCode(lastGroup: string): Promise<ConfirmResult>;
+  /**
+   * A new code that replaces the current one once confirmed. Needs a login of the last 5
+   * minutes, else asks for the password first. The vault must be unlocked.
+   */
+  prepareNewRecoveryCode(): Promise<NewRecoveryCode>;
   /** Locks on sign out. Returns the unsubscribe. */
   start(): () => void;
   /** AppState wiring: the app left the foreground. */
@@ -81,11 +111,14 @@ export function createLockController(deps: LockControllerDeps): LockController {
   // Bumped by lock and reset, so an open that finishes afterwards is closed again.
   let generation = 0;
   let inFlight: Promise<void> | null = null;
+  // The code on screen. Only in memory, only while shown; every way out of the state drops it.
+  let pendingCode: PreparedRecoveryCode | null = null;
   // The biometric prompt opens by itself once per lock, never in a loop.
   let autoPrompted = false;
   const listeners = new Set<() => void>();
 
   const set = (next: LockState) => {
+    if (next.status !== 'recoveryCode') pendingCode = null;
     state = next;
     listeners.forEach((l) => l());
   };
@@ -103,7 +136,8 @@ export function createLockController(deps: LockControllerDeps): LockController {
     return { status: 'locked', ...(biometric && { biometric }), ...(notice && { notice }) };
   }
 
-  async function openWith(dek: Uint8Array): Promise<void> {
+  /** Opens the vault. On success the state stays `unlocking`; the caller decides what follows. */
+  async function openVault(dek: Uint8Array): Promise<boolean> {
     const mine = generation;
     set({ status: 'unlocking' });
     try {
@@ -114,16 +148,45 @@ export function createLockController(deps: LockControllerDeps): LockController {
         status: 'error',
         error: error instanceof VaultNotEncryptedError ? 'notEncrypted' : 'unknown',
       });
-      return;
+      return false;
     }
     if (mine !== generation) {
       await vault.close();
-      return;
+      return false;
     }
+    return true;
+  }
+
+  function showRecoveryCode(prepared: PreparedRecoveryCode) {
+    set({ status: 'recoveryCode', recovery: { groups: prepared.groups } });
+    pendingCode = prepared;
+  }
+
+  // The app died before "Ya lo guardé", or the backup was reset: the server has no recovery key
+  // for this account. It needs the network, so an offline phone stays unlocked and the next open
+  // asks again. It runs only after an open, never on a plain return to the foreground.
+  async function offerMissingRecoveryCode(dek: Uint8Array, mine: number): Promise<void> {
+    try {
+      const device = await identity.currentDevice();
+      if (device?.status !== 'active') return;
+      if (await deps.recoveryKey.get()) return;
+      const prepared = await deps.recoveryCode.prepare(dek);
+      if (mine === generation && state.status === 'unlocked') showRecoveryCode(prepared);
+    } catch {
+      // Offline or the API failed. Nothing is lost: the check repeats on the next unlock.
+    }
+  }
+
+  async function openWith(dek: Uint8Array): Promise<void> {
+    const mine = generation;
+    if (!(await openVault(dek))) return;
+    // The person is in at once; the server check never delays or blocks an offline open.
     set({ status: 'unlocked' });
+    await offerMissingRecoveryCode(dek, mine);
   }
 
   async function setUpFirstPhone(): Promise<void> {
+    const mine = generation;
     let device: Awaited<ReturnType<LockIdentity['currentDevice']>>;
     try {
       device = await identity.currentDevice();
@@ -141,8 +204,20 @@ export function createLockController(deps: LockControllerDeps): LockController {
       set({ status: 'error', error: 'unknown' });
       return;
     }
-    // First phone of the account. A later PR asks the server whether a recovery key already
-    // exists and shows the recovery code here.
+    // A recovery key on the server means this account already has a backup, and a new DEK here
+    // would orphan it. Without an answer we cannot know, so we make no key.
+    let existing: Awaited<ReturnType<RecoveryKeyApi['get']>>;
+    try {
+      existing = await deps.recoveryKey.get();
+    } catch {
+      set({ status: 'error', error: 'offline' });
+      return;
+    }
+    if (existing) {
+      // The restore with the recovery code arrives in a later PR.
+      set({ status: 'pendingDevice' });
+      return;
+    }
     let fresh: Uint8Array;
     try {
       // A left-over file cannot be read without its key.
@@ -153,7 +228,15 @@ export function createLockController(deps: LockControllerDeps): LockController {
       set(keychainError);
       return;
     }
-    await openWith(fresh);
+    if (!(await openVault(fresh))) return;
+    try {
+      const prepared = await deps.recoveryCode.prepare(fresh);
+      if (mine === generation) showRecoveryCode(prepared);
+    } catch {
+      // The vault is open and the key is saved. The next unlock finds no recovery key and
+      // offers the code again.
+      if (mine === generation) set({ status: 'unlocked' });
+    }
   }
 
   async function run(): Promise<void> {
@@ -170,6 +253,9 @@ export function createLockController(deps: LockControllerDeps): LockController {
     set(await locked());
   }
 
+  const isOpenOrOpening = () =>
+    state.status === 'unlocking' || state.status === 'unlocked' || state.status === 'recoveryCode';
+
   const controller: LockController = {
     getState: () => state,
     subscribe(listener) {
@@ -177,7 +263,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
       return () => listeners.delete(listener);
     },
     unlock() {
-      if (state.status === 'unlocked') return Promise.resolve();
+      if (state.status === 'unlocked' || state.status === 'recoveryCode') return Promise.resolve();
       if (state.status === 'error' && state.error === 'notEncrypted') return Promise.resolve();
       inFlight ??= run().finally(() => {
         inFlight = null;
@@ -185,7 +271,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
       return inFlight;
     },
     async unlockWithPassword() {
-      if (state.status === 'unlocking' || state.status === 'unlocked') return;
+      if (isOpenOrOpening()) return;
       const result = await identity.reauthenticate();
       if (result === 'cancelled') return;
       if (result === 'failed') {
@@ -204,7 +290,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
       await openWith(dek);
     },
     async unlockWithBiometrics() {
-      if (state.status === 'unlocking' || state.status === 'unlocked') return;
+      if (isOpenOrOpening()) return;
       set({ status: 'unlocking' });
       const result = await dekStore.readBiometric(deps.biometricPrompt);
       if (result.status === 'ok') return openWith(result.dek);
@@ -248,6 +334,27 @@ export function createLockController(deps: LockControllerDeps): LockController {
     },
     async disableBiometrics() {
       await dekStore.removeBiometric();
+    },
+    async confirmRecoveryCode(lastGroup) {
+      const shown = pendingCode;
+      if (state.status !== 'recoveryCode' || !shown) return 'failed';
+      const result = await confirmRecoveryCode(shown, lastGroup);
+      // A lock while the upload ran already dropped the code; the upload itself stands.
+      if (result === 'ok' && pendingCode === shown) set({ status: 'unlocked' });
+      return result;
+    },
+    async prepareNewRecoveryCode() {
+      if (!isFreshLogin(identity.lastLoginAt(), clock.now())) {
+        const result = await identity.reauthenticate();
+        if (result !== 'ok') return { status: result === 'cancelled' ? 'cancelled' : 'failed' };
+      }
+      try {
+        const dek = await dekStore.read();
+        if (!dek) return { status: 'failed' };
+        return { status: 'ready', prepared: await deps.recoveryCode.prepare(dek) };
+      } catch {
+        return { status: 'failed' };
+      }
     },
     async lock() {
       generation += 1;

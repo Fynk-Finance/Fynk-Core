@@ -61,12 +61,17 @@ it('is open while locked and starts one unlock when the session is signed in', a
   expect(t.controller.unlock).toHaveBeenCalledTimes(1);
 });
 
-it('stays open in the unlocking, pending and error states', async () => {
+it('stays open in the unlocking, pending, recovery code and error states', async () => {
   const t = setup('signedIn');
   const { result } = await renderHook(() => t.useVaultGate());
   for (const state of [
     { status: 'unlocking' },
     { status: 'pendingDevice' },
+    // The vault is already open while the recovery code is shown, but the flow must stay up.
+    {
+      status: 'recoveryCode',
+      recovery: { groups: ['AAAAA', 'BBBBB', 'CCCCC', 'DDDDD', 'EEEEEE'] },
+    },
     { status: 'error', error: 'offline' },
   ] as LockState[]) {
     await t.setLock(state);
