@@ -28,7 +28,7 @@ While #174 waited for approval, Karol asked: "revisa que puedes avanzar con lo q
 
 ## Result
 
-* Tests: 108 suites pass (1307 tests). ESLint, tsc and Prettier are clean.
+* Tests: 106 suites and 1295 tests pass. ESLint, tsc and Prettier are clean.
 * Merged locally with #174 and the milestones branch: no conflicts, 107 savings tests and tsc pass together. The export sits at the end of `index.ts` so it does not touch the lines the milestones branch adds.
 * Pull request: opened from Karol's account against `develop`.
 
