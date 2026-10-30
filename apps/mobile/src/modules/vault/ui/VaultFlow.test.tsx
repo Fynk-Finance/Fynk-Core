@@ -22,6 +22,13 @@ function fakeController(initial: LockState = { status: 'locked' }) {
     autoPromptBiometric: jest.fn(async () => undefined),
     confirmRecoveryCode: jest.fn(async () => 'ok' as const),
     restoreWithCode: jest.fn(async () => 'restored' as const),
+    startApproval: jest.fn(async () => ({
+      status: 'started' as const,
+      id: 'req-1',
+      code: '048291',
+      expiresAt: '2099-01-01T00:00:00Z',
+    })),
+    checkApproval: jest.fn(async () => 'waiting' as const),
   } as unknown as LockController;
   const set = (next: LockState) =>
     act(async () => {
@@ -160,6 +167,21 @@ describe('restore on a new phone', () => {
     expect(controller.restoreWithCode).toHaveBeenCalledWith('abcde fghjk');
     await fireEvent.press(screen.getByRole('link', { name: r.signOut }));
     expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers the approval only to a pending phone and asks through the controller', async () => {
+    const active = fakeController({ status: 'pendingDevice', deviceStatus: 'active' });
+    const First = createVaultFlow(active.controller, deps());
+    await render(<First />);
+    expect(screen.queryByTestId('vault.restore.approvalOption')).toBeNull();
+    await screen.unmount();
+
+    const { controller } = fakeController({ status: 'pendingDevice', deviceStatus: 'pending' });
+    const Flow = createVaultFlow(controller, deps());
+    await render(<Flow />);
+    await fireEvent.press(screen.getByTestId('vault.restore.approvalOption'));
+    expect(controller.startApproval).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('vault.restore.approvalCode')).toHaveTextContent('048 291');
   });
 
   it('shows the error of the last try', async () => {

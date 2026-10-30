@@ -39,7 +39,10 @@ export function createVaultFlow(controller: LockController, { copyText, signOut 
         <RestoreScreen
           restoring={state.status === 'restoring'}
           error={state.restoreError}
+          deviceStatus={state.deviceStatus ?? 'active'}
           onRestore={(typed) => void controller.restoreWithCode(typed)}
+          onStartApproval={() => controller.startApproval()}
+          onCheckApproval={(id) => controller.checkApproval(id)}
           onSignOut={() => void signOut()}
         />
       );
