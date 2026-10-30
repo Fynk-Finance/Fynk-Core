@@ -1,16 +1,21 @@
 // Public API of the bank module. Other modules import only from this file.
+import { api } from '@shared/api';
 import type { Clock } from '@shared/domain/types';
 import type { ModuleRoutes } from '@shared/navigation';
 
 import { onConsentRevoked } from '@modules/consents';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
+import { createBankApi } from './adapters/bankApi';
 import { createProvidersApi } from './adapters/providersApi';
+import { secureRandom, systemBrowser } from './adapters/systemBrowser';
 import { bankMigrations } from './adapters/vault/migrations';
 import { createVaultLinkStore } from './adapters/vault/vaultLinkStore';
+import { linkBank } from './application/linkBank';
 import { revokeLinksOfConsent } from './application/linkRevocation';
 import { useProviders as useProvidersWith } from './application/useProviders';
 import type { BankLink } from './domain/link';
+import { newNonce } from './domain/pkce';
 import { createConnectBankScreen } from './ui/ConnectBankScreen';
 
 export type { BankProvider, ProviderKind } from './domain/provider';
@@ -34,12 +39,20 @@ onConsentRevoked(async (event) => {
 export const getLinks = (): Promise<BankLink[]> => links().getLinks();
 
 const providersApi = createProvidersApi();
+const bankApi = createBankApi(api, () => newNonce(secureRandom));
 
 /** Entities the person can connect (`GET /providers`, React Query). */
 export const useProviders = () => useProvidersWith(providersApi);
 
 /** Conectar banco: the entity selector with M4's consent cards and authorization. */
-export const ConnectBankScreen = createConnectBankScreen({ providers: providersApi });
+export const ConnectBankScreen = createConnectBankScreen({
+  providers: providersApi,
+  link: (input) =>
+    linkBank(
+      { api: bankApi, browser: systemBrowser, store: links, random: secureRandom, clock },
+      input,
+    ),
+});
 
 export const routes: ModuleRoutes = {
   module: 'bank',

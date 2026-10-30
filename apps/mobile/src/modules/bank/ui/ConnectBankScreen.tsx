@@ -1,10 +1,9 @@
 // Conectar banco (ConectarBanco.html, inventory row 29), pushed with the default transition.
 // M5 owns the screen and the entity selector; M4's consent cards and authorization are hosted
-// here. Until M5 step 3 the flow stops once the consent is recorded: the entity's portal does
-// not open yet.
+// here. Once M4 recorded the consent, M5 opens the entity's portal and shows the result.
 import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -17,6 +16,7 @@ import {
 import {
   EmptyState,
   ErrorState,
+  PrimaryButton,
   Skeleton,
   uiStrings,
   useThemedStyles,
@@ -24,27 +24,29 @@ import {
 } from '@shared/ui';
 
 import { selectedProvider, type BankProvider } from '../domain/provider';
+import type { LinkOutcome } from '../application/linkBank';
 import type { ProvidersPort } from '../application/ports';
 import { useProviders } from '../application/useProviders';
 import { ConnectBankHeader } from './ConnectBankHeader';
 import { EntitySelector } from './EntitySelector';
+import { LinkResult } from './LinkResult';
 import { bankStrings } from './strings.es-CO';
 
 const t = bankStrings.connect;
+const tl = bankStrings.link;
 
 export interface ConnectBankDeps {
   providers: ProvidersPort;
-  /** What happens once the consent is recorded. M5 step 3 opens the entity's portal here. */
-  onConsentReady?: (consent: Consent, provider: BankProvider) => void;
+  /** The link flow (linkBank) for the consent M4 just recorded. */
+  link: (input: { provider: string; consentId: string }) => Promise<LinkOutcome>;
 }
 
-const showReady = (_: Consent, provider: BankProvider) =>
-  Alert.alert(t.ready.title, t.ready.message(provider.displayName), [{ text: t.ready.ok }]);
+type Phase =
+  | { kind: 'form' }
+  | { kind: 'linking'; provider: BankProvider }
+  | { kind: 'done'; provider: BankProvider; outcome: Exclude<LinkOutcome, { kind: 'cancelled' }> };
 
-export function createConnectBankScreen({
-  providers,
-  onConsentReady = showReady,
-}: ConnectBankDeps) {
+export function createConnectBankScreen({ providers, link }: ConnectBankDeps) {
   return function ConnectBankScreen() {
     const navigation = useNavigation();
     const styles = useThemedStyles(createStyles);
@@ -52,6 +54,18 @@ export function createConnectBankScreen({
     const list = useProviders(providers);
     const text = useConsentText();
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [phase, setPhase] = useState<Phase>({ kind: 'form' });
+
+    const startLink = async (consent: Consent, chosen: BankProvider) => {
+      setPhase({ kind: 'linking', provider: chosen });
+      const outcome = await link({ provider: chosen.id, consentId: consent.id });
+      // A closed browser goes back to the form: the person can choose again.
+      setPhase(
+        outcome.kind === 'cancelled'
+          ? { kind: 'form' }
+          : { kind: 'done', provider: chosen, outcome },
+      );
+    };
 
     const provider = selectedProvider(list.data ?? [], selectedId);
     const loading = list.isPending || text.isPending;
@@ -62,7 +76,20 @@ export function createConnectBankScreen({
     };
 
     let body;
-    if (failed) {
+    if (phase.kind === 'linking') {
+      const entity = phase.provider.displayName;
+      body = (
+        <EmptyState icon="bank" title={tl.linking(entity)} message={tl.linkingMessage(entity)} />
+      );
+    } else if (phase.kind === 'done') {
+      body = (
+        <LinkResult
+          entity={phase.provider.displayName}
+          outcome={phase.outcome}
+          onRetry={() => setPhase({ kind: 'form' })}
+        />
+      );
+    } else if (failed) {
       body = <ErrorState message={t.error} onRetry={retry} />;
     } else if (loading) {
       body = (
@@ -97,7 +124,7 @@ export function createConnectBankScreen({
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           {body}
         </ScrollView>
-        {provider && text.data && !failed ? (
+        {phase.kind === 'form' && provider && text.data && !failed ? (
           <View
             style={[styles.bottom, { paddingBottom: insets.bottom + 16 }]}
             testID="bank.connect.bottom"
@@ -105,7 +132,16 @@ export function createConnectBankScreen({
             <ConsentAcceptance
               provider={provider}
               text={text.data}
-              onConsentCreated={(consent) => onConsentReady(consent, provider)}
+              onConsentCreated={(consent) => void startLink(consent, provider)}
+            />
+          </View>
+        ) : null}
+        {phase.kind === 'done' && phase.outcome.kind === 'linked' ? (
+          <View style={[styles.bottom, { paddingBottom: insets.bottom + 16 }]}>
+            <PrimaryButton
+              label={tl.done}
+              onPress={() => navigation.goBack()}
+              testID="bank.link.done"
             />
           </View>
         ) : null}
