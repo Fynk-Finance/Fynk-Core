@@ -30,6 +30,7 @@ func TestLoadReadsEveryValue(t *testing.T) {
 		KeycloakIssuer: "http://kc/realms/fynk", KeycloakAudience: "fynk-api",
 		KeycloakURL: "http://keycloak:8080", KeycloakRealm: "fynk",
 		EgressURL: "https://caddy:8443", EgressCAFile: "/certs/ca.crt",
+		BankRedirectURI: "fynk://bank/callback",
 	}
 	if c != want {
 		t.Fatalf("got %+v, want %+v", c, want)
@@ -96,5 +97,51 @@ func TestLoadReadsTheOptionalAdminClientSecret(t *testing.T) {
 	c, err = Load(env(base))
 	if err != nil || c.KeycloakAdminClientSecret != "fake-admin-secret" {
 		t.Fatalf("with the secret: %q, %v", c.KeycloakAdminClientSecret, err)
+	}
+}
+
+func TestLoadReadsTheBankLinkSettings(t *testing.T) {
+	c, err := Load(env(map[string]string{
+		"APP_ENV": "staging", "DATABASE_URL": "d", "REDIS_URL": "r",
+		"BANK_SIGNER_KEY_FILE":      "/secrets/signer.pem",
+		"BANK_FINGERPRINT_KEY_FILE": "/secrets/fingerprint.key",
+		"BANK_REDIRECT_URI":         "fynk://bank/callback-staging",
+		"BANCO_DEMO_CLIENT_ID":      "fynk",
+		"BANCO_DEMO_ISSUER":         "https://bank.example/realms/banco-demo",
+		"BANCO_DEMO_AUTHORIZE_URL":  "https://bank.example/oauth/authorize",
+	}))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if c.BankSignerKeyFile != "/secrets/signer.pem" || c.BankFingerprintKeyFile != "/secrets/fingerprint.key" ||
+		c.BankRedirectURI != "fynk://bank/callback-staging" || c.BancoDemoClientID != "fynk" ||
+		c.BancoDemoIssuer != "https://bank.example/realms/banco-demo" ||
+		c.BancoDemoAuthorizeURL != "https://bank.example/oauth/authorize" {
+		t.Fatalf("bank settings not read: %+v", c)
+	}
+}
+
+func TestLoadLeavesTheBankLinkOffAndDefaultsTheRedirect(t *testing.T) {
+	c, err := Load(env(map[string]string{"APP_ENV": "prod", "DATABASE_URL": "d", "REDIS_URL": "r"}))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if c.BankSignerKeyFile != "" || c.BankFingerprintKeyFile != "" || c.BancoDemoClientID != "" {
+		t.Fatalf("bank settings should be empty: %+v", c)
+	}
+	if c.BankRedirectURI != "fynk://bank/callback" {
+		t.Fatalf("BankRedirectURI = %q, want fynk://bank/callback", c.BankRedirectURI)
+	}
+}
+
+func TestLoadRejectsAPlainHTTPAuthorizePageOutsideLocal(t *testing.T) {
+	base := map[string]string{"DATABASE_URL": "d", "REDIS_URL": "r", "BANCO_DEMO_AUTHORIZE_URL": "http://bank/authorize"}
+	base["APP_ENV"] = "staging"
+	if _, err := Load(env(base)); err == nil || !strings.Contains(err.Error(), "BANCO_DEMO_AUTHORIZE_URL") {
+		t.Fatalf("want a BANCO_DEMO_AUTHORIZE_URL error in staging, got %v", err)
+	}
+	base["APP_ENV"] = "local"
+	if _, err := Load(env(base)); err != nil {
+		t.Fatalf("local may use http: %v", err)
 	}
 }

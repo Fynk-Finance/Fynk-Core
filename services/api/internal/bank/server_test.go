@@ -107,9 +107,9 @@ func TestEveryRouteNeedsATokenBeforeTheRequestIsParsed(t *testing.T) {
 	}
 }
 
-// The link and query endpoints are in the contract (so the app can use the Prism mock) but
-// answer 501 until M5 step 2.
-func TestTheLinkAndQueryEndpointsAnswer501UntilStep2(t *testing.T) {
+// Without the bank link settings, the link and the bank proxy fail closed with
+// provider_unavailable, and never echo the request.
+func TestTheLinkAndTheProxyAnswerProviderUnavailableWithoutTheirSettings(t *testing.T) {
 	srv := newAPI(t)
 	bodies := map[string]string{
 		"/v1/bank/authorizations": `{"provider":"banco-demo","consentId":"0192f0a0-0000-7000-8000-000000000001",` +
@@ -122,7 +122,7 @@ func TestTheLinkAndQueryEndpointsAnswer501UntilStep2(t *testing.T) {
 	}
 	for path, body := range bodies {
 		res := call(t, http.MethodPost, srv.URL+path, auth.DevToken, body)
-		if res.status != http.StatusNotImplemented || code(t, res.body) != "not_implemented" {
+		if res.status != http.StatusServiceUnavailable || code(t, res.body) != "provider_unavailable" {
 			t.Errorf("%s: %d %s", path, res.status, res.body)
 		}
 		if strings.Contains(string(res.body), `"t"`) || strings.Contains(string(res.body), "accessToken") {
