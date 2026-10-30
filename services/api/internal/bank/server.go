@@ -3,10 +3,13 @@ package bank
 import (
 	"context"
 	"errors"
+	"math"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/http"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports"
@@ -15,9 +18,6 @@ import (
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/problem"
 )
-
-// errNotYet marks the endpoints that M5 step 2 implements.
-var errNotYet = errors.New("bank: endpoint not implemented yet")
 
 // server implements the generated httpapi.StrictServerInterface.
 type server struct {
@@ -91,27 +91,100 @@ func (s server) ExchangeBankAuthorization(ctx context.Context, req httpapi.Excha
 	}, nil
 }
 
-func (server) QueryBankAccounts(context.Context, httpapi.QueryBankAccountsRequestObject) (httpapi.QueryBankAccountsResponseObject, error) {
-	return nil, errNotYet
+func (s server) QueryBankAccounts(ctx context.Context, req httpapi.QueryBankAccountsRequestObject) (httpapi.QueryBankAccountsResponseObject, error) {
+	if s.svc == nil {
+		return nil, errNotConfigured
+	}
+	accounts, err := s.svc.Accounts(ctx, userOf(ctx), req.Body.LinkId.String(), req.Body.AccessToken)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]httpapi.BankAccount, len(accounts))
+	for i, a := range accounts {
+		items[i] = toAccount(a)
+	}
+	return httpapi.QueryBankAccounts200JSONResponse{Items: items}, nil
 }
 
-func (server) QueryBankTransactions(context.Context, httpapi.QueryBankTransactionsRequestObject) (httpapi.QueryBankTransactionsResponseObject, error) {
-	return nil, errNotYet
+func (s server) QueryBankTransactions(ctx context.Context, req httpapi.QueryBankTransactionsRequestObject) (httpapi.QueryBankTransactionsResponseObject, error) {
+	if s.svc == nil {
+		return nil, errNotConfigured
+	}
+	b := req.Body
+	cursor := ""
+	if b.Cursor != nil {
+		cursor = *b.Cursor
+	}
+	page, err := s.svc.Transactions(ctx, userOf(ctx), b.LinkId.String(), b.AccessToken, b.ProviderAccountId, b.Since, cursor)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]httpapi.BankTransaction, len(page.Items))
+	for i, t := range page.Items {
+		items[i] = httpapi.BankTransaction{
+			ProviderTxId: t.ProviderTxID, BookedAt: t.BookedAt.UTC(), AmountMinor: t.AmountMinor,
+			Description: t.Description, MerchantRaw: optional(t.MerchantRaw),
+			BankCategory: optional(t.BankCategory), Status: httpapi.BankTransactionStatus(t.Status),
+		}
+	}
+	return httpapi.QueryBankTransactions200JSONResponse{Items: items, NextCursor: optional(page.NextCursor)}, nil
 }
 
-func (server) RefreshBankTokens(context.Context, httpapi.RefreshBankTokensRequestObject) (httpapi.RefreshBankTokensResponseObject, error) {
-	return nil, errNotYet
+func (s server) RefreshBankTokens(ctx context.Context, req httpapi.RefreshBankTokensRequestObject) (httpapi.RefreshBankTokensResponseObject, error) {
+	if s.svc == nil {
+		return nil, errNotConfigured
+	}
+	linked, err := s.svc.Refresh(ctx, userOf(ctx), req.Body.LinkId.String(), req.Body.RefreshToken)
+	if err != nil {
+		return nil, err
+	}
+	return httpapi.RefreshBankTokens200JSONResponse{
+		LinkId: req.Body.LinkId, Provider: linked.Provider, AccessToken: linked.AccessToken,
+		RefreshToken: linked.RefreshToken, ExpiresIn: int32(linked.ExpiresIn / time.Second),
+	}, nil
 }
 
-// errorHandler maps the link errors to problems with their stable codes, the endpoints still
-// to come to 501, and anything else to fallback (500 without details).
+// toAccount maps the shared Account shape. Only the last 4 digits ever leave an adapter.
+func toAccount(a ports.Account) httpapi.BankAccount {
+	out := httpapi.BankAccount{
+		ProviderAccountId: a.ProviderAccountID, Kind: httpapi.BankAccountKind(a.Kind),
+		DisplayName: a.DisplayName, Last4: optional(a.Last4), Currency: httpapi.COP,
+		BalanceMinor: a.BalanceMinor, AvailableMinor: a.AvailableMinor, CreditLimitMinor: a.CreditLimitMinor,
+		Status: httpapi.Active, IsSimulated: a.IsSimulated,
+	}
+	if a.Closed {
+		out.Status = httpapi.Closed
+	}
+	if a.PaymentDueOn != nil {
+		out.PaymentDueOn = &openapi_types.Date{Time: *a.PaymentDueOn}
+	}
+	if a.CDT != nil {
+		out.Cdt = &httpapi.BankCdt{
+			RateEaBps: int32(a.CDT.RateEaBps), TermDays: int32(a.CDT.TermDays),
+			OpenedOn: openapi_types.Date{Time: a.CDT.OpenedOn}, MaturesOn: openapi_types.Date{Time: a.CDT.MaturesOn},
+		}
+	}
+	return out
+}
+
+func optional(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+// errorHandler maps the bank errors to problems with their stable codes, a rate limit to 429
+// with Retry-After, and anything else to fallback (500 without details).
 func errorHandler(fallback func(http.ResponseWriter, *http.Request, error)) func(http.ResponseWriter, *http.Request, error) {
 	return func(w http.ResponseWriter, r *http.Request, err error) {
 		var rule *service.Error
 		var bank *ports.Error
+		var limited *service.RateLimited
 		switch {
-		case errors.Is(err, errNotYet):
-			problem.NotImplemented(w, r)
+		case errors.As(err, &limited):
+			w.Header().Set("Retry-After", strconv.Itoa(max(1, int(math.Ceil(limited.RetryAfter.Seconds())))))
+			write(w, http.StatusTooManyRequests, "rate_limited", "Too many bank queries. Try again later.")
 		case errors.As(err, &rule):
 			problem.Write(w, problem.New(rule.Status, rule.Code, http.StatusText(rule.Status), rule.Detail))
 		case errors.Is(err, consentports.ErrConsentNotFound):

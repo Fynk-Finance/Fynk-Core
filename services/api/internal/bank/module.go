@@ -15,9 +15,8 @@ import (
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/problem"
 )
 
-// New returns the bank module: GET /providers, and the link (authorization and exchange) when
-// the bank link settings are there. The query and refresh endpoints answer 501 until the next
-// part of M5 step 2.
+// New returns the bank module: GET /providers, and when the bank link settings are there, the
+// link (authorization and exchange) and the bank proxy (queries and refresh).
 func New(d module.Deps) module.Module {
 	return bankModule{deps: d, svc: newService(d)}
 }
@@ -41,7 +40,7 @@ func (m bankModule) Routes(r chi.Router) {
 		ResponseErrorHandlerFunc: errorHandler(problem.ResponseErrorHandler(m.deps.Log)),
 	})
 	r.Group(func(r chi.Router) {
-		r.Use(requireAuth, noStore)
+		r.Use(requireAuth, noStore, m.requireNonce)
 		httpapi.HandlerWithOptions(strict, httpapi.ChiServerOptions{
 			BaseRouter:       r,
 			ErrorHandlerFunc: problem.RequestError,
@@ -66,6 +65,23 @@ func requireAuth(next http.Handler) http.Handler {
 func noStore(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
+		next.ServeHTTP(w, r)
+	})
+}
+
+// requireNonce refuses a POST to /bank/* without a new X-Request-Nonce (replay protection,
+// kept 5 minutes). It runs after auth, so the nonce is per user.
+func (m bankModule) requireNonce(next http.Handler) http.Handler {
+	fail := errorHandler(problem.ResponseErrorHandler(m.deps.Log))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || m.svc == nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if err := m.svc.CheckNonce(r.Context(), userOf(r.Context()), r.Header.Get("X-Request-Nonce")); err != nil {
+			fail(w, r, err)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
