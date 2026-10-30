@@ -20,6 +20,7 @@ function fakeController(initial: LockState = { status: 'locked' }) {
     unlockWithPassword: jest.fn(async () => undefined),
     unlockWithBiometrics: jest.fn(async () => undefined),
     autoPromptBiometric: jest.fn(async () => undefined),
+    confirmRecoveryCode: jest.fn(async () => 'ok' as const),
   } as unknown as LockController;
   const set = (next: LockState) =>
     act(async () => {
@@ -31,7 +32,7 @@ function fakeController(initial: LockState = { status: 'locked' }) {
 
 it('asks Keycloak for the password when the button is pressed', async () => {
   const { controller } = fakeController();
-  const Flow = createVaultFlow(controller);
+  const Flow = createVaultFlow(controller, { copyText: jest.fn(async () => undefined) });
   await render(<Flow />);
   await fireEvent.press(screen.getByRole('button', { name: t.password }));
   expect(controller.unlockWithPassword).toHaveBeenCalledTimes(1);
@@ -39,7 +40,7 @@ it('asks Keycloak for the password when the button is pressed', async () => {
 
 it('follows the controller state', async () => {
   const { controller, set } = fakeController();
-  const Flow = createVaultFlow(controller);
+  const Flow = createVaultFlow(controller, { copyText: jest.fn(async () => undefined) });
   await render(<Flow />);
 
   await set({ status: 'unlocking' });
@@ -54,7 +55,7 @@ it('follows the controller state', async () => {
 
 it('retries the unlock from the error state', async () => {
   const { controller } = fakeController({ status: 'error', error: 'offline' });
-  const Flow = createVaultFlow(controller);
+  const Flow = createVaultFlow(controller, { copyText: jest.fn(async () => undefined) });
   await render(<Flow />);
   await fireEvent.press(screen.getByRole('button', { name: 'Reintentar' }));
   expect(controller.unlock).toHaveBeenCalledTimes(1);
@@ -62,7 +63,7 @@ it('retries the unlock from the error state', async () => {
 
 it('opens the biometric prompt once when it shows, and again from the button', async () => {
   const { controller } = fakeController({ status: 'locked', biometric: true });
-  const Flow = createVaultFlow(controller);
+  const Flow = createVaultFlow(controller, { copyText: jest.fn(async () => undefined) });
   await render(<Flow />);
   expect(controller.autoPromptBiometric).toHaveBeenCalledTimes(1);
   expect(controller.unlockWithBiometrics).not.toHaveBeenCalled();
@@ -73,10 +74,45 @@ it('opens the biometric prompt once when it shows, and again from the button', a
 it('opens the prompt when the button arrives after the lock, not before', async () => {
   // lock() shows `locked` at once and adds the button when the copy B lookup answers.
   const { controller, set } = fakeController({ status: 'unlocked' });
-  const Flow = createVaultFlow(controller);
+  const Flow = createVaultFlow(controller, { copyText: jest.fn(async () => undefined) });
   await render(<Flow />);
   await set({ status: 'locked' });
   expect(controller.autoPromptBiometric).not.toHaveBeenCalled();
   await set({ status: 'locked', biometric: true });
   expect(controller.autoPromptBiometric).toHaveBeenCalledTimes(1);
+});
+
+describe('recovery code', () => {
+  const recovery = { groups: ['0A1B2', 'C3D4E', 'F5G6H', 'J7K8M', 'N9P0QR'] };
+  const r = vaultStrings.recovery;
+
+  it('shows the recovery code screen instead of the lock screen', async () => {
+    const { controller } = fakeController({ status: 'recoveryCode', recovery });
+    const Flow = createVaultFlow(controller, { copyText: jest.fn(async () => true) });
+    await render(<Flow />);
+    expect(screen.getByRole('header', { name: r.title })).toBeOnTheScreen();
+    expect(screen.getByTestId('vault.recovery.group.0')).toHaveTextContent('0A1B2');
+    expect(screen.queryByTestId('vault.lock')).toBeNull();
+  });
+
+  it('confirms through the controller and copies through the clipboard', async () => {
+    const { controller } = fakeController({ status: 'recoveryCode', recovery });
+    const copyText = jest.fn(async (_text: string) => true);
+    const Flow = createVaultFlow(controller, { copyText });
+    await render(<Flow />);
+    await fireEvent.press(screen.getByRole('button', { name: r.copy }));
+    expect(copyText).toHaveBeenCalledWith('0A1B2 C3D4E F5G6H J7K8M N9P0QR');
+    await fireEvent.press(screen.getByRole('button', { name: r.saved }));
+    await fireEvent.changeText(screen.getByTestId('vault.recovery.confirmInput'), 'N9P0QR');
+    await fireEvent.press(screen.getByRole('button', { name: r.confirm }));
+    expect(controller.confirmRecoveryCode).toHaveBeenCalledWith('N9P0QR');
+  });
+
+  it('goes back to the lock screen when the state leaves recoveryCode', async () => {
+    const { controller, set } = fakeController({ status: 'recoveryCode', recovery });
+    const Flow = createVaultFlow(controller, { copyText: jest.fn(async () => true) });
+    await render(<Flow />);
+    await set({ status: 'locked' });
+    expect(screen.getByTestId('vault.lock')).toBeOnTheScreen();
+  });
 });
