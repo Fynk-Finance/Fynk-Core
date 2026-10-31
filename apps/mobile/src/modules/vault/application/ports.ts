@@ -1,4 +1,6 @@
 // Ports of the vault engine. The adapters are in adapters/.
+import type { RECOVERY_KDF } from '../domain/recoveryKey';
+
 export type Row = Record<string, unknown>;
 
 /** The encrypted SQLite file. The engine never knows which library is behind it. */
@@ -56,3 +58,59 @@ export class VaultNotEncryptedError extends Error {
     this.name = 'VaultNotEncryptedError';
   }
 }
+
+/**
+ * Argon2id cost, stored beside the wrapped DEK so a new phone derives the same key. The contract
+ * fixes the values (BackupKdfParams), so the type is the domain constant's.
+ */
+export type KdfParams = typeof RECOVERY_KDF;
+
+/**
+ * Argon2id of the canonical recovery code (26 characters) with the salt. Returns the 32 byte
+ * recovery key. The parameters are fixed by the domain (RECOVERY_KDF).
+ */
+export type RecoveryKdf = (code: string, salt: Uint8Array) => Promise<Uint8Array>;
+
+/** Random bytes from the OS source. Domain and application code never call a random source. */
+export type RandomBytes = (n: number) => Uint8Array;
+
+/** What PUT /backup/recovery-key stores. Bytes here; base64 only in the adapter. */
+export interface RecoveryKeyUpload {
+  wrappedDek: Uint8Array;
+  nonce: Uint8Array;
+  salt: Uint8Array;
+  kdfParams: KdfParams;
+  deviceProofHash: Uint8Array;
+}
+
+/** What GET /backup/recovery-key returns. The proof hash is never returned. */
+export interface StoredRecoveryKey {
+  wrappedDek: Uint8Array;
+  nonce: Uint8Array;
+  salt: Uint8Array;
+  kdfParams: KdfParams;
+  createdAt: string;
+}
+
+export interface RecoveryKeyApi {
+  /** Null when the person has no recovery key (404 recovery_key_not_found). */
+  get(): Promise<StoredRecoveryKey | null>;
+  /** Replaces any previous recovery key: the old code stops working. */
+  put(upload: RecoveryKeyUpload): Promise<void>;
+}
+
+/** `offline`: no connection. `notActive`: this phone is not an active device. */
+export type RecoveryErrorKind = 'offline' | 'notActive' | 'unknown';
+
+/** Carries only a kind: no key, code or payload ever goes into an error. */
+export class RecoveryError extends Error {
+  readonly kind: RecoveryErrorKind;
+  constructor(kind: RecoveryErrorKind) {
+    super(`recovery key request failed: ${kind}`);
+    this.name = 'RecoveryError';
+    this.kind = kind;
+  }
+}
+
+export const isRecoveryError = (e: unknown, kind?: RecoveryErrorKind): e is RecoveryError =>
+  e instanceof RecoveryError && (kind === undefined || e.kind === kind);
