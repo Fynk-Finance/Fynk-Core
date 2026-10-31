@@ -63,6 +63,8 @@ export const identityStrings = {
     pending: 'Pendiente',
     pendingHint: 'Este dispositivo espera aprobación',
     closeDevice: (name: string) => `Cerrar la sesión de ${name}`,
+    approve: 'Aprobar',
+    approveDevice: (name: string) => `Aprobar el acceso de ${name}`,
     loadFailed: 'No pudimos cargar tus dispositivos. Intenta de nuevo.',
     changeFailed: {
       title: 'No pudimos cambiar tu contraseña',
