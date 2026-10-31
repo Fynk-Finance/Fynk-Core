@@ -1,0 +1,166 @@
+# M2 (HU-004, HU-045): restore on a new phone with the recovery code. Device A signs up, saves the
+# recovery code and creates a goal; device B signs in with the same account, restores with the
+# code and sees the goal. One emulator plays both devices in sequence: the second launch clears
+# the app state and the keychain, so identity makes a new key pair and the phone registers as a
+# new pending device, like a real second phone.
+#
+# It needs the real Keycloak, Mailpit and the API, so it lives outside the top-level flows that
+# `make e2e` runs (those use EXPO_PUBLIC_DEV_AUTH=dev-token and skip Keycloak). To run it:
+#   1. `make dev` (Keycloak on 8081, Mailpit on 8025, the API on 8080).
+#   2. A development build with EXPO_PUBLIC_DEV_AUTH empty and the Keycloak issuer of
+#      apps/mobile/.env.example; on an Android emulator also `adb reverse tcp:8081 tcp:8081`
+#      and `adb reverse tcp:8080 tcp:8080`.
+#   3. `maestro test apps/mobile/e2e/vault/restore-with-code.yaml`
+# Each run makes a new throwaway account and a new goal name. The scripts run on this computer,
+# so they reach Mailpit on localhost.
+#
+# TODO(M8): the last step only passes once the savings module registers `savings.goals` for the
+# encrypted backup (see chore/savings-backup-placeholder). Until then device B restores an empty
+# vault and the goal is missing, which is the right failure.
+appId: com.fynkfinance.app
+env:
+  MAILPIT_URL: http://localhost:8025
+  # Test-only password for the throwaway local account, never a real one.
+  PASSWORD: FynkE2e2026
+---
+# ---- Device A: sign up, save the recovery code, create a goal ----
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- runScript: ../identity/scripts/new-account.js
+- runScript: scripts/goal-name.js
+- tapOn: 'Empezar'
+
+# Keycloak's Fynk registration page (same steps as identity/signup.yaml).
+- extendedWaitUntil:
+    visible: 'Crea tu cuenta'
+    timeout: 20000
+- tapOn: 'Correo electrónico'
+- inputText: ${output.email}
+- tapOn: 'Contraseña'
+- inputText: ${PASSWORD}
+- tapOn: 'Confirma tu contraseña'
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn: 'Acepto los.*'
+- tapOn: 'Crear cuenta'
+
+- extendedWaitUntil:
+    visible: 'Verifica tu correo'
+    timeout: 20000
+- retry:
+    maxRetries: 5
+    commands:
+      - runScript: ../identity/scripts/mailpit-code.js
+- tapOn: 'Código de verificación'
+- inputText: ${output.code}
+- tapOn: 'Verificar correo'
+
+# The recovery code: each group is copied from the screen and kept in a variable, because device
+# B types the whole code. `copyTextFrom` leaves the text in maestro.copiedText, which the next
+# copy overwrites, so each one is stored right away.
+- extendedWaitUntil:
+    visible: 'Guarda tu código de recuperación'
+    timeout: 30000
+- copyTextFrom:
+    id: 'vault.recovery.group.0'
+- evalScript: ${output.group0 = maestro.copiedText}
+- copyTextFrom:
+    id: 'vault.recovery.group.1'
+- evalScript: ${output.group1 = maestro.copiedText}
+- copyTextFrom:
+    id: 'vault.recovery.group.2'
+- evalScript: ${output.group2 = maestro.copiedText}
+- copyTextFrom:
+    id: 'vault.recovery.group.3'
+- evalScript: ${output.group3 = maestro.copiedText}
+- copyTextFrom:
+    id: 'vault.recovery.group.4'
+- evalScript: ${output.group4 = maestro.copiedText}
+# The last group is still on the clipboard, so the confirmation pastes it as signup.yaml does.
+- tapOn: 'Ya lo guardé'
+- tapOn:
+    id: 'vault.recovery.confirmInput'
+- pasteText
+- tapOn: 'Confirmar'
+
+- extendedWaitUntil:
+    visible: 'Dashboard'
+    timeout: 20000
+
+# The goal. The Dashboard does not place the "Planes de ahorro" carousel yet (M6 does), so the
+# flow opens the goal form and Metas by their deep links (fynk://metas/nueva and fynk://metas).
+# TODO(M8): the goal is only in the backup once M8 registers `savings.goals`.
+- openLink: 'fynk://metas/nueva'
+- extendedWaitUntil:
+    visible:
+      id: 'savings.form.name'
+    timeout: 10000
+- tapOn:
+    id: 'savings.form.name'
+- inputText: ${output.goalName}
+- tapOn:
+    id: 'savings.form.target'
+- inputText: '5000000'
+- hideKeyboard
+- tapOn: 'Guardar meta'
+# The goal is in the vault: Metas lists it before any backup is involved.
+- openLink: 'fynk://metas'
+- extendedWaitUntil:
+    visible: '.*${output.goalName}.*'
+    timeout: 10000
+
+# The backup uploads 5 s after the last change (debounce) and again when the app goes to the
+# background. Wait past the debounce, send the app to the background, then stop it.
+- extendedWaitUntil:
+    visible: 'this text is never on screen'
+    timeout: 7000
+    optional: true
+- pressKey: Home
+- extendedWaitUntil:
+    visible: 'this text is never on screen'
+    timeout: 3000
+    optional: true
+- stopApp
+
+# ---- Device B: a new phone, same account ----
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- tapOn: 'Ya tengo cuenta'
+
+# Keycloak's Fynk sign in page.
+- extendedWaitUntil:
+    visible: 'Hola de nuevo'
+    timeout: 20000
+- tapOn: 'Correo electrónico'
+- inputText: ${output.email}
+- tapOn: 'Contraseña'
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn: 'Ingresar'
+
+# The new key pair makes this phone a pending device: the vault shows the restore screen.
+- extendedWaitUntil:
+    visible:
+      id: 'vault.restore'
+    timeout: 30000
+- tapOn:
+    id: 'vault.restore.codeOption'
+- tapOn:
+    id: 'vault.restore.codeInput'
+- inputText: ${output.group0} ${output.group1} ${output.group2} ${output.group3} ${output.group4}
+- hideKeyboard
+- tapOn:
+    id: 'vault.restore.submit'
+
+# Past the gates, then the goal made on device A.
+# TODO(M8): fails until the savings module backs up `savings.goals`.
+- extendedWaitUntil:
+    visible: 'Dashboard'
+    timeout: 60000
+- openLink: 'fynk://metas'
+- extendedWaitUntil:
+    visible: '.*${output.goalName}.*'
+    timeout: 15000
+- assertVisible: '.*${output.goalName}.*'
