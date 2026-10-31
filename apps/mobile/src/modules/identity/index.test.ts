@@ -39,6 +39,7 @@ it('exports the functions the vault needs', () => {
     'currentDevice',
     'devicePublicKey',
     'deviceSharedSecret',
+    'backupEnabled',
   ] as const) {
     expect(typeof identity[name]).toBe('function');
   }
@@ -58,6 +59,10 @@ describe('with a real session and no registered device', () => {
     expect(await identity.currentDevice()).toBeNull();
     expect(await identity.devicePublicKey()).toBeNull();
     await expect(identity.deviceSharedSecret(new Uint8Array(32).fill(9))).rejects.toThrow();
+  });
+
+  it('has a backup to protect', () => {
+    expect(load(undefined).backupEnabled()).toBe(true);
   });
 
   it('does not reauthenticate when signed out', async () => {
@@ -89,6 +94,8 @@ describe('with the dev session (EXPO_PUBLIC_DEV_AUTH)', () => {
     expect(await identity.reauthenticate()).toBe('ok');
     // No API in the dev session: the vault treats its phone as the account's first.
     expect(await identity.currentDevice()).toEqual({ id: 'dev', status: 'active' });
+    // No registered device and no API: no backup, so no recovery code.
+    expect(identity.backupEnabled()).toBe(false);
     expect(await identity.devicePublicKey()).toBeNull();
     await expect(identity.deviceSharedSecret(new Uint8Array(32))).rejects.toThrow();
   });

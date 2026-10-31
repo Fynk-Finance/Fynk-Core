@@ -14,6 +14,8 @@ jest.mock('expo-crypto', () => ({
   randomUUID: jest.fn(() => '00000000-0000-4000-8000-000000000000'),
 }));
 jest.mock('expo-device', () => ({ modelName: 'Pixel 8' }));
+jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn(async () => true) }));
+jest.mock('react-native-argon2', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('@op-engineering/op-sqlite', () => ({ open: jest.fn() }), { virtual: true });
 
 type Identity = typeof import('@modules/identity');
@@ -43,9 +45,11 @@ it.each(['identity', 'vault'] as const)('loads both module indexes, %s first', (
   expect(typeof vault.wipe).toBe('function');
 });
 
-it('keeps the vault screens and placeholders', () => {
+it('registers the new recovery code screen and exports the Seguridad rows', () => {
   const { vault } = loadBoth('vault');
-  expect(vault.routes.screens?.map((s) => s.name)).toEqual(['vault.RecoveryCode']);
+  expect(vault.routes.screens?.map((s) => [s.name, s.path, s.transition])).toEqual([
+    ['vault.RecoveryCode', 'boveda/recuperacion', undefined],
+  ]);
   expect(typeof vault.UnlockSetting).toBe('function');
-  expect(vault.RecoveryCodeRow()).toBeNull();
+  expect(typeof vault.RecoveryCodeRow).toBe('function');
 });

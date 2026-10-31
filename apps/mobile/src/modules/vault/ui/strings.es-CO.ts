@@ -39,4 +39,41 @@ export const vaultStrings = {
     switchHint: 'Abre Fynk sin escribir tu contraseña',
     failed: 'No pudimos cambiar esta opción. Intenta de nuevo.',
   },
+  // Not in the design: new screen, needs design review. Card style of OnbListo.html, input of
+  // OnbCorreo.html.
+  recovery: {
+    title: 'Guarda tu código de recuperación',
+    subtitle:
+      'Con este código recuperas tus datos en un teléfono nuevo. Anótalo o guárdalo en un lugar seguro, fuera de Fynk.',
+    codeLabel: 'Tu código de recuperación',
+    copy: 'Copiar',
+    copied: 'Copiado',
+    copyHint: 'Copia el código para guardarlo en otra parte',
+    saved: 'Ya lo guardé',
+    warning:
+      'Si pierdes tu teléfono y este código, no podremos recuperar tus metas ni tus gastos manuales.',
+    confirmTitle: 'Escribe el último grupo de tu código',
+    confirmSubtitle: 'Así comprobamos que lo guardaste bien.',
+    inputLabel: 'Último grupo del código',
+    inputPlaceholder: 'Último grupo',
+    confirm: 'Confirmar',
+    seeCode: 'Ver el código otra vez',
+    close: 'Cerrar',
+    errors: {
+      mismatch: 'Ese grupo no coincide. Revisa tu código.',
+      offline: 'Sin conexión. Conéctate a internet e intenta de nuevo.',
+      failed: 'No pudimos guardar tu código. Intenta de nuevo.',
+    },
+    // Seguridad › "Código de recuperación" (row of CfgSeguridad, new, needs design review).
+    row: {
+      section: 'Código de recuperación',
+      title: 'Generar un código nuevo',
+      hint: 'El código anterior deja de funcionar',
+    },
+    newCode: {
+      preparing: 'Preparando tu código',
+      failedTitle: 'No pudimos preparar tu código',
+      failedMessage: 'Revisa tu conexión e intenta de nuevo desde Seguridad.',
+    },
+  },
 } as const;
