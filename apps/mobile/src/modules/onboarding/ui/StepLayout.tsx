@@ -34,6 +34,10 @@ export interface StepLayoutProps {
   children?: ReactNode;
   /** False while the step is not valid: "Continuar" stays disabled. */
   canContinue?: boolean;
+  /** Replaces "Continuar" when the step saves something first (Nombre saves the name). */
+  onContinue?: () => void;
+  /** The step's own save is running. */
+  busy?: boolean;
 }
 
 /** The decorative squares of the step panel (390 × 206 in the design). */
@@ -48,7 +52,15 @@ export function StepPanelShapes() {
   );
 }
 
-export function StepLayout({ step, actions, children, canContinue = true }: StepLayoutProps) {
+export function StepLayout({
+  step,
+  actions,
+  children,
+  canContinue = true,
+  onContinue,
+  busy = false,
+}: StepLayoutProps) {
+  const working = busy || actions.busy;
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const rise = useRise();
@@ -67,7 +79,7 @@ export function StepLayout({ step, actions, children, canContinue = true }: Step
             step={stepNumber(step)}
             total={TOTAL_STEPS}
             onBack={actions.back}
-            onSkip={actions.busy ? undefined : () => void actions.skip()}
+            onSkip={working ? undefined : () => void actions.skip()}
           />
           <AppText
             variant="title"
@@ -96,9 +108,9 @@ export function StepLayout({ step, actions, children, canContinue = true }: Step
         <PrimaryButton
           label={last ? onboardingStrings.step.finish : onboardingStrings.step.continue}
           withArrow
-          onPress={() => void actions.complete()}
+          onPress={onContinue ?? (() => void actions.complete())}
           disabled={!canContinue}
-          loading={actions.busy}
+          loading={working}
           testID="onboarding.continue"
         />
       </View>

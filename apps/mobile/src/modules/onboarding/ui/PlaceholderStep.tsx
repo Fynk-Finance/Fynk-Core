@@ -1,4 +1,4 @@
-// Steps whose content is still to be built: Nombre (M3, next branch), Cuentas (M5 bank links, M6 cash),
+// Steps whose content is still to be built: Cuentas (M5 bank links, M6 cash),
 // Metas (M8 goal form) and Gastos recurrentes (M9 recurring form). The frame, the step bar,
 // "Omitir" and "Continuar" already work, so the setup can be finished end to end.
 // TODO(M5) SCRUM-23 embed BankLinkList and ConnectBankButton from @modules/bank.
