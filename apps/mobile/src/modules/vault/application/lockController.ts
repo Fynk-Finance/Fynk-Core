@@ -17,6 +17,7 @@ import {
   type RecoveryCodeService,
 } from './recoveryCode';
 import type { ApprovalCheck, ApprovalStart, RestoreWithApproval } from './restoreWithApproval';
+import type { ResetBackup, ResetResult } from './resetBackup';
 import type { RestoreFailure, RestoreResult, RestoreWithCode } from './restoreWithCode';
 import type { Vault } from './vault';
 
@@ -75,6 +76,8 @@ export interface LockControllerDeps {
   restoreWithCode: RestoreWithCode;
   /** The restore with the old phone's approval. */
   restoreWithApproval: RestoreWithApproval;
+  /** "No tengo ninguno de los dos": the server deletes the backup after an email code reset. */
+  resetBackup: ResetBackup;
   /** False in the dev session: no registered device and no API, so no backup to protect. */
   backupEnabled: () => boolean;
 }
@@ -119,6 +122,13 @@ export interface LockController {
    * code is left.
    */
   checkApproval(id: string): Promise<ApprovalCheck>;
+  /**
+   * New phone (pending device) with neither the old phone nor the code: asks the server to delete
+   * the backup. The server allows it only after a password reset with the email code. On `ok`
+   * this phone is active with no recovery key, so the first phone path runs: a new DEK and a new
+   * recovery code. Any other result leaves the screen as it was.
+   */
+  resetBackup(): Promise<ResetResult>;
   /**
    * A new code that replaces the current one once confirmed. Needs a login of the last 5
    * minutes, else asks for the password first. The vault must be unlocked.
@@ -440,6 +450,14 @@ export function createLockController(deps: LockControllerDeps): LockController {
         // The server read the grant out: this phone is active and has no key.
         set({ status: 'pendingDevice', deviceStatus: 'active' });
       }
+      return result;
+    },
+    async resetBackup() {
+      if (state.status !== 'pendingDevice') return 'failed';
+      const mine = generation;
+      const result = await deps.resetBackup.reset();
+      // Locked or signed out meanwhile: the next open finds the phone active and sets it up.
+      if (result === 'ok' && mine === generation) await controller.unlock();
       return result;
     },
     async prepareNewRecoveryCode() {

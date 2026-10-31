@@ -17,9 +17,11 @@ import {
 import { createCompleteRestore } from '../application/completeRestore';
 import { createLockController } from '../application/lockController';
 import { createRecoveryCodeService } from '../application/recoveryCode';
+import { createResetBackup } from '../application/resetBackup';
 import { createRestoreState } from '../application/restoreState';
 import { createRestoreWithApproval } from '../application/restoreWithApproval';
 import { createRestoreWithCode } from '../application/restoreWithCode';
+import { createBackupResetApi } from './api/backupResetApi';
 import { createRecoveryKeyApi } from './api/recoveryKeyApi';
 import { argon2Kdf } from './crypto/argon2Kdf';
 import { newDek } from './crypto/newDek';
@@ -71,4 +73,6 @@ export const lockController = createLockController({
     deviceSharedSecret: (peer) => deviceSharedSecret(peer),
     completeRestore: createCompleteRestore({ dekStore, vault, restoreState, restoreAll }),
   }),
+  // No other phone and no code: the server deletes the backup after an email code reset.
+  resetBackup: createResetBackup({ api: createBackupResetApi({ deviceId: () => deviceId() }) }),
 });

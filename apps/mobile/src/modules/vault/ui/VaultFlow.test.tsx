@@ -29,6 +29,7 @@ function fakeController(initial: LockState = { status: 'locked' }) {
       expiresAt: '2099-01-01T00:00:00Z',
     })),
     checkApproval: jest.fn(async () => 'waiting' as const),
+    resetBackup: jest.fn(async () => 'notAllowed' as const),
   } as unknown as LockController;
   const set = (next: LockState) =>
     act(async () => {
@@ -182,6 +183,19 @@ describe('restore on a new phone', () => {
     await fireEvent.press(screen.getByTestId('vault.restore.approvalOption'));
     expect(controller.startApproval).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('vault.restore.approvalCode')).toHaveTextContent('048 291');
+  });
+
+  it('starts from zero through the controller and signs out to reset the password', async () => {
+    const { controller } = fakeController({ status: 'pendingDevice', deviceStatus: 'active' });
+    const signOut = jest.fn(async () => undefined);
+    const Flow = createVaultFlow(controller, deps(signOut));
+    await render(<Flow />);
+    await fireEvent.press(screen.getByTestId('vault.restore.resetOption'));
+    await fireEvent.press(screen.getByTestId('vault.restore.resetStart'));
+    expect(controller.resetBackup).toHaveBeenCalledTimes(1);
+    expect(signOut).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByTestId('vault.restore.resetPassword'));
+    expect(signOut).toHaveBeenCalledTimes(1);
   });
 
   it('shows the error of the last try', async () => {

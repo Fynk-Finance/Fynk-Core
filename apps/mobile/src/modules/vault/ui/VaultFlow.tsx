@@ -43,6 +43,7 @@ export function createVaultFlow(controller: LockController, { copyText, signOut 
           onRestore={(typed) => void controller.restoreWithCode(typed)}
           onStartApproval={() => controller.startApproval()}
           onCheckApproval={(id) => controller.checkApproval(id)}
+          onReset={() => controller.resetBackup()}
           onSignOut={() => void signOut()}
         />
       );
