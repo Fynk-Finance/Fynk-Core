@@ -82,13 +82,13 @@ DEK   32 random bytes made on the first phone (expo-crypto). It is the SQLCipher
 1. After login the phone is `pending`. It calls `GET /backup/recovery-key` and gets the wrapped DEK, nonce, salt and parameters. This is allowed for a pending device because the wrapped key is useless without the code.
 2. The person types the code. The phone derives RK and opens the DEK. A wrong code fails here, on the phone, and the server hears nothing.
 3. The phone derives the proof from the DEK and sends it to `POST /backup/recovery-key/activate`. The server compares `SHA-256(proof)` in constant time. It allows 5 failures per hour for each user, then answers `429 too_many_attempts` without comparing.
-4. The server activates the device. The phone keeps the DEK as copy A, downloads the records page by page, decrypts them and imports them. When two copies of a record exist, the highest version wins.
+4. The server activates the device. The phone keeps the DEK as copy A, downloads the records page by page, decrypts them and imports them. When two copies of a record exist, the highest version wins. A vault mark (`restore_pending`) stays set until the download finishes, so a restore cut short by the network finishes on the next open.
 
 ### A new phone with approval from the old one
 
 1. The new phone has an X25519 key pair from M1 and asks `POST /device-approvals`. It shows a 6-digit code: the first 4 bytes of SHA-256 of its public key, read as an unsigned integer, modulo 1,000,000. The old phone shows the same code with the device name. The person compares the two. If the server had swapped the public key, the codes would differ.
 2. The old phone asks for biometrics or the password. Then it makes an ephemeral X25519 key pair, computes the shared secret with the new phone's public key and derives a 32-byte key with `HKDF-SHA256(shared, info "fynk/device-approval/v1")`.
-3. It sends `AES-256-GCM(DEK)` with a random 12-byte nonce and the approval id as associated data, plus the ephemeral public key, to `POST /device-approvals/{id}/approve`. The server stores them and activates the new device. It cannot open the grant.
+3. It sends `AES-256-GCM(DEK)` with a random 12-byte nonce and the approval id (its lowercase UUID text) as associated data, plus the ephemeral public key, to `POST /device-approvals/{id}/approve`. The server stores them and activates the new device. It cannot open the grant.
 4. A request expires after 10 minutes. The new phone polls it and can read the grant only once: the server clears it in the same transaction. Then the new phone derives the same key, opens the DEK and restores the records as above.
 5. The old phone can also reject the request. The new phone stays pending.
 
