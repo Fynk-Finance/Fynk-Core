@@ -7,25 +7,31 @@ import {
   backupEnabled,
   currentDevice,
   deviceId,
+  devicePublicKey,
+  deviceSharedSecret,
   lastLoginAt,
   onSessionChange,
   reauthenticate,
 } from '@modules/identity';
 
+import { createCompleteRestore } from '../application/completeRestore';
 import { createLockController } from '../application/lockController';
 import { createRecoveryCodeService } from '../application/recoveryCode';
 import { createRestoreState } from '../application/restoreState';
+import { createRestoreWithApproval } from '../application/restoreWithApproval';
 import { createRestoreWithCode } from '../application/restoreWithCode';
 import { createRecoveryKeyApi } from './api/recoveryKeyApi';
 import { argon2Kdf } from './crypto/argon2Kdf';
 import { newDek } from './crypto/newDek';
 import { vaultStrings } from '../ui/strings.es-CO';
 import { restoreAll } from './defaultBackup';
+import { deviceApprovalsApi } from './defaultApproval';
 import { vault } from './defaultVault';
 import { createDekStore } from './keychain/dekStore';
 
 const recoveryKeyApi = createRecoveryKeyApi({ deviceId: () => deviceId() });
 const dekStore = createDekStore();
+const restoreState = createRestoreState(() => vault.getVaultDb());
 
 export const lockController = createLockController({
   vault,
@@ -54,7 +60,15 @@ export const lockController = createLockController({
     kdf: argon2Kdf,
     dekStore,
     vault,
-    restoreState: createRestoreState(() => vault.getVaultDb()),
+    restoreState,
     restoreAll,
+  }),
+  // A new phone: the old phone seals the DEK for this phone's key, then the same restore steps.
+  restoreWithApproval: createRestoreWithApproval({
+    api: deviceApprovalsApi,
+    randomBytes: (n) => getRandomBytes(n),
+    devicePublicKey: () => devicePublicKey(),
+    deviceSharedSecret: (peer) => deviceSharedSecret(peer),
+    completeRestore: createCompleteRestore({ dekStore, vault, restoreState, restoreAll }),
   }),
 });
