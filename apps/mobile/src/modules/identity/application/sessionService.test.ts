@@ -436,6 +436,30 @@ describe('reauthenticate', () => {
   });
 });
 
+describe('userId', () => {
+  it('is the sub of the id token after sign in and restore, and null when signed out', async () => {
+    const { service } = setup();
+    await service.restore();
+    expect(service.userId()).toBeNull();
+    await service.signIn();
+    expect(service.userId()).toBe('user-a');
+    await service.signOut();
+    expect(service.userId()).toBeNull();
+  });
+
+  it('is read from the stored tokens on restore', async () => {
+    const { service } = setup(tokenSet(1, undefined, 'user-b'));
+    await service.restore();
+    expect(service.userId()).toBe('user-b');
+  });
+
+  it('is null when the id token has no sub', async () => {
+    const { service } = setup({ ...tokenSet(1), idToken: jwt({ auth_time: authTime(1) }) });
+    await service.restore();
+    expect(service.userId()).toBeNull();
+  });
+});
+
 describe('lastLoginAt', () => {
   it('is the auth_time of the id token after sign in, and null when signed out', async () => {
     const { service } = setup();

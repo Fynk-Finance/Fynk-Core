@@ -3,6 +3,7 @@
 import type { SessionService, SessionState } from './sessionService';
 
 export const DEV_TOKEN = 'dev-token';
+export const DEV_USER_ID = 'dev-user';
 
 /** EXPO_PUBLIC_DEV_AUTH=dev-token, and only when __DEV__ is true. */
 export function shouldUseDevAuth(setting: string | undefined, isDev: boolean): boolean {
@@ -31,6 +32,7 @@ export function createDevSession(): SessionService {
     // There is no login to repeat: the dev session counts as just logged in, always.
     reauthenticate: async () => 'ok',
     lastLoginAt: () => (state.status === 'signedIn' ? new Date() : null),
+    userId: () => (state.status === 'signedIn' ? DEV_USER_ID : null),
     getAccessToken: async () => (state.status === 'signedIn' ? DEV_TOKEN : null),
     refreshAccessToken: async () => false,
   };

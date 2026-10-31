@@ -34,6 +34,7 @@ it('exports the functions the vault needs', () => {
   const identity = load(undefined);
   for (const name of [
     'lastLoginAt',
+    'userId',
     'onSessionChange',
     'reauthenticate',
     'currentDevice',
@@ -52,6 +53,10 @@ it('exports the functions the vault needs', () => {
 describe('with a real session and no registered device', () => {
   it('has no last login while nobody is signed in', () => {
     expect(load(undefined).lastLoginAt()).toBeNull();
+  });
+
+  it('has no user id while nobody is signed in', () => {
+    expect(load(undefined).userId()).toBeNull();
   });
 
   it('answers null for the device and its public key, and refuses a shared secret', async () => {
@@ -98,6 +103,13 @@ describe('with the dev session (EXPO_PUBLIC_DEV_AUTH)', () => {
     expect(identity.backupEnabled()).toBe(false);
     expect(await identity.devicePublicKey()).toBeNull();
     await expect(identity.deviceSharedSecret(new Uint8Array(32))).rejects.toThrow();
+  });
+
+  it('has a fixed user id while signed in and none after sign out', async () => {
+    const identity = load('dev-token');
+    expect(identity.userId()).toBe('dev-user');
+    await identity.signOut();
+    expect(identity.userId()).toBeNull();
   });
 
   it('has no last login after sign out', async () => {
