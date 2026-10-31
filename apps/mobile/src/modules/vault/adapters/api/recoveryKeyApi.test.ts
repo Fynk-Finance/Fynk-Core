@@ -124,3 +124,38 @@ describe('put', () => {
     );
   });
 });
+
+describe('activate', () => {
+  it('posts the proof in base64 with X-Device-Id and accepts 204', async () => {
+    const { api, seen } = setup(() => new Response(null, { status: 204 }));
+    await api.activate(bytes(32, 1));
+    expect(seen[0]!.method).toBe('POST');
+    expect(seen[0]!.url).toBe('https://api.test/v1/backup/recovery-key/activate');
+    expect(seen[0]!.headers.get('X-Device-Id')).toBe('dev-1');
+    expect(await seen[0]!.json()).toEqual({
+      deviceProof: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=',
+    });
+  });
+
+  it.each([
+    [422, 'proof_mismatch', 'mismatch'],
+    [429, 'too_many_attempts', 'tooMany'],
+    [410, 'device_removed', 'removed'],
+    [404, 'recovery_key_not_found', 'noKey'],
+    [403, 'device_not_active', 'notActive'],
+    [500, 'internal', 'unknown'],
+  ])('maps %i %s to %s', async (status, code, kind) => {
+    const { api } = setup(() => problem(status, code));
+    expect(await kindOf(api.activate(bytes(32, 1)))).toBe(kind);
+  });
+
+  it('maps a failed connection to offline and calls nothing without a device', async () => {
+    const down = setup(() => {
+      throw new TypeError('offline');
+    });
+    expect(await kindOf(down.api.activate(bytes(32, 1)))).toBe('offline');
+    const none = setup(() => new Response(null, { status: 204 }), null);
+    expect(await kindOf(none.api.activate(bytes(32, 1)))).toBe('notActive');
+    expect(none.fetch).not.toHaveBeenCalled();
+  });
+});

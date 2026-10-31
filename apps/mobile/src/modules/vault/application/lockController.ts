@@ -16,6 +16,7 @@ import {
   type PreparedRecoveryCode,
   type RecoveryCodeService,
 } from './recoveryCode';
+import type { RestoreFailure, RestoreResult, RestoreWithCode } from './restoreWithCode';
 import type { Vault } from './vault';
 
 export type LockError = 'notEncrypted' | 'keychain' | 'offline' | 'unknown';
@@ -24,8 +25,11 @@ export type LockError = 'notEncrypted' | 'keychain' | 'offline' | 'unknown';
 export type LockNotice = 'biometricsOff' | 'biometricFailed';
 
 export interface LockState {
-  status: 'locked' | 'unlocking' | 'unlocked' | 'pendingDevice' | 'recoveryCode' | 'error';
+  status:
+    'locked' | 'unlocking' | 'unlocked' | 'pendingDevice' | 'restoring' | 'recoveryCode' | 'error';
   error?: LockError;
+  /** Pending device only: why the last try with the recovery code did not work. */
+  restoreError?: RestoreFailure;
   /** Recovery code only: the groups to show once. The code lives in memory while it is shown. */
   recovery?: { groups: string[] };
   /** Locked only: copy B exists and the phone has biometrics, so the button may show. */
@@ -61,6 +65,8 @@ export interface LockControllerDeps {
   /** Asks the server whether this account already has a recovery key. */
   recoveryKey: Pick<RecoveryKeyApi, 'get'>;
   recoveryCode: RecoveryCodeService;
+  /** The restore on a new phone, and the retry of one that was cut short. */
+  restoreWithCode: RestoreWithCode;
   /** False in the dev session: no registered device and no API, so no backup to protect. */
   backupEnabled: () => boolean;
 }
@@ -88,6 +94,12 @@ export interface LockController {
    * uploaded and the vault is unlocked. `mismatch` and `offline` can be retried on the same code.
    */
   confirmRecoveryCode(lastGroup: string): Promise<ConfirmResult>;
+  /**
+   * New phone (pending device): restores with the recovery code the person typed. Shows
+   * `restoring` while it works. On success the vault is unlocked; on any other result it goes
+   * back to `pendingDevice` with `restoreError`, so the person can try again.
+   */
+  restoreWithCode(typed: string): Promise<RestoreResult>;
   /**
    * A new code that replaces the current one once confirmed. Needs a login of the last 5
    * minutes, else asks for the password first. The vault must be unlocked.
@@ -185,6 +197,8 @@ export function createLockController(deps: LockControllerDeps): LockController {
     if (!(await openVault(dek))) return;
     // The person is in at once; the server check never delays or blocks an offline open.
     set({ status: 'unlocked' });
+    // A restore that was cut short (offline) continues in the background.
+    if (deps.backupEnabled()) void deps.restoreWithCode.resumePending();
     await offerMissingRecoveryCode(dek, mine);
   }
 
@@ -219,7 +233,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
         return;
       }
       if (existing) {
-        // The restore with the recovery code arrives in a later PR.
+        // The person restores with the recovery code (restoreWithCode).
         set({ status: 'pendingDevice' });
         return;
       }
@@ -265,7 +279,10 @@ export function createLockController(deps: LockControllerDeps): LockController {
   }
 
   const isOpenOrOpening = () =>
-    state.status === 'unlocking' || state.status === 'unlocked' || state.status === 'recoveryCode';
+    state.status === 'unlocking' ||
+    state.status === 'unlocked' ||
+    state.status === 'restoring' ||
+    state.status === 'recoveryCode';
 
   const controller: LockController = {
     getState: () => state,
@@ -274,7 +291,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
       return () => listeners.delete(listener);
     },
     unlock() {
-      if (state.status === 'unlocked' || state.status === 'recoveryCode') return Promise.resolve();
+      if (isOpenOrOpening() && state.status !== 'unlocking') return Promise.resolve();
       if (state.status === 'error' && state.error === 'notEncrypted') return Promise.resolve();
       inFlight ??= run().finally(() => {
         inFlight = null;
@@ -352,6 +369,20 @@ export function createLockController(deps: LockControllerDeps): LockController {
       const result = await confirmRecoveryCode(shown, lastGroup);
       // A lock while the upload ran already dropped the code; the upload itself stands.
       if (result === 'ok' && pendingCode === shown) set({ status: 'unlocked' });
+      return result;
+    },
+    async restoreWithCode(typed) {
+      if (state.status !== 'pendingDevice') return 'failed';
+      const mine = generation;
+      set({ status: 'restoring' });
+      const result = await deps.restoreWithCode.restore(typed);
+      const opened = result === 'restored' || result === 'partial';
+      if (mine !== generation) {
+        // Locked or reset while restoring: the vault opened behind that, so close it again.
+        if (opened) await vault.close();
+        return result;
+      }
+      set(opened ? { status: 'unlocked' } : { status: 'pendingDevice', restoreError: result });
       return result;
     },
     async prepareNewRecoveryCode() {

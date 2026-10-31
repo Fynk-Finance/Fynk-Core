@@ -15,6 +15,10 @@ function toRecoveryError(e: unknown): RecoveryError {
   if (!isApiError(e)) return new RecoveryError('unknown');
   if (e.code === 'network_error') return new RecoveryError('offline');
   if (e.code === 'device_not_active') return new RecoveryError('notActive');
+  if (e.code === 'proof_mismatch') return new RecoveryError('mismatch');
+  if (e.code === 'too_many_attempts') return new RecoveryError('tooMany');
+  if (e.code === 'device_removed') return new RecoveryError('removed');
+  if (e.code === 'recovery_key_not_found') return new RecoveryError('noKey');
   return new RecoveryError('unknown');
 }
 
@@ -69,6 +73,18 @@ export function createRecoveryKeyApi({
               kdfParams: upload.kdfParams,
               deviceProofHash: toBase64(upload.deviceProofHash),
             },
+          }),
+        );
+      } catch (e) {
+        throw e instanceof RecoveryError ? e : toRecoveryError(e);
+      }
+    },
+    async activate(proof) {
+      try {
+        await unwrap(
+          client.POST('/backup/recovery-key/activate', {
+            params: { header: header() },
+            body: { deviceProof: toBase64(proof) },
           }),
         );
       } catch (e) {

@@ -3,7 +3,7 @@ import type { ModuleRoutes } from '@shared/navigation';
 import type { MarkDirty, RegisterBackupCollection } from '@shared/ports/backup';
 import type { GetVaultDb, RegisterVaultMigrations } from '@shared/ports/vault';
 
-import { useSession } from '@modules/identity';
+import { signOut, useSession } from '@modules/identity';
 
 import { watchAppState } from './adapters/appStateLock';
 import { approveDevice, startApprovalNotifier } from './adapters/defaultApproval';
@@ -35,7 +35,7 @@ export const routes: ModuleRoutes = {
   module: 'vault',
   // Lock screen and the recovery code of a new account, shown with a fade and no back gesture
   // (flow change).
-  flow: createVaultFlow(lockController, { copyText }),
+  flow: createVaultFlow(lockController, { copyText, signOut: () => signOut() }),
   // Open while there is a session and the vault is not unlocked.
   useGate: createUseVaultGate({
     controller: lockController,

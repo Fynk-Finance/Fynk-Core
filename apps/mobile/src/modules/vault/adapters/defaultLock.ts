@@ -14,18 +14,22 @@ import {
 
 import { createLockController } from '../application/lockController';
 import { createRecoveryCodeService } from '../application/recoveryCode';
+import { createRestoreState } from '../application/restoreState';
+import { createRestoreWithCode } from '../application/restoreWithCode';
 import { createRecoveryKeyApi } from './api/recoveryKeyApi';
 import { argon2Kdf } from './crypto/argon2Kdf';
 import { newDek } from './crypto/newDek';
 import { vaultStrings } from '../ui/strings.es-CO';
+import { restoreAll } from './defaultBackup';
 import { vault } from './defaultVault';
 import { createDekStore } from './keychain/dekStore';
 
 const recoveryKeyApi = createRecoveryKeyApi({ deviceId: () => deviceId() });
+const dekStore = createDekStore();
 
 export const lockController = createLockController({
   vault,
-  dekStore: createDekStore(),
+  dekStore,
   newDek: () => newDek(),
   identity: {
     lastLoginAt: () => lastLoginAt(),
@@ -43,5 +47,14 @@ export const lockController = createLockController({
     random: (n) => getRandomBytes(n),
     kdf: argon2Kdf,
     api: recoveryKeyApi,
+  }),
+  // A new phone: the code opens the DEK, the server activates the phone, then the records come.
+  restoreWithCode: createRestoreWithCode({
+    recoveryKey: recoveryKeyApi,
+    kdf: argon2Kdf,
+    dekStore,
+    vault,
+    restoreState: createRestoreState(() => vault.getVaultDb()),
+    restoreAll,
   }),
 });

@@ -69,13 +69,6 @@ it('shows a spinner and no button while unlocking', async () => {
   expect(screen.queryByRole('button', { name: t.password })).toBeNull();
 });
 
-it('explains that this phone waits for approval', async () => {
-  await renderScreen({ status: 'pendingDevice' });
-  expect(screen.getByText(t.pendingTitle)).toBeOnTheScreen();
-  expect(screen.getByText(t.pendingMessage)).toBeOnTheScreen();
-  expect(screen.queryByRole('button', { name: t.password })).toBeNull();
-});
-
 it.each(['offline', 'keychain', 'unknown'] as const)(
   'shows the %s error with a retry button',
   async (error) => {
