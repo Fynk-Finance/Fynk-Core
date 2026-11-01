@@ -308,7 +308,7 @@
       "enabled": true,
       "serviceAccountClientId": "fynk-admin",
       "clientRoles": {
-        "realm-management": ["view-users", "manage-users"]
+        "realm-management": ["view-users", "manage-users", "view-events"]
       }
     },
     {
