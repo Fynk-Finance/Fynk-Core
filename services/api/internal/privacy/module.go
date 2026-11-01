@@ -1,45 +1,67 @@
 package privacy
 
 import (
-	"context"
+	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
+	identity "github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/module"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/problem"
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/privacy/http"
 )
 
-// New returns the privacy module. Until M13 implements it, only the example health path of
-// contracts/modules/privacy.yaml answers. Every other route answers 501.
+// New returns the privacy module. /privacy/policy and /privacy/my-data are implemented;
+// other privacy routes (like deletion requests) answer 501 until implemented.
 func New(d module.Deps) module.Module {
-	return stub{
-		Stub: module.Stub{ModuleName: "privacy", Prefixes: []string{"/privacy"}},
-		deps: d,
+	var profile ProfileReader
+	if d.Config.KeycloakAdminClientSecret != "" {
+		profile = identity.NewUserProfileReader(d.Config)
+	}
+	collector := NewCollector(d.DB, profile, d.Clock)
+	return mod{
+		Stub:      module.Stub{ModuleName: "privacy", Prefixes: []string{"/privacy"}},
+		deps:      d,
+		collector: collector,
 	}
 }
 
-type stub struct {
+type mod struct {
 	module.Stub
-	deps module.Deps
+	deps      module.Deps
+	collector *Collector
 }
 
-// Routes mounts the server generated from the contract, then the 501 stub routes.
-func (s stub) Routes(r chi.Router) {
-	strict := httpapi.NewStrictHandlerWithOptions(server{}, nil, httpapi.StrictHTTPServerOptions{
+// Routes mounts the server generated from the contract, with requireAuth for protected paths,
+// and the 501 stub for routes not yet implemented.
+func (m mod) Routes(r chi.Router) {
+	srv := server{collector: m.collector}
+	strict := httpapi.NewStrictHandlerWithOptions(srv, nil, httpapi.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  problem.RequestError,
-		ResponseErrorHandlerFunc: problem.ResponseErrorHandler(s.deps.Log),
+		ResponseErrorHandlerFunc: problem.ResponseErrorHandler(m.deps.Log),
 	})
-	httpapi.HandlerWithOptions(strict, httpapi.ChiServerOptions{
-		BaseRouter:       r,
-		ErrorHandlerFunc: problem.RequestError,
+
+	r.Group(func(g chi.Router) {
+		g.Use(requireAuth)
+		httpapi.HandlerWithOptions(strict, httpapi.ChiServerOptions{
+			BaseRouter:       g,
+			ErrorHandlerFunc: problem.RequestError,
+		})
 	})
-	s.Stub.Routes(r)
+
+	m.Stub.Routes(r)
 }
 
-// server implements the generated httpapi.StrictServerInterface.
-type server struct{}
-
-func (server) PrivacyHealth(context.Context, httpapi.PrivacyHealthRequestObject) (httpapi.PrivacyHealthResponseObject, error) {
-	return httpapi.PrivacyHealth200JSONResponse{Module: "privacy", Status: httpapi.Stub}, nil
+// requireAuth applies auth.Require to all routes except the public /privacy/health and /privacy/policy.
+func requireAuth(next http.Handler) http.Handler {
+	protected := auth.Require(next)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/privacy/health") || strings.HasSuffix(r.URL.Path, "/privacy/policy") {
+			next.ServeHTTP(w, r)
+			return
+		}
+		protected.ServeHTTP(w, r)
+	})
 }
