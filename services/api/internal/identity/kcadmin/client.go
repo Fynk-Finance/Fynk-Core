@@ -297,3 +297,70 @@ func (c *Client) DeleteSession(ctx context.Context, sid string) error {
 	}
 	return err
 }
+
+// AuthEvent is a user authentication event from Keycloak's event store.
+type AuthEvent struct {
+	ID        string            `json:"id"`
+	Time      int64             `json:"time"`
+	Type      string            `json:"type"`
+	RealmID   string            `json:"realmId"`
+	ClientID  string            `json:"clientId"`
+	UserID    string            `json:"userId"`
+	SessionID string            `json:"sessionId"`
+	IPAddress string            `json:"ipAddress"`
+	Error     string            `json:"error"`
+	Details   map[string]string `json:"details"`
+}
+
+// EventsFilter specifies query parameters for retrieving Keycloak user events.
+type EventsFilter struct {
+	DateFrom string   // format "yyyy-MM-dd"
+	DateTo   string   // format "yyyy-MM-dd"
+	Types    []string // e.g. "LOGIN", "LOGIN_ERROR", "RESET_PASSWORD"
+	Client   string   // client ID
+	User     string   // user ID
+	First    int      // offset
+	Max      int      // limit
+}
+
+// GetEvents queries user events from Keycloak.
+func (c *Client) GetEvents(ctx context.Context, f EventsFilter) ([]AuthEvent, error) {
+	vals := url.Values{}
+	if f.DateFrom != "" {
+		vals.Set("dateFrom", f.DateFrom)
+	}
+	if f.DateTo != "" {
+		vals.Set("dateTo", f.DateTo)
+	}
+	for _, t := range f.Types {
+		vals.Add("type", t)
+	}
+	if f.Client != "" {
+		vals.Set("client", f.Client)
+	}
+	if f.User != "" {
+		vals.Set("user", f.User)
+	}
+	if f.First > 0 {
+		vals.Set("first", strconv.Itoa(f.First))
+	}
+	if f.Max > 0 {
+		vals.Set("max", strconv.Itoa(f.Max))
+	}
+
+	target := c.realmURL("/events")
+	if len(vals) > 0 {
+		target += "?" + vals.Encode()
+	}
+
+	data, _, err := c.do(ctx, "get events", http.MethodGet, target, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var events []AuthEvent
+	if err := json.Unmarshal(data, &events); err != nil {
+		return nil, errors.New("kcadmin: get events: decode")
+	}
+	return events, nil
+}

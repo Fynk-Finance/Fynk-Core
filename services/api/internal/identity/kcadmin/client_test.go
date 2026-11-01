@@ -19,16 +19,17 @@ import (
 const secret = "unit-test-secret"
 
 type fakeKC struct {
-	mu        sync.Mutex
-	tokens    atomic.Int32
-	expiresIn int
-	userBody  string
-	userCode  int
-	okBody    string // replaces the default user answer when set
-	puts      []map[string]any
-	deletes   []string
-	lastForm  string
-	lastQuery string
+	mu         sync.Mutex
+	tokens     atomic.Int32
+	expiresIn  int
+	userBody   string
+	userCode   int
+	okBody     string // replaces the default user answer when set
+	eventsBody string // replaces the default events answer when set
+	puts       []map[string]any
+	deletes    []string
+	lastForm   string
+	lastQuery  string
 }
 
 func (f *fakeKC) handler() http.Handler {
@@ -69,6 +70,17 @@ func (f *fakeKC) handler() http.Handler {
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && r.URL.Path == "/admin/realms/fynk/events":
+			f.lastQuery = r.URL.RawQuery
+			if f.userCode != 0 {
+				w.WriteHeader(f.userCode)
+				return
+			}
+			if f.eventsBody != "" {
+				_, _ = w.Write([]byte(f.eventsBody))
+				return
+			}
+			_, _ = w.Write([]byte(`[{"id":"e1","time":1793109791000,"type":"LOGIN","userId":"u1","ipAddress":"10.0.0.1"}]`))
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -277,5 +289,32 @@ func TestEmailResetAtErrors(t *testing.T) {
 	}
 	if _, _, err := New(config.Config{}, nil).EmailResetAt(context.Background(), "u1"); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("unconfigured: %v", err)
+	}
+}
+
+func TestGetEvents(t *testing.T) {
+	f := &fakeKC{expiresIn: 300}
+	c := setup(t, f)
+	evts, err := c.GetEvents(context.Background(), EventsFilter{
+		DateFrom: "2026-10-28",
+		Types:    []string{"LOGIN", "LOGIN_ERROR"},
+		Client:   "fynk-mobile",
+		First:    0,
+		Max:      50,
+	})
+	if err != nil {
+		t.Fatalf("GetEvents: %v", err)
+	}
+	if len(evts) != 1 || evts[0].ID != "e1" || evts[0].Type != "LOGIN" || evts[0].UserID != "u1" {
+		t.Fatalf("unexpected events: %+v", evts)
+	}
+	if !strings.Contains(f.lastQuery, "dateFrom=2026-10-28") || !strings.Contains(f.lastQuery, "type=LOGIN") ||
+		!strings.Contains(f.lastQuery, "client=fynk-mobile") || !strings.Contains(f.lastQuery, "max=50") {
+		t.Fatalf("unexpected query string: %s", f.lastQuery)
+	}
+
+	// Unconfigured client returns ErrUnavailable
+	if _, err := New(config.Config{}, nil).GetEvents(context.Background(), EventsFilter{}); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("expected ErrUnavailable, got: %v", err)
 	}
 }

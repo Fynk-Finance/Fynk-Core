@@ -33,7 +33,7 @@ Clients:
 | --- | --- | --- |
 | `fynk-mobile` | Public, Authorization Code with PKCE S256 only, redirect `co.fynk.app://oauth/callback`, adds `aud=fynk-api` | The app, in the system browser |
 | `fynk-api` | Bearer-only | Audience of the access tokens the API accepts |
-| `fynk-admin` | Confidential, service account only, `realm-management` roles `view-users` and `manage-users` | The API, to read and update the profile and to end a removed device's session. Keycloak cannot narrow `manage-users` to those operations, so the API only calls those endpoints |
+| `fynk-admin` | Confidential, service account only, `realm-management` roles `view-users`, `manage-users` and `view-events` | The API, to read and update the profile, end a removed device's session, and import authentication events for M13. Keycloak cannot narrow `manage-users` to those operations, so the API only calls those endpoints |
 
 ### Things that are easy to break
 

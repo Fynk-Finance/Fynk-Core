@@ -482,8 +482,8 @@ func TestAdminClientIsAConfidentialServiceAccount(t *testing.T) {
 	for _, u := range r.Users {
 		if u.ServiceAccountClientID == "fynk-admin" {
 			roles := slices.Sorted(slices.Values(u.ClientRoles["realm-management"]))
-			if !slices.Equal(roles, []string{"manage-users", "view-users"}) || len(u.ClientRoles) != 1 {
-				t.Fatalf("fynk-admin roles = %v, want realm-management manage-users and view-users", u.ClientRoles)
+			if !slices.Equal(roles, []string{"manage-users", "view-events", "view-users"}) || len(u.ClientRoles) != 1 {
+				t.Fatalf("fynk-admin roles = %v, want realm-management manage-users, view-events and view-users", u.ClientRoles)
 			}
 			return
 		}

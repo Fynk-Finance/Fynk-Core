@@ -16,6 +16,7 @@ import (
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit"
 	auditmigrations "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/migrations"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
+	identityports "github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/clock"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/db"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/migrate"
@@ -44,7 +45,7 @@ func setupTestStore(t *testing.T) (*audit.Store, *sql.DB, context.Context) {
 	t.Cleanup(reset)
 
 	res, err := migrate.Up(ctx, dbURL, migrate.Source{Schema: "audit", FS: auditmigrations.FS})
-	if err != nil || res.Version != 1 || res.Dirty {
+	if err != nil || res.Version != 2 || res.Dirty {
 		t.Fatalf("migrate: %+v, %v", res, err)
 	}
 
@@ -56,6 +57,91 @@ func setupTestStore(t *testing.T) (*audit.Store, *sql.DB, context.Context) {
 
 	store := audit.New(pool, slog.Default(), clock.System{})
 	return store, sqldb, ctx
+}
+
+type fakeEventsReader struct {
+	events []identityports.AuthEvent
+}
+
+func (f fakeEventsReader) Events(context.Context, time.Time) ([]identityports.AuthEvent, error) {
+	return f.events, nil
+}
+
+func TestKeycloakImporterIntegration(t *testing.T) {
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		t.Skip("DATABASE_URL is not set")
+	}
+
+	store, sqldb, ctx := setupTestStore(t)
+	pool, err := db.Open(ctx, dbURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(pool.Close)
+
+	reader := &fakeEventsReader{
+		events: []identityports.AuthEvent{
+			{
+				ID:        "kc-1",
+				Time:      time.Now().Add(-10 * time.Minute),
+				Type:      "LOGIN",
+				UserID:    "usr-kc-1",
+				IPAddress: "192.168.1.1",
+				Details:   map[string]string{"auth_method": "openid-connect"},
+			},
+			{
+				ID:        "kc-2",
+				Time:      time.Now().Add(-5 * time.Minute),
+				Type:      "LOGIN_ERROR",
+				UserID:    "usr-kc-2",
+				IPAddress: "192.168.1.2",
+				Error:     "invalid_user_credentials",
+			},
+		},
+	}
+
+	clk := clock.System{}
+	importer := audit.NewKeycloakImporter(pool, store, reader, slog.Default(), clk)
+
+	// 1. First import should import 2 events
+	n, err := importer.ImportOnce(ctx)
+	if err != nil {
+		t.Fatalf("ImportOnce first run: %v", err)
+	}
+	if n != 2 {
+		t.Fatalf("expected 2 imported events, got %d", n)
+	}
+
+	// Verify chain integrity
+	verRes, err := store.Verify(ctx)
+	if err != nil || !verRes.Valid || verRes.Count != 2 {
+		t.Fatalf("verify after first import: %+v, %v", verRes, err)
+	}
+
+	// 2. Second import with same events + 1 new event
+	reader.events = append(reader.events, identityports.AuthEvent{
+		ID:        "kc-3",
+		Time:      time.Now(),
+		Type:      "RESET_PASSWORD",
+		UserID:    "usr-kc-1",
+		IPAddress: "192.168.1.1",
+	})
+
+	n, err = importer.ImportOnce(ctx)
+	if err != nil {
+		t.Fatalf("ImportOnce second run: %v", err)
+	}
+	if n != 1 {
+		t.Fatalf("expected 1 new imported event (2 deduplicated), got %d", n)
+	}
+
+	// Verify chain integrity
+	verRes, err = store.Verify(ctx)
+	if err != nil || !verRes.Valid || verRes.Count != 3 {
+		t.Fatalf("verify after second import: %+v, %v", verRes, err)
+	}
+	_ = sqldb
 }
 
 func TestImmutabilityTriggerRejectsUpdateDeleteTruncate(t *testing.T) {
