@@ -82,7 +82,7 @@ func TestEveryStubRouteAnswers501ProblemJSON(t *testing.T) {
 	// M5 bank and M11 recommendations have real endpoints, tested in their own packages.
 	paths := []string{
 		"/v1/backup/unknown",
-		"/v1/catalog/merchants", "/v1/privacy/policy", "/v1/market/cdt-products",
+		"/v1/catalog/merchants", "/v1/privacy/deletion-requests", "/v1/market/cdt-products",
 	}
 	for _, p := range paths {
 		res, body := get(t, srv.URL+p, auth.DevToken)
@@ -107,6 +107,17 @@ func TestStubRoutesRequireAToken(t *testing.T) {
 	}
 	if res, _ := get(t, srv.URL+"/v1/consents/x", "wrong"); res.status != http.StatusUnauthorized {
 		t.Fatalf("status %d, want 401", res.status)
+	}
+}
+
+func TestPrivacyPolicyIsPublic(t *testing.T) {
+	srv := newServer(t, nil)
+	res, body := get(t, srv.URL+"/v1/privacy/policy", "")
+	if res.status != http.StatusOK {
+		t.Fatalf("status %d, want 200, body: %s", res.status, body)
+	}
+	if !strings.Contains(string(body), "2026-11-v1") {
+		t.Fatalf("body does not contain policy version: %s", body)
 	}
 }
 
