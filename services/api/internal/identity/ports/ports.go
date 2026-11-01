@@ -210,3 +210,19 @@ func (r userProfileReader) GetUser(ctx context.Context, userID string) (UserProf
 		CreatedAt:     u.CreatedAt,
 	}, nil
 }
+
+// UserDeleter removes a user from Keycloak.
+type UserDeleter interface {
+	DeleteUser(ctx context.Context, userID string) error
+}
+
+// NewUserDeleter returns a UserDeleter backed by kcadmin.Client.
+func NewUserDeleter(cfg config.Config) UserDeleter {
+	return userDeleter{kc: kcadmin.New(cfg, nil)}
+}
+
+type userDeleter struct{ kc *kcadmin.Client }
+
+func (d userDeleter) DeleteUser(ctx context.Context, userID string) error {
+	return d.kc.DeleteUser(ctx, userID)
+}

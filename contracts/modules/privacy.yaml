@@ -4,7 +4,7 @@
 openapi: 3.1.0
 info:
   title: Fynk API · Privacy
-  version: 0.2.0
+  version: 0.3.0
 tags:
   - name: privacy
     description: 'Privacy policy, my data export and deletion requests (M13).'
@@ -70,21 +70,82 @@ paths:
           $ref: '../openapi.yaml#/components/responses/Problem'
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
+  /privacy/deletion-requests:
+    post:
+      tags: [privacy]
+      operationId: createDeletionRequest
+      summary: Request account deletion under Ley 1581 de 2012
+      description: |
+        Requires authentication and fresh login in the last 5 minutes.
+        Executes cascade deletion in legal sequence:
+        1. Revoke every consent through M4 (which revokes at the bank)
+        2. Mark every bank link revoked and delete bank link records
+        3. Delete backup records, recovery key, and device approvals
+        4. Delete registered devices
+        5. Delete the Keycloak user
+        6. Store deletion evidence and immutable audit records
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivacyDeletionRequestCreate'
+      responses:
+        '202':
+          description: Deletion request accepted and executed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyDeletionRequest'
+        '400':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '403':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /privacy/deletion-requests/{id}:
+    get:
+      tags: [privacy]
+      operationId: getDeletionRequest
+      summary: Get deletion request status and legal confirmation
+      description: Public. Allows checking completion status after user account deletion.
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID of the deletion request
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Status of the deletion request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyDeletionRequest'
+        '400':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '404':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
 components:
   schemas:
     PrivacyPolicy:
       type: object
       required:
-        [
-          version,
-          publishedAt,
-          sha256,
-          bodyMd,
-          dataController,
-          contactEmail,
-          queryResponseDays,
-          claimResponseDays,
-        ]
+        - version
+        - publishedAt
+        - sha256
+        - bodyMd
+        - dataController
+        - contactEmail
+        - queryResponseDays
+        - claimResponseDays
       properties:
         version:
           type: string
@@ -114,7 +175,14 @@ components:
           example: 15
     PrivacyDataExport:
       type: object
-      required: [exportedAt, profile, devices, consents, bankLinks, backup, auditEvents]
+      required:
+        - exportedAt
+        - profile
+        - devices
+        - consents
+        - bankLinks
+        - backup
+        - auditEvents
       properties:
         exportedAt:
           type: string
@@ -182,7 +250,16 @@ components:
           format: date-time
     PrivacyConsentData:
       type: object
-      required: [id, provider, scopes, purpose, termDays, status, textVersion, evidence, createdAt]
+      required:
+        - id
+        - provider
+        - scopes
+        - purpose
+        - termDays
+        - status
+        - textVersion
+        - evidence
+        - createdAt
       properties:
         id:
           type: string
@@ -274,3 +351,44 @@ components:
         meta:
           type: object
           additionalProperties: true
+    PrivacyDeletionRequestCreate:
+      type: object
+      properties:
+        confirmation:
+          type: string
+          description: Typed confirmation, must be "ELIMINAR"
+          example: 'ELIMINAR'
+        reason:
+          type: string
+          maxLength: 256
+          example: 'Ya no uso la aplicación'
+    PrivacyDeletionRequest:
+      type: object
+      required: [id, status, createdAt, message]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [in_progress, completed, failed]
+          example: 'completed'
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        stepsDone:
+          type: array
+          items:
+            type: string
+          example:
+            - 'consents_revoked'
+            - 'bank_links_revoked'
+            - 'backup_deleted'
+            - 'devices_deleted'
+            - 'keycloak_deleted'
+        message:
+          type: string
+          example: 'Tu cuenta y tus datos fueron eliminados el 1 de noviembre de 2026.'

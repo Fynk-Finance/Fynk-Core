@@ -82,7 +82,7 @@ func TestEveryStubRouteAnswers501ProblemJSON(t *testing.T) {
 	// M5 bank and M11 recommendations have real endpoints, tested in their own packages.
 	paths := []string{
 		"/v1/backup/unknown",
-		"/v1/catalog/merchants", "/v1/privacy/deletion-requests", "/v1/market/cdt-products",
+		"/v1/catalog/merchants", "/v1/privacy/unknown", "/v1/market/cdt-products",
 	}
 	for _, p := range paths {
 		res, body := get(t, srv.URL+p, auth.DevToken)
