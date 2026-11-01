@@ -297,3 +297,12 @@ func (c *Client) DeleteSession(ctx context.Context, sid string) error {
 	}
 	return err
 }
+
+// DeleteUser removes a user from Keycloak. A user that is already gone is not an error.
+func (c *Client) DeleteUser(ctx context.Context, id string) error {
+	_, status, err := c.do(ctx, "delete user", http.MethodDelete, c.realmURL("/users/"+url.PathEscape(id)), nil)
+	if status == http.StatusNotFound {
+		return nil
+	}
+	return err
+}

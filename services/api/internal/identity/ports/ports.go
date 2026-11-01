@@ -19,8 +19,9 @@ import (
 
 // Errors the ports return.
 var (
-	ErrNotFound = devices.ErrNotFound
-	ErrRemoved  = devices.ErrRemoved
+	ErrNotFound    = devices.ErrNotFound
+	ErrRemoved     = devices.ErrRemoved
+	ErrUnavailable = kcadmin.ErrUnavailable
 )
 
 // Activator lets M2 activate a device once it approved it (or the recovery code was used).
@@ -165,4 +166,63 @@ func (s sessions) SessionStart(ctx context.Context, userID, sid string) (time.Ti
 		return time.Time{}, false, ErrNotFound
 	}
 	return at, ok, err
+}
+
+// UserProfile is the profile details from Keycloak.
+type UserProfile struct {
+	ID            string
+	Email         string
+	FirstName     string
+	LastName      string
+	EmailVerified bool
+	CreatedAt     time.Time
+}
+
+// UserProfileReader reads user profiles from Keycloak.
+type UserProfileReader interface {
+	GetUser(ctx context.Context, userID string) (UserProfile, error)
+}
+
+// NewUserProfileReader returns a UserProfileReader backed by kcadmin.Client.
+func NewUserProfileReader(cfg config.Config) UserProfileReader {
+	return userProfileReader{kc: kcadmin.New(cfg, nil)}
+}
+
+type userProfileReader struct{ kc *kcadmin.Client }
+
+func (r userProfileReader) GetUser(ctx context.Context, userID string) (UserProfile, error) {
+	u, err := r.kc.GetUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, kcadmin.ErrNotFound) {
+			return UserProfile{}, ErrNotFound
+		}
+		if errors.Is(err, kcadmin.ErrUnavailable) {
+			return UserProfile{}, ErrUnavailable
+		}
+		return UserProfile{}, err
+	}
+	return UserProfile{
+		ID:            userID,
+		Email:         u.Email,
+		FirstName:     u.FirstName,
+		LastName:      u.LastName,
+		EmailVerified: u.EmailVerified,
+		CreatedAt:     u.CreatedAt,
+	}, nil
+}
+
+// UserDeleter removes a user from Keycloak.
+type UserDeleter interface {
+	DeleteUser(ctx context.Context, userID string) error
+}
+
+// NewUserDeleter returns a UserDeleter backed by kcadmin.Client.
+func NewUserDeleter(cfg config.Config) UserDeleter {
+	return userDeleter{kc: kcadmin.New(cfg, nil)}
+}
+
+type userDeleter struct{ kc *kcadmin.Client }
+
+func (d userDeleter) DeleteUser(ctx context.Context, userID string) error {
+	return d.kc.DeleteUser(ctx, userID)
 }

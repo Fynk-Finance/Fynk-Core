@@ -1,21 +1,20 @@
 # Contract of the privacy module, owned by M13 (see CODEOWNERS).
 # Only M13 edits this file. Shared parts come from ../openapi.yaml.
-# The health path below is M0's example so generation works from day one.
-# Replace it with the real endpoints of docs/modules/00-shared-contracts.md, section 5.
+# Endpoints of docs/modules/00-shared-contracts.md, section 5.
 openapi: 3.1.0
 info:
   title: Fynk API · Privacy
-  version: 0.1.0
+  version: 0.3.0
 tags:
   - name: privacy
-    description: 'Privacy policy, my data and deletion requests (M13).'
+    description: 'Privacy policy, my data export and deletion requests (M13).'
 paths:
   /privacy/health:
     get:
       tags: [privacy]
       operationId: privacyHealth
       summary: Example health path of the privacy module
-      description: Public. Answers while the module is a stub. Removed when the module adds real endpoints.
+      description: Public. Kept while health tests expect it.
       security: []
       responses:
         '200':
@@ -26,6 +25,370 @@ paths:
                 $ref: '../openapi.yaml#/components/schemas/ModuleHealth'
               example:
                 module: privacy
-                status: stub
+                status: ok
+        '400':
+          $ref: '../openapi.yaml#/components/responses/Problem'
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
+  /privacy/policy:
+    get:
+      tags: [privacy]
+      operationId: getPrivacyPolicy
+      summary: Current privacy policy and data treatment terms (Ley 1581 de 2012)
+      description: |
+        Public. Returns the current privacy policy in Markdown in Spanish, with data controller,
+        purposes, data categories, where data lives, rights of the owner, contact channels,
+        and response times (10 days for queries, 15 days for claims).
+      security: []
+      responses:
+        '200':
+          description: The active privacy policy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyPolicy'
+        '400':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /privacy/my-data:
+    get:
+      tags: [privacy]
+      operationId: getMyData
+      summary: Export all cloud data stored for the authenticated user
+      description: |
+        Authenticated. Returns profile from Keycloak, registered devices, consents with evidence,
+        bank links without token fingerprints, backup record count and size, and immutable audit events.
+      responses:
+        '200':
+          description: Full cloud data export for the authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyDataExport'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /privacy/deletion-requests:
+    post:
+      tags: [privacy]
+      operationId: createDeletionRequest
+      summary: Request account deletion under Ley 1581 de 2012
+      description: |
+        Requires authentication and fresh login in the last 5 minutes.
+        Executes cascade deletion in legal sequence:
+        1. Revoke every consent through M4 (which revokes at the bank)
+        2. Mark every bank link revoked and delete bank link records
+        3. Delete backup records, recovery key, and device approvals
+        4. Delete registered devices
+        5. Delete the Keycloak user
+        6. Store deletion evidence and immutable audit records
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivacyDeletionRequestCreate'
+      responses:
+        '202':
+          description: Deletion request accepted and executed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyDeletionRequest'
+        '400':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '403':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /privacy/deletion-requests/{id}:
+    get:
+      tags: [privacy]
+      operationId: getDeletionRequest
+      summary: Get deletion request status and legal confirmation
+      description: Public. Allows checking completion status after user account deletion.
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID of the deletion request
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Status of the deletion request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyDeletionRequest'
+        '400':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '404':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+components:
+  schemas:
+    PrivacyPolicy:
+      type: object
+      required:
+        - version
+        - publishedAt
+        - sha256
+        - bodyMd
+        - dataController
+        - contactEmail
+        - queryResponseDays
+        - claimResponseDays
+      properties:
+        version:
+          type: string
+          example: '2026-11-v1'
+        publishedAt:
+          type: string
+          format: date-time
+          example: '2026-11-01T00:00:00Z'
+        sha256:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        bodyMd:
+          type: string
+          description: Markdown text of the policy in Spanish (Colombia).
+        dataController:
+          type: string
+          example: 'Fynk Finance S.A.S.'
+        contactEmail:
+          type: string
+          format: email
+          example: 'privacidad@fynk.com.co'
+        queryResponseDays:
+          type: integer
+          example: 10
+        claimResponseDays:
+          type: integer
+          example: 15
+    PrivacyDataExport:
+      type: object
+      required:
+        - exportedAt
+        - profile
+        - devices
+        - consents
+        - bankLinks
+        - backup
+        - auditEvents
+      properties:
+        exportedAt:
+          type: string
+          format: date-time
+        profile:
+          $ref: '#/components/schemas/PrivacyProfileData'
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrivacyDeviceData'
+        consents:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrivacyConsentData'
+        bankLinks:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrivacyBankLinkData'
+        backup:
+          $ref: '#/components/schemas/PrivacyBackupData'
+        auditEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrivacyAuditEventData'
+    PrivacyProfileData:
+      type: object
+      required: [id, email, emailVerified, createdAt]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        emailVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    PrivacyDeviceData:
+      type: object
+      required: [id, name, platform, status, createdAt, lastSeenAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        platform:
+          type: string
+          enum: [ios, android]
+        publicKeyHex:
+          type: string
+        status:
+          type: string
+          enum: [pending, active, removed]
+        createdAt:
+          type: string
+          format: date-time
+        lastSeenAt:
+          type: string
+          format: date-time
+    PrivacyConsentData:
+      type: object
+      required:
+        - id
+        - provider
+        - scopes
+        - purpose
+        - termDays
+        - status
+        - textVersion
+        - evidence
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        purpose:
+          type: string
+        termDays:
+          type: integer
+        status:
+          type: string
+        textVersion:
+          type: string
+        evidence:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+        grantedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        revokedAt:
+          type: string
+          format: date-time
+        revokedReason:
+          type: string
+    PrivacyBankLinkData:
+      type: object
+      required: [id, provider, consentId, status, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+        consentId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [active, revoked]
+        createdAt:
+          type: string
+          format: date-time
+        lastRefreshedAt:
+          type: string
+          format: date-time
+        revokedAt:
+          type: string
+          format: date-time
+    PrivacyBackupData:
+      type: object
+      required: [recordCount, totalSizeBytes, hasRecoveryKey]
+      properties:
+        recordCount:
+          type: integer
+        totalSizeBytes:
+          type: integer
+          format: int64
+        hasRecoveryKey:
+          type: boolean
+        lastBackupAt:
+          type: string
+          format: date-time
+    PrivacyAuditEventData:
+      type: object
+      required: [id, type, at, meta]
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          type: string
+        deviceId:
+          type: string
+          format: uuid
+        at:
+          type: string
+          format: date-time
+        meta:
+          type: object
+          additionalProperties: true
+    PrivacyDeletionRequestCreate:
+      type: object
+      properties:
+        confirmation:
+          type: string
+          description: Typed confirmation, must be "ELIMINAR"
+          example: 'ELIMINAR'
+        reason:
+          type: string
+          maxLength: 256
+          example: 'Ya no uso la aplicación'
+    PrivacyDeletionRequest:
+      type: object
+      required: [id, status, createdAt, message]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [in_progress, completed, failed]
+          example: 'completed'
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        stepsDone:
+          type: array
+          items:
+            type: string
+          example:
+            - 'consents_revoked'
+            - 'bank_links_revoked'
+            - 'backup_deleted'
+            - 'devices_deleted'
+            - 'keycloak_deleted'
+        message:
+          type: string
+          example: 'Tu cuenta y tus datos fueron eliminados el 1 de noviembre de 2026.'

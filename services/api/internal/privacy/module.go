@@ -1,45 +1,86 @@
 package privacy
 
 import (
-	"context"
+	"io/fs"
+	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
+	consents "github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/ports"
+	identity "github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/module"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/problem"
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/privacy/http"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/privacy/migrations"
 )
 
-// New returns the privacy module. Until M13 implements it, only the example health path of
-// contracts/modules/privacy.yaml answers. Every other route answers 501.
+// New returns the privacy module (M13).
 func New(d module.Deps) module.Module {
-	return stub{
-		Stub: module.Stub{ModuleName: "privacy", Prefixes: []string{"/privacy"}},
-		deps: d,
+	var profile ProfileReader
+	var sessions identity.Sessions
+	var userDeleter identity.UserDeleter
+
+	if d.Config.KeycloakAdminClientSecret != "" {
+		profile = identity.NewUserProfileReader(d.Config)
+		sessions = identity.NewSessions(d.Config)
+		userDeleter = identity.NewUserDeleter(d.Config)
+	}
+	consentsRevoker := consents.NewConsentsRevoker(d)
+
+	collector := NewCollector(d.DB, profile, d.Clock)
+	deleter := NewDeleter(d.DB, d.Clock, d.Audit, sessions, consentsRevoker, userDeleter)
+
+	return mod{
+		Stub:      module.Stub{ModuleName: "privacy", Prefixes: []string{"/privacy"}},
+		deps:      d,
+		collector: collector,
+		deleter:   deleter,
 	}
 }
 
-type stub struct {
+type mod struct {
 	module.Stub
-	deps module.Deps
+	deps      module.Deps
+	collector *Collector
+	deleter   *Deleter
 }
 
-// Routes mounts the server generated from the contract, then the 501 stub routes.
-func (s stub) Routes(r chi.Router) {
-	strict := httpapi.NewStrictHandlerWithOptions(server{}, nil, httpapi.StrictHTTPServerOptions{
+// Migrations implements module.Module: the privacy schema.
+func (mod) Migrations() fs.FS { return migrations.FS }
+
+// Routes mounts the server generated from the contract, with requireAuth for protected paths,
+// and the 501 stub for routes not yet implemented.
+func (m mod) Routes(r chi.Router) {
+	srv := server{collector: m.collector, deleter: m.deleter}
+	strict := httpapi.NewStrictHandlerWithOptions(srv, nil, httpapi.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  problem.RequestError,
-		ResponseErrorHandlerFunc: problem.ResponseErrorHandler(s.deps.Log),
+		ResponseErrorHandlerFunc: problem.ResponseErrorHandler(m.deps.Log),
 	})
-	httpapi.HandlerWithOptions(strict, httpapi.ChiServerOptions{
-		BaseRouter:       r,
-		ErrorHandlerFunc: problem.RequestError,
+
+	r.Group(func(g chi.Router) {
+		g.Use(requireAuth)
+		httpapi.HandlerWithOptions(strict, httpapi.ChiServerOptions{
+			BaseRouter:       g,
+			ErrorHandlerFunc: problem.RequestError,
+		})
 	})
-	s.Stub.Routes(r)
+
+	m.Stub.Routes(r)
 }
 
-// server implements the generated httpapi.StrictServerInterface.
-type server struct{}
-
-func (server) PrivacyHealth(context.Context, httpapi.PrivacyHealthRequestObject) (httpapi.PrivacyHealthResponseObject, error) {
-	return httpapi.PrivacyHealth200JSONResponse{Module: "privacy", Status: httpapi.Stub}, nil
+// requireAuth applies auth.Require to all routes except the public /privacy/health,
+// /privacy/policy and GET /privacy/deletion-requests/{id}.
+func requireAuth(next http.Handler) http.Handler {
+	protected := auth.Require(next)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/privacy/health") ||
+			strings.HasSuffix(r.URL.Path, "/privacy/policy") ||
+			(r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/privacy/deletion-requests/")) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		protected.ServeHTTP(w, r)
+	})
 }
