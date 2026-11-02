@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: chore/patch-react-native-argon2-gradle
 tool: Claude Code
-pr: none
+pr: "#224"
 status: done
 ---
 
@@ -25,7 +25,7 @@ Sofia wanted to check as many gates as possible on a phone: "List the instructio
 
 * `./gradlew app:assembleDebug` builds the debug APK (x86_64) on Windows; the app was then installed from Android Studio on a real Android 15 phone and runs against the local stack.
 * `pnpm install --frozen-lockfile` and Prettier pass. No JavaScript changed, so Jest and ESLint are not affected.
-* Pull request: see the PR of this branch.
+* Pull request: #224.
 
 ## Decisions and problems
 
