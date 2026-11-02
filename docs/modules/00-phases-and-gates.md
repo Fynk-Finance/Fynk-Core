@@ -30,13 +30,22 @@ Runs in parallel. M0 is the critical path. The other two only need the repositor
 
 **Gate A checklist**
 
-* [ ] `git clone` plus `make dev` starts the whole stack locally in under 10 minutes.
+* [x] `git clone` plus `make dev` starts the whole stack locally in under 10 minutes.
 * [ ] The app opens on Android and iOS with the 4 tabs and placeholder screens built from the design system, in light and dark (following the phone or the Apariencia choice).
 * [ ] The tabs switch by tap and by swipe, pushed screens go back with the button and the edge swipe on both platforms, and Reduce Motion turns transitions into fades.
-* [ ] `make generate`, `make lint` and `make test` pass in CI on a pull request to `develop`.
+* [x] `make generate`, `make lint` and `make test` pass in CI on a pull request to `develop`.
 * [ ] Staging answers `GET https://api.<domain>/healthz` and Keycloak shows its themed login at `https://auth.<domain>`.
 * [ ] The Banco Demo returns 12 months of movements for a seeded user through Caddy with mTLS.
 * [ ] `contracts/` and the vault ports are frozen. Tag `v0.1.0-gate-a` on `main`.
+
+Status on 2 Nov 2026 (Android phone, local stack):
+
+* `make dev` after `docker compose down -v` finished in under 10 minutes on Windows. CI is green on the latest pull requests to `develop`.
+* Android: the app opens with the 4 tabs, in light and dark, following the phone and Mi cuenta › Apariencia. iOS is not checked (no Mac in the team yet).
+* Android: tabs switch by tap and swipe, and pushed screens go back with the button and the edge swipe, but no slide animation was seen. Still to check: the cause of the missing animation, and Reduce Motion.
+* Staging: `api.fynk.club` does not resolve and the Deploy Staging workflow fails on `develop` (M14).
+* Banco Demo: `services/bank-simulator` is still the M0 placeholder (M16). Only the local mTLS hop through Caddy can be checked.
+* No tag on `main` yet.
 
 ## Phase 1. Core security and data
 
@@ -52,13 +61,22 @@ Runs in parallel. M0 is the critical path. The other two only need the repositor
 
 **Gate B checklist**
 
-* [ ] A new user registers in Keycloak, verifies the email and signs in from the app.
-* [ ] The vault file cannot be opened with `sqlite3`, and the app unlocks it after login or with biometrics.
+* [x] A new user registers in Keycloak, verifies the email and signs in from the app.
+* [x] The vault file cannot be opened with `sqlite3`, and the app unlocks it after login or with biometrics.
 * [ ] The user links Banco Demo, gives consent in the Banco Demo login, and 12 months of movements land in the vault.
 * [ ] Pull to refresh brings a payment made in the Banco Demo portal within 60 seconds.
 * [ ] A second phone restores the manual data with the recovery code, and also through approval from the first phone.
 * [ ] Audit rows exist for login, consent, link and sync, and the app's database role cannot update or delete them.
 * [ ] The Bancolombia spike result is written in `docs/adr/0003-bancolombia-sandbox.md`. Tag `v0.2.0-gate-b`.
+
+Status on 2 Nov 2026 (Android phone, local stack, not staging yet):
+
+* Sign up: registration in Keycloak, the 6 digit email code from Mailpit and the sign in from the app work. Saving the recovery code answered 500 (SCRUM-72, below).
+* Vault: `fynk-vault.db` copied from the phone gives `file is not a database` in `sqlite3`. The app opens it after a fresh login, with the password, and with the fingerprint once "Face ID o huella" is on in Seguridad.
+* Banco Demo link, sync and pull to refresh: blocked until M16 builds the Banco Demo. `POST /v1/bank/authorizations` answers 503 because the bank link is not configured.
+* Restore and approval on a second phone: not checked yet, and blocked by SCRUM-72. Every backup flow (recovery key, restore, approval, reset) answers 500 because the audit allow-list of M13 rejects the events of M2.
+* Audit: rows exist for `auth.login`, `device.registered` and `consent.created`, and `update` and `delete` on `audit.events` fail with "append-only". Rows for link and sync wait for M16, and `recovery_key.set` waits for SCRUM-72.
+* `docs/adr/0003-bancolombia-sandbox.md` does not exist yet (M5).
 
 ## Phase 2. Seeing the money
 
