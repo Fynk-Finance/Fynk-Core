@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: docs/gate-checklist-status
 tool: Claude Code
-pr: none
+pr: "#225"
 status: done
 ---
 
@@ -27,7 +27,7 @@ Sofia ran the app on a real Android phone against the local stack to "check as m
 ## Result
 
 * Ticked: Gate A `make dev` under 10 minutes, Gate A CI, Gate B sign up and sign in, Gate B vault encryption and unlock (password and fingerprint).
-* Pull request: see the PR of this branch.
+* Pull request: #225.
 
 ## Decisions and problems
 
