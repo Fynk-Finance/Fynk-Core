@@ -94,6 +94,11 @@ func run(logger *slog.Logger) error {
 	auth.Install(verifier)
 
 	auditStore := audit.New(pool, logger, clock.System{})
+	if cfg.KeycloakAdminClientSecret != "" {
+		eventsReader := identityports.NewAuthEvents(cfg)
+		importer := audit.NewKeycloakImporter(pool, auditStore, eventsReader, logger, clock.System{})
+		go importer.Run(ctx, 5*time.Minute)
+	}
 	deps := app.Deps{
 		DB:     pool,
 		Redis:  rdb,
