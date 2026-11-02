@@ -5,6 +5,7 @@ import {
   type Theme as NavigationTheme,
 } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect, useMemo, useState } from 'react';
@@ -15,6 +16,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useAppFonts, useTheme, type Theme } from '@shared/ui';
 
 import { buildLinking } from './linking';
+import { navigationBarStyle } from './navigationBar';
 import { RootNavigator } from './navigation/RootNavigator';
 import { createQueryClient } from './queryClient';
 
@@ -54,6 +56,8 @@ function ThemedNavigation() {
     <NavigationContainer theme={navTheme} linking={linking}>
       {/* Every screen starts under a blue header, so the status bar text is light in both themes. */}
       <StatusBar style="light" />
+      {/* Android buttons follow the theme; MainTabs overrides them while the tab bar shows. */}
+      <NavigationBar style={navigationBarStyle(theme.scheme, false)} />
       <RootNavigator />
     </NavigationContainer>
   );
