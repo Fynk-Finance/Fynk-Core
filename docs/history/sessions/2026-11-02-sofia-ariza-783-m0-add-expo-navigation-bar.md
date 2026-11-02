@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: chore/add-expo-navigation-bar
 tool: Claude Code
-pr: none
+pr: "#226"
 status: done
 ---
 
@@ -25,7 +25,7 @@ Testing the app on an Android 15 phone, Sofia saw that "the phone menu should be
 
 * `pnpm install --frozen-lockfile` and Prettier pass.
 * The library is used in the next pull request of the stack (`fix/android-navigation-bar-contrast`), where it was checked on the phone.
-* Pull request: see the PR of this branch.
+* Pull request: #226 (stack #228, with #227 on top).
 
 ## Decisions and problems
 
