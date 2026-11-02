@@ -166,3 +166,60 @@ func (s sessions) SessionStart(ctx context.Context, userID, sid string) (time.Ti
 	}
 	return at, ok, err
 }
+
+// AuthEvent is a user authentication event from Keycloak.
+type AuthEvent struct {
+	ID        string
+	Time      time.Time
+	Type      string
+	UserID    string
+	IPAddress string
+	Error     string
+	Details   map[string]string
+}
+
+// AuthEvents lets M13 query authentication events from Keycloak.
+type AuthEvents interface {
+	Events(ctx context.Context, after time.Time) ([]AuthEvent, error)
+}
+
+// NewAuthEvents returns the AuthEvents port over the Keycloak admin client.
+func NewAuthEvents(cfg config.Config) AuthEvents { return authEvents{kc: kcadmin.New(cfg, nil)} }
+
+type authEvents struct{ kc *kcadmin.Client }
+
+func (a authEvents) Events(ctx context.Context, after time.Time) ([]AuthEvent, error) {
+	dateFrom := ""
+	if !after.IsZero() {
+		dateFrom = after.UTC().Format("2006-01-02")
+	}
+
+	filter := kcadmin.EventsFilter{
+		DateFrom: dateFrom,
+		Types:    []string{"LOGIN", "LOGIN_ERROR", "RESET_PASSWORD", "UPDATE_PASSWORD"},
+		Max:      100,
+	}
+
+	raw, err := a.kc.GetEvents(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]AuthEvent, 0, len(raw))
+	for _, e := range raw {
+		eventTime := time.UnixMilli(e.Time).UTC()
+		if !after.IsZero() && eventTime.Before(after) {
+			continue
+		}
+		res = append(res, AuthEvent{
+			ID:        e.ID,
+			Time:      eventTime,
+			Type:      e.Type,
+			UserID:    e.UserID,
+			IPAddress: e.IPAddress,
+			Error:     e.Error,
+			Details:   e.Details,
+		})
+	}
+	return res, nil
+}
