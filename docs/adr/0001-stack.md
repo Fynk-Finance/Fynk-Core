@@ -68,6 +68,7 @@
 | @expo-google-fonts/space-grotesk | 0.4.1 | Heading font, weights 500 and 700 |
 | @expo-google-fonts/ibm-plex-mono | 0.4.1 | Money font, weights 500 and 600 |
 | expo-system-ui | 58.0.6 | Applies `userInterfaceStyle: automatic` on Android and paints the window behind the screens with the theme's canvas color |
+| expo-navigation-bar | 58.0.4 | Android only. Its config plugin turns off the contrast layer Android 15 paints over the three-button navigation bar of an edge-to-edge app, and `NavigationBar` sets the button color from the theme at runtime |
 | @tanstack/react-query | 5.104.5 | Async server state (decided). No background refetch, see `src/app/queryClient.ts`. 5.105.0 was a few hours old and is held back by the release age policy |
 | openapi-fetch | 0.17.0 | Typed fetch client built on the generated `paths` types. Small, no runtime codegen, lets the client add headers and retry once after a token refresh |
 | openapi-typescript | 7.13.0 | Generates `src/shared/api/schema.gen.ts` from the bundled contract. It declares TypeScript 5 as its peer. It generates correctly with TypeScript 6, so `pnpm-workspace.yaml` allows it (`peerDependencyRules`) |
