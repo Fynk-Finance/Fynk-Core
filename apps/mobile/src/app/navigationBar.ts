@@ -3,17 +3,21 @@
 // Android paints over three-button bars is off (expo-navigation-bar plugin in app.json).
 import type { Theme } from '@shared/ui';
 
-/** expo-navigation-bar styles: `light` is a light bar with dark buttons, `dark` the opposite. */
+/**
+ * Color of the buttons, as expo-navigation-bar reads it: `dark` gives dark buttons, like
+ * expo-status-bar. Its 58.0.4 type comments say the opposite, but its native module treats
+ * `dark` as dark content (checked on a phone).
+ */
 export type NavigationBarStyle = 'light' | 'dark';
 
 /**
  * Over the tab bar the buttons are dark in both themes, because the tab bar is the same light
- * blue (`primaryLight`) in light and dark. Elsewhere they follow the theme's canvas.
+ * blue (`primaryLight`) in light and dark. Elsewhere they contrast with the theme's canvas.
  */
 export function navigationBarStyle(
   scheme: Theme['scheme'],
   overTabBar: boolean,
 ): NavigationBarStyle {
-  if (overTabBar) return 'light';
-  return scheme === 'dark' ? 'dark' : 'light';
+  if (overTabBar) return 'dark';
+  return scheme === 'dark' ? 'light' : 'dark';
 }
