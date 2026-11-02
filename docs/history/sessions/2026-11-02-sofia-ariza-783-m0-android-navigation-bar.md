@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: fix/android-navigation-bar-contrast
 tool: Claude Code
-pr: none
+pr: "#227"
 status: done
 ---
 
@@ -26,7 +26,7 @@ On an Android 15 phone with three-button navigation, the system bar under the bl
 
 * ESLint, `tsc` and the 27 tests of `src/app` pass.
 * Checked on the phone (Android 15, three-button navigation), light and dark: no white band; dark buttons on the blue tab bar in both themes; dark buttons on the white canvas and light buttons on the dark canvas of a pushed screen (Mi cuenta, Apariencia).
-* Pull request: see the PR of this branch.
+* Pull request: #227 (stack #228, on top of #226).
 
 ## Decisions and problems
 
