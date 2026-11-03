@@ -53,7 +53,11 @@ async function setup(answer: 'Solo este' | 'Aplicar a todos' = 'Solo este') {
         refresh: async () => undefined,
         clock,
       }),
-      [DETAIL_ROUTE]: createTransactionDetailScreen({ hooks: m.hooks, useAccounts }),
+      [DETAIL_ROUTE]: createTransactionDetailScreen({
+        hooks: m.hooks,
+        useAccounts,
+        deleteManual: (id) => m.manual.deleteManualTransaction(id),
+      }),
       [CATEGORY_ROUTE]: createCategoryPickerSheet({
         hooks: m.hooks,
         changeCategory: (id, categoryId, opts) => m.categories.changeCategory(id, categoryId, opts),

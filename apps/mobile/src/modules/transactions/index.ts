@@ -37,7 +37,8 @@ import type { PageRequest, TransactionFilter, TransactionPage } from './domain/q
 import { createAllTransactionsScreen, TRANSACTIONS_ROUTE } from './ui/AllTransactionsScreen';
 import { createCategoryPickerSheet } from './ui/CategoryPickerSheet';
 import { createFiltersSheet, FILTERS_ROUTE } from './ui/FiltersSheet';
-import { CATEGORY_ROUTE, DETAIL_ROUTE } from './ui/routes';
+import { createManualTransactionSheet } from './ui/ManualTransactionSheet';
+import { CATEGORY_ROUTE, DETAIL_ROUTE, NEW_TRANSACTION_ROUTE } from './ui/routes';
 import { createTransactionDetailScreen } from './ui/TransactionDetailScreen';
 import { createTransactionList } from './ui/TransactionList';
 import { createTransactionPreview } from './ui/TransactionPreview';
@@ -46,7 +47,8 @@ export type { CategoryChange, ManualInput, PageRequest, TransactionFilter, Trans
 export { InvalidManualTransactionError } from './domain/manual';
 export type { TransactionCursor } from './domain/query';
 export { TransactionNotFoundError } from './application/transactionsService';
-export { DETAIL_ROUTE as TRANSACTION_DETAIL_ROUTE, TRANSACTIONS_ROUTE };
+export { DETAIL_ROUTE as TRANSACTION_DETAIL_ROUTE, NEW_TRANSACTION_ROUTE, TRANSACTIONS_ROUTE };
+export type { ManualTransactionParams } from './ui/ManualTransactionSheet';
 export type { TransactionDetailParams } from './ui/TransactionDetailScreen';
 export type { AllTransactionsParams } from './ui/AllTransactionsScreen';
 export type { TransactionListProps } from './ui/TransactionList';
@@ -195,6 +197,7 @@ export const TransactionPreview = createTransactionPreview({
 export const TransactionDetailScreen = createTransactionDetailScreen({
   hooks,
   useAccounts: () => useAccounts(),
+  deleteManual: (id) => manual.deleteManualTransaction(id),
 });
 
 /** The movements of a filter, e.g. one account in Detalle de cuenta (M6). */
@@ -217,6 +220,18 @@ export const routes: ModuleRoutes = {
       component: createCategoryPickerSheet({
         hooks,
         changeCategory: (id, categoryId, opts) => categories.changeCategory(id, categoryId, opts),
+      }),
+      transition: 'sheet',
+    },
+    {
+      // "Registrar gasto o ingreso" (Dashboard FAB) and "Editar" of a manual movement: { id? }.
+      name: NEW_TRANSACTION_ROUTE,
+      component: createManualTransactionSheet({
+        hooks,
+        useAccounts: () => useAccounts(),
+        add: (input) => manual.addManualTransaction(input),
+        update: (id, input) => manual.updateManualTransaction(id, input),
+        clock,
       }),
       transition: 'sheet',
     },

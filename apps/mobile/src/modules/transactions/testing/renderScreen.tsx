@@ -14,8 +14,10 @@ import { ThemeProvider, type ThemePreference } from '@shared/ui';
 
 import { transactionsMigrations } from '../adapters/vault/migrations';
 import { createVaultCategoryStore } from '../adapters/vault/vaultCategoryStore';
+import { createVaultManualStore } from '../adapters/vault/vaultManualStore';
 import { createVaultTransactionsStore } from '../adapters/vault/vaultTransactionsStore';
 import { createCategoryService } from '../application/categoryService';
+import { createManualService } from '../application/manualService';
 import { createTransactionsService } from '../application/transactionsService';
 import { createTransactionHooks } from '../application/useTransactions';
 import { createNodeSqliteVault } from './nodeSqliteVault';
@@ -49,6 +51,14 @@ export async function createTestModule() {
     newId: () => `change-${++ids}`,
     markDirty: jest.fn(),
   });
+  const manual = createManualService({
+    store: () => createVaultTransactionsStore(vault.db),
+    manual: () => createVaultManualStore(vault.db),
+    events,
+    newId: () => `manual-${++ids}`,
+    markDirty: jest.fn(),
+    treatsThreshold: async () => 2_000_000,
+  });
   const hooks = createTransactionHooks({
     service,
     history: (id) => categories.getCategoryHistory(id),
@@ -61,7 +71,7 @@ export async function createTestModule() {
       await service.upsertFromSync({ accountId, since: '2020-01-01T00:00:00Z', transactions });
     }
   };
-  return { vault, events, service, categories, hooks, seed };
+  return { vault, events, service, categories, manual, hooks, seed };
 }
 
 export interface RenderOptions {
