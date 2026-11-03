@@ -13,6 +13,9 @@ import { useEffect } from 'react';
 import type { AppEvents } from '@shared/events/appEvents';
 import { VaultLockedError } from '@shared/ports';
 
+import type { Id, Transaction } from '@shared/domain/types';
+
+import type { CategoryChange } from '../domain/categoryChange';
 import type {
   TransactionCursor,
   TransactionFilter,
@@ -37,11 +40,13 @@ async function unlessLocked<T>(read: () => Promise<T>, empty: T): Promise<T> {
 }
 
 export interface TransactionHooksDeps {
-  service: Pick<TransactionsService, 'queryTransactions' | 'summarize'>;
+  service: Pick<TransactionsService, 'queryTransactions' | 'summarize' | 'getTransaction'>;
+  /** The category changes of a movement, newest first. */
+  history: (id: Id) => Promise<CategoryChange[]>;
   events: Pick<AppEvents, 'on'>;
 }
 
-export function createTransactionHooks({ service, events }: TransactionHooksDeps) {
+export function createTransactionHooks({ service, history, events }: TransactionHooksDeps) {
   /** Refetches every movement query when the movements or the vault change. */
   function useRefreshOnChanges() {
     const queryClient = useQueryClient();
@@ -91,7 +96,27 @@ export function createTransactionHooks({ service, events }: TransactionHooksDeps
     });
   }
 
-  return { useTransactionPages, useTransactionSummary };
+  /** One movement, or null when it is not in the vault. */
+  function useTransaction(id: Id) {
+    useRefreshOnChanges();
+    return useQuery<Transaction | null>({
+      queryKey: [...TRANSACTIONS_QUERY_KEY, 'one', id],
+      queryFn: () => unlessLocked(() => service.getTransaction(id), null),
+      staleTime: Infinity,
+    });
+  }
+
+  /** "Historial de cambios" of a movement. */
+  function useCategoryHistory(id: Id) {
+    useRefreshOnChanges();
+    return useQuery({
+      queryKey: [...TRANSACTIONS_QUERY_KEY, 'history', id],
+      queryFn: () => unlessLocked(() => history(id), [] as CategoryChange[]),
+      staleTime: Infinity,
+    });
+  }
+
+  return { useTransactionPages, useTransactionSummary, useTransaction, useCategoryHistory };
 }
 
 export type TransactionHooks = ReturnType<typeof createTransactionHooks>;

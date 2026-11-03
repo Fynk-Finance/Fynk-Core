@@ -2,6 +2,7 @@
 // cuenta, design CuentaDetalle): the title, a pill with the count, the chevron, and rows
 // "<fecha> · <categoría>" with "Cargar 20 más". It draws plain views, not a list, because it
 // sits inside the screen's own scroll.
+import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -20,6 +21,7 @@ import {
 import type { TransactionHooks } from '../application/useTransactions';
 import type { TransactionFilter } from '../domain/query';
 import { accountSubtitle, titleOf } from './labels';
+import { DETAIL_ROUTE } from './routes';
 import { transactionsStrings as s } from './strings.es-CO';
 import { LoadMoreButton } from './LoadMoreButton';
 import { TransactionRow } from './TransactionRow';
@@ -36,6 +38,7 @@ export function createTransactionList({
   hooks: Pick<TransactionHooks, 'useTransactionPages' | 'useTransactionSummary'>;
 }) {
   return function TransactionList({ filter, initiallyOpen = true }: TransactionListProps) {
+    const navigation = useNavigation<NavigationProp<ParamListBase>>();
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
     const [open, setOpen] = useState(initiallyOpen);
@@ -88,6 +91,7 @@ export function createTransactionList({
                   variant="account"
                   title={titleOf(tx)}
                   subtitle={accountSubtitle(tx)}
+                  onPress={(row) => navigation.navigate(DETAIL_ROUTE, { id: row.id })}
                 />
               ))
             )}

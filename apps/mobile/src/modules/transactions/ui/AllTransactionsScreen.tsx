@@ -38,7 +38,7 @@ import type { TransactionFilter } from '../domain/query';
 import { dayHeader, entityNames, listSubtitle, summaryLine, titleOf } from './labels';
 import { transactionsStrings as s } from './strings.es-CO';
 import { LoadMoreButton } from './LoadMoreButton';
-import { FILTERS_ROUTE, TRANSACTIONS_ROUTE } from './routes';
+import { DETAIL_ROUTE, FILTERS_ROUTE, TRANSACTIONS_ROUTE } from './routes';
 import { TransactionRow } from './TransactionRow';
 import { SEARCH_DEBOUNCE_MS, useDebounced } from './useDebounced';
 
@@ -225,6 +225,7 @@ export function createAllTransactionsScreen({
                 title={titleOf(item)}
                 subtitle={listSubtitle(item, entities)}
                 divider={index > 0}
+                onPress={(tx) => navigation.navigate(DETAIL_ROUTE, { id: tx.id })}
               />
             )}
             ListEmptyComponent={

@@ -32,14 +32,18 @@ import { createTransactionHooks } from './application/useTransactions';
 import type { CategoryChange } from './domain/categoryChange';
 import type { PageRequest, TransactionFilter, TransactionPage } from './domain/query';
 import { createAllTransactionsScreen, TRANSACTIONS_ROUTE } from './ui/AllTransactionsScreen';
+import { createCategoryPickerSheet } from './ui/CategoryPickerSheet';
 import { createFiltersSheet, FILTERS_ROUTE } from './ui/FiltersSheet';
+import { CATEGORY_ROUTE, DETAIL_ROUTE } from './ui/routes';
+import { createTransactionDetailScreen } from './ui/TransactionDetailScreen';
 import { createTransactionList } from './ui/TransactionList';
 import { createTransactionPreview } from './ui/TransactionPreview';
 
 export type { CategoryChange, PageRequest, TransactionFilter, TransactionPage };
 export type { TransactionCursor } from './domain/query';
 export { TransactionNotFoundError } from './application/transactionsService';
-export { TRANSACTIONS_ROUTE };
+export { DETAIL_ROUTE as TRANSACTION_DETAIL_ROUTE, TRANSACTIONS_ROUTE };
+export type { TransactionDetailParams } from './ui/TransactionDetailScreen';
 export type { AllTransactionsParams } from './ui/AllTransactionsScreen';
 export type { TransactionListProps } from './ui/TransactionList';
 export { InvalidSyncedTransactionError } from './domain/syncedTransactions';
@@ -72,7 +76,11 @@ const categories = createCategoryService({
 });
 registerBackupCollection(categories.backupCollection);
 
-const hooks = createTransactionHooks({ service, events: appEvents });
+const hooks = createTransactionHooks({
+  service,
+  history: (id) => categories.getCategoryHistory(id),
+  events: appEvents,
+});
 
 // ---- Write API ----
 
@@ -150,6 +158,12 @@ export const TransactionPreview = createTransactionPreview({
   useAccounts: () => useAccounts(),
 });
 
+/** Detalle de movimiento: { id }. */
+export const TransactionDetailScreen = createTransactionDetailScreen({
+  hooks,
+  useAccounts: () => useAccounts(),
+});
+
 /** The movements of a filter, e.g. one account in Detalle de cuenta (M6). */
 export const TransactionList = createTransactionList({ hooks });
 
@@ -161,6 +175,16 @@ export const routes: ModuleRoutes = {
       // "Filtros" of Movimientos: a sheet (README, kinds of screen).
       name: FILTERS_ROUTE,
       component: createFiltersSheet({ useAccounts: () => useAccounts(), clock }),
+      transition: 'sheet',
+    },
+    { name: DETAIL_ROUTE, component: TransactionDetailScreen, path: 'movimientos/:id' },
+    {
+      // "Cambiar categoría" of Detalle de movimiento: a sheet.
+      name: CATEGORY_ROUTE,
+      component: createCategoryPickerSheet({
+        hooks,
+        changeCategory: (id, categoryId, opts) => categories.changeCategory(id, categoryId, opts),
+      }),
       transition: 'sheet',
     },
   ],

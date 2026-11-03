@@ -9,10 +9,13 @@ import { Text } from 'react-native';
 
 import type { Transaction } from '@shared/domain/types';
 import { createAppEvents } from '@shared/events/appEvents';
+import { createFixedClock } from '@shared/testing';
 import { ThemeProvider, type ThemePreference } from '@shared/ui';
 
 import { transactionsMigrations } from '../adapters/vault/migrations';
+import { createVaultCategoryStore } from '../adapters/vault/vaultCategoryStore';
 import { createVaultTransactionsStore } from '../adapters/vault/vaultTransactionsStore';
+import { createCategoryService } from '../application/categoryService';
 import { createTransactionsService } from '../application/transactionsService';
 import { createTransactionHooks } from '../application/useTransactions';
 import { createNodeSqliteVault } from './nodeSqliteVault';
@@ -26,7 +29,7 @@ export function RouteProbe() {
   return <Text testID="probe.route">{`${route.name} ${JSON.stringify(route.params ?? {})}`}</Text>;
 }
 
-/** Service, hooks and events of M7 on an empty test vault, plus a way to seed bank movements. */
+/** Services, hooks and events of M7 on an empty test vault, plus a way to seed bank movements. */
 export async function createTestModule() {
   const vault = createNodeSqliteVault();
   vault.registerMigrations('transactions', transactionsMigrations);
@@ -37,7 +40,20 @@ export async function createTestModule() {
     events,
     treatsThreshold: async () => 2_000_000,
   });
-  const hooks = createTransactionHooks({ service, events });
+  let ids = 0;
+  const categories = createCategoryService({
+    store: () => createVaultTransactionsStore(vault.db),
+    categories: () => createVaultCategoryStore(vault.db),
+    events,
+    clock: createFixedClock('2026-09-21T15:00:00Z'),
+    newId: () => `change-${++ids}`,
+    markDirty: jest.fn(),
+  });
+  const hooks = createTransactionHooks({
+    service,
+    history: (id) => categories.getCategoryHistory(id),
+    events,
+  });
   const seed = async (txs: Transaction[]) => {
     const byAccount = new Map<string, Transaction[]>();
     for (const tx of txs) byAccount.set(tx.accountId, [...(byAccount.get(tx.accountId) ?? []), tx]);
@@ -45,7 +61,7 @@ export async function createTestModule() {
       await service.upsertFromSync({ accountId, since: '2020-01-01T00:00:00Z', transactions });
     }
   };
-  return { vault, events, service, hooks, seed };
+  return { vault, events, service, categories, hooks, seed };
 }
 
 export interface RenderOptions {

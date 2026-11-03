@@ -2,3 +2,5 @@
 // importing each other.
 export const TRANSACTIONS_ROUTE = 'transactions.All';
 export const FILTERS_ROUTE = 'transactions.Filters';
+export const DETAIL_ROUTE = 'transactions.Detail';
+export const CATEGORY_ROUTE = 'transactions.Category';

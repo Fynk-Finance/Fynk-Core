@@ -1,9 +1,10 @@
 // Words the rows show for a movement: its title, its account and its day header.
 import { categoryLabel } from '@shared/domain/categories';
 import { formatCop, formatCopSigned } from '@shared/domain/money';
-import type { Account, Id, MoneyMinor, Transaction } from '@shared/domain/types';
+import type { Account, Id, IsoDateTime, MoneyMinor, Transaction } from '@shared/domain/types';
 
 import { bogotaDay } from '../domain/bogota';
+import type { CategoryChange } from '../domain/categoryChange';
 import type { DayGroup } from '../domain/dayGroups';
 import { shortDate, transactionsStrings as s } from './strings.es-CO';
 
@@ -67,4 +68,31 @@ export function previewSubtitle(tx: Transaction, kinds: ReadonlyMap<Id, Account[
 /** Subtitle of a Detalle de cuenta row: "24 oct · Mercado". */
 export function accountSubtitle(tx: Transaction): string {
   return `${shortDate(bogotaDay(tx.bookedAt))} · ${categoryLabel(tx.categoryId)}`;
+}
+
+/** "lunes 22 sep 2026 · 9:03 a. m." in Bogotá. */
+export function dateTimeLabel(at: IsoDateTime): string {
+  const local = new Date(Date.parse(at) - 5 * 60 * 60 * 1000);
+  const day = local.toISOString().slice(0, 10);
+  const hours = local.getUTCHours();
+  const minutes = String(local.getUTCMinutes()).padStart(2, '0');
+  const h12 = hours % 12 === 0 ? 12 : hours % 12;
+  const half = hours < 12 ? s.detail.am : s.detail.pm;
+  const weekday = s.weekdaysLong[local.getUTCDay()];
+  return `${weekday} ${shortDate(day)} ${day.slice(0, 4)} · ${h12}:${minutes} ${half}`;
+}
+
+/** "Cambiaste de Otros a Restaurantes el 21 sep". */
+export function historyLine(change: Pick<CategoryChange, 'from' | 'to' | 'changedAt'>): string {
+  return s.detail.historyLine(
+    categoryLabel(change.from),
+    categoryLabel(change.to),
+    shortDate(bogotaDay(change.changedAt)),
+  );
+}
+
+/** "Bancolombia · Cuenta de ahorros", or "Efectivo". */
+export function accountLabel(account: Pick<Account, 'kind' | 'displayName'>): string {
+  const entity = entityOf(account);
+  return account.kind === 'cash' ? entity : `${entity} · ${s.kinds[account.kind]}`;
 }
