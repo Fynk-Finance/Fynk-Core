@@ -15,7 +15,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	auditval "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit"
 	audit "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity"
@@ -28,7 +27,7 @@ import (
 type recAudit struct{ types []string }
 
 func (r *recAudit) Record(_ context.Context, e audit.Event) error {
-	if err := auditval.ValidateEvent(e); err != nil {
+	if err := audit.ValidateEvent(e); err != nil {
 		return err
 	}
 	r.types = append(r.types, e.Type)

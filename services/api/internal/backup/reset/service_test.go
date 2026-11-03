@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	auditval "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit"
 	audit "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/reset"
 	identity "github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports"
@@ -73,7 +72,7 @@ func (f *fake) DeleteBackup(context.Context, string) error {
 }
 func (f *fake) Record(_ context.Context, e audit.Event) error {
 	f.order = append(f.order, "audit")
-	if err := auditval.ValidateEvent(e); err != nil {
+	if err := audit.ValidateEvent(e); err != nil {
 		return err
 	}
 	if f.auditErr != nil {

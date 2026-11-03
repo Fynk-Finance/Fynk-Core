@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	auditval "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit"
 	audit "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/recovery"
 	identity "github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports"
@@ -57,7 +56,7 @@ func (f *fakeActivator) ActivateDevice(_ context.Context, id string) error {
 type fakeAudit struct{ events []audit.Event }
 
 func (f *fakeAudit) Record(_ context.Context, e audit.Event) error {
-	if err := auditval.ValidateEvent(e); err != nil {
+	if err := audit.ValidateEvent(e); err != nil {
 		return err
 	}
 	f.events = append(f.events, e)
