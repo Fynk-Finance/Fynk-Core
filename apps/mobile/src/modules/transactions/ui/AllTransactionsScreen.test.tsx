@@ -8,6 +8,7 @@ import { createFixedClock } from '@shared/testing';
 import { bankTx, hourlyTxs } from '../testing/fixtures';
 import { createTestModule, renderScreens } from '../testing/renderScreen';
 import { createAllTransactionsScreen, TRANSACTIONS_ROUTE } from './AllTransactionsScreen';
+import { SEARCH_DEBOUNCE_MS } from './useDebounced';
 
 // Tuesday 22 Sep 2026, 9:00 in Bogotá.
 const clock = createFixedClock('2026-09-22T14:00:00Z');
@@ -126,5 +127,39 @@ describe('Movimientos', () => {
     const title = await screen.findByText('Movimientos');
     expect(title).toHaveStyle({ color: '#E8F1F6' });
     expect(screen.getByTestId('transactions.all')).toHaveStyle({ backgroundColor: '#13212D' });
+  });
+});
+
+describe('Buscar por nombre (HU-017)', () => {
+  // The search waits for a pause in typing: let that timer run inside act.
+  const type = async (text: string) => {
+    await fireEvent.changeText(screen.getByLabelText('Buscar por nombre'), text);
+    await act(async () => new Promise((r) => setTimeout(r, SEARCH_DEBOUNCE_MS + 50)));
+  };
+
+  it('finds movements as the person types, without case or accents', async () => {
+    const m = await setup();
+    await m.seed([
+      bankTx({ id: 'super', bookedAt: '2026-09-22T13:00:00Z', merchantRaw: 'Supermercado' }),
+      bankTx({
+        id: 'cafe',
+        bookedAt: '2026-09-21T13:00:00Z',
+        description: 'Café Señor',
+        merchantRaw: 'Café Señor',
+      }),
+    ]);
+    await m.render();
+    await screen.findByText('Café Señor');
+
+    await type('SUPERMÉRC');
+    await waitFor(() => expect(screen.queryByText('Café Señor')).toBeNull());
+    expect(screen.getByText('Supermercado')).toBeTruthy();
+    expect(screen.getByTestId('transactions.summary')).toHaveTextContent(/Mostrando 1 de 1/);
+
+    await type('netflix');
+    expect(await screen.findByText('No encontramos movimientos')).toBeTruthy();
+
+    await type('');
+    expect(await screen.findByText('Café Señor')).toBeTruthy();
   });
 });

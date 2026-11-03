@@ -22,6 +22,9 @@ export class TransactionNotFoundError extends Error {
   }
 }
 
+/** Matches searchTransactions gives at most, newest first. */
+export const SEARCH_LIMIT = 50;
+
 export interface TransactionsServiceDeps {
   /** Called on every use: the vault can be locked and opened again while the app runs. */
   store: () => TransactionsStore;
@@ -36,6 +39,7 @@ export interface TransactionsService {
   }): Promise<{ newIds: Id[] }>;
   queryTransactions(filter: TransactionFilter, page?: PageRequest): Promise<TransactionPage>;
   summarize(filter: TransactionFilter): Promise<TransactionSummary>;
+  searchTransactions(text: string): Promise<Transaction[]>;
   getTransactionsBetween(from: IsoDate, to: IsoDate): Promise<Transaction[]>;
   getTransaction(id: Id): Promise<Transaction | null>;
   setTransactionGoal(id: Id, goalId: Id | null): Promise<void>;
@@ -53,6 +57,11 @@ export function createTransactionsService(deps: TransactionsServiceDeps): Transa
       const limit = pageLimit(page.limit);
       const rows = await deps.store().page(toStoreQuery(filter), page.cursor ?? null, limit + 1);
       return toPage(rows, limit);
+    },
+
+    async searchTransactions(text) {
+      if (!text.trim()) return [];
+      return deps.store().page(toStoreQuery({ text }), null, SEARCH_LIMIT);
     },
 
     summarize(filter) {

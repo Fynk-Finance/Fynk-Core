@@ -11,6 +11,7 @@ import type {
 } from '@shared/domain/types';
 
 import { bogotaDayStart, bogotaRange } from './bogota';
+import { toFtsQuery } from './searchQuery';
 
 export interface TransactionFilter {
   /** First Bogotá day, included. */
@@ -27,6 +28,8 @@ export interface TransactionFilter {
   maxAmountMinor?: MoneyMinor;
   /** Only these categories. Empty or missing means every category. */
   categoryIds?: CategoryId[];
+  /** Words typed in "Buscar por nombre": each one is a prefix of a word of the movement. */
+  text?: string;
 }
 
 /** The filter in UTC, as the store reads it. `end` is excluded. */
@@ -38,6 +41,8 @@ export interface StoreQuery {
   minAbs?: MoneyMinor;
   maxAbs?: MoneyMinor;
   categoryIds?: CategoryId[];
+  /** FTS5 query built by toFtsQuery. */
+  match?: string;
 }
 
 /** The last row of a page: the next page starts strictly after it. */
@@ -85,6 +90,8 @@ export function toStoreQuery(filter: TransactionFilter): StoreQuery {
   if (filter.categoryIds && filter.categoryIds.length > 0) {
     query.categoryIds = [...filter.categoryIds];
   }
+  const match = filter.text ? toFtsQuery(filter.text) : null;
+  if (match) query.match = match;
   return query;
 }
 
