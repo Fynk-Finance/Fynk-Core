@@ -4,14 +4,7 @@
 // which starts a sync (rule 4 of CLAUDE.md, M5 applies the 60 s cooldown).
 import { useNavigation } from '@react-navigation/native';
 import { useMemo, useState, type ReactNode } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  SectionList,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Pressable, RefreshControl, SectionList, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Account, Clock, Transaction } from '@shared/domain/types';
@@ -35,6 +28,7 @@ import { groupByDay, type DayGroup } from '../domain/dayGroups';
 import type { TransactionFilter } from '../domain/query';
 import { dayHeader, entityNames, listSubtitle, summaryLine, titleOf } from './labels';
 import { transactionsStrings as s } from './strings.es-CO';
+import { LoadMoreButton } from './LoadMoreButton';
 import { TransactionRow } from './TransactionRow';
 
 export const TRANSACTIONS_ROUTE = 'transactions.All';
@@ -180,22 +174,11 @@ export function createAllTransactionsScreen({
             }
             ListFooterComponent={
               pages.hasNextPage ? (
-                <Pressable
+                <LoadMoreButton
+                  loading={pages.isFetchingNextPage}
                   onPress={() => void pages.fetchNextPage()}
-                  disabled={pages.isFetchingNextPage}
-                  accessibilityRole="button"
-                  accessibilityState={{ busy: pages.isFetchingNextPage }}
                   testID="transactions.loadMore"
-                  style={({ pressed }) => [styles.more, pressed ? styles.morePressed : null]}
-                >
-                  {pages.isFetchingNextPage ? (
-                    <ActivityIndicator color={colors.primaryDark} />
-                  ) : (
-                    <AppText variant="label" style={styles.moreText}>
-                      {s.list.loadMore}
-                    </AppText>
-                  )}
-                </Pressable>
+                />
               ) : undefined
             }
           />
@@ -245,16 +228,4 @@ const createStyles = ({ colors }: Theme) =>
     dayGap: { marginTop: 16 },
     // 12 px, 700, uppercase, letter-spacing .06em (Movimientos h2).
     dayTitle: { fontFamily: fonts.body.bold, letterSpacing: 0.72, textTransform: 'uppercase' },
-    more: {
-      marginTop: 16,
-      height: size.iconButton,
-      borderRadius: 15,
-      borderWidth: 1.5,
-      borderColor: colors.borderBlue,
-      backgroundColor: colors.surfaceBlueSoft,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    morePressed: { backgroundColor: colors.surfaceBlue },
-    moreText: { fontFamily: fonts.body.bold, color: colors.primaryDeep },
   });

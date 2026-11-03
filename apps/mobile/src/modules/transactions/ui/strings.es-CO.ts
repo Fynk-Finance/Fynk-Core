@@ -46,4 +46,14 @@ export const transactionsStrings = {
     error: 'No pudimos cargar tus movimientos.',
     rowLabel: (title: string, amount: string) => `Ver detalle de ${title}, ${amount}`,
   },
+  preview: {
+    title: 'Movimientos',
+    seeAll: 'Ver todo',
+    empty: 'Aún no tienes movimientos.',
+  },
+  account: {
+    title: 'Movimientos',
+    count: (n: number) => (n === 1 ? '1 movimiento' : `${n} movimientos`),
+    empty: 'Esta cuenta aún no tiene movimientos.',
+  },
 } as const;

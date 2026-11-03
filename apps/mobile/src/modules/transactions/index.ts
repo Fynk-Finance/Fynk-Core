@@ -14,11 +14,14 @@ import { createTransactionsService } from './application/transactionsService';
 import { createTransactionHooks } from './application/useTransactions';
 import type { PageRequest, TransactionFilter, TransactionPage } from './domain/query';
 import { createAllTransactionsScreen, TRANSACTIONS_ROUTE } from './ui/AllTransactionsScreen';
+import { createTransactionList } from './ui/TransactionList';
+import { createTransactionPreview } from './ui/TransactionPreview';
 
 export type { PageRequest, TransactionFilter, TransactionPage };
 export type { TransactionCursor } from './domain/query';
 export { TransactionNotFoundError } from './application/transactionsService';
 export { TRANSACTIONS_ROUTE };
+export type { TransactionListProps } from './ui/TransactionList';
 export { InvalidSyncedTransactionError } from './domain/syncedTransactions';
 
 registerVaultMigrations('transactions', transactionsMigrations);
@@ -80,6 +83,15 @@ export const AllTransactionsScreen = createAllTransactionsScreen({
   refresh: () => syncNow(),
   clock,
 });
+
+/** "Movimientos" of the Dashboard: the 3 latest movements and "Ver todo" (M6). */
+export const TransactionPreview = createTransactionPreview({
+  hooks,
+  useAccounts: () => useAccounts(),
+});
+
+/** The movements of a filter, e.g. one account in Detalle de cuenta (M6). */
+export const TransactionList = createTransactionList({ hooks });
 
 export const routes: ModuleRoutes = {
   module: 'transactions',
