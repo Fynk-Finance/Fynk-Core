@@ -6,7 +6,7 @@ module: M7
 jira: [SCRUM-30]
 branch: feature/transaction-filters
 tool: Claude Code
-pr: none
+pr: "#234"
 status: done
 ---
 
