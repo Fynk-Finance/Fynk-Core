@@ -105,3 +105,39 @@ func (c LocalChecker) MarkGranted(context.Context, string, string) error {
 	}
 	return nil
 }
+
+// ConsentsRevoker revokes all active and pending consents belonging to a user.
+type ConsentsRevoker interface {
+	RevokeAll(ctx context.Context, userID string) error
+}
+
+// NewConsentsRevoker returns a ConsentsRevoker backed by the consents schema in pool.
+func NewConsentsRevoker(d module.Deps) ConsentsRevoker {
+	if d.DB == nil {
+		return noopConsentsRevoker{}
+	}
+	return consentsRevoker{svc: service.New(store.New(d.DB), d.Clock, d.Audit, d.Log, service.BankRevoker{})}
+}
+
+type noopConsentsRevoker struct{}
+
+func (noopConsentsRevoker) RevokeAll(context.Context, string) error { return nil }
+
+type consentsRevoker struct {
+	svc *service.Service
+}
+
+func (r consentsRevoker) RevokeAll(ctx context.Context, userID string) error {
+	list, err := r.svc.List(ctx, userID)
+	if err != nil {
+		return err
+	}
+	for _, c := range list {
+		if c.Status == domain.StatusActive || c.Status == domain.StatusPending {
+			if _, err := r.svc.Revoke(ctx, userID, c.ID); err != nil && !errors.Is(err, domain.ErrAlreadyRevoked) {
+				return err
+			}
+		}
+	}
+	return nil
+}
