@@ -2,7 +2,13 @@
 // "Ver todo" on the Dashboard. Title and back button, the sticky bar with the summary line, days
 // with their net, rows newest first, "Cargar 20 más" (keyset pages of 20) and pull to refresh,
 // which starts a sync (rule 4 of CLAUDE.md, M5 applies the 60 s cooldown).
-import { useNavigation } from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  type NavigationProp,
+  type ParamListBase,
+  type RouteProp,
+} from '@react-navigation/native';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, SectionList, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,13 +31,29 @@ import {
 
 import type { TransactionHooks } from '../application/useTransactions';
 import { groupByDay, type DayGroup } from '../domain/dayGroups';
+import { activeFilterCount, filterFromParams } from '../domain/filter';
 import type { TransactionFilter } from '../domain/query';
 import { dayHeader, entityNames, listSubtitle, summaryLine, titleOf } from './labels';
 import { transactionsStrings as s } from './strings.es-CO';
 import { LoadMoreButton } from './LoadMoreButton';
+import { FILTERS_ROUTE, TRANSACTIONS_ROUTE } from './routes';
 import { TransactionRow } from './TransactionRow';
 
-export const TRANSACTIONS_ROUTE = 'transactions.All';
+export { TRANSACTIONS_ROUTE };
+
+/**
+ * Movimientos opens with all movements, or with a filter: the one "Aplicar" returns from the
+ * Filtros sheet, or { categoryId, from, to } from Estadísticas (M10) and { accountId }.
+ */
+export type AllTransactionsParams =
+  | {
+      filter?: TransactionFilter;
+      categoryId?: string;
+      from?: string;
+      to?: string;
+      accountId?: string;
+    }
+  | undefined;
 
 export interface AllTransactionsDeps {
   hooks: Pick<TransactionHooks, 'useTransactionPages' | 'useTransactionSummary'>;
@@ -44,8 +66,6 @@ export interface AllTransactionsDeps {
 
 type Section = DayGroup & { data: Transaction[] };
 
-const NO_FILTER: TransactionFilter = {};
-
 export function createAllTransactionsScreen({
   hooks,
   useAccounts,
@@ -53,11 +73,14 @@ export function createAllTransactionsScreen({
   clock,
 }: AllTransactionsDeps) {
   return function AllTransactionsScreen() {
-    const navigation = useNavigation();
+    const navigation = useNavigation<NavigationProp<ParamListBase>>();
+    const route = useRoute<RouteProp<{ all: AllTransactionsParams }, 'all'>>();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
-    const filter = NO_FILTER;
+    const params = route.params;
+    const filter = useMemo(() => params?.filter ?? filterFromParams(params), [params]);
+    const active = activeFilterCount(filter);
     const pages = hooks.useTransactionPages(filter);
     const summary = hooks.useTransactionSummary(filter);
     const accounts = useAccounts().data?.accounts;
@@ -99,6 +122,26 @@ export function createAllTransactionsScreen({
 
     const bar = (
       <View style={styles.bar}>
+        <View style={styles.tools}>
+          <View style={styles.searchSlot} />
+          <Pressable
+            onPress={() => navigation.navigate(FILTERS_ROUTE, { filter })}
+            accessibilityRole="button"
+            accessibilityLabel={active > 0 ? s.filters.activeCount(active) : s.filters.open}
+            accessibilityHint={s.filters.title}
+            testID="transactions.filtersButton"
+            style={({ pressed }) => [styles.filterButton, pressed ? styles.filterPressed : null]}
+          >
+            <Icon name="filter" size={24} strokeWidth={2.4} color={colors.primaryDark} />
+            {active > 0 ? (
+              <View style={styles.badge} testID="transactions.filtersBadge">
+                <AppText variant="overline" style={styles.badgeText}>
+                  {active}
+                </AppText>
+              </View>
+            ) : null}
+          </Pressable>
+        </View>
         {summary.data ? (
           <AppText variant="caption" color="textSecondary" testID="transactions.summary">
             {summaryLine(items.length, summary.data)}
@@ -215,6 +258,33 @@ const createStyles = ({ colors }: Theme) =>
       borderBottomColor: colors.divider,
       backgroundColor: colors.background,
     },
+    tools: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    // The search field goes here (feature/transaction-search-fts).
+    searchSlot: { flex: 1 },
+    filterButton: {
+      width: size.iconButton,
+      height: size.iconButton,
+      borderRadius: radius.button,
+      borderWidth: 1.5,
+      borderColor: colors.borderBlue,
+      backgroundColor: colors.surfaceBlueSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    filterPressed: { borderColor: colors.borderBlueStrong },
+    badge: {
+      position: 'absolute',
+      top: -6,
+      right: -6,
+      minWidth: 20,
+      height: 20,
+      paddingHorizontal: 5,
+      borderRadius: radius.pill,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    badgeText: { color: colors.onPrimary, letterSpacing: 0 },
     list: { paddingTop: 8, paddingHorizontal: 16 },
     placeholder: { paddingTop: 16, paddingHorizontal: 16, gap: 8 },
     dayHeader: {

@@ -9,7 +9,7 @@ import { AppText, SectionHeader, Skeleton } from '@shared/ui';
 
 import type { TransactionHooks } from '../application/useTransactions';
 import type { TransactionFilter } from '../domain/query';
-import { TRANSACTIONS_ROUTE } from './AllTransactionsScreen';
+import { TRANSACTIONS_ROUTE } from './routes';
 import { previewSubtitle, titleOf } from './labels';
 import { transactionsStrings as s } from './strings.es-CO';
 import { TransactionRow } from './TransactionRow';
