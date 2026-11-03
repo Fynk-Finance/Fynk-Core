@@ -48,4 +48,25 @@ export const savingsMigrations: VaultMigration[] = [
       );
     `,
   },
+  {
+    // HU-045: the encrypted backup of M2. Every write bumps `version` (the highest one wins on a
+    // restore), and deleting a goal leaves a tombstone instead of erasing it, so the deletion
+    // reaches the other phone. The rows that exist before this version have never been backed
+    // up: `savings_backup_pending` keeps them until the vault opens and they are marked dirty.
+    version: 3,
+    up: `
+      ALTER TABLE savings_goals ADD COLUMN version INTEGER NOT NULL DEFAULT 1;
+      ALTER TABLE savings_goals ADD COLUMN deleted_at TEXT;
+      ALTER TABLE savings_contributions ADD COLUMN version INTEGER NOT NULL DEFAULT 1;
+      CREATE TABLE savings_backup_pending (
+        collection TEXT NOT NULL,
+        record_id TEXT NOT NULL,
+        PRIMARY KEY (collection, record_id)
+      );
+      INSERT INTO savings_backup_pending (collection, record_id)
+        SELECT 'savings.goals', id FROM savings_goals;
+      INSERT INTO savings_backup_pending (collection, record_id)
+        SELECT 'savings.contributions', id FROM savings_contributions;
+    `,
+  },
 ];

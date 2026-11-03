@@ -145,7 +145,7 @@ export function createGoalService(deps: GoalServiceDeps): GoalService {
 
     async remove(id) {
       await deps.beforeRemove?.(id);
-      await deps.store().remove(id);
+      await deps.store().remove(id, deps.clock.now().toISOString());
       changed();
     },
 
