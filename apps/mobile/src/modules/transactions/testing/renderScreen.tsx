@@ -35,6 +35,7 @@ export async function createTestModule() {
   const service = createTransactionsService({
     store: () => createVaultTransactionsStore(vault.db),
     events,
+    treatsThreshold: async () => 2_000_000,
   });
   const hooks = createTransactionHooks({ service, events });
   const seed = async (txs: Transaction[]) => {

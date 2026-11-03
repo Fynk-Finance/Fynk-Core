@@ -199,6 +199,56 @@ export function createVaultTransactionsStore(db: VaultDb): TransactionsStore {
       return rows[0] ? toTransaction(rows[0]) : null;
     },
 
+    async getMany(ids) {
+      const found: Transaction[] = [];
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const chunk = ids.slice(i, i + CHUNK);
+        const rows = await db.query<TransactionRow>(
+          `SELECT ${TX_COLUMNS} FROM transactions_transactions t
+           WHERE t.id IN (${placeholders(chunk.length)})`,
+          chunk,
+        );
+        found.push(...rows.map(toTransaction));
+      }
+      return found;
+    },
+
+    async overridesFor({ providerTxIds, merchantKeys }) {
+      const read = async (table: string, key: string, values: string[]) => {
+        const map = new Map<string, CategoryId>();
+        for (let i = 0; i < values.length; i += CHUNK) {
+          const chunk = values.slice(i, i + CHUNK);
+          const rows = await db.query<{ k: string; category_id: CategoryId }>(
+            `SELECT ${key} AS k, category_id FROM ${table}
+             WHERE ${key} IN (${placeholders(chunk.length)})`,
+            chunk,
+          );
+          for (const r of rows) map.set(r.k, r.category_id);
+        }
+        return map;
+      };
+      return {
+        txOverrides: await read('transactions_tx_overrides', 'provider_tx_id', providerTxIds),
+        merchantOverrides: await read(
+          'transactions_category_overrides',
+          'merchant_key',
+          merchantKeys,
+        ),
+      };
+    },
+
+    async setCategories(changes) {
+      if (changes.length === 0) return;
+      await db.transaction(async (tx) => {
+        for (const c of changes) {
+          await tx.execute(
+            'UPDATE transactions_transactions SET category_id = ?, category_source = ? WHERE id = ?',
+            [c.categoryId, c.categorySource, c.id],
+          );
+        }
+      });
+    },
+
     async setGoal(id, goalId) {
       return db.transaction(async (tx) => {
         const rows = await tx.query<{ id: string }>(

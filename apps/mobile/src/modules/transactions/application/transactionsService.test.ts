@@ -39,6 +39,7 @@ beforeEach(async () => {
   service = createTransactionsService({
     store: () => createVaultTransactionsStore(vault.db),
     events: { emit },
+    treatsThreshold: async () => 2_000_000,
   });
 });
 

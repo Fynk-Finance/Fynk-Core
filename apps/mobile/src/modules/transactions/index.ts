@@ -5,6 +5,7 @@ import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
 import { useAccounts } from '@modules/accounts';
+import { getTreatsThreshold } from '@modules/analytics';
 import { syncNow } from '@modules/bank';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
@@ -33,6 +34,14 @@ const clock: Clock = { now: () => new Date() };
 const service = createTransactionsService({
   store: () => createVaultTransactionsStore(getVaultDb()),
   events: appEvents,
+  treatsThreshold: () => getTreatsThreshold(),
+  // TODO(M9) catalogCategory: getCatalogCategory, once M9 exports it.
+});
+
+// New movements of a sync are categorized once (HU-018). A locked vault or a failure leaves
+// them as `other`; the person can still pick their category.
+appEvents.on('sync.completed', (event) => {
+  service.categorizeNew(event.newTransactionIds).catch(() => undefined);
 });
 
 const hooks = createTransactionHooks({ service, events: appEvents });
