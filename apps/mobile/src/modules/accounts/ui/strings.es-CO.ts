@@ -20,6 +20,8 @@ export const accountsStrings = {
   dashboard: {
     // Shown until M3 keeps the name the person typed in onboarding.
     guest: 'Invitado',
+    // The FAB of the Dashboard (M7 opens the sheet).
+    newMovement: 'Registrar gasto o ingreso',
     balanceTotal: 'Balance total',
     connected: (n: number) => `COP · ${n} ${n === 1 ? 'cuenta conectada' : 'cuentas conectadas'}`,
     income: 'Ingresos',

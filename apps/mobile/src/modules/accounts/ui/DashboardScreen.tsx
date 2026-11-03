@@ -1,13 +1,14 @@
 // Dashboard tab (design Dashboard, inventory rows 5 and 6), owned by M6: the blue header with
 // "Hola, <nombre>" and the bell, the "Balance total" card and Detalle de cuentas, which expands
-// in place. Planes de ahorro (M8) and Movimientos (M7) go below when those modules export them.
+// in place. Below, Movimientos (M7's preview), and the FAB "Registrar gasto o ingreso", which
+// opens M7's sheet. Planes de ahorro (M8) goes there too when M8 exports it.
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import type { UseQueryResult } from '@tanstack/react-query';
-import { useState } from 'react';
-import { View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 
-import { ErrorState, HeaderBlue, Screen, motion, spacing } from '@shared/ui';
+import { ErrorState, Fab, HeaderBlue, Screen, motion, spacing } from '@shared/ui';
 
 import type { AccountsOverview } from '../application/accountsService';
 import { accountRows, type MonthSummary } from '../domain/dashboard';
@@ -26,6 +27,10 @@ export interface DashboardDeps {
   useDisplayName: () => string | null;
   accountRoute: string;
   notificationsRoute: string;
+  /** "Movimientos" with the latest movements (M7's TransactionPreview). */
+  renderMovements?: () => ReactNode;
+  /** The route of M7's "Registrar gasto o ingreso" sheet. Read at press time. */
+  newMovementRoute?: () => string;
 }
 
 export function createDashboardScreen(deps: DashboardDeps) {
@@ -72,13 +77,31 @@ export function createDashboardScreen(deps: DashboardDeps) {
       </View>
     );
 
+    const newMovementRoute = deps.newMovementRoute;
     // TODO(M5) pull to refresh starts a sync once M5 exports it (CLAUDE.md rule 4).
     return (
-      <Screen header={header} scroll withTabBar padded gap={spacing.block}>
-        {accounts.isError ? (
-          <ErrorState message={t.loadError} onRetry={() => void accounts.refetch()} />
+      <View style={styles.root}>
+        <Screen header={header} scroll withTabBar padded gap={spacing.block}>
+          {accounts.isError ? (
+            <ErrorState message={t.loadError} onRetry={() => void accounts.refetch()} />
+          ) : null}
+          {deps.renderMovements?.()}
+        </Screen>
+        {newMovementRoute ? (
+          <Fab
+            accessibilityLabel={t.newMovement}
+            onPress={() => navigation.navigate(newMovementRoute())}
+            style={styles.fab}
+            testID="accounts.dashboard.fab"
+          />
         ) : null}
-      </Screen>
+      </View>
     );
   };
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  // right 16, bottom 92: above the tab bar (Dashboard `.fab`).
+  fab: { position: 'absolute', right: 16, bottom: 92 },
+});
