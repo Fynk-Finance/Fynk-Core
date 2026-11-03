@@ -151,15 +151,21 @@ describe('Buscar por nombre (HU-017)', () => {
     await m.render();
     await screen.findByText('Café Señor');
 
+    // Wait for the result itself, not for the old rows to go: in between the list loads.
+    const slow = { timeout: 5000 };
     await type('SUPERMÉRC');
-    await waitFor(() => expect(screen.queryByText('Café Señor')).toBeNull());
-    expect(screen.getByText('Supermercado')).toBeTruthy();
-    expect(screen.getByTestId('transactions.summary')).toHaveTextContent(/Mostrando 1 de 1/);
+    await waitFor(
+      () =>
+        expect(screen.getByTestId('transactions.summary')).toHaveTextContent(/Mostrando 1 de 1/),
+      slow,
+    );
+    expect(await screen.findByText('Supermercado', {}, slow)).toBeTruthy();
+    expect(screen.queryByText('Café Señor')).toBeNull();
 
     await type('netflix');
-    expect(await screen.findByText('No encontramos movimientos')).toBeTruthy();
+    expect(await screen.findByText('No encontramos movimientos', {}, slow)).toBeTruthy();
 
     await type('');
-    expect(await screen.findByText('Café Señor')).toBeTruthy();
+    expect(await screen.findByText('Café Señor', {}, slow)).toBeTruthy();
   });
 });
