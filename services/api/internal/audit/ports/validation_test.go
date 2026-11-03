@@ -1,4 +1,4 @@
-package audit
+package ports
 
 import (
 	"errors"
@@ -6,36 +6,34 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
-	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
 )
 
 func TestValidateEventTypes(t *testing.T) {
 	requiredTypes := []string{
-		ports.AuthLogin,
-		ports.AuthLoginFailed,
-		ports.AuthPasswordReset,
-		ports.DeviceRegistered,
-		ports.DeviceApproved,
-		ports.DeviceRejected,
-		ports.DeviceRemoved,
-		ports.ConsentCreated,
-		ports.ConsentGranted,
-		ports.ConsentRevoked,
-		ports.ConsentExpired,
-		ports.BankLinkCreated,
-		ports.BankSync,
-		ports.BankSyncFailed,
-		ports.BankTokenRefreshed,
-		ports.BackupUploaded,
-		ports.BackupRestored,
-		ports.RecoveryKeySet,
-		ports.PrivacyDeletionRequested,
-		ports.PrivacyDeletionCompleted,
+		AuthLogin,
+		AuthLoginFailed,
+		AuthPasswordReset,
+		DeviceRegistered,
+		DeviceApproved,
+		DeviceRejected,
+		DeviceRemoved,
+		ConsentCreated,
+		ConsentGranted,
+		ConsentRevoked,
+		ConsentExpired,
+		BankLinkCreated,
+		BankSync,
+		BankSyncFailed,
+		BankTokenRefreshed,
+		BackupUploaded,
+		BackupRestored,
+		RecoveryKeySet,
+		PrivacyDeletionRequested,
+		PrivacyDeletionCompleted,
 	}
 
 	for _, typ := range requiredTypes {
-		err := ValidateEvent(ports.Event{
+		err := ValidateEvent(Event{
 			Type: typ,
 			At:   time.Now(),
 		})
@@ -44,7 +42,7 @@ func TestValidateEventTypes(t *testing.T) {
 		}
 	}
 
-	err := ValidateEvent(ports.Event{
+	err := ValidateEvent(Event{
 		Type: "invalid.type",
 		At:   time.Now(),
 	})
@@ -72,8 +70,8 @@ func TestValidateSensitiveKeysRejected(t *testing.T) {
 	}
 
 	for _, k := range forbiddenKeys {
-		err := ValidateEvent(ports.Event{
-			Type: ports.BankSync,
+		err := ValidateEvent(Event{
+			Type: BankSync,
 			Meta: map[string]string{k: "secret-value"},
 		})
 		if !errors.Is(err, ErrSensitiveMetaKey) {
@@ -83,8 +81,8 @@ func TestValidateSensitiveKeysRejected(t *testing.T) {
 }
 
 func TestValidateDisallowedMetaKeys(t *testing.T) {
-	err := ValidateEvent(ports.Event{
-		Type: ports.DeviceRegistered,
+	err := ValidateEvent(Event{
+		Type: DeviceRegistered,
 		Meta: map[string]string{
 			"unregistered_key": "some_value",
 		},
@@ -94,8 +92,8 @@ func TestValidateDisallowedMetaKeys(t *testing.T) {
 	}
 
 	// Valid keys should pass
-	err = ValidateEvent(ports.Event{
-		Type: ports.DeviceRegistered,
+	err = ValidateEvent(Event{
+		Type: DeviceRegistered,
 		Meta: map[string]string{
 			"platform": "ios",
 			"status":   "active",
@@ -109,8 +107,8 @@ func TestValidateDisallowedMetaKeys(t *testing.T) {
 func TestValidateDeviceID(t *testing.T) {
 	// Valid UUID should pass
 	validUUID := uuid.NewString()
-	err := ValidateEvent(ports.Event{
-		Type:     ports.AuthLogin,
+	err := ValidateEvent(Event{
+		Type:     AuthLogin,
 		DeviceID: validUUID,
 	})
 	if err != nil {
@@ -118,8 +116,8 @@ func TestValidateDeviceID(t *testing.T) {
 	}
 
 	// Invalid UUID should fail
-	err = ValidateEvent(ports.Event{
-		Type:     ports.AuthLogin,
+	err = ValidateEvent(Event{
+		Type:     AuthLogin,
 		DeviceID: "not-a-uuid",
 	})
 	if !errors.Is(err, ErrInvalidDeviceID) {
@@ -127,8 +125,8 @@ func TestValidateDeviceID(t *testing.T) {
 	}
 
 	// Empty DeviceID should pass
-	err = ValidateEvent(ports.Event{
-		Type:     ports.AuthLogin,
+	err = ValidateEvent(Event{
+		Type:     AuthLogin,
 		DeviceID: "",
 	})
 	if err != nil {
@@ -180,19 +178,19 @@ func TestValidateEventAcceptsBackupEvents(t *testing.T) {
 		deviceID string
 		meta     map[string]string
 	}{
-		{"recovery key set", ports.RecoveryKeySet, deviceID, map[string]string{}},
-		{"backup uploaded", ports.BackupUploaded, deviceID, map[string]string{"record_count": "12"}},
-		{"backup restored by recovery code", ports.BackupRestored, deviceID, map[string]string{"method": "recovery_code"}},
-		{"backup restored by device approval", ports.BackupRestored, deviceID, map[string]string{"method": "device_approval"}},
-		{"device approved by recovery code", ports.DeviceApproved, deviceID, map[string]string{"method": "recovery_code"}},
-		{"device approved by device approval", ports.DeviceApproved, deviceID, map[string]string{"method": "device_approval", "approver_device_id": approverID}},
-		{"device rejected", ports.DeviceRejected, deviceID, map[string]string{"method": "device_approval", "approver_device_id": approverID}},
-		{"backup reset", ports.BackupReset, deviceID, map[string]string{"method": "email_code"}},
+		{"recovery key set", RecoveryKeySet, deviceID, map[string]string{}},
+		{"backup uploaded", BackupUploaded, deviceID, map[string]string{"record_count": "12"}},
+		{"backup restored by recovery code", BackupRestored, deviceID, map[string]string{"method": "recovery_code"}},
+		{"backup restored by device approval", BackupRestored, deviceID, map[string]string{"method": "device_approval"}},
+		{"device approved by recovery code", DeviceApproved, deviceID, map[string]string{"method": "recovery_code"}},
+		{"device approved by device approval", DeviceApproved, deviceID, map[string]string{"method": "device_approval", "approver_device_id": approverID}},
+		{"device rejected", DeviceRejected, deviceID, map[string]string{"method": "device_approval", "approver_device_id": approverID}},
+		{"backup reset", BackupReset, deviceID, map[string]string{"method": "email_code"}},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateEvent(ports.Event{
+			err := ValidateEvent(Event{
 				Type:     tt.typ,
 				DeviceID: tt.deviceID,
 				At:       time.Now(),
