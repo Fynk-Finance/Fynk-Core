@@ -1,10 +1,12 @@
 package privacy_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -14,13 +16,14 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 
+	audit "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
 	identity "github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/clock"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/config"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/module"
-	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/problem"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/privacy"
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/privacy/http"
 )
@@ -37,6 +40,43 @@ func (f fakeProfileReader) GetUser(ctx context.Context, userID string) (identity
 		return identity.UserProfile{}, f.err
 	}
 	return f.user, nil
+}
+
+type fakeSessions struct {
+	start time.Time
+	found bool
+	err   error
+}
+
+func (f fakeSessions) SessionStart(ctx context.Context, userID, sid string) (time.Time, bool, error) {
+	return f.start, f.found, f.err
+}
+
+type memAuditRecorder struct {
+	events []audit.Event
+}
+
+func (m *memAuditRecorder) Record(_ context.Context, e audit.Event) error {
+	m.events = append(m.events, e)
+	return nil
+}
+
+type fakeConsentsRevoker struct {
+	revokedUsers []string
+}
+
+func (f *fakeConsentsRevoker) RevokeAll(_ context.Context, userID string) error {
+	f.revokedUsers = append(f.revokedUsers, userID)
+	return nil
+}
+
+type fakeUserDeleter struct {
+	deletedUsers []string
+}
+
+func (f *fakeUserDeleter) DeleteUser(_ context.Context, userID string) error {
+	f.deletedUsers = append(f.deletedUsers, userID)
+	return nil
 }
 
 func TestCurrentPolicyValidity(t *testing.T) {
@@ -127,7 +167,6 @@ func TestCollectorExportFallback(t *testing.T) {
 		t.Errorf("profile.emailVerified = false, want true")
 	}
 
-	// Verify slices are non-nil empty slices
 	if export.Devices == nil || len(export.Devices) != 0 {
 		t.Errorf("devices = %v, want empty non-nil slice", export.Devices)
 	}
@@ -139,6 +178,15 @@ func TestCollectorExportFallback(t *testing.T) {
 	}
 	if export.AuditEvents == nil || len(export.AuditEvents) != 0 {
 		t.Errorf("auditEvents = %v, want empty non-nil slice", export.AuditEvents)
+	}
+}
+
+func TestDeletionMessage(t *testing.T) {
+	dt := time.Date(2026, 11, 1, 14, 30, 0, 0, time.UTC)
+	msg := privacy.DeletionMessage(dt)
+	want := "Tu cuenta y tus datos fueron eliminados el 1 de noviembre de 2026."
+	if msg != want {
+		t.Errorf("message = %q, want %q", msg, want)
 	}
 }
 
@@ -226,22 +274,114 @@ func TestPrivacyHTTPRoutes(t *testing.T) {
 		t.Errorf("export profile id = %q, want dev-user", export.Profile.Id)
 	}
 
-	// 5. Unimplemented stub route /v1/privacy/deletion-requests answers 501
-	reqStub, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/privacy/deletion-requests", nil)
-	reqStub.Header.Set("Authorization", "Bearer "+auth.DevToken)
-	resStub, err := http.DefaultClient.Do(reqStub)
+	// 5. POST /v1/privacy/deletion-requests without token returns 401
+	reqDelNoAuth, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/privacy/deletion-requests", nil)
+	resDelNoAuth, err := http.DefaultClient.Do(reqDelNoAuth)
 	if err != nil {
-		t.Fatalf("POST /privacy/deletion-requests: %v", err)
+		t.Fatalf("POST /privacy/deletion-requests without token: %v", err)
 	}
-	defer func() { _ = resStub.Body.Close() }()
-	if resStub.StatusCode != http.StatusNotImplemented {
-		t.Errorf("stub status = %d, want 501", resStub.StatusCode)
+	defer func() { _ = resDelNoAuth.Body.Close() }()
+	if resDelNoAuth.StatusCode != http.StatusUnauthorized {
+		t.Errorf("deletion without auth status = %d, want 401", resDelNoAuth.StatusCode)
 	}
-	var prob problem.Problem
-	if err := json.NewDecoder(resStub.Body).Decode(&prob); err != nil {
-		t.Fatalf("decode problem json: %v", err)
+
+	// 6. POST /v1/privacy/deletion-requests with invalid confirmation returns 400
+	badBody := []byte(`{"confirmation": "CANCELAR"}`)
+	reqBad, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/privacy/deletion-requests", bytes.NewReader(badBody))
+	reqBad.Header.Set("Authorization", "Bearer "+auth.DevToken)
+	reqBad.Header.Set("Content-Type", "application/json")
+	resBad, err := http.DefaultClient.Do(reqBad)
+	if err != nil {
+		t.Fatalf("POST /privacy/deletion-requests invalid confirmation: %v", err)
 	}
-	if prob.Code != "not_implemented" {
-		t.Errorf("problem code = %q, want not_implemented", prob.Code)
+	defer func() { _ = resBad.Body.Close() }()
+	if resBad.StatusCode != http.StatusBadRequest {
+		t.Errorf("deletion bad confirmation status = %d, want 400", resBad.StatusCode)
+	}
+
+	// 7. POST /v1/privacy/deletion-requests with valid confirmation returns 202
+	goodBody := []byte(`{"confirmation": "ELIMINAR", "reason": "No longer using service"}`)
+	reqGood, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/privacy/deletion-requests", bytes.NewReader(goodBody))
+	reqGood.Header.Set("Authorization", "Bearer "+auth.DevToken)
+	reqGood.Header.Set("Content-Type", "application/json")
+	resGood, err := http.DefaultClient.Do(reqGood)
+	if err != nil {
+		t.Fatalf("POST /privacy/deletion-requests valid: %v", err)
+	}
+	defer func() { _ = resGood.Body.Close() }()
+	if resGood.StatusCode != http.StatusAccepted {
+		body, _ := io.ReadAll(resGood.Body)
+		t.Fatalf("deletion status = %d, want 202, body: %s", resGood.StatusCode, body)
+	}
+	var delResp httpapi.PrivacyDeletionRequest
+	if err := json.NewDecoder(resGood.Body).Decode(&delResp); err != nil {
+		t.Fatalf("decode deletion response: %v", err)
+	}
+	if delResp.Status != httpapi.Completed {
+		t.Errorf("status = %q, want completed", delResp.Status)
+	}
+	if !strings.Contains(delResp.Message, "Tu cuenta y tus datos fueron eliminados") {
+		t.Errorf("message = %q, want containing deletion statement", delResp.Message)
+	}
+
+	// 8. GET /v1/privacy/deletion-requests/{id} is public (no token needed)
+	unknownUUID := uuid.New().String()
+	resGetPub, err := http.Get(srv.URL + "/v1/privacy/deletion-requests/" + unknownUUID)
+	if err != nil {
+		t.Fatalf("GET /privacy/deletion-requests/{id}: %v", err)
+	}
+	defer func() { _ = resGetPub.Body.Close() }()
+	// For pool == nil fallback, returns 404 (not 401!)
+	if resGetPub.StatusCode != http.StatusNotFound {
+		t.Errorf("public GET deletion-requests status = %d, want 404", resGetPub.StatusCode)
+	}
+}
+
+func TestDeleterFreshLoginValidation(t *testing.T) {
+	now := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
+	clk := clock.NewFixed(now)
+	rec := &memAuditRecorder{}
+	consentsRevoker := &fakeConsentsRevoker{}
+	userDeleter := &fakeUserDeleter{}
+
+	// Case 1: Session started 10 minutes ago (> 5 minutes) -> rejects with ErrFreshLoginRequired
+	staleSessions := fakeSessions{
+		start: now.Add(-10 * time.Minute),
+		found: true,
+	}
+	deleterStale := privacy.NewDeleter(nil, clk, rec, staleSessions, consentsRevoker, userDeleter)
+	user := auth.User{ID: "user-1", SessionID: "sid-1"}
+	_, err := deleterStale.DeleteAccount(context.Background(), user, httpapi.PrivacyDeletionRequestCreate{})
+	if !errors.Is(err, privacy.ErrFreshLoginRequired) {
+		t.Errorf("expected ErrFreshLoginRequired, got %v", err)
+	}
+
+	// Case 2: Session started 2 minutes ago (<= 5 minutes) -> succeeds
+	freshSessions := fakeSessions{
+		start: now.Add(-2 * time.Minute),
+		found: true,
+	}
+	deleterFresh := privacy.NewDeleter(nil, clk, rec, freshSessions, consentsRevoker, userDeleter)
+	resp, err := deleterFresh.DeleteAccount(context.Background(), user, httpapi.PrivacyDeletionRequestCreate{})
+	if err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
+	if resp.Status != httpapi.Completed {
+		t.Errorf("status = %q, want completed", resp.Status)
+	}
+	if len(consentsRevoker.revokedUsers) != 1 || consentsRevoker.revokedUsers[0] != "user-1" {
+		t.Errorf("consents revoked users = %v, want [user-1]", consentsRevoker.revokedUsers)
+	}
+	if len(userDeleter.deletedUsers) != 1 || userDeleter.deletedUsers[0] != "user-1" {
+		t.Errorf("deleted users = %v, want [user-1]", userDeleter.deletedUsers)
+	}
+	if len(rec.events) != 2 {
+		t.Fatalf("audit events count = %d, want 2", len(rec.events))
+	}
+	if rec.events[0].Type != audit.PrivacyDeletionRequested {
+		t.Errorf("first audit event = %q, want %q", rec.events[0].Type, audit.PrivacyDeletionRequested)
+	}
+	if rec.events[1].Type != audit.PrivacyDeletionCompleted {
+		t.Errorf("second audit event = %q, want %q", rec.events[1].Type, audit.PrivacyDeletionCompleted)
 	}
 }
