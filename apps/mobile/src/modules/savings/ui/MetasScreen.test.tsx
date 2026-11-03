@@ -21,6 +21,7 @@ import {
 import { createGoalService, type GoalService } from '../application/goalService';
 import type { GoalInput } from '../domain/goal';
 import { GOAL_FORM_ROUTE } from './GoalFormScreen';
+import { LINK_MOVEMENT_ROUTE } from './LinkMovementScreen';
 import { METAS_ROUTE, createMetasScreen } from './MetasScreen';
 
 const noStore = { load: async () => 'system' as const, save: async () => undefined };
@@ -322,5 +323,40 @@ describe('pace in the open card (SCRUM-53)', () => {
     expect(screen.getByTestId('savings.goal.g1.pace')).toHaveTextContent(
       'Abona $625.000 al mes para llegar a tiempo',
     );
+  });
+});
+
+describe('Vincular un movimiento (SCRUM-52)', () => {
+  it('the open card offers it and opens the picker for that goal', async () => {
+    await addDesignGoals();
+    const Metas = createMetasScreen({
+      service,
+      monthlyIncome: async () => null,
+      contributions,
+      canLink: true,
+    });
+    function Picker({ route }: { route: { name: string; params?: { goalId?: string } } }) {
+      return <Text>{`picker:${route.params?.goalId ?? ''}`}</Text>;
+    }
+    await render(
+      <ThemeProvider initialPreference="light" store={noStore}>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name={METAS_ROUTE} component={Metas} />
+            <Stack.Screen name={LINK_MOVEMENT_ROUTE} component={Picker} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </ThemeProvider>,
+    );
+    await fireEvent.press(await screen.findByTestId('savings.goal.g1.head'));
+    await fireEvent.press(screen.getByTestId('savings.goal.g1.link'));
+    expect(await screen.findByText('picker:g1')).toBeTruthy();
+  });
+
+  it('is hidden while movements cannot be linked', async () => {
+    await addDesignGoals();
+    await renderMetas();
+    await fireEvent.press(await screen.findByTestId('savings.goal.g1.head'));
+    expect(screen.queryByTestId('savings.goal.g1.link')).toBeNull();
   });
 });

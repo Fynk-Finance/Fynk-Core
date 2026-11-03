@@ -32,6 +32,7 @@ import type { GoalSummary } from '../domain/goal';
 import { AbonarBox } from './AbonarBox';
 import { GoalCard } from './GoalCard';
 import { GOAL_FORM_ROUTE } from './GoalFormScreen';
+import { LINK_MOVEMENT_ROUTE } from './LinkMovementScreen';
 import { GOAL_ICONS } from './goalIcons';
 import { MetasHeader } from './MetasHeader';
 import { MetasStats } from './MetasStats';
@@ -50,6 +51,8 @@ export interface MetasDeps {
   monthlyIncome: () => Promise<MoneyMinor | null>;
   /** "Abonar a esta meta" and its "Deshacer" (SCRUM-52). */
   contributions: Pick<ContributionService, 'add' | 'undo'>;
+  /** Whether movements can be linked (M7 is wired). Shows "Vincular un movimiento". */
+  canLink?: boolean;
 }
 
 type Toast = { message: string; undoId: string | null };
@@ -58,7 +61,12 @@ type Toast = { message: string; undoId: string | null };
 const doneMonth = (date: string) =>
   `${MONTHS_SHORT[Number(date.slice(5, 7)) - 1]!.toLowerCase()} ${date.slice(0, 4)}`;
 
-export function createMetasScreen({ service, monthlyIncome, contributions }: MetasDeps) {
+export function createMetasScreen({
+  service,
+  monthlyIncome,
+  contributions,
+  canLink = false,
+}: MetasDeps) {
   return function MetasScreen() {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();
     const styles = useThemedStyles(createStyles);
@@ -137,6 +145,11 @@ export function createMetasScreen({ service, monthlyIncome, contributions }: Met
                       expanded={open === goal.id}
                       onToggle={() => setOpen((id) => (id === goal.id ? null : goal.id))}
                       onEdit={() => edit(goal)}
+                      onLink={
+                        canLink
+                          ? () => navigation.navigate(LINK_MOVEMENT_ROUTE, { goalId: goal.id })
+                          : undefined
+                      }
                       abonar={
                         <AbonarBox
                           goalId={goal.id}

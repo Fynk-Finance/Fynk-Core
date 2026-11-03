@@ -42,9 +42,11 @@ export interface GoalCardProps {
   onEdit: () => void;
   /** "Abonar a esta meta", shown in the open card. */
   abonar?: ReactNode;
+  /** "Vincular un movimiento" (SCRUM-52). Without it the button is not shown. */
+  onLink?: () => void;
 }
 
-export function GoalCard({ goal, expanded, onToggle, onEdit, abonar }: GoalCardProps) {
+export function GoalCard({ goal, expanded, onToggle, onEdit, abonar, onLink }: GoalCardProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const soon = goal.monthsLeft <= 2;
@@ -118,6 +120,14 @@ export function GoalCard({ goal, expanded, onToggle, onEdit, abonar }: GoalCardP
           </View>
           <PaceLine goal={goal} />
           {abonar}
+          {onLink ? (
+            <GhostButton
+              label={savingsStrings.link.button}
+              icon="bank"
+              onPress={onLink}
+              testID={`savings.goal.${goal.id}.link`}
+            />
+          ) : null}
           <GhostButton
             label={t.edit}
             icon="chevronRight"

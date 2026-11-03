@@ -127,6 +127,22 @@ export const savingsStrings = {
     undo: 'Deshacer',
     undone: 'Abono deshecho',
   },
+  // "Vincular un movimiento" (M8 prompt): a movement the person already made counts as an aporte.
+  // New screen, needs design review.
+  link: {
+    button: 'Vincular un movimiento',
+    title: 'Vincular un movimiento',
+    subtitle: (goal: string) =>
+      `Elige una salida de tus cuentas para contarla como aporte a ${goal}.`,
+    window: 'Salidas de los últimos 60 días',
+    note: 'En Movimientos quedará como aporte a tu plan de ahorro. Fynk no mueve tu dinero.',
+    empty: 'No hay salidas para vincular en los últimos 60 días.',
+    rowLabel: (description: string, amount: string, date: string) =>
+      `Vincular ${description}, ${amount}, ${date}`,
+    already: 'Ese movimiento ya cuenta para una meta.',
+    failed: 'No pudimos vincularlo. Intenta de nuevo.',
+    back: 'Volver a Metas',
+  },
   // Pace of a goal in its open card (SCRUM-53). New copy, needs design review: the design does
   // not show it on Metas; the M8 prompt puts it in the goal detail.
   pace: {
