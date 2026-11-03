@@ -14,6 +14,7 @@ import { createTransactionsService } from './application/transactionsService';
 import { createTransactionHooks } from './application/useTransactions';
 import type { PageRequest, TransactionFilter, TransactionPage } from './domain/query';
 import { createAllTransactionsScreen, TRANSACTIONS_ROUTE } from './ui/AllTransactionsScreen';
+import { createFiltersSheet, FILTERS_ROUTE } from './ui/FiltersSheet';
 import { createTransactionList } from './ui/TransactionList';
 import { createTransactionPreview } from './ui/TransactionPreview';
 
@@ -21,6 +22,7 @@ export type { PageRequest, TransactionFilter, TransactionPage };
 export type { TransactionCursor } from './domain/query';
 export { TransactionNotFoundError } from './application/transactionsService';
 export { TRANSACTIONS_ROUTE };
+export type { AllTransactionsParams } from './ui/AllTransactionsScreen';
 export type { TransactionListProps } from './ui/TransactionList';
 export { InvalidSyncedTransactionError } from './domain/syncedTransactions';
 
@@ -95,5 +97,13 @@ export const TransactionList = createTransactionList({ hooks });
 
 export const routes: ModuleRoutes = {
   module: 'transactions',
-  screens: [{ name: TRANSACTIONS_ROUTE, component: AllTransactionsScreen, path: 'movimientos' }],
+  screens: [
+    { name: TRANSACTIONS_ROUTE, component: AllTransactionsScreen, path: 'movimientos' },
+    {
+      // "Filtros" of Movimientos: a sheet (README, kinds of screen).
+      name: FILTERS_ROUTE,
+      component: createFiltersSheet({ useAccounts: () => useAccounts(), clock }),
+      transition: 'sheet',
+    },
+  ],
 };

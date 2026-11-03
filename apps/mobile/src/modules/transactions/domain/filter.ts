@@ -110,3 +110,19 @@ export function filterFromParams(params: unknown): TransactionFilter {
   if (typeof p.accountId === 'string' && p.accountId !== '') filter.accountIds = [p.accountId];
   return filter;
 }
+
+/** '22/09/2026' (or '22-09-2026', '2/9/2026') to '2026-09-22'. Null when it is not a real day. */
+export function parseDayInput(text: string): IsoDate | null {
+  const match = /^\s*(\d{1,2})[/-](\d{1,2})[/-](\d{4})\s*$/.exec(text);
+  if (!match) return null;
+  const [, d, m, y] = match as unknown as [string, string, string, string];
+  const iso = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  const ms = Date.parse(`${iso}T00:00:00Z`);
+  return !Number.isNaN(ms) && new Date(ms).toISOString().slice(0, 10) === iso ? iso : null;
+}
+
+/** '2026-09-22' to '22/09/2026', the way the person types it. */
+export function formatDayInput(day: IsoDate): string {
+  const [y, m, d] = day.split('-');
+  return `${d}/${m}/${y}`;
+}
