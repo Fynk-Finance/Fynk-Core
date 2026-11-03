@@ -45,6 +45,11 @@ Daniel asked for a check of what was left of M1 and M2, and for a plan to finish
 * The keys were renamed to ones the allow-list already accepts, so the M13 change stays small.
 * `kdf` was dropped instead of being added to the list, because ADR 0002 fixes the Argon2id parameters, so the value never changes.
 * The old fakes also hid a second problem: the test device ids were not UUIDs. Production ids come from Postgres and are UUIDs, so only the tests changed.
+* Added after the PR opened: the first push failed CI's golangci-lint.
+  * The fakes imported `internal/audit`, and depguard allows another module only through `internal/<module>/ports`, even in tests.
+  * #243 moved the rules to `audit/ports.ValidateEvent`, and the fakes now call it through the `audit` port alias the tests already import.
+  * golangci-lint v2.15.0 now passes on `./...`.
+  * Linting with `--build-tags integration` still reports old issues in the Postgres integration tests, which import `internal/identity` to mount that module. CI does not lint with that tag, and those issues were already on develop.
 * An audit failure still leaves the action stored, so the key is saved but the client gets a 500 (the "Efecto secundario" in SCRUM-72). With valid events this no longer happens in normal use, and it is out of scope here.
 
 ## Next step
