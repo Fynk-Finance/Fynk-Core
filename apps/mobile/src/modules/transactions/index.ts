@@ -1,31 +1,49 @@
 // Public API of the transactions module. Other modules import only from this file.
 // M5 is the only writer of bank movements (upsertFromSync); M8 links movements to goals.
-import type { Clock, Id, IsoDate, IsoDateTime, Transaction } from '@shared/domain/types';
+import { randomUUID } from 'expo-crypto';
+
+import type {
+  CategoryId,
+  Clock,
+  Id,
+  IsoDate,
+  IsoDateTime,
+  Transaction,
+} from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
 import { useAccounts } from '@modules/accounts';
 import { getTreatsThreshold } from '@modules/analytics';
 import { syncNow } from '@modules/bank';
-import { getVaultDb, registerVaultMigrations } from '@modules/vault';
+import {
+  getVaultDb,
+  markDirty,
+  registerBackupCollection,
+  registerVaultMigrations,
+} from '@modules/vault';
 
 import { transactionsMigrations } from './adapters/vault/migrations';
+import { createVaultCategoryStore } from './adapters/vault/vaultCategoryStore';
 import { createVaultTransactionsStore } from './adapters/vault/vaultTransactionsStore';
+import { createCategoryService } from './application/categoryService';
 import { createTransactionsService } from './application/transactionsService';
 import { createTransactionHooks } from './application/useTransactions';
+import type { CategoryChange } from './domain/categoryChange';
 import type { PageRequest, TransactionFilter, TransactionPage } from './domain/query';
 import { createAllTransactionsScreen, TRANSACTIONS_ROUTE } from './ui/AllTransactionsScreen';
 import { createFiltersSheet, FILTERS_ROUTE } from './ui/FiltersSheet';
 import { createTransactionList } from './ui/TransactionList';
 import { createTransactionPreview } from './ui/TransactionPreview';
 
-export type { PageRequest, TransactionFilter, TransactionPage };
+export type { CategoryChange, PageRequest, TransactionFilter, TransactionPage };
 export type { TransactionCursor } from './domain/query';
 export { TransactionNotFoundError } from './application/transactionsService';
 export { TRANSACTIONS_ROUTE };
 export type { AllTransactionsParams } from './ui/AllTransactionsScreen';
 export type { TransactionListProps } from './ui/TransactionList';
 export { InvalidSyncedTransactionError } from './domain/syncedTransactions';
+export { InvalidCategoryError } from './domain/categoryChange';
 
 registerVaultMigrations('transactions', transactionsMigrations);
 
@@ -43,6 +61,16 @@ const service = createTransactionsService({
 appEvents.on('sync.completed', (event) => {
   service.categorizeNew(event.newTransactionIds).catch(() => undefined);
 });
+
+const categories = createCategoryService({
+  store: () => createVaultTransactionsStore(getVaultDb()),
+  categories: () => createVaultCategoryStore(getVaultDb()),
+  events: appEvents,
+  clock,
+  newId: randomUUID,
+  markDirty: (collection, id) => markDirty(collection, id),
+});
+registerBackupCollection(categories.backupCollection);
 
 const hooks = createTransactionHooks({ service, events: appEvents });
 
@@ -67,7 +95,21 @@ export const upsertFromSync = (input: {
 export const setTransactionGoal = (id: Id, goalId: Id | null): Promise<void> =>
   service.setTransactionGoal(id, goalId);
 
+/**
+ * Changes the category of a movement (HU-018). With applyToMerchant, every movement of its
+ * merchant and the next ones get it too. Writes the history and emits transactions.changed.
+ */
+export const changeCategory = (
+  id: Id,
+  categoryId: CategoryId,
+  opts?: { applyToMerchant?: boolean },
+): Promise<Id[]> => categories.changeCategory(id, categoryId, opts);
+
 // ---- Read API ----
+
+/** The category changes of a movement, newest first. */
+export const getCategoryHistory = (id: Id): Promise<CategoryChange[]> =>
+  categories.getCategoryHistory(id);
 
 /** One page of movements, newest first. Pass the page's nextCursor to get the next one. */
 export const queryTransactions = (

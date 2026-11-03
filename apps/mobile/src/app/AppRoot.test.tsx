@@ -30,6 +30,9 @@ jest.mock('@modules/vault', () => {
     },
     // Modules register their tables when they load (M12, later M8 and M9). The vault stays locked.
     registerVaultMigrations: jest.fn(),
+    // ...and their backup collections (M7).
+    registerBackupCollection: jest.fn(),
+    markDirty: jest.fn(),
     getVaultDb: () => {
       throw new (jest.requireActual('@shared/ports').VaultLockedError)();
     },
