@@ -30,7 +30,7 @@ Second item of the list Karol approved ("Si, hazlo"): M10's `configureAnalytics`
 
 ## Result
 
-* Tests: 191 suites pass. ESLint, tsc and Prettier are clean.
+* Tests: 190 suites and 2336 tests pass. ESLint, tsc and Prettier are clean.
 * M9 already exports what M10 asks: `getSubscriptionsSummary()` and `getFixedExpensesThisMonth()`.
 * Nothing in the app calls `configureAnalytics` yet. Whoever installs it (M10 or M0) passes:
   `getGoalSummaries: getGoalsForSnapshot`, `getPaydayContribution`,
