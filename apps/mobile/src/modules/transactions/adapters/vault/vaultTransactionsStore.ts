@@ -64,6 +64,19 @@ export function whereOf(query: StoreQuery): { sql: string; params: unknown[] } {
     parts.push(`t.account_id IN (${placeholders(query.accountIds.length)})`);
     params.push(...query.accountIds);
   }
+  if (query.sign) parts.push(query.sign === 'in' ? 't.amount_minor > 0' : 't.amount_minor < 0');
+  if (query.minAbs !== undefined) {
+    parts.push('abs(t.amount_minor) >= ?');
+    params.push(query.minAbs);
+  }
+  if (query.maxAbs !== undefined) {
+    parts.push('abs(t.amount_minor) <= ?');
+    params.push(query.maxAbs);
+  }
+  if (query.categoryIds && query.categoryIds.length > 0) {
+    parts.push(`t.category_id IN (${placeholders(query.categoryIds.length)})`);
+    params.push(...query.categoryIds);
+  }
   return { sql: parts.length > 0 ? parts.join(' AND ') : '1 = 1', params };
 }
 
