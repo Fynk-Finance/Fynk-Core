@@ -6,7 +6,7 @@ module: M7
 jira: [SCRUM-29]
 branch: feature/transaction-preview-and-account-list
 tool: Claude Code
-pr: none
+pr: "#233"
 status: done
 ---
 
