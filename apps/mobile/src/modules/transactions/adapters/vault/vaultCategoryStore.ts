@@ -80,7 +80,8 @@ export function createVaultCategoryStore(db: VaultDb): CategoryStore {
             changed.push(id);
           }
           await tx.execute(
-            "UPDATE transactions_transactions SET category_id = ?, category_source = 'user' WHERE id = ?",
+            `UPDATE transactions_transactions SET category_id = ?, category_source = 'user',
+               backup_version = backup_version + (source = 'manual') WHERE id = ?`,
             [to, id],
           );
         }

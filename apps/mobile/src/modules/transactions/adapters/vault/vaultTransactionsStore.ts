@@ -256,10 +256,10 @@ export function createVaultTransactionsStore(db: VaultDb): TransactionsStore {
           [id],
         );
         if (rows.length === 0) return false;
-        await tx.execute('UPDATE transactions_transactions SET goal_id = ? WHERE id = ?', [
-          goalId,
-          id,
-        ]);
+        await tx.execute(
+          "UPDATE transactions_transactions SET goal_id = ?, backup_version = backup_version + (source = 'manual') WHERE id = ?",
+          [goalId, id],
+        );
         return true;
       });
     },
