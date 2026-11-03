@@ -59,3 +59,15 @@ export interface CategoryStore {
   exportOverrides(): Promise<BackupRecord<CategoryOverride>[]>;
   importOverrides(records: BackupRecord<CategoryOverride>[]): Promise<void>;
 }
+
+/** Manual movements and their backup (transactions.manual). Bank rows are never touched. */
+export interface ManualStore {
+  /** Inserts or updates a manual movement; its backup version goes up by one. */
+  save(tx: Transaction): Promise<void>;
+  /** Deletes a manual movement and leaves a tombstone. False when it is not a manual one. */
+  delete(id: Id): Promise<boolean>;
+  /** The ids among these that are manual movements. */
+  manualIds(ids: Id[]): Promise<Id[]>;
+  exportAll(): Promise<BackupRecord<Transaction | null>[]>;
+  importAll(records: BackupRecord<Transaction | null>[]): Promise<void>;
+}

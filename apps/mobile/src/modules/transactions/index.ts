@@ -25,11 +25,14 @@ import {
 
 import { transactionsMigrations } from './adapters/vault/migrations';
 import { createVaultCategoryStore } from './adapters/vault/vaultCategoryStore';
+import { createVaultManualStore } from './adapters/vault/vaultManualStore';
 import { createVaultTransactionsStore } from './adapters/vault/vaultTransactionsStore';
 import { createCategoryService } from './application/categoryService';
+import { createManualService } from './application/manualService';
 import { createTransactionsService } from './application/transactionsService';
 import { createTransactionHooks } from './application/useTransactions';
 import type { CategoryChange } from './domain/categoryChange';
+import type { ManualInput } from './domain/manual';
 import type { PageRequest, TransactionFilter, TransactionPage } from './domain/query';
 import { createAllTransactionsScreen, TRANSACTIONS_ROUTE } from './ui/AllTransactionsScreen';
 import { createCategoryPickerSheet } from './ui/CategoryPickerSheet';
@@ -39,7 +42,8 @@ import { createTransactionDetailScreen } from './ui/TransactionDetailScreen';
 import { createTransactionList } from './ui/TransactionList';
 import { createTransactionPreview } from './ui/TransactionPreview';
 
-export type { CategoryChange, PageRequest, TransactionFilter, TransactionPage };
+export type { CategoryChange, ManualInput, PageRequest, TransactionFilter, TransactionPage };
+export { InvalidManualTransactionError } from './domain/manual';
 export type { TransactionCursor } from './domain/query';
 export { TransactionNotFoundError } from './application/transactionsService';
 export { DETAIL_ROUTE as TRANSACTION_DETAIL_ROUTE, TRANSACTIONS_ROUTE };
@@ -75,6 +79,20 @@ const categories = createCategoryService({
   markDirty: (collection, id) => markDirty(collection, id),
 });
 registerBackupCollection(categories.backupCollection);
+
+const manual = createManualService({
+  store: () => createVaultTransactionsStore(getVaultDb()),
+  manual: () => createVaultManualStore(getVaultDb()),
+  events: appEvents,
+  newId: randomUUID,
+  markDirty: (collection, id) => markDirty(collection, id),
+  treatsThreshold: () => getTreatsThreshold(),
+});
+registerBackupCollection(manual.backupCollection);
+// A goal or category change of a manual movement is a new version of it in the backup.
+appEvents.on('transactions.changed', (event) => {
+  manual.markChanged(event.ids).catch(() => undefined);
+});
 
 const hooks = createTransactionHooks({
   service,
@@ -112,6 +130,21 @@ export const changeCategory = (
   categoryId: CategoryId,
   opts?: { applyToMerchant?: boolean },
 ): Promise<Id[]> => categories.changeCategory(id, categoryId, opts);
+
+/**
+ * Registers a gasto or ingreso by hand, in cash or any account (Nuevo movimiento manual). It is
+ * a record only: no balance changes. Throws InvalidManualTransactionError on bad input.
+ */
+export const addManualTransaction = (input: ManualInput): Promise<Transaction> =>
+  manual.addManualTransaction(input);
+
+/** Edits a manual movement. Throws TransactionNotFoundError for a bank one. */
+export const updateManualTransaction = (id: Id, input: ManualInput): Promise<Transaction> =>
+  manual.updateManualTransaction(id, input);
+
+/** Deletes a manual movement. Throws TransactionNotFoundError for a bank one. */
+export const deleteManualTransaction = (id: Id): Promise<void> =>
+  manual.deleteManualTransaction(id);
 
 // ---- Read API ----
 

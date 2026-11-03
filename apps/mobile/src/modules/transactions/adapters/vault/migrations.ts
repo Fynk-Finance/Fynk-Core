@@ -88,4 +88,15 @@ export const transactionsMigrations: VaultMigration[] = [
       INSERT INTO transactions_fts (transactions_fts) VALUES ('rebuild');
     `,
   },
+  {
+    version: 3,
+    up: `
+      -- A deleted manual movement stays here with its last backup version, so the backup
+      -- (transactions.manual) can tell other phones to delete it too.
+      CREATE TABLE transactions_manual_tombstones (
+        id TEXT PRIMARY KEY,
+        backup_version INTEGER NOT NULL
+      );
+    `,
+  },
 ];
