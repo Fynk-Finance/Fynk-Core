@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  react-native-argon2@4.0.0: fa3b0185a4bc8e1f677e8a4b88f4f0b552b0f0d47c274b1dc498b0a8923b23db
+
 importers:
 
   .:
@@ -80,6 +83,9 @@ importers:
       expo-linear-gradient:
         specifier: 58.0.3
         version: 58.0.3(f6f944aca1c0fc8fb2985e5037e1f8d6)
+      expo-navigation-bar:
+        specifier: 58.0.4
+        version: 58.0.4(ad4bb925ee29db8893d54a77a9338299)
       expo-notifications:
         specifier: 58.1.6
         version: 58.1.6(97dd3fb3ec4f325bb3dcaa5508f321ae)
@@ -106,7 +112,7 @@ importers:
         version: 9.0.0(react-native@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))
       react-native-argon2:
         specifier: 4.0.0
-        version: 4.0.0
+        version: 4.0.0(patch_hash=fa3b0185a4bc8e1f677e8a4b88f4f0b552b0f0d47c274b1dc498b0a8923b23db)
       react-native-gesture-handler:
         specifier: 3.3.0
         version: 3.3.0(react-native@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
@@ -2857,6 +2863,13 @@ packages:
 
   expo-modules-macros@0.22.0:
     resolution: {integrity: sha512-IHY+FkILfG19qsyf9G/z7dcWVgsyqdkWsvvob3n5nWKa2meCCAGeEjp42N68fG8Ta6dn/bsceuma7uh2i6ho9g==}
+
+  expo-navigation-bar@58.0.4:
+    resolution: {integrity: sha512-XO1Ljy9MlmVLYlmIGUNHxTCcHN8TjlbYQnf+jqjoxpbPxDCXDCSaX0+F7rKh0G4CUehKsfoebbMO/VIy87qSqg==}
+    peerDependencies:
+      expo: '*'
+      react: '*'
+      react-native: '*'
 
   expo-notifications@58.1.6:
     resolution: {integrity: sha512-O3Y4u1GyiReD+akm/hlHkLB/2FoW6bOflTUoONhwRsgmXr+jZQBZckdjmhk6TE/gQ2FRdsTfSCX4sUHdWA+LsQ==}
@@ -8955,6 +8968,15 @@ snapshots:
       '@expo/modules-macros-win32-arm64': 0.22.0
       '@expo/modules-macros-win32-x64': 0.22.0
 
+  expo-navigation-bar@58.0.4(ad4bb925ee29db8893d54a77a9338299):
+    dependencies:
+      debug: 4.4.3(supports-color@10.2.2)
+      expo: 58.0.19(@babel/core@7.29.7(supports-color@10.2.2))(react-native-worklets@0.13.0(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(react-native@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2))(react-native@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2)(typescript@6.0.3)
+      react: 19.3.0
+      react-native: 0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2)
+    transitivePeerDependencies:
+      - supports-color
+
   expo-notifications@58.1.6(97dd3fb3ec4f325bb3dcaa5508f321ae):
     dependencies:
       '@expo/image-utils': 0.12.5(supports-color@10.2.2)(typescript@6.0.3)
@@ -10972,7 +10994,7 @@ snapshots:
       react-native: 0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2)
       react-native-base64: 0.0.2
 
-  react-native-argon2@4.0.0: {}
+  react-native-argon2@4.0.0(patch_hash=fa3b0185a4bc8e1f677e8a4b88f4f0b552b0f0d47c274b1dc498b0a8923b23db): {}
 
   react-native-base64@0.0.2: {}
 
