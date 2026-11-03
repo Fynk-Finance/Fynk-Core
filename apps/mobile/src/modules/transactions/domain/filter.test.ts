@@ -2,6 +2,8 @@ import {
   activeFilterCount,
   filterFromParams,
   filterProblems,
+  formatDayInput,
+  parseDayInput,
   presetOf,
   presetRange,
 } from './filter';
@@ -85,5 +87,19 @@ describe('filterFromParams', () => {
     expect(filterFromParams(undefined)).toEqual({});
     expect(filterFromParams({ categoryId: 'pizza', from: '1 sep', to: 3 })).toEqual({});
     expect(filterFromParams({ from: '2026-09-30', to: '2026-09-01' })).toEqual({});
+  });
+});
+
+describe('day input', () => {
+  it('reads the day the way people in Colombia write it', () => {
+    expect(parseDayInput('22/09/2026')).toBe('2026-09-22');
+    expect(parseDayInput(' 2-9-2026 ')).toBe('2026-09-02');
+    expect(formatDayInput('2026-09-02')).toBe('02/09/2026');
+  });
+
+  it('refuses days that do not exist and other text', () => {
+    expect(parseDayInput('31/02/2026')).toBeNull();
+    expect(parseDayInput('2026-09-22')).toBeNull();
+    expect(parseDayInput('ayer')).toBeNull();
   });
 });
