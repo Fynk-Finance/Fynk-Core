@@ -6,7 +6,7 @@ module: M13
 jira: [SCRUM-72]
 branch: fix/audit-allow-backup-events
 tool: Claude Code
-pr: none
+pr: "#243"
 status: done
 ---
 
