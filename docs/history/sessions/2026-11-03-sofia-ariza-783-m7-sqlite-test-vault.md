@@ -6,7 +6,7 @@ module: M7
 jira: [SCRUM-31]
 branch: test/transactions-sqlite-test-vault
 tool: Claude Code
-pr: none
+pr: "#229"
 status: done
 ---
 
