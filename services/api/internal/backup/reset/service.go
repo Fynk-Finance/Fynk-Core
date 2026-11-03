@@ -61,7 +61,7 @@ func (s *Service) Reset(ctx context.Context, user auth.User) error {
 			return err
 		}
 	}
-	err = s.audit.Record(ctx, audit.Event{Type: AuditBackupReset, UserID: user.ID, DeviceID: user.DeviceID,
+	err = s.audit.Record(ctx, audit.Event{Type: audit.BackupReset, UserID: user.ID, DeviceID: user.DeviceID,
 		At: s.clock.Now(), Meta: map[string]string{"method": "email_code"}})
 	if err != nil {
 		return fmt.Errorf("reset: audit: %w", err)

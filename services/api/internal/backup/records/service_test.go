@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	auditval "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit"
 	audit "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/records"
 	identity "github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports"
@@ -81,11 +82,16 @@ func (*fakeDevices) RemoveOthers(context.Context, string, string) error { return
 type fakeAudit struct{ events []audit.Event }
 
 func (f *fakeAudit) Record(_ context.Context, e audit.Event) error {
+	if err := auditval.ValidateEvent(e); err != nil {
+		return err
+	}
 	f.events = append(f.events, e)
 	return nil
 }
 
-var user = auth.User{ID: "u1", DeviceID: "dev"}
+const devID = "11111111-1111-4111-8111-111111111111"
+
+var user = auth.User{ID: "u1", DeviceID: devID}
 
 func setup(status string) (*records.Service, *memRepo, *fakeAudit) {
 	repo, rec := newRepo(), &fakeAudit{}
@@ -179,7 +185,7 @@ func TestAuditHasOnlyTheCount(t *testing.T) {
 		t.Fatalf("%d %v %d", n, err, len(rec.events))
 	}
 	e := rec.events[0]
-	if e.Type != audit.BackupUploaded || len(e.Meta) != 1 || e.Meta["count"] != "2" || e.UserID != "u1" || e.DeviceID != "dev" {
+	if e.Type != audit.BackupUploaded || len(e.Meta) != 1 || e.Meta["record_count"] != "2" || e.UserID != "u1" || e.DeviceID != devID {
 		t.Fatalf("event %+v", e)
 	}
 }
