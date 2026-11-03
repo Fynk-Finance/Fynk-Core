@@ -6,7 +6,7 @@ module: M7
 jira: [SCRUM-32]
 branch: feature/transaction-category-changes
 tool: Claude Code
-pr: none
+pr: "#238"
 status: done
 ---
 
