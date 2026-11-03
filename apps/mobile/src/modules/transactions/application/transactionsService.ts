@@ -1,8 +1,16 @@
 // Use cases of the transactions module. M5 writes the movements of a sync; M8 links a movement
 // to a goal; everyone else reads.
-import type { Id, IsoDate, IsoDateTime, Transaction } from '@shared/domain/types';
+import type {
+  CategoryId,
+  Id,
+  IsoDate,
+  IsoDateTime,
+  MoneyMinor,
+  Transaction,
+} from '@shared/domain/types';
 import type { AppEvents } from '@shared/events/appEvents';
 
+import { categorize } from '../domain/categorize';
 import {
   pageLimit,
   toPage,
@@ -29,6 +37,10 @@ export interface TransactionsServiceDeps {
   /** Called on every use: the vault can be locked and opened again while the app runs. */
   store: () => TransactionsStore;
   events: Pick<AppEvents, 'emit'>;
+  /** The Antojos threshold of M10 ($20.000 by default). */
+  treatsThreshold: () => Promise<MoneyMinor>;
+  /** M9's merchant catalog, when it is available. */
+  catalogCategory?: (merchantKey: string) => CategoryId | null;
 }
 
 export interface TransactionsService {
@@ -43,6 +55,11 @@ export interface TransactionsService {
   getTransactionsBetween(from: IsoDate, to: IsoDate): Promise<Transaction[]>;
   getTransaction(id: Id): Promise<Transaction | null>;
   setTransactionGoal(id: Id, goalId: Id | null): Promise<void>;
+  /**
+   * Runs the categorization pipeline on these movements (the new ids of a sync). Never touches
+   * a category the person picked. Emits transactions.changed with the ids that changed.
+   */
+  categorizeNew(ids: Id[]): Promise<Id[]>;
 }
 
 export function createTransactionsService(deps: TransactionsServiceDeps): TransactionsService {
@@ -74,6 +91,35 @@ export function createTransactionsService(deps: TransactionsServiceDeps): Transa
 
     getTransaction(id) {
       return deps.store().get(id);
+    },
+
+    async categorizeNew(ids) {
+      if (ids.length === 0) return [];
+      const store = deps.store();
+      const order = new Map(ids.map((id, i) => [id, i]));
+      const rows = (await store.getMany(ids))
+        .filter((t) => t.categorySource !== 'user')
+        .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+      if (rows.length === 0) return [];
+      const overrides = await store.overridesFor({
+        providerTxIds: rows.flatMap((t) => (t.providerTxId ? [t.providerTxId] : [])),
+        merchantKeys: rows.flatMap((t) => (t.merchantKey ? [t.merchantKey] : [])),
+      });
+      const ctx = {
+        ...overrides,
+        catalog: deps.catalogCategory,
+        treatsThresholdMinor: await deps.treatsThreshold(),
+      };
+      const changes = rows.flatMap((t) => {
+        const result = categorize(t, ctx);
+        return result.categoryId === t.categoryId && result.categorySource === t.categorySource
+          ? []
+          : [{ id: t.id, ...result }];
+      });
+      await store.setCategories(changes);
+      const changed = changes.map((c) => c.id);
+      if (changed.length > 0) deps.events.emit({ type: 'transactions.changed', ids: changed });
+      return changed;
     },
 
     async setTransactionGoal(id, goalId) {

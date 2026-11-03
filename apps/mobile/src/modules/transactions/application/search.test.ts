@@ -22,6 +22,7 @@ beforeEach(async () => {
   service = createTransactionsService({
     store: () => createVaultTransactionsStore(vault.db),
     events: { emit: jest.fn() },
+    treatsThreshold: async () => 2_000_000,
   });
   await sync([
     bankTx({

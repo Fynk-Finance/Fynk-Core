@@ -1,5 +1,5 @@
 // What the transactions use cases need from the outside world.
-import type { Id, IsoDateTime, Transaction } from '@shared/domain/types';
+import type { CategoryId, Id, IsoDateTime, Transaction } from '@shared/domain/types';
 
 import type { StoreQuery, TransactionCursor, TransactionSummary } from '../domain/query';
 
@@ -21,6 +21,17 @@ export interface TransactionsStore {
   /** Every row of the query, newest first. */
   list(query: StoreQuery): Promise<Transaction[]>;
   get(id: Id): Promise<Transaction | null>;
+  /** The movements with these ids that exist, in any order. */
+  getMany(ids: Id[]): Promise<Transaction[]>;
+  /** The person's categories for these bank ids and merchant keys. */
+  overridesFor(keys: { providerTxIds: string[]; merchantKeys: string[] }): Promise<{
+    txOverrides: Map<string, CategoryId>;
+    merchantOverrides: Map<string, CategoryId>;
+  }>;
+  /** Writes the category of each movement. */
+  setCategories(
+    changes: { id: Id; categoryId: CategoryId; categorySource: Transaction['categorySource'] }[],
+  ): Promise<void>;
   /** Sets or clears the goal of a movement. False when the movement does not exist. */
   setGoal(id: Id, goalId: Id | null): Promise<boolean>;
 }
