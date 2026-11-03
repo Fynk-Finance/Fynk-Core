@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	auditval "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit"
 	audit "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/backup/recovery"
 	identity "github.com/Fynk-Finance/Fynk-Core/services/api/internal/identity/ports"
@@ -56,6 +57,9 @@ func (f *fakeActivator) ActivateDevice(_ context.Context, id string) error {
 type fakeAudit struct{ events []audit.Event }
 
 func (f *fakeAudit) Record(_ context.Context, e audit.Event) error {
+	if err := auditval.ValidateEvent(e); err != nil {
+		return err
+	}
 	f.events = append(f.events, e)
 	return nil
 }
@@ -68,7 +72,9 @@ type env struct {
 	aud  *fakeAudit
 }
 
-var user = auth.User{ID: "u1", DeviceID: "d1"}
+const devID = "11111111-1111-4111-8111-111111111111"
+
+var user = auth.User{ID: "u1", DeviceID: devID}
 
 var proof = bytes.Repeat([]byte{7}, 32)
 
@@ -93,7 +99,7 @@ func TestSetOnlyActiveDeviceAndAudits(t *testing.T) {
 	if e.repo.puts != 1 || !e.repo.key.CreatedAt.Equal(now) {
 		t.Fatalf("not stored with the clock: %+v", e.repo.key)
 	}
-	if len(e.aud.events) != 1 || e.aud.events[0].Type != audit.RecoveryKeySet || e.aud.events[0].Meta["kdf"] != "argon2id" {
+	if len(e.aud.events) != 1 || e.aud.events[0].Type != audit.RecoveryKeySet || len(e.aud.events[0].Meta) != 0 {
 		t.Fatalf("audit %+v", e.aud.events)
 	}
 	for name, c := range map[string]struct {
@@ -139,7 +145,7 @@ func TestActivateMatchActivatesAndAudits(t *testing.T) {
 	if err := e.svc.Activate(context.Background(), user, proof); err != nil {
 		t.Fatal(err)
 	}
-	if len(e.act.activated) != 1 || e.act.activated[0] != "d1" {
+	if len(e.act.activated) != 1 || e.act.activated[0] != devID {
 		t.Fatalf("activated %v", e.act.activated)
 	}
 	if len(e.aud.events) != 2 || e.aud.events[0].Type != audit.DeviceApproved || e.aud.events[1].Type != audit.BackupRestored ||
