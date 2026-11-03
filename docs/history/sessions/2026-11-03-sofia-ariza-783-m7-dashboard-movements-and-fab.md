@@ -6,7 +6,7 @@ module: M6
 jira: [SCRUM-29]
 branch: feature/dashboard-movements-and-fab
 tool: Claude Code
-pr: none
+pr: "#242"
 status: done
 ---
 
