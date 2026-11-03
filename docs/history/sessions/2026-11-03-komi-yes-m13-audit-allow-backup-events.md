@@ -35,7 +35,7 @@ Daniel asked for a check of what was left of M1 and M2, run with Sonnet, and for
 
 ## Result
 
-* Tests: `go test ./internal/audit/...` passes, and `gofmt` and `go vet` report nothing. golangci-lint is not installed locally, so CI runs it.
+* Tests: `go test ./internal/audit/...` passes, and `gofmt`, `go vet` and golangci-lint report nothing.
 * Pull request: the bottom of a `gh stack`, with the M2 key renames on top in `fix/backup-audit-meta-keys`.
 * The backup flows still fail until the M2 PR above this one is merged too, because M2 still sends `kdf`, `count`, `approvedBy` and `rejectedBy`.
 
@@ -50,6 +50,10 @@ Daniel asked for a check of what was left of M1 and M2, run with Sonnet, and for
   * `method`, to tell a restore with the recovery code from one with a device approval;
   * the approver on a rejection.
 * None of the new keys hits the list of sensitive words.
+* Added after the PR opened: CI failed on #244 because its tests imported `internal/audit`. The depguard rule in `services/api/.golangci.yml` lets a module reach another one only through `internal/<module>/ports`, and it applies to tests too.
+  * `ValidateEvent`, its errors and the allow-list moved, with `git mv`, from `internal/audit/validation.go` to `internal/audit/ports/validation.go`, together with their tests.
+  * Package `audit` keeps the old names as aliases, so `store.go` and the importer are unchanged.
+  * golangci-lint v2.15.0 passes on `./...`, and with `--build-tags integration` on `./internal/audit/...`. It runs locally through `go run`, as in the Makefile, so "not installed" was no reason to skip it.
 
 ## Next step
 
