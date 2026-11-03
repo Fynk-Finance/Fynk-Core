@@ -6,7 +6,7 @@ module: M7
 jira: [SCRUM-29]
 branch: feature/transactions-store-and-pagination
 tool: Claude Code
-pr: none
+pr: "#230"
 status: done
 ---
 
