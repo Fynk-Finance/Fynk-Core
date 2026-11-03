@@ -3,6 +3,7 @@ import { categoryLabel } from '@shared/domain/categories';
 import { formatCop, formatCopSigned } from '@shared/domain/money';
 import type { Account, Id, MoneyMinor, Transaction } from '@shared/domain/types';
 
+import { bogotaDay } from '../domain/bogota';
 import type { DayGroup } from '../domain/dayGroups';
 import { shortDate, transactionsStrings as s } from './strings.es-CO';
 
@@ -54,4 +55,16 @@ export function summaryLine(
     `+${formatCop(summary.incomeMinor)}`,
     `${TYPOGRAPHIC_MINUS}${formatCop(-summary.spendMinor)}`,
   ].join(' · ');
+}
+
+/** Subtitle of a Dashboard row: "Cuenta de ahorros · 22 sep". */
+export function previewSubtitle(tx: Transaction, kinds: ReadonlyMap<Id, Account['kind']>): string {
+  const kind = kinds.get(tx.accountId);
+  const date = shortDate(bogotaDay(tx.bookedAt));
+  return kind ? `${s.kinds[kind]} · ${date}` : date;
+}
+
+/** Subtitle of a Detalle de cuenta row: "24 oct · Mercado". */
+export function accountSubtitle(tx: Transaction): string {
+  return `${shortDate(bogotaDay(tx.bookedAt))} · ${categoryLabel(tx.categoryId)}`;
 }
