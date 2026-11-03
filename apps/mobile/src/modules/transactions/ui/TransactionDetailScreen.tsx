@@ -11,7 +11,7 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { categoryLabel } from '@shared/domain/categories';
@@ -35,10 +35,11 @@ import {
 import type { TransactionHooks } from '../application/useTransactions';
 import { iconOf } from './categoryIcons';
 import { accountLabel, dateTimeLabel, historyLine, titleOf } from './labels';
-import { CATEGORY_ROUTE } from './routes';
+import { CATEGORY_ROUTE, NEW_TRANSACTION_ROUTE } from './routes';
 import { transactionsStrings } from './strings.es-CO';
 
 const t = transactionsStrings.detail;
+const m = transactionsStrings.manual;
 
 export interface TransactionDetailParams {
   id: Id;
@@ -47,9 +48,18 @@ export interface TransactionDetailParams {
 export interface TransactionDetailDeps {
   hooks: Pick<TransactionHooks, 'useTransaction' | 'useCategoryHistory'>;
   useAccounts: () => { data?: { accounts: Account[] } };
+  /** Deletes a manual movement. */
+  deleteManual: (id: Id) => Promise<void>;
+  /** Alert.alert, replaced in tests. */
+  ask?: typeof Alert.alert;
 }
 
-export function createTransactionDetailScreen({ hooks, useAccounts }: TransactionDetailDeps) {
+export function createTransactionDetailScreen({
+  hooks,
+  useAccounts,
+  deleteManual,
+  ask = Alert.alert,
+}: TransactionDetailDeps) {
   return function TransactionDetailScreen() {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();
     const route = useRoute<RouteProp<{ detail: TransactionDetailParams }, 'detail'>>();
@@ -129,6 +139,40 @@ export function createTransactionDetailScreen({ hooks, useAccounts }: Transactio
               />
             </View>
           </Card>
+
+          {tx.source === 'manual' ? (
+            <View style={styles.actions}>
+              <View style={styles.flex}>
+                <GhostButton
+                  label={m.edit}
+                  onPress={() => navigation.navigate(NEW_TRANSACTION_ROUTE, { id: tx.id })}
+                  testID="transactions.detail.edit"
+                />
+              </View>
+              <View style={styles.flex}>
+                <GhostButton
+                  label={m.delete}
+                  tone="danger"
+                  testID="transactions.detail.delete"
+                  onPress={() =>
+                    ask(m.deleteTitle, m.deleteMessage, [
+                      { text: m.cancel, style: 'cancel' },
+                      {
+                        text: m.delete,
+                        style: 'destructive',
+                        onPress: () => {
+                          deleteManual(tx.id).then(
+                            () => navigation.goBack(),
+                            () => undefined,
+                          );
+                        },
+                      },
+                    ])
+                  }
+                />
+              </View>
+            </View>
+          ) : null}
 
           {history.length > 0 ? (
             <View style={styles.history} testID="transactions.detail.history">
@@ -220,4 +264,5 @@ const createStyles = ({ colors }: Theme) =>
     categoryRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 6 },
     flex: { flex: 1 },
     history: { gap: 6 },
+    actions: { flexDirection: 'row', gap: 12 },
   });
