@@ -5,6 +5,7 @@ import type { Clock, MoneyMinor } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
+import type { GoalSummary as AnalyticsGoal, PaydayContribution } from '@modules/analytics';
 import { notificationsPort } from '@modules/notifications';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
@@ -15,6 +16,7 @@ import { createContributionService } from './application/contributionService';
 import { createGoalService } from './application/goalService';
 import { createMilestoneNotifier } from './application/milestoneNotifier';
 import { createVaultMilestoneStore } from './adapters/vault/vaultMilestoneStore';
+import { goalForAnalytics, paydayContribution } from './domain/analytics';
 import type { GoalSummary } from './domain/goal';
 import { createGoalFormScreen, GOAL_FORM_ROUTE } from './ui/GoalFormScreen';
 import { createGoalsCarousel, GoalCardCompact } from './ui/GoalsCarousel';
@@ -66,6 +68,20 @@ export const getGoals = (): Promise<GoalSummary[]> => service.list();
 
 /** "2 metas $840.000/mes": suggested monthly amounts of the goals not reached yet (M3). */
 export const getGoalsMonthlyTotal = (): Promise<MoneyMinor> => service.monthlyTotal();
+
+/**
+ * M10's `AnalyticsSources.getGoalSummaries`: the goals not reached yet, with the fields of the
+ * snapshot (shared contracts 3.5). `name` is for the screen and never goes in the snapshot.
+ */
+export const getGoalsForSnapshot = async (): Promise<AnalyticsGoal[]> =>
+  (await service.list()).filter((g) => !g.done).map(goalForAnalytics);
+
+/**
+ * M10's `AnalyticsSources.getPaydayContribution`: "Programa $300.000 para Viaje a Cartagena el
+ * día de tu salario · Meta 2 meses antes" in Recomendaciones, or null when no goal gains from it.
+ */
+export const getPaydayContribution = async (): Promise<PaydayContribution | null> =>
+  paydayContribution(await service.list());
 
 export const routes: ModuleRoutes = {
   module: 'savings',
