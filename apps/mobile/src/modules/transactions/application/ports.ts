@@ -1,6 +1,8 @@
 // What the transactions use cases need from the outside world.
 import type { CategoryId, Id, IsoDateTime, Transaction } from '@shared/domain/types';
+import type { BackupRecord } from '@shared/ports';
 
+import type { CategoryChange, CategoryOverride } from '../domain/categoryChange';
 import type { StoreQuery, TransactionCursor, TransactionSummary } from '../domain/query';
 
 export interface TransactionsStore {
@@ -34,4 +36,26 @@ export interface TransactionsStore {
   ): Promise<void>;
   /** Sets or clears the goal of a movement. False when the movement does not exist. */
   setGoal(id: Id, goalId: Id | null): Promise<boolean>;
+}
+
+/** Category changes the person makes, their history and the overrides they leave. */
+export interface CategoryStore {
+  /** Ids of every movement of a merchant. */
+  merchantIds(merchantKey: string): Promise<Id[]>;
+  /**
+   * In one vault transaction: saves the override (its backup version goes up by one), sets the
+   * category of each movement as the person's, and writes a history line for each one that
+   * really changed. Gives those ids.
+   */
+  recategorize(input: {
+    ids: Id[];
+    to: CategoryId;
+    at: IsoDateTime;
+    newId: () => Id;
+    override: Pick<CategoryOverride, 'kind' | 'key'> | null;
+  }): Promise<{ changed: Id[] }>;
+  /** History of a movement, newest first. */
+  history(transactionId: Id): Promise<CategoryChange[]>;
+  exportOverrides(): Promise<BackupRecord<CategoryOverride>[]>;
+  importOverrides(records: BackupRecord<CategoryOverride>[]): Promise<void>;
 }
