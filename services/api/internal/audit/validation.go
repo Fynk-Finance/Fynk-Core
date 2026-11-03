@@ -55,7 +55,7 @@ var allowedMetaKeys = map[string]map[string]bool{
 		"approver_device_id": true, "status": true, "method": true,
 	},
 	ports.DeviceRejected: {
-		"reason": true, "status": true,
+		"reason": true, "status": true, "method": true, "approver_device_id": true,
 	},
 	ports.DeviceRemoved: {
 		"reason": true, "status": true, "self": true, "initiator": true,
@@ -88,7 +88,10 @@ var allowedMetaKeys = map[string]map[string]bool{
 		"size_bytes": true, "record_count": true, "version": true, "checksum": true, "status": true,
 	},
 	ports.BackupRestored: {
-		"size_bytes": true, "record_count": true, "version": true, "status": true,
+		"size_bytes": true, "record_count": true, "version": true, "status": true, "method": true,
+	},
+	ports.BackupReset: {
+		"method": true, "status": true,
 	},
 	ports.RecoveryKeySet: {
 		"status": true, "key_version": true,
