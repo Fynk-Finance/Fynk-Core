@@ -2,6 +2,15 @@
 import type { AccountKind } from '@shared/domain/types';
 
 const WEEKDAYS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'] as const;
+const WEEKDAYS_LONG = [
+  'domingo',
+  'lunes',
+  'martes',
+  'miércoles',
+  'jueves',
+  'viernes',
+  'sábado',
+] as const;
 const MONTHS = [
   'ene',
   'feb',
@@ -25,6 +34,7 @@ export function shortDate(day: string): string {
 
 export const transactionsStrings = {
   weekdays: WEEKDAYS,
+  weekdaysLong: WEEKDAYS_LONG,
   months: MONTHS,
   kinds: {
     savings: 'Cuenta de ahorros',
@@ -85,6 +95,36 @@ export const transactionsStrings = {
       amounts: 'El monto mínimo es mayor que el máximo.',
       amount: 'Escribe el monto en pesos, sin decimales.',
     },
+  },
+  detail: {
+    title: 'Movimiento',
+    back: 'Volver',
+    account: 'Cuenta',
+    description: 'Descripción',
+    merchant: 'Comercio',
+    category: 'Categoría',
+    status: 'Estado',
+    pending: 'Pendiente',
+    booked: 'Aplicado',
+    manual: 'Registrado manualmente',
+    changeCategory: 'Cambiar categoría',
+    history: 'Historial de cambios',
+    historyLine: (from: string, to: string, day: string) =>
+      `Cambiaste de ${from} a ${to} el ${day}`,
+    gone: 'Este movimiento ya no está',
+    error: 'No pudimos cargar el movimiento.',
+    am: 'a. m.',
+    pm: 'p. m.',
+  },
+  category: {
+    title: 'Cambiar categoría',
+    close: 'Cerrar',
+    current: 'Actual',
+    applyAllTitle: (merchant: string) => `¿Aplicar a todos los movimientos de ${merchant}?`,
+    applyAllMessage: 'Los que lleguen después también tendrán esta categoría.',
+    onlyThis: 'Solo este',
+    applyAll: 'Aplicar a todos',
+    error: 'No pudimos cambiar la categoría. Intenta de nuevo.',
   },
   account: {
     title: 'Movimientos',

@@ -9,7 +9,7 @@ import { AppText, SectionHeader, Skeleton } from '@shared/ui';
 
 import type { TransactionHooks } from '../application/useTransactions';
 import type { TransactionFilter } from '../domain/query';
-import { TRANSACTIONS_ROUTE } from './routes';
+import { DETAIL_ROUTE, TRANSACTIONS_ROUTE } from './routes';
 import { previewSubtitle, titleOf } from './labels';
 import { transactionsStrings as s } from './strings.es-CO';
 import { TransactionRow } from './TransactionRow';
@@ -57,6 +57,7 @@ export function createTransactionPreview({ hooks, useAccounts }: TransactionPrev
                 variant="preview"
                 title={titleOf(tx)}
                 subtitle={previewSubtitle(tx, kinds)}
+                onPress={(row) => navigation.navigate(DETAIL_ROUTE, { id: row.id })}
               />
             ))}
           </View>
