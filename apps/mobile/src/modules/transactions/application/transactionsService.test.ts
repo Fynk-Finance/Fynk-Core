@@ -157,6 +157,89 @@ describe('queryTransactions (HU-015 paginación y orden cronológico)', () => {
   });
 });
 
+describe('filters (HU-016)', () => {
+  beforeEach(async () => {
+    await sync([
+      bankTx({
+        id: 'salary',
+        bookedAt: '2026-09-25T15:00:00Z',
+        amountMinor: 520_000_000,
+        categoryId: 'salary',
+      }),
+      bankTx({
+        id: 'market',
+        bookedAt: '2026-09-24T15:00:00Z',
+        amountMinor: -18_430_000,
+        categoryId: 'groceries',
+      }),
+      bankTx({
+        id: 'coffee',
+        bookedAt: '2026-09-23T15:00:00Z',
+        amountMinor: -980_000,
+        categoryId: 'treats',
+      }),
+      bankTx({
+        id: 'august',
+        bookedAt: '2026-08-20T15:00:00Z',
+        amountMinor: -7_200_000,
+        categoryId: 'restaurants',
+      }),
+    ]);
+    await sync(
+      [
+        bankTx({
+          id: 'wallet',
+          accountId: 'acc-wallet',
+          bookedAt: '2026-09-26T15:00:00Z',
+          amountMinor: -4_000_000,
+          categoryId: 'transport',
+        }),
+      ],
+      'acc-wallet',
+    );
+  });
+
+  it('filters by date', async () => {
+    expect(await allIds({ from: '2026-08-01', to: '2026-08-31' })).toEqual(['august']);
+  });
+
+  it('filters money in and money out', async () => {
+    expect(await allIds({ kind: 'income' })).toEqual(['salary']);
+    expect(await allIds({ kind: 'expense' })).toEqual(['wallet', 'market', 'coffee', 'august']);
+  });
+
+  it('filters by amount without sign, both ends included', async () => {
+    expect(await allIds({ minAmountMinor: 4_000_000, maxAmountMinor: 18_430_000 })).toEqual([
+      'wallet',
+      'market',
+      'august',
+    ]);
+    expect(await allIds({ minAmountMinor: 100_000_000 })).toEqual(['salary']);
+  });
+
+  it('filters by account and by category', async () => {
+    expect(await allIds({ accountIds: ['acc-wallet'] })).toEqual(['wallet']);
+    expect(await allIds({ categoryIds: ['treats', 'restaurants'] })).toEqual(['coffee', 'august']);
+  });
+
+  it('combines every filter and the summary follows it', async () => {
+    const filter = {
+      from: '2026-09-01',
+      to: '2026-09-30',
+      kind: 'expense' as const,
+      maxAmountMinor: 20_000_000,
+      accountIds: ['acc-ahorros'],
+      categoryIds: ['groceries' as const, 'treats' as const, 'transport' as const],
+    };
+    expect(await allIds(filter)).toEqual(['market', 'coffee']);
+    expect(await service.summarize(filter)).toEqual({
+      count: 2,
+      incomeMinor: 0,
+      spendMinor: -19_410_000,
+    });
+  });
+});
+
 describe('summarize', () => {
   it('counts the rows of the filter and adds money in and money out', async () => {
     await sync([

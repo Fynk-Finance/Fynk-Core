@@ -1,7 +1,14 @@
 // What a list asks for: a filter in the person's terms (Bogotá days) turned into the store's
 // terms (UTC instants), and keyset pages on (bookedAt, id), newest first. Never OFFSET: a new
 // movement synced between two pages would shift every row and repeat or skip one.
-import type { Id, IsoDate, IsoDateTime, MoneyMinor, Transaction } from '@shared/domain/types';
+import type {
+  CategoryId,
+  Id,
+  IsoDate,
+  IsoDateTime,
+  MoneyMinor,
+  Transaction,
+} from '@shared/domain/types';
 
 import { bogotaDayStart, bogotaRange } from './bogota';
 
@@ -12,6 +19,14 @@ export interface TransactionFilter {
   to?: IsoDate;
   /** Only these accounts. Empty or missing means every account. */
   accountIds?: Id[];
+  /** Ingresos (money in) or Gastos (money out). Missing means Todos. */
+  kind?: 'income' | 'expense';
+  /** Smallest amount, without sign, included. */
+  minAmountMinor?: MoneyMinor;
+  /** Biggest amount, without sign, included. */
+  maxAmountMinor?: MoneyMinor;
+  /** Only these categories. Empty or missing means every category. */
+  categoryIds?: CategoryId[];
 }
 
 /** The filter in UTC, as the store reads it. `end` is excluded. */
@@ -19,6 +34,10 @@ export interface StoreQuery {
   start?: IsoDateTime;
   end?: IsoDateTime;
   accountIds?: Id[];
+  sign?: 'in' | 'out';
+  minAbs?: MoneyMinor;
+  maxAbs?: MoneyMinor;
+  categoryIds?: CategoryId[];
 }
 
 /** The last row of a page: the next page starts strictly after it. */
@@ -60,6 +79,12 @@ export function toStoreQuery(filter: TransactionFilter): StoreQuery {
     query.end = bogotaRange(filter.to, filter.to).end;
   }
   if (filter.accountIds && filter.accountIds.length > 0) query.accountIds = [...filter.accountIds];
+  if (filter.kind) query.sign = filter.kind === 'income' ? 'in' : 'out';
+  if (filter.minAmountMinor !== undefined) query.minAbs = filter.minAmountMinor;
+  if (filter.maxAmountMinor !== undefined) query.maxAbs = filter.maxAmountMinor;
+  if (filter.categoryIds && filter.categoryIds.length > 0) {
+    query.categoryIds = [...filter.categoryIds];
+  }
   return query;
 }
 
