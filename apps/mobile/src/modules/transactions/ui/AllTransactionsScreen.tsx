@@ -1,5 +1,6 @@
 // Movimientos (design: Movimientos, inventory row 13). Pushed with the default transition, from
-// "Ver todo" on the Dashboard. Title and back button, the sticky bar with the summary line, days
+// "Ver todo" on the Dashboard. Title and back button, the sticky bar with "Buscar por nombre",
+// "Filtros" and the summary line, days
 // with their net, rows newest first, "Cargar 20 más" (keyset pages of 20) and pull to refresh,
 // which starts a sync (rule 4 of CLAUDE.md, M5 applies the 60 s cooldown).
 import {
@@ -20,6 +21,7 @@ import {
   EmptyState,
   ErrorState,
   Icon,
+  SearchField,
   Skeleton,
   fonts,
   radius,
@@ -38,6 +40,7 @@ import { transactionsStrings as s } from './strings.es-CO';
 import { LoadMoreButton } from './LoadMoreButton';
 import { FILTERS_ROUTE, TRANSACTIONS_ROUTE } from './routes';
 import { TransactionRow } from './TransactionRow';
+import { SEARCH_DEBOUNCE_MS, useDebounced } from './useDebounced';
 
 export { TRANSACTIONS_ROUTE };
 
@@ -79,8 +82,11 @@ export function createAllTransactionsScreen({
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
     const params = route.params;
-    const filter = useMemo(() => params?.filter ?? filterFromParams(params), [params]);
-    const active = activeFilterCount(filter);
+    const base = useMemo(() => params?.filter ?? filterFromParams(params), [params]);
+    const [query, setQuery] = useState('');
+    const text = useDebounced(query.trim(), SEARCH_DEBOUNCE_MS);
+    const filter = useMemo(() => (text ? { ...base, text } : base), [base, text]);
+    const active = activeFilterCount(base);
     const pages = hooks.useTransactionPages(filter);
     const summary = hooks.useTransactionSummary(filter);
     const accounts = useAccounts().data?.accounts;
@@ -123,9 +129,18 @@ export function createAllTransactionsScreen({
     const bar = (
       <View style={styles.bar}>
         <View style={styles.tools}>
-          <View style={styles.searchSlot} />
+          <View style={styles.search}>
+            <SearchField
+              placeholder={s.list.search}
+              value={query}
+              onChangeText={setQuery}
+              autoCorrect={false}
+              autoCapitalize="none"
+              testID="transactions.search"
+            />
+          </View>
           <Pressable
-            onPress={() => navigation.navigate(FILTERS_ROUTE, { filter })}
+            onPress={() => navigation.navigate(FILTERS_ROUTE, { filter: base })}
             accessibilityRole="button"
             accessibilityLabel={active > 0 ? s.filters.activeCount(active) : s.filters.open}
             accessibilityHint={s.filters.title}
@@ -213,7 +228,15 @@ export function createAllTransactionsScreen({
               />
             )}
             ListEmptyComponent={
-              <EmptyState title={s.list.empty} message={s.list.emptyMessage} icon="cardAlt" />
+              text || active > 0 ? (
+                <EmptyState
+                  title={s.list.noResults}
+                  message={s.list.noResultsMessage}
+                  icon="search"
+                />
+              ) : (
+                <EmptyState title={s.list.empty} message={s.list.emptyMessage} icon="cardAlt" />
+              )
             }
             ListFooterComponent={
               pages.hasNextPage ? (
@@ -259,8 +282,7 @@ const createStyles = ({ colors }: Theme) =>
       backgroundColor: colors.background,
     },
     tools: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    // The search field goes here (feature/transaction-search-fts).
-    searchSlot: { flex: 1 },
+    search: { flex: 1 },
     filterButton: {
       width: size.iconButton,
       height: size.iconButton,

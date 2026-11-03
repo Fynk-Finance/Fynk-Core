@@ -77,6 +77,10 @@ export function whereOf(query: StoreQuery): { sql: string; params: unknown[] } {
     parts.push(`t.category_id IN (${placeholders(query.categoryIds.length)})`);
     params.push(...query.categoryIds);
   }
+  if (query.match) {
+    parts.push('t.rowid IN (SELECT rowid FROM transactions_fts WHERE transactions_fts MATCH ?)');
+    params.push(query.match);
+  }
   return { sql: parts.length > 0 ? parts.join(' AND ') : '1 = 1', params };
 }
 

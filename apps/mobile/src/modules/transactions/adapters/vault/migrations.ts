@@ -59,4 +59,33 @@ export const transactionsMigrations: VaultMigration[] = [
       );
     `,
   },
+  {
+    version: 2,
+    up: `
+      -- Search (HU-017): an FTS5 index over description and merchant, case and accent
+      -- insensitive. It keeps no copy of the text (content=) and triggers keep it in step.
+      CREATE VIRTUAL TABLE transactions_fts USING fts5 (
+        description, merchant_raw,
+        content='transactions_transactions', content_rowid='rowid',
+        tokenize='unicode61 remove_diacritics 2'
+      );
+      CREATE TRIGGER transactions_fts_ai AFTER INSERT ON transactions_transactions BEGIN
+        INSERT INTO transactions_fts (rowid, description, merchant_raw)
+          VALUES (new.rowid, new.description, new.merchant_raw);
+      END;
+      CREATE TRIGGER transactions_fts_ad AFTER DELETE ON transactions_transactions BEGIN
+        INSERT INTO transactions_fts (transactions_fts, rowid, description, merchant_raw)
+          VALUES ('delete', old.rowid, old.description, old.merchant_raw);
+      END;
+      CREATE TRIGGER transactions_fts_au
+        AFTER UPDATE OF description, merchant_raw ON transactions_transactions BEGIN
+        INSERT INTO transactions_fts (transactions_fts, rowid, description, merchant_raw)
+          VALUES ('delete', old.rowid, old.description, old.merchant_raw);
+        INSERT INTO transactions_fts (rowid, description, merchant_raw)
+          VALUES (new.rowid, new.description, new.merchant_raw);
+      END;
+      -- Movements saved before this version.
+      INSERT INTO transactions_fts (transactions_fts) VALUES ('rebuild');
+    `,
+  },
 ];

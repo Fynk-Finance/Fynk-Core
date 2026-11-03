@@ -70,6 +70,13 @@ export const queryTransactions = (
 export const getTransactionsBetween = (from: IsoDate, to: IsoDate): Promise<Transaction[]> =>
   service.getTransactionsBetween(from, to);
 
+/**
+ * Movements whose description or merchant has every typed word as a prefix, without case or
+ * accents ("SUPERMERC" and "supermércado" find "Supermercado"). At most 50, newest first.
+ */
+export const searchTransactions = (text: string): Promise<Transaction[]> =>
+  service.searchTransactions(text);
+
 /** One movement, or null. */
 export const getTransaction = (id: Id): Promise<Transaction | null> => service.getTransaction(id);
 
