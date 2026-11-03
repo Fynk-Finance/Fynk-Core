@@ -1,27 +1,36 @@
 // Public API of the transactions module. Other modules import only from this file.
 // M5 is the only writer of bank movements (upsertFromSync); M8 links movements to goals.
-import type { Id, IsoDate, IsoDateTime, Transaction } from '@shared/domain/types';
+import type { Clock, Id, IsoDate, IsoDateTime, Transaction } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
-import { createPlaceholderScreen, type ModuleRoutes } from '@shared/navigation';
+import type { ModuleRoutes } from '@shared/navigation';
 
+import { useAccounts } from '@modules/accounts';
+import { syncNow } from '@modules/bank';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
 import { transactionsMigrations } from './adapters/vault/migrations';
 import { createVaultTransactionsStore } from './adapters/vault/vaultTransactionsStore';
 import { createTransactionsService } from './application/transactionsService';
+import { createTransactionHooks } from './application/useTransactions';
 import type { PageRequest, TransactionFilter, TransactionPage } from './domain/query';
+import { createAllTransactionsScreen, TRANSACTIONS_ROUTE } from './ui/AllTransactionsScreen';
 
 export type { PageRequest, TransactionFilter, TransactionPage };
 export type { TransactionCursor } from './domain/query';
 export { TransactionNotFoundError } from './application/transactionsService';
+export { TRANSACTIONS_ROUTE };
 export { InvalidSyncedTransactionError } from './domain/syncedTransactions';
 
 registerVaultMigrations('transactions', transactionsMigrations);
+
+const clock: Clock = { now: () => new Date() };
 
 const service = createTransactionsService({
   store: () => createVaultTransactionsStore(getVaultDb()),
   events: appEvents,
 });
+
+const hooks = createTransactionHooks({ service, events: appEvents });
 
 // ---- Write API ----
 
@@ -59,14 +68,20 @@ export const getTransactionsBetween = (from: IsoDate, to: IsoDate): Promise<Tran
 /** One movement, or null. */
 export const getTransaction = (id: Id): Promise<Transaction | null> => service.getTransaction(id);
 
-// Placeholder route from M0 until the Movimientos screen lands (feature/transactions-list-screen).
+// ---- Screens ----
+
+// Other modules are used only inside functions, never while this file loads: M5 and M6 import
+// this module too, and an import cycle must not see an undefined value (vault/index.ts does
+// the same with identity).
+/** Movimientos, from "Ver todo" on the Dashboard. */
+export const AllTransactionsScreen = createAllTransactionsScreen({
+  hooks,
+  useAccounts: () => useAccounts(),
+  refresh: () => syncNow(),
+  clock,
+});
+
 export const routes: ModuleRoutes = {
   module: 'transactions',
-  screens: [
-    {
-      name: 'transactions.All',
-      component: createPlaceholderScreen({ title: 'Movimientos', owner: 'M7 · Movimientos' }),
-      path: 'movimientos',
-    },
-  ],
+  screens: [{ name: TRANSACTIONS_ROUTE, component: AllTransactionsScreen, path: 'movimientos' }],
 };

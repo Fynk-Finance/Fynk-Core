@@ -157,6 +157,26 @@ describe('queryTransactions (HU-015 paginación y orden cronológico)', () => {
   });
 });
 
+describe('summarize', () => {
+  it('counts the rows of the filter and adds money in and money out', async () => {
+    await sync([
+      bankTx({ id: 'in', bookedAt: '2026-10-02T10:00:00Z', amountMinor: 520_000_000 }),
+      bankTx({ id: 'out', bookedAt: '2026-10-02T11:00:00Z', amountMinor: -18_430_000 }),
+      bankTx({ id: 'old', bookedAt: '2026-08-02T11:00:00Z', amountMinor: -1_000_000 }),
+    ]);
+    expect(await service.summarize({ from: '2026-10-01', to: '2026-10-31' })).toEqual({
+      count: 2,
+      incomeMinor: 520_000_000,
+      spendMinor: -18_430_000,
+    });
+    expect(await service.summarize({ accountIds: ['nobody'] })).toEqual({
+      count: 0,
+      incomeMinor: 0,
+      spendMinor: 0,
+    });
+  });
+});
+
 describe('getTransactionsBetween (M9, M10)', () => {
   it('gives the movements of Bogotá days, both ends included, newest first', async () => {
     await sync([
