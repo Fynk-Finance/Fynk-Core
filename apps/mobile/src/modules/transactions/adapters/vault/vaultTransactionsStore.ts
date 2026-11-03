@@ -147,6 +147,23 @@ export function createVaultTransactionsStore(db: VaultDb): TransactionsStore {
       return rows.map(toTransaction);
     },
 
+    async summary(query) {
+      const where = whereOf(query);
+      const rows = await db.query<{ n: number; income: number | null; spend: number | null }>(
+        `SELECT count(*) AS n,
+           sum(CASE WHEN t.amount_minor > 0 THEN t.amount_minor ELSE 0 END) AS income,
+           sum(CASE WHEN t.amount_minor < 0 THEN t.amount_minor ELSE 0 END) AS spend
+         FROM transactions_transactions t WHERE ${where.sql}`,
+        where.params,
+      );
+      const row = rows[0];
+      return {
+        count: Number(row?.n ?? 0),
+        incomeMinor: Number(row?.income ?? 0),
+        spendMinor: Number(row?.spend ?? 0),
+      };
+    },
+
     async list(query) {
       const where = whereOf(query);
       const rows = await db.query<TransactionRow>(

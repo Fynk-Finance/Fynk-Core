@@ -1,7 +1,7 @@
 // What a list asks for: a filter in the person's terms (Bogotá days) turned into the store's
 // terms (UTC instants), and keyset pages on (bookedAt, id), newest first. Never OFFSET: a new
 // movement synced between two pages would shift every row and repeat or skip one.
-import type { Id, IsoDate, IsoDateTime, Transaction } from '@shared/domain/types';
+import type { Id, IsoDate, IsoDateTime, MoneyMinor, Transaction } from '@shared/domain/types';
 
 import { bogotaDayStart, bogotaRange } from './bogota';
 
@@ -37,6 +37,14 @@ export interface TransactionPage {
   items: Transaction[];
   /** Null when there are no more rows. */
   nextCursor: TransactionCursor | null;
+}
+
+/** The line above the list: "Mostrando 20 de 94 · +$16.545.000 · −$9.903.300". */
+export interface TransactionSummary {
+  count: number;
+  incomeMinor: MoneyMinor;
+  /** Money out, as a negative number. */
+  spendMinor: MoneyMinor;
 }
 
 export const PAGE_SIZE = 20;

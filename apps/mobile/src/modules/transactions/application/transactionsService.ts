@@ -10,6 +10,7 @@ import {
   type PageRequest,
   type TransactionFilter,
   type TransactionPage,
+  type TransactionSummary,
 } from '../domain/query';
 import { cleanSyncedTransactions } from '../domain/syncedTransactions';
 import type { TransactionsStore } from './ports';
@@ -34,6 +35,7 @@ export interface TransactionsService {
     transactions: Transaction[];
   }): Promise<{ newIds: Id[] }>;
   queryTransactions(filter: TransactionFilter, page?: PageRequest): Promise<TransactionPage>;
+  summarize(filter: TransactionFilter): Promise<TransactionSummary>;
   getTransactionsBetween(from: IsoDate, to: IsoDate): Promise<Transaction[]>;
   getTransaction(id: Id): Promise<Transaction | null>;
   setTransactionGoal(id: Id, goalId: Id | null): Promise<void>;
@@ -51,6 +53,10 @@ export function createTransactionsService(deps: TransactionsServiceDeps): Transa
       const limit = pageLimit(page.limit);
       const rows = await deps.store().page(toStoreQuery(filter), page.cursor ?? null, limit + 1);
       return toPage(rows, limit);
+    },
+
+    summarize(filter) {
+      return deps.store().summary(toStoreQuery(filter));
     },
 
     async getTransactionsBetween(from, to) {
