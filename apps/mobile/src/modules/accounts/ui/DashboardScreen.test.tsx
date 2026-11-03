@@ -38,6 +38,7 @@ async function renderDashboard(
     isError?: boolean;
     theme?: ThemePreference;
     name?: string | null;
+    withMovements?: boolean;
   } = {},
 ) {
   const refetch = jest.fn();
@@ -53,6 +54,12 @@ async function renderDashboard(
     useDisplayName: () => (opts.name === undefined ? 'Laura Gómez' : opts.name),
     accountRoute: 'identity.Account',
     notificationsRoute: 'notifications.Inbox',
+    ...(opts.withMovements
+      ? {
+          renderMovements: () => <Text>movements of M7</Text>,
+          newMovementRoute: () => 'transactions.New',
+        }
+      : {}),
   });
   await render(
     <GestureHandlerRootView>
@@ -63,6 +70,7 @@ async function renderDashboard(
             <Stack.Screen name="identity.Account" component={Target} />
             <Stack.Screen name="notifications.Inbox" component={Target} />
             <Stack.Screen name={ACCOUNT_DETAIL_ROUTE} component={Target} />
+            <Stack.Screen name="transactions.New" component={Target} />
           </Stack.Navigator>
         </NavigationContainer>
       </ThemeProvider>
@@ -196,6 +204,20 @@ describe('Detalle de cuentas', () => {
     await renderDashboard({ overview: overviewOf([]) });
     await openDetails();
     expect(screen.getByText('Aún no tienes cuentas conectadas.')).toBeTruthy();
+  });
+});
+
+describe('Movimientos and the FAB (M7)', () => {
+  it('shows the movements of M7 and opens Registrar gasto o ingreso from the FAB', async () => {
+    await renderDashboard({ withMovements: true });
+    expect(screen.getByText('movements of M7')).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('Registrar gasto o ingreso'));
+    expect(await screen.findByText('arrived:transactions.New:')).toBeTruthy();
+  });
+
+  it('has no FAB until M7 gives its sheet', async () => {
+    await renderDashboard();
+    expect(screen.queryByLabelText('Registrar gasto o ingreso')).toBeNull();
   });
 });
 

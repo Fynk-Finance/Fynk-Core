@@ -145,7 +145,6 @@ export function createAccountDetailScreen(deps: AccountDetailDeps) {
       <Screen header={hero} scroll gap={spacing.section}>
         {!current ? <EmptyState title={t.gone} icon="bank" /> : null}
         {current?.kind === 'credit_card' ? <CreditData account={current} /> : null}
-        {/* TODO(M7) TransactionList filtered by this account, with pull to refresh. */}
         {current && deps.renderTransactions ? deps.renderTransactions(current.id) : null}
       </Screen>
     );

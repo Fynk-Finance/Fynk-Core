@@ -1,6 +1,7 @@
 // Public API of the accounts module. Other modules import only from this file.
 // M5 is the only writer (upsertFromSync, markLinkRevoked); everyone else reads.
 import { randomUUID } from 'expo-crypto';
+import { createElement } from 'react';
 
 import type { Account, Clock, Id, IsoDate, MoneyMinor } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
@@ -8,6 +9,7 @@ import { registerSlot, type ModuleRoutes } from '@shared/navigation';
 import type { MarkDirty } from '@shared/ports';
 
 import { NOTIFICATIONS_ROUTE, useUnreadCount } from '@modules/notifications';
+import { NEW_TRANSACTION_ROUTE, TransactionList, TransactionPreview } from '@modules/transactions';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
 import { accountsMigrations } from './adapters/vault/migrations';
@@ -115,8 +117,8 @@ export const MisCuentasMiCuenta = createMisCuentasMiCuenta({ useAccounts });
 // close an import cycle (vault imports identity).
 registerSlot('miCuenta.misCuentas', MisCuentasMiCuenta);
 
-// TODO(M10) take Ingresos and Gastos from M10's useMonthSummary(). Until then the temporary
-// monthSummary runs on this month's movements, and M7 has none to give yet (TODO(M7)).
+// TODO(M10) take Ingresos and Gastos from M10's useMonthSummary(), which reads M7's
+// movements, once the app configures M10. Until then the temporary summary shows $0.
 const useMonthSummary = () => monthSummary([], clock.now());
 
 export const routes: ModuleRoutes = {
@@ -130,13 +132,20 @@ export const routes: ModuleRoutes = {
     useDisplayName: () => null,
     accountRoute: 'identity.Account',
     notificationsRoute: NOTIFICATIONS_ROUTE,
+    // M7 imports this module too: its values are read only when the screen renders.
+    renderMovements: () => createElement(TransactionPreview),
+    newMovementRoute: () => NEW_TRANSACTION_ROUTE,
   }),
   screens: [
     {
       // Detalle de cuenta, from a row of Detalle de cuentas: { accountId }.
       name: ACCOUNT_DETAIL_ROUTE,
-      // TODO(M7) renderTransactions: M7's TransactionList filtered by the account.
-      component: createAccountDetailScreen({ useAccounts, clock }),
+      component: createAccountDetailScreen({
+        useAccounts,
+        clock,
+        renderTransactions: (accountId) =>
+          createElement(TransactionList, { filter: { accountIds: [accountId] } }),
+      }),
       path: 'cuentas/:accountId',
       transition: 'modal',
     },
