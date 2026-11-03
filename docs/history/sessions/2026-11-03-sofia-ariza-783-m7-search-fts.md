@@ -6,7 +6,7 @@ module: M7
 jira: [SCRUM-31]
 branch: feature/transaction-search-fts
 tool: Claude Code
-pr: none
+pr: "#236"
 status: done
 ---
 
