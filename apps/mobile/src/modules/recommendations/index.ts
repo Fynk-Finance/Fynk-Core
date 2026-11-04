@@ -3,6 +3,7 @@ import type { Clock } from '@shared/domain';
 import type { ModuleRoutes } from '@shared/navigation';
 import type { RegisterVaultMigrations, VaultDb } from '@shared/ports';
 import { getAnalyticsReport, snapshotDataRange } from '@modules/analytics';
+import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
 import { createRecommendationsApi } from './adapters/api/recommendationsApi';
 import { recommendationsMigrations } from './adapters/vault/migrations';
@@ -39,7 +40,7 @@ export interface RecommendationsDeps {
   navigation?: Partial<RecommendationsNavigation>;
 }
 
-/** Installs the module once at startup, after M2's vault and configureAnalytics(). */
+/** Installs the module with M2's vault, after M10 (which installs itself from its index.ts). */
 export function configureRecommendations(deps: RecommendationsDeps): void {
   deps.registerVaultMigrations('recommendations', recommendationsMigrations);
   navigationTargets = { ...defaultNavigation, ...deps.navigation };
@@ -53,3 +54,14 @@ export function configureRecommendations(deps: RecommendationsDeps): void {
     }),
   );
 }
+
+/**
+ * The module installs itself when the app loads it, like M7, M8, M9 and M10. "Programar" and
+ * "Revisar" keep the default targets (Metas and Billetera) and the header shows "Invitado"
+ * until M1 exports the profile name.
+ */
+configureRecommendations({
+  getVaultDb: () => getVaultDb(),
+  registerVaultMigrations,
+  clock: { now: () => new Date() },
+});
