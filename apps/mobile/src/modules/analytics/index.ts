@@ -1,9 +1,10 @@
 // Public API of the analytics module (M10). Other modules import only from this file.
+import { randomUUID } from 'expo-crypto';
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { useCallback } from 'react';
 
 import type { AggregateSnapshot, CategoryId, Clock, Id, MoneyMinor } from '@shared/domain';
-import type { AppEvents } from '@shared/events/appEvents';
+import { appEvents, type AppEvents } from '@shared/events/appEvents';
 import type {
   MarkDirty,
   NotificationsPort,
@@ -13,6 +14,17 @@ import type {
 } from '@shared/ports';
 import type { ModuleRoutes } from '@shared/navigation';
 
+import { notificationsPort } from '@modules/notifications';
+import { getFixedExpensesThisMonth, getSubscriptionsSummary } from '@modules/recurring';
+import { getGoalsForSnapshot, getPaydayContribution } from '@modules/savings';
+import { getTransactionsBetween } from '@modules/transactions';
+import {
+  getVaultDb,
+  markDirty,
+  registerBackupCollection,
+  registerVaultMigrations,
+} from '@modules/vault';
+
 import { createVaultCapsStore } from './adapters/vault/capsStore';
 import { analyticsMigrations } from './adapters/vault/migrations';
 import {
@@ -21,7 +33,11 @@ import {
   type AnalyticsService,
 } from './application/analyticsService';
 import { subscribeAnalyticsEvents } from './application/events';
-import { getAnalyticsService, setAnalyticsService } from './application/hooks';
+import {
+  getAnalyticsService,
+  notifyAnalyticsChanged,
+  setAnalyticsService,
+} from './application/hooks';
 import type { AnalyticsSources, CapsBackupData } from './application/ports';
 import { DEFAULT_TREATS_THRESHOLD_MINOR } from './domain/caps';
 import type { MonthSummary, Opportunity, RecurringIncomeSource } from './domain/types';
@@ -90,6 +106,31 @@ export function configureAnalytics(deps: AnalyticsDeps): () => void {
   setAnalyticsService(service);
   return subscribeAnalyticsEvents(deps.events, service, deps.onDataChanged);
 }
+
+/**
+ * The module installs itself when the app loads it, like M7, M8 and M9: M2's vault and backup,
+ * M7's movements, M8's goals, M9's subscriptions and fixed expenses, M12's notifications.
+ * The sources are called lazily, so the import cycle with M7 (which reads getTreatsThreshold)
+ * and M8 (which imports types only) is safe.
+ */
+configureAnalytics({
+  sources: {
+    listTransactions: (from, to) => getTransactionsBetween(from, to),
+    getSubscriptionSummary: () => getSubscriptionsSummary(),
+    getFixedExpensesMonthly: () => getFixedExpensesThisMonth(),
+    getGoalSummaries: () => getGoalsForSnapshot(),
+    getPaydayContribution: () => getPaydayContribution(),
+  },
+  getVaultDb: () => getVaultDb(),
+  registerVaultMigrations,
+  registerBackupCollection,
+  markDirty: (collection, id) => markDirty(collection, id),
+  notifications: notificationsPort,
+  events: appEvents,
+  clock: { now: () => new Date() },
+  newId: randomUUID,
+  onDataChanged: notifyAnalyticsChanged,
+});
 
 function requireService(): AnalyticsService {
   const service = getAnalyticsService();

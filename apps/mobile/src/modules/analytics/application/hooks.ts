@@ -3,7 +3,7 @@
 // their empty state instead of failing. Results are cached by TanStack Query and invalidated on
 // sync.completed, transactions.changed and vault.unlocked (events.ts).
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 import type { CategoryId, IsoDate, MoneyMinor } from '@shared/domain';
 
@@ -34,7 +34,28 @@ export function useAnalyticsService(): AnalyticsService | null {
   );
 }
 
+const changeListeners = new Set<() => void>();
+
+/** The numbers changed (sync, movements, vault unlock): every analytics query refetches. */
+export function notifyAnalyticsChanged(): void {
+  changeListeners.forEach((fn) => fn());
+}
+
+function useRefreshOnChanges(): void {
+  const client = useQueryClient();
+  useEffect(() => {
+    const refresh = () => {
+      void client.invalidateQueries({ queryKey: ANALYTICS_QUERY_KEY });
+    };
+    changeListeners.add(refresh);
+    return () => {
+      changeListeners.delete(refresh);
+    };
+  }, [client]);
+}
+
 function useAnalyticsQuery<T>(key: readonly unknown[], run: (s: AnalyticsService) => Promise<T>) {
+  useRefreshOnChanges();
   const service = useAnalyticsService();
   const query = useQuery({
     queryKey: [...ANALYTICS_QUERY_KEY, ...key],
@@ -51,6 +72,7 @@ export function useMonthSummary(month?: string) {
 }
 
 export function useSpendByCategory(range: { from: IsoDate; to: IsoDate } | null) {
+  useRefreshOnChanges();
   const service = useAnalyticsService();
   const query = useQuery({
     queryKey: [...ANALYTICS_QUERY_KEY, 'byCategory', range?.from, range?.to],
