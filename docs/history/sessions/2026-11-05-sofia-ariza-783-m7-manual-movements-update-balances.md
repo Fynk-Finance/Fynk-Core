@@ -6,7 +6,7 @@ module: M7
 jira: [SCRUM-29, SCRUM-32]
 branch: feature/manual-movements-update-balances
 tool: Claude Code
-pr: none
+pr: "#265"
 status: done
 ---
 
@@ -35,7 +35,7 @@ The same team decision as the M6 log of today (`2026-11-05-sofia-ariza-783-m6-ma
 ## Result
 
 * Tests: full mobile suite 212 suites, 2473 tests pass. `tsc --noEmit`, ESLint and Prettier pass.
-* Pull request: none yet.
+* Pull request: #265, top of stack #263 (#261 → #262 → #264 → #265).
 * Not checked on a phone yet.
 
 ## Decisions and problems
