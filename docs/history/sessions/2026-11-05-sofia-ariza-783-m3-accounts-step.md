@@ -6,7 +6,7 @@ module: M3
 jira: [SCRUM-69]
 branch: feature/onboarding-accounts-step
 tool: Claude Code
-pr: none
+pr: "#277"
 status: done
 ---
 
@@ -30,7 +30,7 @@ Sofia asked: "Steps are still PlaceholderStep. These parts are already exported 
 
 * Tests: onboarding suites, 118 pass. With accounts and app suites, 265 pass. `tsc`, ESLint and Prettier are clean.
 * Loading `@modules/bank` first, then onboarding and accounts, works (checked with a throwaway test).
-* Pull request: not opened yet. Stacked on `feature/onboarding-accounts-step-rules`. About 450 changed lines, half of them the screen test.
+* Pull request: #277. Stacked on `feature/onboarding-accounts-step-rules`. About 450 changed lines, half of them the screen test.
 
 ## Decisions and problems
 
