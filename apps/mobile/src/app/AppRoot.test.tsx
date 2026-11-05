@@ -50,6 +50,8 @@ jest.mock('@modules/onboarding', () => {
       flow: createPlaceholderScreen({ title: 'Configuración', owner: 'M3 · Configuración' }),
       useGate: () => mockOnboardingGateOpen,
     },
+    // The Dashboard greeting (M6) reads the name typed in onboarding.
+    useDisplayName: () => null,
   };
 });
 
