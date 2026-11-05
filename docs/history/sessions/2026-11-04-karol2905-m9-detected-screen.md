@@ -36,6 +36,7 @@ Karol said "si" to the screen of detected payments now that detection (#251) is 
 ## Result
 
 * 198 suites and 2396 tests pass. ESLint, tsc and Prettier are clean.
+* Rebased on #252 (account and last charges). The conflicts in `recurring/index.ts` and `ui/BilleteraScreen.tsx` were Billetera dependencies added next to each other, so both sides were kept. After the rebase, 201 suites and 2405 tests pass.
 
 ## Decisions and problems
 
