@@ -26,8 +26,11 @@ export interface RecurringService {
   /** Active items, oldest first. */
   list(): Promise<StoredRecurringItem[]>;
   get(id: Id): Promise<StoredRecurringItem | null>;
-  /** Returns the new id. Throws InvalidRecurringError when the form is not valid. */
-  create(input: RecurringInput): Promise<Id>;
+  /**
+   * Returns the new id. Throws InvalidRecurringError when the form is not valid. With
+   * `merchantKey`, the item comes from a detected proposal the person confirmed (SCRUM-55).
+   */
+  create(input: RecurringInput, detected?: { merchantKey: string }): Promise<Id>;
   update(id: Id, input: RecurringInput): Promise<void>;
   remove(id: Id): Promise<void>;
   /** "Gastos fijos de este mes" of Billetera: every active item, counted in the current month. */
@@ -116,14 +119,14 @@ export function createRecurringService(deps: RecurringServiceDeps): RecurringSer
       return deps.store().get(id);
     },
 
-    async create(input) {
+    async create(input, detected) {
       const item: StoredRecurringItem = {
         id: deps.newId(),
         ...editable(input),
         status: 'active',
         usage: input.kind === 'subscription' ? (input.usage ?? null) : null,
-        merchantKey: null,
-        source: 'manual',
+        merchantKey: detected?.merchantKey ?? null,
+        source: detected ? 'detected' : 'manual',
         createdAt: deps.clock.now().toISOString(),
       };
       await deps.store().save(item);

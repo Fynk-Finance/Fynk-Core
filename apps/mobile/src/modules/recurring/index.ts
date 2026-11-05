@@ -12,6 +12,7 @@ import {
   onNotificationSettingsChanged,
   useUnreadCount,
 } from '@modules/notifications';
+import { getTransactionsBetween } from '@modules/transactions';
 import {
   getVaultDb,
   markDirty,
@@ -21,7 +22,9 @@ import {
 
 import { createRecurringBackup } from './adapters/backup/recurringBackup';
 import { recurringMigrations } from './adapters/vault/migrations';
+import { createVaultProposalStore } from './adapters/vault/vaultProposalStore';
 import { createVaultRecurringStore } from './adapters/vault/vaultRecurringStore';
+import { createDetectionService } from './application/detectionService';
 import { createRecurringService } from './application/recurringService';
 import { createReminderScheduler } from './application/reminders';
 import type { SubscriptionsSummary } from './domain/amounts';
@@ -75,6 +78,24 @@ const backup = createRecurringBackup({
 registerBackupCollection(backup.items);
 appEvents.on('vault.unlocked', () => {
   void backup.flushPending().catch(() => undefined);
+});
+
+// SCRUM-55: after every sync (the first full one included), detection runs over 12 months of
+// M7's outflows. New proposals emit `recurring.detected`; the person confirms or dismisses
+// each one. The merchant catalog (SCRUM-58) is not built yet, so nothing is looked up.
+const detection = createDetectionService({
+  proposals: () => createVaultProposalStore(getVaultDb()),
+  items: () => createVaultRecurringStore(getVaultDb()).list(),
+  listMovements: getTransactionsBetween,
+  catalog: () => null,
+  recurring: service,
+  clock,
+  onDetected: (count) => {
+    if (count > 0) appEvents.emit({ type: 'recurring.detected', count });
+  },
+});
+appEvents.on('sync.completed', () => {
+  void detection.run().catch(() => undefined);
 });
 
 /** "Gastos fijos de este mes": every active item counted by its charges in the current month. */
