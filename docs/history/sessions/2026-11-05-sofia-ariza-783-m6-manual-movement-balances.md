@@ -6,7 +6,7 @@ module: M6
 jira: [SCRUM-71]
 branch: feature/manual-movement-balances
 tool: Claude Code
-pr: none
+pr: "#264"
 status: done
 ---
 
@@ -42,7 +42,7 @@ The work is split into two stacked branches. This one is M6. The M7 sheet and se
 ## Result
 
 * Tests: full mobile suite 212 suites, 2463 tests pass. `tsc --noEmit`, ESLint and Prettier pass.
-* Pull request: none yet.
+* Pull request: #264, in stack #263 (#261 → #262 → #264 → #265). The stack was rebased on `develop` b77cfb8 (#258, Go only) before pushing.
 
 ## Decisions and problems
 
