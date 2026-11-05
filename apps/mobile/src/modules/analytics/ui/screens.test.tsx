@@ -76,9 +76,8 @@ describe('Estadísticas', () => {
     const h = await setupAnalytics(octoberTxs);
     setAnalyticsService(h.service);
     await renderScreens({ screens, initial: 'analytics.Spending', preference: 'dark' });
-    expect(await screen.findByTestId('analytics.statistics.balance')).toHaveTextContent(
-      'Balance +$2.097.600',
-    );
+    // The card is drawn before the numbers load: wait for the balance itself.
+    expect(await screen.findByText('Balance +$2.097.600')).toBeOnTheScreen();
   });
 
   it('shows the weekday bars, where the person spends the most, and opens Topes', async () => {
