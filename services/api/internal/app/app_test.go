@@ -79,10 +79,11 @@ func TestAllListsTheEightModulesOnce(t *testing.T) {
 func TestEveryStubRouteAnswers501ProblemJSON(t *testing.T) {
 	srv := newServer(t, nil)
 	// One path per endpoint group of the shared contracts, section 5, of the modules still stubbed.
-	// M5 bank, M11 recommendations and M15 market have real endpoints, tested in their own packages.
+	// M5 bank, M9 catalog, M11 recommendations and M15 market have real endpoints, tested in their
+	// own packages.
 	paths := []string{
 		"/v1/backup/unknown",
-		"/v1/catalog/merchants", "/v1/privacy/unknown",
+		"/v1/privacy/unknown",
 	}
 	for _, p := range paths {
 		res, body := get(t, srv.URL+p, auth.DevToken)
@@ -178,7 +179,7 @@ func TestGeneratedHealthPathsArePublicAndAnswerFromTheContract(t *testing.T) {
 	srv := newServer(t, nil)
 	for _, m := range All(Deps{}) {
 		switch m.Name() {
-		case "identity", "backup", "recommendations", "market":
+		case "identity", "backup", "recommendations", "market", "catalog":
 			continue // these modules replaced the example path with their real endpoints
 		}
 		res, body := get(t, srv.URL+"/v1/"+m.Name()+"/health", "")
