@@ -213,6 +213,8 @@ func (c Consent) ActiveAt(now time.Time) bool { return c.StatusAt(now) == Status
 // Revocation reasons stored in revoked_reason.
 const (
 	ReasonUserRequest = "user_request"
+	// ReasonAccountDeleted: the person deleted their Fynk account (M13, Ley 1581).
+	ReasonAccountDeleted = "account_deleted"
 )
 
 // How long and how often Fynk tries to tell the entity about a revocation (M4 prompt).
