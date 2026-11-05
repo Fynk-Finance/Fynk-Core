@@ -42,10 +42,13 @@ export { savingOpportunities, totalMonthlySaving } from './domain/opportunities'
 export { useAnalyticsReport, useMonthSummary, ANALYTICS_QUERY_KEY } from './application/hooks';
 export { SpendingScreen, CapsScreen, CapFormScreen };
 
+/** Estadísticas. M6 opens it from the Dashboard chart icon and the "Gastos" pill. */
+export const STATISTICS_ROUTE = 'analytics.Spending' as const;
+
 export const routes: ModuleRoutes = {
   module: 'analytics',
   screens: [
-    { name: 'analytics.Spending', component: SpendingScreen, path: 'analisis' },
+    { name: STATISTICS_ROUTE, component: SpendingScreen, path: 'analisis' },
     { name: CAPS_ROUTE, component: CapsScreen, path: 'analisis/topes' },
     { name: CAP_FORM_ROUTE, component: CapFormScreen, path: 'analisis/topes/nuevo' },
   ],
