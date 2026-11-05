@@ -7,41 +7,24 @@ import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { categoryLabel } from '@shared/domain/categories';
 import {
   AppText,
   BackButton,
-  Chip,
   GhostButton,
   PrimaryButton,
   Screen,
-  SegmentedControl,
-  Switch,
-  TextField,
   spacing,
   useThemedStyles,
   type Theme,
 } from '@shared/ui';
 
 import type { RecurringError, RecurringField } from '../domain/item';
-import type { Usage } from '../domain/types';
 import type { RecurringService } from '../application/recurringService';
-import {
-  FORM_CATEGORIES,
-  emptyForm,
-  formFromItem,
-  readForm,
-  withPeriodicity,
-  type FormPeriodicity,
-  type RecurringForm,
-} from './formState';
+import { emptyForm, formFromItem, readForm, type RecurringForm } from './formState';
+import { RecurringFormFields } from './RecurringFormFields';
 import { recurringStrings } from './strings.es-CO';
 
 const t = recurringStrings.form;
-/** Monday first, as people read a week in Colombia. */
-const WEEK = [1, 2, 3, 4, 5, 6, 0];
-
-const USAGES: readonly Usage[] = ['high', 'some', 'low'];
 
 export const RECURRING_FORM_ROUTE = 'recurring.Form' as const;
 /** The same form opened by a reminder's link, fynk://billetera/recurrentes/<id>. */
@@ -78,10 +61,6 @@ export function createRecurringFormScreen({ service }: { service: RecurringServi
         active = false;
       };
     }, [id]);
-
-    const set = (patch: Partial<RecurringForm>) => setForm((f) => ({ ...f, ...patch }));
-    const errorOf = (field: RecurringField) =>
-      errors[field] ? t.errors[errors[field]] : undefined;
 
     const save = async () => {
       const read = readForm(form);
@@ -120,12 +99,6 @@ export function createRecurringFormScreen({ service }: { service: RecurringServi
       ]);
     };
 
-    const toggleDay = (day: number) => {
-      const bit = 1 << day;
-      if (form.periodicity === 'weekly') set({ weekdaysMask: bit });
-      else set({ weekdaysMask: form.weekdaysMask ^ bit });
-    };
-
     const header = (
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <BackButton tone="plain" accessibilityLabel={t.back} onPress={() => navigation.goBack()} />
@@ -138,140 +111,7 @@ export function createRecurringFormScreen({ service }: { service: RecurringServi
     return (
       <Screen header={header} scroll padded={false} testID="recurring.form">
         <View style={styles.content}>
-          <TextField
-            label={t.name}
-            value={form.name}
-            onChangeText={(name) => set({ name })}
-            placeholder={t.namePlaceholder}
-            error={errorOf('name')}
-            maxLength={60}
-            editable={!loading}
-            testID="recurring.form.name"
-          />
-
-          <View style={styles.field}>
-            <AppText variant="label">{t.kind}</AppText>
-            <SegmentedControl
-              options={[
-                { value: 'fixed', label: t.kinds.fixed },
-                { value: 'subscription', label: t.kinds.subscription },
-              ]}
-              value={form.kind}
-              onChange={(kind) => set({ kind })}
-              accessibilityLabel={t.kind}
-              testID="recurring.form.kind"
-            />
-          </View>
-
-          <View style={styles.field}>
-            <AppText variant="label">{t.category}</AppText>
-            <View style={styles.chips} accessibilityRole="radiogroup">
-              {FORM_CATEGORIES.map((c) => (
-                <Chip
-                  key={c}
-                  label={categoryLabel(c)}
-                  selected={form.categoryId === c}
-                  onPress={() => set({ categoryId: c })}
-                  testID={`recurring.form.category.${c}`}
-                />
-              ))}
-            </View>
-          </View>
-
-          <TextField
-            label={t.amount}
-            value={form.amount}
-            onChangeText={(amount) => set({ amount })}
-            placeholder={t.amountPlaceholder}
-            keyboardType="numeric"
-            error={errorOf('amount')}
-            testID="recurring.form.amount"
-          />
-
-          <View style={styles.field}>
-            <AppText variant="label">{t.periodicity}</AppText>
-            <SegmentedControl<FormPeriodicity>
-              options={[
-                { value: 'monthly', label: t.periodicities.monthly },
-                { value: 'weekly', label: t.periodicities.weekly },
-                { value: 'daily', label: t.periodicities.daily },
-              ]}
-              value={form.periodicity}
-              onChange={(p) => setForm((f) => withPeriodicity(f, p))}
-              accessibilityLabel={t.periodicity}
-              testID="recurring.form.periodicity"
-            />
-          </View>
-
-          {form.periodicity === 'monthly' ? (
-            <TextField
-              label={t.day}
-              value={form.day}
-              onChangeText={(day) => set({ day })}
-              keyboardType="number-pad"
-              maxLength={2}
-              helper={t.dayHelper}
-              error={errorOf('schedule')}
-              testID="recurring.form.day"
-            />
-          ) : (
-            <View style={styles.field}>
-              <AppText variant="label">
-                {form.periodicity === 'weekly' ? t.weekday : t.weekdays}
-              </AppText>
-              <View style={styles.chips}>
-                {WEEK.map((d) => (
-                  <Chip
-                    key={d}
-                    label={recurringStrings.weekdayShort[d] ?? ''}
-                    selected={(form.weekdaysMask & (1 << d)) !== 0}
-                    onPress={() => toggleDay(d)}
-                    testID={`recurring.form.weekday.${d}`}
-                  />
-                ))}
-              </View>
-              {errorOf('schedule') ? (
-                <AppText variant="caption" color="danger">
-                  {errorOf('schedule')}
-                </AppText>
-              ) : null}
-            </View>
-          )}
-
-          {form.kind === 'subscription' ? (
-            <View style={styles.field}>
-              <AppText variant="label">{t.usage}</AppText>
-              <View style={styles.chips} accessibilityRole="radiogroup">
-                {USAGES.map((u) => (
-                  <Chip
-                    key={u}
-                    label={t.usages[u]}
-                    selected={form.usage === u}
-                    onPress={() => set({ usage: form.usage === u ? null : u })}
-                    testID={`recurring.form.usage.${u}`}
-                  />
-                ))}
-              </View>
-              <AppText variant="caption" color="textSecondary">
-                {t.usageHelper}
-              </AppText>
-            </View>
-          ) : null}
-
-          <View style={styles.reminder}>
-            <View style={styles.reminderText}>
-              <AppText variant="label">{t.reminder}</AppText>
-              <AppText variant="caption" color="textSecondary">
-                {form.reminderEnabled ? t.reminderOn : t.reminderOff}
-              </AppText>
-            </View>
-            <Switch
-              value={form.reminderEnabled}
-              onValueChange={(reminderEnabled) => set({ reminderEnabled })}
-              accessibilityLabel={t.reminder}
-              testID="recurring.form.reminder"
-            />
-          </View>
+          <RecurringFormFields form={form} onChange={setForm} errors={errors} loading={loading} />
 
           {failure ? (
             <AppText variant="small" color="danger" accessibilityLiveRegion="polite">
@@ -305,8 +145,4 @@ const createStyles = ({ colors }: Theme) =>
   StyleSheet.create({
     header: { paddingHorizontal: 16, gap: spacing.md, backgroundColor: colors.background },
     content: { paddingHorizontal: 16, paddingBottom: 32, gap: spacing.section },
-    field: { gap: spacing.md },
-    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-    reminder: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-    reminderText: { flexGrow: 1, flexShrink: 1, gap: 2 },
   });

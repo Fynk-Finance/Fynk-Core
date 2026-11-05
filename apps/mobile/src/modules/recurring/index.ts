@@ -39,6 +39,7 @@ import {
   RECURRING_EDIT_ROUTE,
   RECURRING_FORM_ROUTE,
 } from './ui/RecurringFormScreen';
+import { createRecurringSetup } from './ui/RecurringSetup';
 import {
   createSubscriptionDetailScreen,
   SUBSCRIPTION_DETAIL_ROUTE,
@@ -188,3 +189,13 @@ export const routes: ModuleRoutes = {
     },
   ],
 };
+
+/** Monthly total of the active fixed expenses and subscriptions (onboarding step 5 and Listo). */
+export const getRecurringMonthlyTotal = (): Promise<MoneyMinor> => service.fixedExpensesThisMonth();
+
+/**
+ * Onboarding step 5, "Gastos recurrentes" (design OnbGastos): the collapsible items with the form
+ * fields, "Agregar gasto recurrente" and "Total mensual". M3 renders `<RecurringSetup />` inside
+ * its step frame, above "Terminar configuración".
+ */
+export const RecurringSetup = createRecurringSetup({ service });
