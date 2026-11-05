@@ -78,6 +78,18 @@ const checkMilestones = () => {
 appEvents.on('vault.unlocked', checkMilestones);
 service.subscribe(checkMilestones);
 
+// The payday reminder (M8 prompt, Recomendaciones "Programar"). M12 notifications fire once, so
+// the next month is scheduled again whenever the vault opens. Its screen comes next.
+const payday = createPaydayService({
+  store: () => createVaultPaydayStore(getVaultDb()),
+  goals: () => service.list(),
+  notifications: notificationsPort,
+  clock,
+});
+appEvents.on('vault.unlocked', () => {
+  void payday.refresh().catch(() => undefined);
+});
+
 // HU-045: goals before contributions, which reference them.
 const backup = createSavingsBackup({
   db: getVaultDb,
@@ -109,18 +121,6 @@ export const getGoalsForSnapshot = async (): Promise<AnalyticsGoal[]> =>
  */
 export const getPaydayContribution = async (): Promise<PaydayContribution | null> =>
   paydayContribution(await service.list());
-
-// The payday reminder (M8 prompt, Recomendaciones "Programar"). M12 notifications fire once, so
-// the next month is scheduled again whenever the vault opens. Its screen comes next.
-const payday = createPaydayService({
-  store: () => createVaultPaydayStore(getVaultDb()),
-  goals: () => service.list(),
-  notifications: notificationsPort,
-  clock,
-});
-appEvents.on('vault.unlocked', () => {
-  void payday.refresh().catch(() => undefined);
-});
 
 export const routes: ModuleRoutes = {
   module: 'savings',
