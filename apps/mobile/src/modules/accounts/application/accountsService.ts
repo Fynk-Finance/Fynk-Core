@@ -9,6 +9,7 @@ import {
   sortAccounts,
   type ConnectedAccountsSummary,
 } from '../domain/netWorth';
+import { balanceOwner } from '../domain/manualBalance';
 import { bogotaDate, cleanSyncedAccounts } from '../domain/syncedAccounts';
 import type { AccountsStore, BalancePoint } from './ports';
 
@@ -16,12 +17,18 @@ import type { AccountsStore, BalancePoint } from './ports';
 export interface AccountsOverview {
   /** Active accounts, sorted for display. */
   accounts: Account[];
+  /**
+   * Bank accounts whose link was revoked or closed, sorted, without CDTs. Out of the total and
+   * the count; M7 offers them for manual movements, which change their balance.
+   */
+  disconnectedAccounts: Account[];
   balanceTotalMinor: MoneyMinor;
   connectedCount: number;
 }
 
 export const EMPTY_OVERVIEW: AccountsOverview = {
   accounts: [],
+  disconnectedAccounts: [],
   balanceTotalMinor: 0,
   connectedCount: 0,
 };
@@ -76,6 +83,9 @@ export function createAccountsService(deps: AccountsServiceDeps): AccountsServic
       const { count, totalMinor } = connectedAccountsSummary(accounts);
       return {
         accounts: sortAccounts(accounts.filter(isActive)),
+        disconnectedAccounts: sortAccounts(
+          accounts.filter((a) => balanceOwner(a) === 'disconnected'),
+        ),
         balanceTotalMinor: totalMinor,
         connectedCount: count,
       };

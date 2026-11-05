@@ -16,6 +16,25 @@ describe('analytics service', () => {
     expect(snapshot.periodEnd).toBe(DESIGN_TODAY);
   });
 
+  it('gives Estadísticas for a period from the movements of that period and the one before', async () => {
+    const { service } = await setup([
+      tx('2026-10-28', -129_890, 'shopping', { merchant: 'Tienda' }),
+      tx('2026-10-26', 5_580_000, 'salary'),
+      tx('2026-10-20', -50_000, 'restaurants'),
+    ]);
+    const view = await service.getStatistics('week');
+    expect(view.summary.range).toEqual({ from: '2026-10-22', to: DESIGN_TODAY });
+    expect(view.summary).toMatchObject({
+      spendingMinor: cop(129_890),
+      incomeMinor: cop(5_580_000),
+      previousSpendingMinor: cop(50_000),
+    });
+    expect(view.stats).toMatchObject({ movementCount: 2, savedVsPreviousMinor: cop(-79_890) });
+    expect(view.places.map((p) => p.label)).toEqual(['Tienda']);
+    expect(view.byCategory.totalMinor).toBe(cop(129_890));
+    expect(view.weekdays.peak?.weekday).toBe(2); // Wednesday 28 October
+  });
+
   it('creates, edits and deletes a cap in the vault and marks the backup dirty (HU-043)', async () => {
     const { service, backup, vault } = await setup();
     const cap = await service.saveCap({

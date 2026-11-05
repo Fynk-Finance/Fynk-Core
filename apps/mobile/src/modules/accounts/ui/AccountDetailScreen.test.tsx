@@ -47,6 +47,7 @@ async function renderDetail(
     useAccounts: () => ({
       data: {
         accounts: sortAccounts(opts.accounts ?? [savings, wallet, card, cdt, cash]),
+        disconnectedAccounts: [],
         balanceTotalMinor: 0,
         connectedCount: 0,
       },

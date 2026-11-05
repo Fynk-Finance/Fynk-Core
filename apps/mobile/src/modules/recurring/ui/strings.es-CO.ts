@@ -168,3 +168,26 @@ export const recurringStrings = {
   // Lun, Mar… in the order of the weekday mask bits (Sunday first).
   weekdayShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
 } as const;
+
+// Onboarding step 5 (design OnbGastos): the recurring expenses of the setup, built by M9 and
+// placed by M3.
+export const setupStrings = {
+  title: 'Tus gastos recurrentes',
+  count: (n: number) => (n === 1 ? '1 gasto' : `${n} gastos`),
+  newItem: 'Nuevo gasto',
+  // "Vivienda · día 5".
+  summary: (category: string, schedule: string) => `${category} · ${schedule.toLowerCase()}`,
+  add: 'Agregar gasto recurrente',
+  save: 'Guardar gasto',
+  delete: 'Eliminar gasto',
+  expand: (name: string) => `${name}, toca para editar`,
+  collapse: (name: string) => `${name}, toca para cerrar`,
+  total: 'Total mensual',
+  reminders: (n: number) =>
+    n === 0
+      ? 'Sin recordatorios'
+      : n === 1
+        ? 'Te avisaremos de 1 pago'
+        : `Te avisaremos de ${n} pagos`,
+  failed: 'No pudimos guardar. Intenta de nuevo.',
+} as const;

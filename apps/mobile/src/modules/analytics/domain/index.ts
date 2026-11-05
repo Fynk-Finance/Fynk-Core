@@ -7,3 +7,4 @@ export * from './snapshot';
 export * from './spending';
 export * from './types';
 export * from './periods';
+export * from './statistics';

@@ -1,5 +1,6 @@
-// Manual movements: create, edit and delete; validation; the transactions.manual backup with
-// deletions; and a sync never touching them.
+// Manual movements: create, edit and delete; validation; the balances they change through M6
+// (team decision of 5 Nov 2026); the transactions.manual backup with deletions; and a sync
+// never touching them.
 import { createAppEvents } from '@shared/events/appEvents';
 import { createInMemoryBackupRegistry } from '@shared/testing';
 
@@ -10,6 +11,7 @@ import { InvalidManualTransactionError, type ManualInput } from '../domain/manua
 import { bankTx } from '../testing/fixtures';
 import { createNodeSqliteVault, type NodeSqliteVault } from '../testing/nodeSqliteVault';
 import { createManualService, MANUAL_COLLECTION, type ManualService } from './manualService';
+import type { ManualBalanceChange, ManualStore } from './ports';
 import {
   createTransactionsService,
   TransactionNotFoundError,
@@ -23,8 +25,11 @@ let backup: ReturnType<typeof createInMemoryBackupRegistry>;
 const events = createAppEvents();
 const changed = jest.fn();
 events.on('transactions.changed', changed);
+// M6's applyManualMovement: records every change it gets.
+const applied: ManualBalanceChange[] = [];
+const balances = { apply: jest.fn(async (c: ManualBalanceChange) => void applied.push(c)) };
 
-async function build() {
+async function build(opts: { manualStore?: (store: ManualStore) => ManualStore } = {}) {
   const v = createNodeSqliteVault();
   v.registerMigrations('transactions', transactionsMigrations);
   await v.migrate();
@@ -37,8 +42,9 @@ async function build() {
   });
   manual = createManualService({
     store: () => createVaultTransactionsStore(v.db),
-    manual: () => createVaultManualStore(v.db),
+    manual: () => (opts.manualStore ?? ((s) => s))(createVaultManualStore(v.db)),
     events,
+    balances,
     newId: () => `manual-${++n}`,
     markDirty: backup.markDirty,
     treatsThreshold: async () => 2_000_000,
@@ -57,6 +63,8 @@ const lunch: ManualInput = {
 
 beforeEach(async () => {
   changed.mockReset();
+  applied.length = 0;
+  balances.apply.mockClear();
   vault = await build();
 });
 
@@ -164,6 +172,91 @@ describe('updateManualTransaction and deleteManualTransaction', () => {
       transactions: [],
     });
     expect(await service.getTransaction('manual-1')).not.toBeNull();
+  });
+});
+
+describe('balances (team decision of 5 Nov 2026)', () => {
+  const lunchEffect = { accountId: 'acc-cash', amountMinor: -2_500_000 };
+
+  it('applies a new Gasto to its account with a minus sign, and an Ingreso with a plus', async () => {
+    await manual.addManualTransaction(lunch);
+    await manual.addManualTransaction({ ...lunch, kind: 'income', amountMinor: 1_000_000 });
+    expect(applied).toEqual([
+      { before: null, after: lunchEffect },
+      { before: null, after: { accountId: 'acc-cash', amountMinor: 1_000_000 } },
+    ]);
+  });
+
+  it('gives M6 the old and the new movement on an edit, also when the account changes', async () => {
+    await manual.addManualTransaction(lunch);
+    await manual.updateManualTransaction('manual-1', {
+      ...lunch,
+      accountId: 'acc-wallet',
+      amountMinor: 3_000_000,
+    });
+    expect(applied[1]).toEqual({
+      before: lunchEffect,
+      after: { accountId: 'acc-wallet', amountMinor: -3_000_000 },
+    });
+  });
+
+  it('takes the movement back on delete', async () => {
+    await manual.addManualTransaction(lunch);
+    await manual.deleteManualTransaction('manual-1');
+    expect(applied[1]).toEqual({ before: lunchEffect, after: null });
+  });
+
+  it('saves nothing when M6 refuses the movement (Gasto bigger than the cash)', async () => {
+    balances.apply.mockRejectedValueOnce(new Error('InsufficientCashError'));
+    await expect(manual.addManualTransaction(lunch)).rejects.toThrow('InsufficientCashError');
+    expect(await service.getTransaction('manual-1')).toBeNull();
+    expect(backup.dirty(MANUAL_COLLECTION)).toEqual([]);
+    expect(changed).not.toHaveBeenCalled();
+  });
+
+  it('keeps the movement when M6 refuses an edit or a delete', async () => {
+    await manual.addManualTransaction(lunch);
+    balances.apply.mockRejectedValueOnce(new Error('InsufficientCashError'));
+    await expect(
+      manual.updateManualTransaction('manual-1', { ...lunch, amountMinor: 90_000_000 }),
+    ).rejects.toThrow();
+    balances.apply.mockRejectedValueOnce(new Error('InsufficientCashError'));
+    await expect(manual.deleteManualTransaction('manual-1')).rejects.toThrow();
+    expect(await service.getTransaction('manual-1')).toMatchObject({ amountMinor: -2_500_000 });
+  });
+
+  it('gives the balance back when the movement cannot be saved or deleted', async () => {
+    vault.close();
+    vault = await build({
+      manualStore: (s) => ({
+        ...s,
+        save: async () => Promise.reject(new Error('vault locked')),
+        delete: async () => Promise.reject(new Error('vault locked')),
+      }),
+    });
+    await expect(manual.addManualTransaction(lunch)).rejects.toThrow('vault locked');
+    expect(applied).toEqual([
+      { before: null, after: lunchEffect },
+      { before: lunchEffect, after: null },
+    ]);
+  });
+
+  it('never touches balances for a bank movement, a restore or a sync', async () => {
+    await service.upsertFromSync({
+      accountId: 'acc-ahorros',
+      since: '2020-01-01T00:00:00Z',
+      transactions: [bankTx({ id: 'bank-1', bookedAt: '2026-09-20T15:00:00Z' })],
+    });
+    await expect(manual.deleteManualTransaction('bank-1')).rejects.toThrow(
+      TransactionNotFoundError,
+    );
+    await manual.addManualTransaction(lunch);
+    const exported = await backup.exportAll();
+    const phone = await build();
+    balances.apply.mockClear();
+    await backup.importAll(exported);
+    expect(balances.apply).not.toHaveBeenCalled();
+    phone.close();
   });
 });
 

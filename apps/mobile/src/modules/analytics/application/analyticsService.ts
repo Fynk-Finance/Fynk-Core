@@ -23,6 +23,18 @@ import { addMonths, bogotaDate, firstDayOfMonth, monthOf, type MonthKey } from '
 import { recurringIncome } from '../domain/recurringIncome';
 import { buildSnapshot, opportunitiesFrom, type AnalyticsInputs } from '../domain/snapshot';
 import { monthSummary, spendByCategory, trend } from '../domain/spending';
+import {
+  periodRanges,
+  periodStats,
+  periodSummary,
+  topPlaces,
+  weekdayPattern,
+  type PeriodStats,
+  type PeriodSummary,
+  type StatsPeriod,
+  type TopPlace,
+  type WeekdayPattern,
+} from '../domain/statistics';
 import type {
   CapPeriod,
   CapStatus,
@@ -64,6 +76,15 @@ export class InvalidCapError extends Error {
 
 export type AnalyticsService = ReturnType<typeof createAnalyticsService>;
 
+/** Everything the Estadísticas screen shows for one period, from the same movements. */
+export interface StatisticsView {
+  summary: PeriodSummary;
+  stats: PeriodStats;
+  byCategory: SpendByCategory;
+  weekdays: WeekdayPattern;
+  places: TopPlace[];
+}
+
 export function createAnalyticsService(deps: AnalyticsServiceDeps) {
   const today = (): IsoDate => bogotaDate(deps.clock.now());
 
@@ -100,6 +121,20 @@ export function createAnalyticsService(deps: AnalyticsServiceDeps) {
 
     async getMonthSummary(month: MonthKey = monthOf(today())): Promise<MonthSummary> {
       return monthSummary(await loadTransactions(), month);
+    },
+
+    /** Estadísticas: the period ending today and the one before it, read once. */
+    async getStatistics(period: StatsPeriod): Promise<StatisticsView> {
+      const t = today();
+      const { range, previousRange } = periodRanges(period, t);
+      const txs = await deps.sources.listTransactions(previousRange.from, t);
+      return {
+        summary: periodSummary(txs, period, t),
+        stats: periodStats(txs, range, previousRange),
+        byCategory: spendByCategory(txs, range.from, range.to),
+        weekdays: weekdayPattern(txs, range),
+        places: topPlaces(txs, range),
+      };
     },
 
     async getSpendByCategory(from: IsoDate, to: IsoDate): Promise<SpendByCategory> {

@@ -19,6 +19,7 @@ import { buildLinking } from './linking';
 import { navigationBarStyle } from './navigationBar';
 import { RootNavigator } from './navigation/RootNavigator';
 import { createQueryClient } from './queryClient';
+import { bindQueryClient, startModules } from './startup';
 
 /** React Navigation's theme from the active palette (screen backgrounds, cards, text). */
 export function navigationTheme({ scheme, colors }: Theme): NavigationTheme {
@@ -36,6 +37,9 @@ export function navigationTheme({ scheme, colors }: Theme): NavigationTheme {
     },
   };
 }
+
+// M10 and M11 take their dependencies here, before the vault can open.
+startModules();
 
 const linking = buildLinking();
 if (__DEV__ && linking.config) {
@@ -66,6 +70,8 @@ function ThemedNavigation() {
 export function AppRoot() {
   const fontsReady = useAppFonts();
   const [queryClient] = useState(createQueryClient);
+  // Sync, movement changes and unlock refresh M10's cached numbers in this client.
+  useEffect(() => bindQueryClient(queryClient), [queryClient]);
 
   // The native splash screen stays until the design fonts are ready.
   if (!fontsReady) return null;

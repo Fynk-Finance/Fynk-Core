@@ -226,7 +226,7 @@ func TestBackupResetWithoutAFreshEmailResetDeletesNothing(t *testing.T) {
 		t.Fatalf("sessions revoked: %v", a.kc.revoked)
 	}
 	for _, ty := range a.rec.types {
-		if ty == "backup.reset" || ty == audit.DeviceRemoved {
+		if ty == audit.BackupReset || ty == audit.DeviceRemoved {
 			t.Fatalf("audit %v", a.rec.types)
 		}
 	}
@@ -260,7 +260,7 @@ func TestBackupResetFromANewPhone(t *testing.T) {
 	if n := a.count(`SELECT count(*) FROM identity.devices WHERE status = 'active'`); n != 1 {
 		t.Fatalf("active devices = %d, want 1", n)
 	}
-	a.wantAudit(audit.DeviceRemoved, "backup.reset")
+	a.wantAudit(audit.DeviceRemoved, audit.BackupReset)
 
 	// Repeating the call inside the window is a no-op that still answers 204.
 	a.status("POST", "/v1/backup/reset", "", a.pending, 204)

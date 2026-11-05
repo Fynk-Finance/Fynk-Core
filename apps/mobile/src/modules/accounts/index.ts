@@ -6,32 +6,41 @@ import { createElement } from 'react';
 import type { Account, Clock, Id, IsoDate, MoneyMinor } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
 import { registerSlot, type ModuleRoutes } from '@shared/navigation';
-import type { MarkDirty } from '@shared/ports';
 
+import { useMonthSummary as useAnalyticsMonthSummary } from '@modules/analytics';
 import { NOTIFICATIONS_ROUTE, useUnreadCount } from '@modules/notifications';
 import { useDisplayName } from '@modules/onboarding';
 import { NEW_TRANSACTION_ROUTE, TransactionList, TransactionPreview } from '@modules/transactions';
-import { getVaultDb, registerVaultMigrations } from '@modules/vault';
+import {
+  getVaultDb,
+  markDirty,
+  registerBackupCollection,
+  registerVaultMigrations,
+} from '@modules/vault';
 
 import { accountsMigrations } from './adapters/vault/migrations';
 import { createVaultAccountsStore } from './adapters/vault/vaultAccountsStore';
 import { createVaultCashStore } from './adapters/vault/vaultCashStore';
 import { createAccountsService, type AccountsOverview } from './application/accountsService';
 import { createCashService } from './application/cashService';
+import { createManualBalanceService } from './application/manualBalanceService';
 import type { BalancePoint, Cash } from './application/ports';
 import { ACCOUNTS_QUERY_KEY, createUseAccounts } from './application/useAccounts';
-import { monthSummary } from './domain/dashboard';
+import { createUseMonthSummary } from './application/useMonthSummary';
+import type { ManualEffect, ManualMovementChange } from './domain/manualBalance';
 import type { ConnectedAccountsSummary } from './domain/netWorth';
 import { ACCOUNT_DETAIL_ROUTE, createAccountDetailScreen } from './ui/AccountDetailScreen';
 import { createDashboardScreen } from './ui/DashboardScreen';
 import { createMisCuentasBilletera, createMisCuentasMiCuenta } from './ui/MisCuentas';
 
 export type { AccountsOverview, BalancePoint, Cash, ConnectedAccountsSummary };
+export type { ManualEffect, ManualMovementChange };
 export type { CashInputProps } from './ui/CashInput';
 export { ACCOUNTS_QUERY_KEY, ACCOUNT_DETAIL_ROUTE };
 export type { AccountDetailParams } from './ui/AccountDetailScreen';
 export { maskedNumber } from './domain/masking';
 export { InvalidCashAmountError } from './domain/cash';
+export { InsufficientCashError } from './domain/manualBalance';
 export { InvalidSyncedAccountError } from './domain/syncedAccounts';
 export { CashInput } from './ui/CashInput';
 
@@ -44,10 +53,6 @@ const service = createAccountsService({
   clock,
 });
 
-// TODO(M2) SCRUM-62 take registerBackupCollection and markDirty from @modules/vault once M2
-// exports them, and register cash.backupCollection there. Until then cash is only in the vault.
-const markDirty: MarkDirty = () => undefined;
-
 const cash = createCashService({
   store: () => createVaultCashStore(getVaultDb()),
   clock,
@@ -56,8 +61,14 @@ const cash = createCashService({
   onChanged: service.notifyChanged,
 });
 
-/** The accounts.cash collection, for M2's encrypted backup. */
-export const cashBackupCollection = cash.backupCollection;
+// Cash goes into M2's encrypted backup; setCash marks every change dirty there.
+registerBackupCollection(cash.backupCollection);
+
+const manualBalances = createManualBalanceService({
+  store: () => createVaultAccountsStore(getVaultDb()),
+  setCash: cash.setCash,
+  onChanged: service.notifyChanged,
+});
 
 // Derived values are recomputed after a sync and whenever the vault opens or closes.
 appEvents.on('sync.completed', service.notifyChanged);
@@ -107,6 +118,17 @@ export const getCash = (): Promise<Cash | null> => cash.getCash();
 /** Registers or updates cash. Throws InvalidCashAmountError below zero or with decimals. */
 export const setCash = (amountMinor: MoneyMinor): Promise<void> => cash.setCash(amountMinor);
 
+// ---- Manual movements, for M7 only ----
+
+/**
+ * Applies a manual movement to the balance of its account: a Gasto subtracts and an Ingreso
+ * adds, on cash and on disconnected accounts. Connected accounts keep their bank's balance.
+ * Pass the movement before and after (null on add or delete) with signed amounts. Throws
+ * InsufficientCashError, writing nothing, when cash would go below $0.
+ */
+export const applyManualMovement = (change: ManualMovementChange): Promise<void> =>
+  manualBalances.applyManualMovement(change);
+
 // ---- Mis cuentas, rendered by other modules ----
 
 /** "Mis cuentas" of Billetera (M9): rendered above "Gastos recurrentes". */
@@ -118,9 +140,8 @@ export const MisCuentasMiCuenta = createMisCuentasMiCuenta({ useAccounts });
 // close an import cycle (vault imports identity).
 registerSlot('miCuenta.misCuentas', MisCuentasMiCuenta);
 
-// TODO(M10) take Ingresos and Gastos from M10's useMonthSummary(), which reads M7's
-// movements, once the app configures M10. Until then the temporary summary shows $0.
-const useMonthSummary = () => monthSummary([], clock.now());
+// Ingresos and Gastos of this month come from M10, which src/app/startup.ts configures.
+const useMonthSummary = createUseMonthSummary(() => useAnalyticsMonthSummary());
 
 export const routes: ModuleRoutes = {
   module: 'accounts',

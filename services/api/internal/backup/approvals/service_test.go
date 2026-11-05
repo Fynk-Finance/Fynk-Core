@@ -16,6 +16,11 @@ import (
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/clock"
 )
 
+const (
+	oldID = "11111111-1111-4111-8111-111111111111"
+	newID = "22222222-2222-4222-8222-222222222222"
+)
+
 var now = time.Date(2026, 10, 28, 12, 0, 0, 0, time.UTC)
 
 // memRepo keeps approvals in memory; InTx works on a copy that is dropped on error.
@@ -139,13 +144,16 @@ func (f *fakeIdentity) ActivateDevice(_ context.Context, id string) error {
 type fakeAudit struct{ events []audit.Event }
 
 func (f *fakeAudit) Record(_ context.Context, e audit.Event) error {
+	if err := audit.ValidateEvent(e); err != nil {
+		return err
+	}
 	f.events = append(f.events, e)
 	return nil
 }
 
 var (
-	oldPhone = auth.User{ID: "u1", DeviceID: "old"}
-	newPhone = auth.User{ID: "u1", DeviceID: "new"}
+	oldPhone = auth.User{ID: "u1", DeviceID: oldID}
+	newPhone = auth.User{ID: "u1", DeviceID: newID}
 	pubKey   = bytes.Repeat([]byte{9}, 32)
 	grant    = approvals.Grant{EphemeralPublicKey: bytes.Repeat([]byte{1}, 32), WrappedDEK: bytes.Repeat([]byte{2}, 48), Nonce: bytes.Repeat([]byte{3}, 12)}
 )
@@ -162,8 +170,8 @@ type env struct {
 func setup() *env {
 	e := &env{repo: newRepo(), clk: clock.NewFixed(now), rec: &fakeAudit{}, id: &fakeIdentity{
 		devs: map[string]identity.DeviceInfo{
-			"old": {ID: "old", Name: "iPhone", Platform: "ios", Status: "active", PublicKey: bytes.Repeat([]byte{8}, 32)},
-			"new": {ID: "new", Name: "Pixel", Platform: "android", Status: "pending", PublicKey: pubKey},
+			oldID: {ID: oldID, Name: "iPhone", Platform: "ios", Status: "active", PublicKey: bytes.Repeat([]byte{8}, 32)},
+			newID: {ID: newID, Name: "Pixel", Platform: "android", Status: "pending", PublicKey: pubKey},
 		}, gone: map[string]error{}}}
 	e.s = approvals.NewService(e.repo, e.id, e.id, e.clk, e.rec, func() string { e.seq++; return fmt.Sprintf("a%d", e.seq) })
 	return e
@@ -185,7 +193,7 @@ func TestCreateTakesPublicKeyFromIdentityAndExpiresInTenMinutes(t *testing.T) {
 	if a.Status != approvals.Pending || !a.ExpiresAt.Equal(now.Add(10*time.Minute)) || !a.CreatedAt.Equal(now) {
 		t.Fatalf("got %+v", a)
 	}
-	if !bytes.Equal(stored.NewDevicePublicKey, pubKey) || stored.NewDeviceID != "new" || stored.UserID != "u1" {
+	if !bytes.Equal(stored.NewDevicePublicKey, pubKey) || stored.NewDeviceID != newID || stored.UserID != "u1" {
 		t.Fatalf("stored %+v", stored)
 	}
 	if len(a.NewDevicePublicKey) != 0 {
@@ -199,7 +207,7 @@ func TestCreateByNonPendingDevice(t *testing.T) {
 	if _, err := e.s.Create(ctx, oldPhone, ""); !errors.Is(err, approvals.ErrAlreadyActive) {
 		t.Fatalf("active: %v", err)
 	}
-	e.id.gone["new"] = identity.ErrRemoved
+	e.id.gone[newID] = identity.ErrRemoved
 	if _, err := e.s.Create(ctx, newPhone, ""); !errors.Is(err, approvals.ErrNotActive) {
 		t.Fatalf("removed: %v", err)
 	}
@@ -281,8 +289,8 @@ func TestNonActiveDeviceCannotListApproveOrReject(t *testing.T) {
 	ctx := context.Background()
 	for name, mut := range map[string]func(*env){
 		"pending": func(*env) {},
-		"removed": func(e *env) { e.id.gone["new"] = identity.ErrRemoved },
-		"unknown": func(e *env) { delete(e.id.devs, "new") },
+		"removed": func(e *env) { e.id.gone[newID] = identity.ErrRemoved },
+		"unknown": func(e *env) { delete(e.id.devs, newID) },
 	} {
 		e := setup()
 		a := e.create(t)
@@ -315,15 +323,15 @@ func TestApproveStoresGrantActivatesAndAudits(t *testing.T) {
 	if stored.Status != approvals.Approved || !bytes.Equal(stored.Grant.WrappedDEK, grant.WrappedDEK) || stored.DecidedAt == nil {
 		t.Fatalf("stored %+v", stored)
 	}
-	if e.id.devs["new"].Status != "active" {
+	if e.id.devs[newID].Status != "active" {
 		t.Fatal("device not activated")
 	}
 	if len(e.rec.events) != 1 {
 		t.Fatalf("events %+v", e.rec.events)
 	}
 	ev := e.rec.events[0]
-	if ev.Type != audit.DeviceApproved || ev.DeviceID != "new" || ev.UserID != "u1" ||
-		len(ev.Meta) != 2 || ev.Meta["method"] != "device_approval" || ev.Meta["approvedBy"] != "old" {
+	if ev.Type != audit.DeviceApproved || ev.DeviceID != newID || ev.UserID != "u1" ||
+		len(ev.Meta) != 2 || ev.Meta["method"] != "device_approval" || ev.Meta["approver_device_id"] != oldID {
 		t.Fatalf("event %+v", ev)
 	}
 	if _, err := e.s.Approve(ctx, oldPhone, a.ID, grant); !errors.Is(err, approvals.ErrNotPending) {
@@ -365,7 +373,7 @@ func TestExpiredCannotBeApprovedOrRejectedAndIsStored(t *testing.T) {
 		if !errors.Is(err, approvals.ErrExpired) {
 			t.Fatalf("reject=%v: %v", reject, err)
 		}
-		if e.repo.rows[a.ID].Status != approvals.Expired || e.id.devs["new"].Status != "pending" || len(e.rec.events) != 0 {
+		if e.repo.rows[a.ID].Status != approvals.Expired || e.id.devs[newID].Status != "pending" || len(e.rec.events) != 0 {
 			t.Fatalf("reject=%v: %+v", reject, e.repo.rows[a.ID])
 		}
 		// A later call on the stored expired request is still expired.
@@ -400,14 +408,14 @@ func TestDecideNotFoundAndNotPending(t *testing.T) {
 		t.Fatalf("another user reject: %v", err)
 	}
 	// The new device was removed or activated by other means: the request cannot be decided.
-	e.id.gone["new"] = identity.ErrRemoved
+	e.id.gone[newID] = identity.ErrRemoved
 	if _, err := e.s.Approve(ctx, oldPhone, a.ID, grant); !errors.Is(err, approvals.ErrNotPending) {
 		t.Fatalf("removed: %v", err)
 	}
-	delete(e.id.gone, "new")
-	d := e.id.devs["new"]
+	delete(e.id.gone, newID)
+	d := e.id.devs[newID]
 	d.Status = "active"
-	e.id.devs["new"] = d
+	e.id.devs[newID] = d
 	if _, err := e.s.Reject(ctx, oldPhone, a.ID); !errors.Is(err, approvals.ErrNotPending) {
 		t.Fatalf("already active: %v", err)
 	}
@@ -424,12 +432,12 @@ func TestRejectKeepsNewDevicePendingAndAudits(t *testing.T) {
 	if err != nil || got.Status != approvals.Rejected {
 		t.Fatalf("%+v %v", got, err)
 	}
-	if e.repo.rows[a.ID].Status != approvals.Rejected || e.repo.rows[a.ID].DecidedAt == nil || e.id.devs["new"].Status != "pending" {
+	if e.repo.rows[a.ID].Status != approvals.Rejected || e.repo.rows[a.ID].DecidedAt == nil || e.id.devs[newID].Status != "pending" {
 		t.Fatalf("stored %+v", e.repo.rows[a.ID])
 	}
 	ev := e.rec.events[0]
-	if len(e.rec.events) != 1 || ev.Type != audit.DeviceRejected || ev.DeviceID != "new" ||
-		len(ev.Meta) != 2 || ev.Meta["method"] != "device_approval" || ev.Meta["rejectedBy"] != "old" {
+	if len(e.rec.events) != 1 || ev.Type != audit.DeviceRejected || ev.DeviceID != newID ||
+		len(ev.Meta) != 2 || ev.Meta["method"] != "device_approval" || ev.Meta["approver_device_id"] != oldID {
 		t.Fatalf("events %+v", e.rec.events)
 	}
 	if _, err := e.s.Reject(ctx, oldPhone, a.ID); !errors.Is(err, approvals.ErrNotPending) {
@@ -443,7 +451,7 @@ func TestGetBelongsOnlyToTheCreatingDevice(t *testing.T) {
 	a := e.create(t)
 	for name, u := range map[string]auth.User{
 		"old phone":    oldPhone,
-		"other user":   {ID: "u2", DeviceID: "new"},
+		"other user":   {ID: "u2", DeviceID: newID},
 		"other device": {ID: "u1", DeviceID: "ghost"},
 		"no device":    {ID: "u1"},
 	} {
@@ -495,7 +503,7 @@ func TestGrantIsReturnedOnceThenCleared(t *testing.T) {
 		t.Fatalf("events %+v", e.rec.events)
 	}
 	ev := e.rec.events[0]
-	if ev.Type != audit.BackupRestored || ev.DeviceID != "new" || len(ev.Meta) != 1 || ev.Meta["method"] != "device_approval" {
+	if ev.Type != audit.BackupRestored || ev.DeviceID != newID || len(ev.Meta) != 1 || ev.Meta["method"] != "device_approval" {
 		t.Fatalf("event %+v", ev)
 	}
 	v, err = e.s.Get(ctx, newPhone, a.ID)

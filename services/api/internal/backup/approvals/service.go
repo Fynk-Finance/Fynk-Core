@@ -243,11 +243,11 @@ func (s *Service) decide(ctx context.Context, user auth.User, id string, g *Gran
 	if expired {
 		return Approval{}, ErrExpired
 	}
-	typ, key := audit.DeviceRejected, "rejectedBy"
+	typ := audit.DeviceRejected
 	if g != nil {
-		typ, key = audit.DeviceApproved, "approvedBy"
+		typ = audit.DeviceApproved
 	}
-	if err := s.record(ctx, typ, user, out.NewDeviceID, now, map[string]string{key: user.DeviceID}); err != nil {
+	if err := s.record(ctx, typ, user, out.NewDeviceID, now, map[string]string{"approver_device_id": user.DeviceID}); err != nil {
 		return Approval{}, err
 	}
 	return out, nil

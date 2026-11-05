@@ -72,7 +72,7 @@ func (s *Service) Put(ctx context.Context, user auth.User, batch []Envelope) (in
 		return 0, err
 	}
 	err = s.audit.Record(ctx, audit.Event{Type: audit.BackupUploaded, UserID: user.ID, DeviceID: user.DeviceID,
-		At: now, Meta: map[string]string{"count": strconv.Itoa(len(batch))}})
+		At: now, Meta: map[string]string{"record_count": strconv.Itoa(len(batch))}})
 	if err != nil {
 		return 0, fmt.Errorf("audit %s: %w", audit.BackupUploaded, err)
 	}
