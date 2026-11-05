@@ -7,8 +7,14 @@ import type { ModuleRoutes } from '@shared/navigation';
 
 import type { GoalSummary as AnalyticsGoal, PaydayContribution } from '@modules/analytics';
 import { notificationsPort } from '@modules/notifications';
-import { getVaultDb, registerVaultMigrations } from '@modules/vault';
+import {
+  getVaultDb,
+  markDirty,
+  registerBackupCollection,
+  registerVaultMigrations,
+} from '@modules/vault';
 
+import { createSavingsBackup } from './adapters/backup/savingsBackup';
 import { savingsMigrations } from './adapters/vault/migrations';
 import { createVaultContributionStore } from './adapters/vault/vaultContributionStore';
 import { createVaultGoalStore } from './adapters/vault/vaultGoalStore';
@@ -33,7 +39,7 @@ registerVaultMigrations('savings', savingsMigrations);
 const clock: Clock = { now: () => new Date() };
 
 const service = createGoalService({
-  store: () => createVaultGoalStore(getVaultDb()),
+  store: () => createVaultGoalStore(getVaultDb(), markDirty),
   clock,
   newId: randomUUID,
   // Deleting a goal frees the movements linked to it first.
@@ -42,8 +48,8 @@ const service = createGoalService({
 
 // SCRUM-52. Movements can be linked once M7 exports setTransactionGoal (`movements`).
 const contributions = createContributionService({
-  store: () => createVaultContributionStore(getVaultDb()),
-  goals: () => createVaultGoalStore(getVaultDb()),
+  store: () => createVaultContributionStore(getVaultDb(), markDirty),
+  goals: () => createVaultGoalStore(getVaultDb(), markDirty),
   clock,
   newId: randomUUID,
   onChange: () => service.notifyChanged(),
@@ -62,6 +68,18 @@ const checkMilestones = () => {
 };
 appEvents.on('vault.unlocked', checkMilestones);
 service.subscribe(checkMilestones);
+
+// HU-045: goals before contributions, which reference them.
+const backup = createSavingsBackup({
+  db: getVaultDb,
+  markDirty,
+  onImported: () => service.notifyChanged(),
+});
+registerBackupCollection(backup.goals);
+registerBackupCollection(backup.contributions);
+appEvents.on('vault.unlocked', () => {
+  void backup.flushPending().catch(() => undefined);
+});
 
 /** Goals with saved amount, percent and suggested monthly, nearest deadline first. */
 export const getGoals = (): Promise<GoalSummary[]> => service.list();

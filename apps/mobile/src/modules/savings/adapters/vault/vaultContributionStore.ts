@@ -1,7 +1,10 @@
 // ContributionStore on the SQLCipher vault (table savings_contributions in ./migrations.ts).
 // "Deshacer" only marks a row deleted, so the record of what happened stays in the vault.
+// Every write bumps the version and marks the row dirty for M2's encrypted backup (HU-045).
 import type { Id } from '@shared/domain/types';
-import type { VaultDb } from '@shared/ports';
+import type { MarkDirty, VaultDb } from '@shared/ports';
+
+import { SAVINGS_BACKUP_COLLECTIONS } from '../backup/savingsBackup';
 
 import { MovementAlreadyLinkedError } from '../../application/contributionService';
 import type { Contribution } from '../../domain/contribution';
@@ -29,7 +32,12 @@ const toContribution = (r: Row): Contribution => ({
 
 const COLUMNS = 'id, goal_id, amount_minor, contributed_on, source, transaction_id, note';
 
-export function createVaultContributionStore(db: VaultDb): ContributionStore {
+const noDirty: MarkDirty = () => undefined;
+
+export function createVaultContributionStore(
+  db: VaultDb,
+  markDirty: MarkDirty = noDirty,
+): ContributionStore {
   return {
     async list(goalId: Id) {
       const rows = await db.query<Row>(
@@ -63,10 +71,16 @@ export function createVaultContributionStore(db: VaultDb): ContributionStore {
         `INSERT INTO savings_contributions (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [c.id, c.goalId, c.amountMinor, c.contributedOn, c.source, c.transactionId, c.note],
       );
+      markDirty(SAVINGS_BACKUP_COLLECTIONS.contributions, c.id);
     },
 
     async markDeleted(id, at) {
-      await db.execute('UPDATE savings_contributions SET deleted_at = ? WHERE id = ?', [at, id]);
+      await db.execute(
+        `UPDATE savings_contributions SET deleted_at = ?, version = version + 1
+         WHERE id = ? AND deleted_at IS NULL`,
+        [at, id],
+      );
+      markDirty(SAVINGS_BACKUP_COLLECTIONS.contributions, id);
     },
 
     async linkedTransactionIds(goalId) {

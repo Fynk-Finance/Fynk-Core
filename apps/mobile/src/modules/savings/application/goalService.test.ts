@@ -145,7 +145,9 @@ describe('savings goals in the vault', () => {
     await contribute(id, 1_000_000);
     await service.remove(id);
     expect(await service.list()).toEqual([]);
-    expect(await vault.db.query('SELECT id FROM savings_contributions')).toEqual([]);
+    expect(
+      await vault.db.query('SELECT id FROM savings_contributions WHERE deleted_at IS NULL'),
+    ).toEqual([]);
   });
 
   it('refuses an invalid goal and an edit of a missing one', async () => {
