@@ -40,7 +40,7 @@ No file of M10 or M11 was edited.
 * Registration runs at load and the QueryClient is bound in an effect, because AppRoot creates the client per mount but the vault tables must register only once.
 * M11's `navigation` is not passed: M8's `openPaydayReminder` and an M1 display-name hook are not on `develop` yet, so M11 keeps its defaults.
 * A test that spread the real M7 module inside `jest.mock` broke M7's import cycle with M5. The test uses the real M7 instead and checks that it reaches the locked vault.
-* `git fetch` failed with an SSL certificate error, so the branch starts from the local `origin/develop` (d92339d, fetched earlier the same day). Rebase before opening the pull request.
+* `git fetch` failed with an SSL certificate error, so the branch starts from the local `origin/develop` (d92339d, fetched earlier the same day). Before the pull request, `git -c http.sslBackend=schannel fetch` (the Windows certificate store) worked: `develop` had not moved, so the rebase changed nothing.
 * `tsc` failed in M11's `recommendationsApi.ts` until `make generate-ts` regenerated the local `schema.gen.ts` (it was from 29 Oct). Generated, not committed.
 
 ## Next step
