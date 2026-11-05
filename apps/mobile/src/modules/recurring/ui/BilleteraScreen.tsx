@@ -27,6 +27,7 @@ import { MisCuentasBilletera } from '@modules/accounts';
 import type { RecurringService } from '../application/recurringService';
 import { chargedAccount } from '../domain/charges';
 import type { StoredRecurringItem } from '../domain/item';
+import { DetectedBanner } from './DetectedBanner';
 import { RecurringCard } from './RecurringCard';
 import { RECURRING_FORM_ROUTE } from './RecurringFormScreen';
 import { SUBSCRIPTION_DETAIL_ROUTE } from './SubscriptionDetailScreen';
@@ -35,6 +36,7 @@ import { recurringStrings } from './strings.es-CO';
 import { accountKind } from './accountLabel';
 import { SubscriptionRow } from './SubscriptionRow';
 import { useAccounts } from './useAccounts';
+import { usePendingProposals } from './usePendingProposals';
 import { useRecurringItems } from './useRecurringItems';
 
 const t = recurringStrings.billetera;
@@ -55,6 +57,9 @@ export interface BilleteraDeps {
   recommendationsRoute: string;
   /** M6 `getAccounts`: the account or card of each subscription. */
   accounts?: () => Promise<Account[]>;
+  /** How many detected proposals wait for the person (SCRUM-55), and the screen to review them. */
+  pendingProposals?: () => Promise<number>;
+  detectedRoute?: string;
 }
 
 export function createBilleteraScreen(deps: BilleteraDeps) {
@@ -63,6 +68,7 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
     const styles = useThemedStyles(createStyles);
     const { state, reload } = useRecurringItems(deps.service);
     const accounts = useAccounts(deps.accounts);
+    const detected = usePendingProposals(deps.pendingProposals, state);
     const unread = deps.useUnreadCount();
     const today = bogotaToday(deps.clock.now());
     const add = () => navigation.navigate(RECURRING_FORM_ROUTE);
@@ -100,6 +106,12 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
         testID="recurring.billetera"
       >
         <MisCuentasBilletera />
+        {detected > 0 && deps.detectedRoute ? (
+          <DetectedBanner
+            count={detected}
+            onPress={() => deps.detectedRoute && navigation.navigate(deps.detectedRoute)}
+          />
+        ) : null}
         <SectionHeader title={t.recurring} actionLabel={t.add} onAction={add} />
         {state.status === 'loading' ? (
           <View style={styles.grid}>

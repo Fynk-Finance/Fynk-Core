@@ -30,6 +30,8 @@ import { createRecurringService } from './application/recurringService';
 import { createReminderScheduler } from './application/reminders';
 import type { SubscriptionsSummary } from './domain/amounts';
 import { bogotaToday, createBilleteraScreen } from './ui/BilleteraScreen';
+import { createDetectedScreen, DETECTED_ROUTE } from './ui/DetectedScreen';
+import { recurringStrings } from './ui/strings.es-CO';
 import {
   createRecurringFormScreen,
   RECURRING_EDIT_ROUTE,
@@ -84,6 +86,7 @@ appEvents.on('vault.unlocked', () => {
 // SCRUM-55: after every sync (the first full one included), detection runs over 12 months of
 // M7's outflows. New proposals emit `recurring.detected`; the person confirms or dismisses
 // each one. The merchant catalog (SCRUM-58) is not built yet, so nothing is looked up.
+const detectedStrings = recurringStrings.detected;
 const detection = createDetectionService({
   proposals: () => createVaultProposalStore(getVaultDb()),
   items: () => createVaultRecurringStore(getVaultDb()).list(),
@@ -92,8 +95,20 @@ const detection = createDetectionService({
   recurring: service,
   clock,
   onDetected: (count) => {
-    if (count > 0) appEvents.emit({ type: 'recurring.detected', count });
+    if (count === 0) return;
+    appEvents.emit({ type: 'recurring.detected', count });
+    void notificationsPort
+      .notify({
+        kind: 'sync_result',
+        title: detectedStrings.noticeTitle,
+        body: detectedStrings.noticeBody(count),
+        deepLink: 'fynk://billetera/detectados',
+        dedupeKey: `recurring.detected:${clock.now().toISOString()}`,
+      })
+      .catch(() => undefined);
   },
+  // Billetera reloads, so its banner shows how many are left.
+  onChange: () => service.notifyChanged(),
 });
 appEvents.on('sync.completed', () => {
   void detection.run().catch(() => undefined);
@@ -118,8 +133,16 @@ export const routes: ModuleRoutes = {
     notificationsRoute: NOTIFICATIONS_ROUTE,
     recommendationsRoute: 'Recomendaciones',
     accounts: getAccounts,
+    pendingProposals: async () => (await detection.pending()).length,
+    detectedRoute: DETECTED_ROUTE,
   }),
   screens: [
+    {
+      // SCRUM-55: from the Billetera banner, or the inbox notice after a sync.
+      name: DETECTED_ROUTE,
+      component: createDetectedScreen({ detection, subscribe: service.subscribe }),
+      path: 'billetera/detectados',
+    },
     {
       // Add a fixed expense or subscription; with { id } it edits one.
       name: RECURRING_FORM_ROUTE,
