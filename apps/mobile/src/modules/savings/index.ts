@@ -5,7 +5,12 @@ import type { Clock, MoneyMinor } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
-import type { GoalSummary as AnalyticsGoal, PaydayContribution } from '@modules/analytics';
+import {
+  getMonthSummary,
+  getRecurringIncome,
+  type GoalSummary as AnalyticsGoal,
+  type PaydayContribution,
+} from '@modules/analytics';
 import { notificationsPort } from '@modules/notifications';
 import { getTransactionsBetween, setTransactionGoal } from '@modules/transactions';
 import {
@@ -22,13 +27,14 @@ import { savingsMigrations } from './adapters/vault/migrations';
 import { createVaultContributionStore } from './adapters/vault/vaultContributionStore';
 import { createVaultGoalStore } from './adapters/vault/vaultGoalStore';
 import { createContributionService } from './application/contributionService';
-import { createGoalService } from './application/goalService';
+import { bogotaToday, createGoalService } from './application/goalService';
 import { createMilestoneNotifier } from './application/milestoneNotifier';
 import { createVaultMilestoneStore } from './adapters/vault/vaultMilestoneStore';
 import { createVaultPaydayStore } from './adapters/vault/vaultPaydayStore';
 import { createPaydayService } from './application/paydayService';
 import { salaryDay } from './domain/payday';
 import { goalForAnalytics, paydayContribution } from './domain/analytics';
+import { monthlyIncome, previousMonth } from './domain/income';
 import type { GoalSummary } from './domain/goal';
 import { createGoalFormScreen, GOAL_FORM_ROUTE } from './ui/GoalFormScreen';
 import { createPaydayReminderScreen, PAYDAY_REMINDER_ROUTE } from './ui/PaydayReminderScreen';
@@ -135,15 +141,31 @@ export const getGoalsForSnapshot = async (): Promise<AnalyticsGoal[]> =>
 export const getPaydayContribution = async (): Promise<PaydayContribution | null> =>
   paydayContribution(await service.list());
 
+/**
+ * "23 % de tus ingresos" (design Metas): M10's recurring income, or the income of the last full
+ * month. Null while M10 is not configured or there is no income, and Metas then hides the share.
+ */
+const incomeForMetas = async () => {
+  const [sources, lastMonth] = await Promise.all([
+    getRecurringIncome().catch(() => []),
+    getMonthSummary(previousMonth(bogotaToday(clock.now())))
+      .then((m) => m.incomeMinor)
+      .catch(() => null),
+  ]);
+  return monthlyIncome(
+    sources.map((s) => s.estimatedMonthlyMinor),
+    lastMonth,
+  );
+};
+
 export const routes: ModuleRoutes = {
   module: 'savings',
   screens: [
     {
       name: METAS_ROUTE,
-      // "23 % de tus ingresos" needs the monthly income of M10, not exported yet.
       component: createMetasScreen({
         service,
-        monthlyIncome: async () => null,
+        monthlyIncome: incomeForMetas,
         contributions,
         canLink: true,
       }),
