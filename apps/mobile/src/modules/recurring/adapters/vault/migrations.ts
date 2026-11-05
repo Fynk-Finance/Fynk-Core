@@ -82,4 +82,17 @@ export const recurringMigrations: VaultMigration[] = [
       CREATE INDEX recurring_price_alerts_item ON recurring_price_alerts (item_id);
     `,
   },
+  {
+    // SCRUM-58: the phone's copy of the shared merchant catalog, with its ETag. One row. It holds
+    // no personal data and is not backed up: it is downloaded again.
+    version: 5,
+    up: `
+      CREATE TABLE recurring_catalog (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        etag TEXT NOT NULL,
+        entries_json TEXT NOT NULL,
+        fetched_at TEXT NOT NULL
+      );
+    `,
+  },
 ];
