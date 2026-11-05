@@ -144,8 +144,15 @@ export const transactionsStrings = {
     automatic: 'Automática',
     save: 'Guardar',
     noAccounts: 'Primero registra tu efectivo o conecta una cuenta',
-    note: 'Es un registro: no mueve dinero ni cambia el saldo de tus cuentas.',
+    disconnected: 'Desconectada',
+    // Which balance the movement changes, for the account picked (team decision, 5 Nov 2026).
+    notes: {
+      cash: 'Actualiza tu efectivo. No mueve dinero.',
+      disconnected: 'Actualiza el saldo de esta cuenta desconectada. No mueve dinero.',
+      connected: 'Es un registro: no mueve dinero. Tu banco actualiza el saldo al sincronizar.',
+    },
     errors: {
+      cashShort: (cash: string) => `Tu efectivo es ${cash}`,
       amount: 'Escribe el monto en pesos, mayor que cero.',
       account: 'Elige una cuenta.',
       day: 'Escribe una fecha de hoy o antes, como dd/mm/aaaa.',
