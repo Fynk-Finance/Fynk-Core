@@ -3,7 +3,12 @@
 // the 2 column cards of the fixed expenses, the savings banner when a subscription is marked
 // "Casi nunca" (SCRUM-56), and "Otros gastos" with the subscriptions. M6 adds "Mis cuentas"
 // above when it lands.
-import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  type NavigationProp,
+  type ParamListBase,
+} from '@react-navigation/native';
 import { StyleSheet, View } from 'react-native';
 
 import { formatCop } from '@shared/domain/money';
@@ -11,6 +16,7 @@ import type { Account, Clock, IsoDate } from '@shared/domain/types';
 import {
   AmountText,
   AppText,
+  Chip,
   EmptyState,
   ErrorState,
   HeaderBlue,
@@ -47,6 +53,9 @@ export function bogotaToday(now: Date): IsoDate {
   return new Date(now.getTime() - 5 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
+/** Route params of the tab: Recomendaciones "Revisar" sends { filter: 'low_use' }. */
+export type BilleteraParams = { filter?: 'low_use' };
+
 export interface BilleteraDeps {
   service: RecurringService;
   clock: Clock;
@@ -70,6 +79,8 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();
     const styles = useThemedStyles(createStyles);
     const { state, reload } = useRecurringItems(deps.service);
+    // Recomendaciones "Revisar" opens Billetera with { filter: 'low_use' } (M11).
+    const lowUseOnly = (useRoute().params as BilleteraParams | undefined)?.filter === 'low_use';
     const accounts = useAccounts(deps.accounts);
     const detected = usePendingProposals(deps.pendingProposals, state);
     const priceUp = usePriceUpItems(deps.priceUpItems, state);
@@ -164,8 +175,22 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
                     </AppText>
                   }
                 />
+                {lowUseOnly ? (
+                  <View style={styles.filter}>
+                    <Chip
+                      label={t.lowUseOnly}
+                      selected
+                      onPress={() => navigation.setParams({ filter: undefined })}
+                      testID="recurring.billetera.lowUseFilter"
+                    />
+                    <AppText variant="caption" color="textSecondary">
+                      {t.lowUseOnlyHint}
+                    </AppText>
+                  </View>
+                ) : null}
                 {state.items
                   .filter((item) => item.kind === 'subscription')
+                  .filter((item) => !lowUseOnly || item.usage === 'low')
                   .map((item) => (
                     <SubscriptionRow
                       key={item.id}
@@ -192,4 +217,5 @@ const createStyles = () =>
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
     skeleton: { flexBasis: '48%', flexGrow: 1 },
     subscriptions: { gap: spacing.md, marginTop: spacing.md },
+    filter: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.md },
   });

@@ -91,6 +91,9 @@ export const recurringStrings = {
     subscriptionsMeta: (count: number, amount: string) =>
       `${count} ${count === 1 ? 'activa' : 'activas'} · ${amount}/mes`,
     lowUse: 'Poco uso',
+    // Filter set by Recomendaciones "Revisar"; tapping the chip shows them all again.
+    lowUseOnly: 'Solo poco uso',
+    lowUseOnlyHint: 'Toca para ver todas',
     renews: (date: string) => `Renueva ${date}`,
     // "Tarjeta de crédito · renueva 28 sep" (design Billetera).
     renewsFrom: (account: string, date: string) => `${account} · renueva ${date}`,
