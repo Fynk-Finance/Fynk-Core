@@ -3,8 +3,6 @@ package catalog
 import (
 	"context"
 	"errors"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -60,23 +58,40 @@ func TestUnavailableWithoutSources(t *testing.T) {
 	}
 }
 
-func TestBankDemoProductsThroughM5sProductType(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/banco-demo/open-finance/v1/products/cdt" || r.Header.Get("Authorization") != "" {
-			t.Errorf("public catalog through the egress without a user token, got %s %q", r.URL.Path, r.Header.Get("Authorization"))
-		}
-		_, _ = w.Write([]byte(`{"data":[{"id":"cdt-demo-180","name":"CDT Digital Banco Demo 180 Días","termDays":180,"rateEa":10.5,"rateEaBps":1050,"minAmount":"500000.00","minAmountMinor":50000000,"risk":"BAJO"},{"id":"","name":"sin id","termDays":0}]}`))
-	}))
-	defer ts.Close()
-	src := FromProvider{Lister: BankDemoProducts{BaseURL: ts.URL + "/banco-demo/"}, Issuer: "Banco Demo", Simulated: true}
+// m5Catalog stands for the catalog the bank module installs (bank/wiring.go).
+type m5Catalog struct{ asked []string }
+
+func (c *m5Catalog) Products(_ context.Context, provider string) ([]bankports.Product, error) {
+	c.asked = append(c.asked, provider)
+	return []bankports.Product{
+		{ID: "cdt-demo-180", Name: "CDT Digital Banco Demo 180 Días", TermDays: 180, RateEaBps: 1050, MinAmountMinor: 50000000, Risk: "BAJO"},
+		{ID: "", Name: "sin id"},
+	}, nil
+}
+
+func TestBankDemoCatalogComesFromM5ThroughBankPorts(t *testing.T) {
+	m5 := &m5Catalog{}
+	bankports.InstallProductCatalog(m5)
+	t.Cleanup(func() { bankports.InstallProductCatalog(nil) })
+
+	src := FromProvider{Lister: bankports.ProductsOf("banco-demo"), Issuer: "Banco Demo", Simulated: true}
 	ps, err := src.Products(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := Product{ID: "cdt-demo-180", Name: "CDT Digital Banco Demo 180 Días", Issuer: "Banco Demo", TermDays: 180,
 		RateEaBps: 1050, MinAmountMinor: 50000000, Risk: RiskLow, Simulated: true}
-	if len(ps) != 1 || ps[0] != want {
-		t.Fatalf("got %+v", ps)
+	if len(ps) != 1 || ps[0] != want || len(m5.asked) != 1 || m5.asked[0] != "banco-demo" {
+		t.Fatalf("got %+v, asked %v", ps, m5.asked)
+	}
+}
+
+func TestUnavailableUntilM5InstallsTheCatalog(t *testing.T) {
+	bankports.InstallProductCatalog(nil)
+	src := FromProvider{Lister: bankports.ProductsOf("banco-demo"), Issuer: "Banco Demo", Simulated: true}
+	_, err := NewService(nil, now, src).Get(context.Background())
+	if !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("want ErrUnavailable, got %v", err)
 	}
 }
 
