@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider, type ThemePreference } from '@shared/ui';
 
 import type { AccountsOverview } from '../application/accountsService';
+import type { MonthSummary } from '../domain/dashboard';
 import { connectedAccountsSummary, isActive, sortAccounts } from '../domain/netWorth';
 import { account, card, cash, cdt, savings, wallet } from '../testing/fixtures';
 import { ACCOUNT_DETAIL_ROUTE } from './AccountDetailScreen';
@@ -39,6 +40,7 @@ async function renderDashboard(
     theme?: ThemePreference;
     name?: string | null;
     withMovements?: boolean;
+    summary?: MonthSummary | null;
   } = {},
 ) {
   const refetch = jest.fn();
@@ -49,7 +51,10 @@ async function renderDashboard(
         isError: !!opts.isError,
         refetch,
       }) as never,
-    useMonthSummary: () => ({ incomeMinor: 520_000_000, spendingMinor: 231_040_000 }),
+    useMonthSummary: () =>
+      opts.summary === undefined
+        ? { incomeMinor: 520_000_000, spendingMinor: 231_040_000 }
+        : opts.summary,
     useUnreadCount: () => 0,
     useDisplayName: () => (opts.name === undefined ? 'Laura Gómez' : opts.name),
     accountRoute: 'identity.Account',
@@ -103,6 +108,12 @@ describe('Dashboard balance card', () => {
     await renderDashboard();
     expect(screen.getByLabelText('Ingresos')).toHaveTextContent(/Ingresos.*\$5\.200\.000/);
     expect(screen.getByLabelText('Gastos')).toHaveTextContent(/Gastos.*\$2\.310\.400/);
+  });
+
+  it('shows placeholders, not $0, while Ingresos and Gastos are loading', async () => {
+    await renderDashboard({ summary: null });
+    expect(screen.getByLabelText('Ingresos')).not.toHaveTextContent(/\$/);
+    expect(screen.getByLabelText('Gastos')).not.toHaveTextContent(/\$/);
   });
 
   it('explains how the total is calculated', async () => {
