@@ -1,7 +1,8 @@
 // "Registrar gasto o ingreso" (the Dashboard FAB) and "Editar" of a manual movement, as a
 // sheet. The design exports the FAB sheet closed (only its CSS: a segmented control, fields, a
 // dropdown and "Guardar"), so it is built from shared components: new screen, needs design
-// review. Gasto or Ingreso, Monto, Cuenta (Efectivo included), Fecha, Descripción, Categoría.
+// review. Gasto or Ingreso, Monto, Cuenta (Efectivo and disconnected accounts included), Fecha,
+// Descripción, Categoría. The note says which balance the movement changes (5 Nov 2026).
 import {
   useNavigation,
   useRoute,
@@ -14,7 +15,8 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CATEGORY_IDS, categoryLabel } from '@shared/domain/categories';
-import type { Account, Clock, Id, Transaction } from '@shared/domain/types';
+import { formatCop } from '@shared/domain/money';
+import type { Account, Clock, Id, MoneyMinor, Transaction } from '@shared/domain/types';
 import {
   AppText,
   Chip,
@@ -53,9 +55,12 @@ export interface ManualTransactionParams {
 
 export interface ManualTransactionDeps {
   hooks: Pick<TransactionHooks, 'useTransaction'>;
-  useAccounts: () => { data?: { accounts: Account[] } };
+  /** M6: active accounts, and the disconnected ones whose balance manual movements change. */
+  useAccounts: () => { data?: { accounts: Account[]; disconnectedAccounts?: Account[] } };
   add: (input: ManualInput) => Promise<Transaction>;
   update: (id: Id, input: ManualInput) => Promise<Transaction>;
+  /** The cash there is when M6 refused a Gasto bigger than it, otherwise null. */
+  cashShortOf?: (error: unknown) => MoneyMinor | null;
   clock: Clock;
 }
 
@@ -64,13 +69,16 @@ export function createManualTransactionSheet(deps: ManualTransactionDeps) {
     const route = useRoute<RouteProp<{ manual: ManualTransactionParams }, 'manual'>>();
     const id = route.params?.id;
     const editing = deps.hooks.useTransaction(id ?? '').data;
-    const accounts = (deps.useAccounts().data?.accounts ?? []).filter((a) => a.kind !== 'cdt');
+    const data = deps.useAccounts().data;
+    const disconnected = data?.disconnectedAccounts ?? [];
+    const accounts = [...(data?.accounts ?? []), ...disconnected].filter((a) => a.kind !== 'cdt');
     if (id && !editing) return null;
     return (
       <Form
         key={editing?.id ?? 'new'}
         deps={deps}
         accounts={accounts}
+        disconnectedIds={new Set(disconnected.map((a) => a.id))}
         editing={editing && editing.source === 'manual' ? editing : null}
       />
     );
@@ -80,10 +88,12 @@ export function createManualTransactionSheet(deps: ManualTransactionDeps) {
 function Form({
   deps,
   accounts,
+  disconnectedIds,
   editing,
 }: {
   deps: ManualTransactionDeps;
   accounts: Account[];
+  disconnectedIds: ReadonlySet<Id>;
   editing: Transaction | null;
 }) {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -99,12 +109,26 @@ function Form({
   const [errors, setErrors] = useState<ManualDraftError[]>([]);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [cashShort, setCashShort] = useState<MoneyMinor | null>(null);
 
   const set = (patch: Partial<ManualDraft>) => {
     setDraft((d) => ({ ...d, ...patch }));
     setErrors([]);
     setFailed(false);
+    setCashShort(null);
   };
+  const labelOf = (account: Account) =>
+    disconnectedIds.has(account.id)
+      ? `${accountLabel(account)} · ${t.disconnected}`
+      : accountLabel(account);
+  const selected = accounts.find((a) => a.id === draft.accountId);
+  const note = !selected
+    ? null
+    : selected.kind === 'cash'
+      ? t.notes.cash
+      : disconnectedIds.has(selected.id)
+        ? t.notes.disconnected
+        : t.notes.connected;
   const errorOf = (key: ManualDraftError) => (errors.includes(key) ? t.errors[key] : undefined);
 
   const save = async () => {
@@ -118,8 +142,10 @@ function Form({
       if (editing) await deps.update(editing.id, result.input);
       else await deps.add(result.input);
       navigation.goBack();
-    } catch {
-      setFailed(true);
+    } catch (e) {
+      const short = deps.cashShortOf?.(e) ?? null;
+      if (short === null) setFailed(true);
+      else setCashShort(short);
     } finally {
       setSaving(false);
     }
@@ -174,13 +200,16 @@ function Form({
         value={draft.amountText}
         onChangeText={(amountText) => set({ amountText })}
         keyboardType="number-pad"
-        error={errorOf('amount')}
+        error={
+          errorOf('amount') ??
+          (cashShort === null ? undefined : t.errors.cashShort(formatCop(cashShort)))
+        }
       />
       <Group title={t.account} error={errorOf('account')}>
         {accounts.map((account) => (
           <Chip
             key={account.id}
-            label={accountLabel(account)}
+            label={labelOf(account)}
             selected={draft.accountId === account.id}
             onPress={() => set({ accountId: account.id })}
           />
@@ -233,9 +262,11 @@ function Form({
           />
         ))}
       </Group>
-      <AppText variant="caption" color="textSecondary">
-        {t.note}
-      </AppText>
+      {note ? (
+        <AppText variant="caption" color="textSecondary">
+          {note}
+        </AppText>
+      ) : null}
       {failed ? (
         <AppText variant="small" color="danger" accessibilityLiveRegion="polite">
           {t.errors.save}

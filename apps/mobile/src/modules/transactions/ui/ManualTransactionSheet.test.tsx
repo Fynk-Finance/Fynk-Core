@@ -1,9 +1,11 @@
 // Nuevo movimiento manual (SCRUM-29, SCRUM-32): a gasto in Efectivo, an ingreso with its
-// category, the checks, and edit and delete from the detail of a manual movement.
+// category, the checks, and edit and delete from the detail of a manual movement. Since the
+// team decision of 5 Nov 2026: disconnected accounts, "Tu efectivo es $X", and a note that says
+// which balance the movement changes.
 import { fireEvent, screen } from '@testing-library/react-native';
 import type { Alert } from 'react-native';
 
-import type { Account } from '@shared/domain/types';
+import type { Account, Transaction } from '@shared/domain/types';
 import { createFixedClock } from '@shared/testing';
 
 import { createTestModule, renderScreens } from '../testing/renderScreen';
@@ -19,12 +21,28 @@ const accounts = [
   { id: 'acc-cash', kind: 'cash', displayName: 'Efectivo' },
   { id: 'acc-cdt', kind: 'cdt', displayName: 'Banco Demo · CDT' },
 ] as Account[];
+const disconnected = [
+  { id: 'acc-old', kind: 'savings', displayName: 'Banco Demo · Ahorros', status: 'revoked' },
+] as Account[];
 
 type Buttons = Parameters<typeof Alert.alert>[2];
 
-async function setup(opts: { accounts?: Account[]; initial?: string } = {}) {
+async function setup(
+  opts: {
+    accounts?: Account[];
+    disconnectedAccounts?: Account[];
+    initial?: string;
+    add?: () => Promise<Transaction>;
+    cashShortOf?: (error: unknown) => number | null;
+  } = {},
+) {
   const m = await createTestModule();
-  const useAccounts = () => ({ data: { accounts: opts.accounts ?? accounts } });
+  const useAccounts = () => ({
+    data: {
+      accounts: opts.accounts ?? accounts,
+      disconnectedAccounts: opts.disconnectedAccounts ?? [],
+    },
+  });
   const ask = jest.fn((_t: string, _m?: string, buttons?: Buttons) => {
     buttons?.find((b) => b.style === 'destructive')?.onPress?.();
   });
@@ -39,8 +57,9 @@ async function setup(opts: { accounts?: Account[]; initial?: string } = {}) {
       [NEW_TRANSACTION_ROUTE]: createManualTransactionSheet({
         hooks: m.hooks,
         useAccounts,
-        add: (input) => m.manual.addManualTransaction(input),
+        add: opts.add ?? ((input) => m.manual.addManualTransaction(input)),
         update: (id, input) => m.manual.updateManualTransaction(id, input),
+        ...(opts.cashShortOf ? { cashShortOf: opts.cashShortOf } : {}),
         clock,
       }),
       [DETAIL_ROUTE]: createTransactionDetailScreen({
@@ -148,5 +167,48 @@ describe('Editar and Eliminar of a manual movement', () => {
     );
     expect(await screen.findByText('Aún no tienes movimientos')).toBeTruthy();
     expect(await m.service.getTransaction('manual-1')).toBeNull();
+  });
+});
+
+describe('balances (team decision of 5 Nov 2026)', () => {
+  it('offers disconnected accounts after the connected ones, marked "Desconectada"', async () => {
+    await setup({ disconnectedAccounts: disconnected });
+    expect(
+      await screen.findByRole('button', { name: 'Banco Demo · Cuenta de ahorros · Desconectada' }),
+    ).toBeTruthy();
+  });
+
+  it('says which balance the movement changes, for the account picked', async () => {
+    await setup({ disconnectedAccounts: disconnected });
+    expect(await screen.findByText('Actualiza tu efectivo. No mueve dinero.')).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Bancolombia · Cuenta de ahorros' }));
+    expect(
+      screen.getByText(
+        'Es un registro: no mueve dinero. Tu banco actualiza el saldo al sincronizar.',
+      ),
+    ).toBeTruthy();
+
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Banco Demo · Cuenta de ahorros · Desconectada' }),
+    );
+    expect(
+      screen.getByText('Actualiza el saldo de esta cuenta desconectada. No mueve dinero.'),
+    ).toBeTruthy();
+  });
+
+  it('says how much cash there is when the Gasto is bigger, and stays open', async () => {
+    const short = new Error('InsufficientCashError');
+    await setup({
+      add: () => Promise.reject(short),
+      cashShortOf: (e) => (e === short ? 3_000_000 : null),
+    });
+    await fireEvent.changeText(await screen.findByLabelText('Monto'), '50.000');
+    await fireEvent.changeText(screen.getByLabelText('Descripción'), 'Mercado');
+    await fireEvent.press(screen.getByText('Guardar'));
+
+    expect(await screen.findByText('Tu efectivo es $30.000')).toBeTruthy();
+    expect(screen.queryByText('No pudimos guardar el movimiento. Intenta de nuevo.')).toBeNull();
+    expect(screen.getByText('Registrar movimiento')).toBeTruthy();
   });
 });

@@ -1,6 +1,7 @@
 // Manual movements (Nuevo movimiento manual): cash or any account, money in or money out.
-// They are records only: Fynk never moves money, and a manual movement never changes a bank or
-// cash balance. Pure: the caller passes the id and the category pipeline.
+// Fynk never moves money. Since 5 Nov 2026 a movement in cash or in a disconnected account
+// changes that balance through M6 (application/manualService.ts); a connected account keeps its
+// bank's. Pure: the caller passes the id and the category pipeline.
 import { isCategoryId } from '@shared/domain/categories';
 import type { CategoryId, Id, IsoDateTime, MoneyMinor, Transaction } from '@shared/domain/types';
 
