@@ -39,6 +39,8 @@ export type { CashInputProps } from './ui/CashInput';
 export { ACCOUNTS_QUERY_KEY, ACCOUNT_DETAIL_ROUTE };
 export type { AccountDetailParams } from './ui/AccountDetailScreen';
 export { maskedNumber } from './domain/masking';
+/** Whether an account counts as connected (onboarding Cuentas lists the same ones it counts). */
+export { isConnected } from './domain/netWorth';
 export { InvalidCashAmountError } from './domain/cash';
 export { InsufficientCashError } from './domain/manualBalance';
 export { InvalidSyncedAccountError } from './domain/syncedAccounts';
