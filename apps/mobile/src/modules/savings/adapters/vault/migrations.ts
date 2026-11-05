@@ -69,4 +69,16 @@ export const savingsMigrations: VaultMigration[] = [
         SELECT 'savings.contributions', id FROM savings_contributions;
     `,
   },
+  {
+    // M8 prompt: the payday reminder of a goal ("Programar" in Recomendaciones). One per goal.
+    version: 4,
+    up: `
+      CREATE TABLE savings_payday_reminders (
+        goal_id TEXT PRIMARY KEY REFERENCES savings_goals (id),
+        amount_minor INTEGER NOT NULL CHECK (amount_minor > 0),
+        day INTEGER NOT NULL CHECK (day BETWEEN 1 AND 31),
+        updated_at TEXT NOT NULL
+      );
+    `,
+  },
 ];
