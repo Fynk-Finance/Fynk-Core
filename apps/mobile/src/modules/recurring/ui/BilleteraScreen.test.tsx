@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
+import type { Account } from '@shared/domain/types';
 import { createFixedClock, createInMemoryVault, type InMemoryVault } from '@shared/testing';
 import { ThemeProvider, type ThemePreference } from '@shared/ui';
 
@@ -60,6 +61,7 @@ const billetera: RecurringInput[] = [
 
 let vault: InMemoryVault;
 let service: RecurringService;
+let accountsDep: (() => Promise<Account[]>) | undefined;
 
 beforeEach(async () => {
   vault = await createInMemoryVault();
@@ -73,7 +75,10 @@ beforeEach(async () => {
   });
 });
 
-afterEach(() => vault.close());
+afterEach(() => {
+  vault.close();
+  accountsDep = undefined;
+});
 
 function Target({ route }: { route: { name: string; params?: { id?: string } } }) {
   return <Text>{`arrived:${route.name}:${route.params?.id ?? ''}`}</Text>;
@@ -87,6 +92,7 @@ async function renderBilletera(preference: ThemePreference = 'light', unread = 0
     accountRoute: 'identity.Account',
     notificationsRoute: 'notifications.Inbox',
     recommendationsRoute: 'Recomendaciones',
+    accounts: accountsDep,
   });
   await render(
     <ThemeProvider initialPreference={preference} store={noStore}>
@@ -155,6 +161,22 @@ describe('Billetera', () => {
       /Streaming de video.*Renueva 28 oct.*\$38\.900/,
     );
     expect(screen.getByTestId('recurring.subscription.r6')).toHaveTextContent(/Renueva 2 nov/);
+  });
+
+  it('a subscription row names the card it is charged to (M6)', async () => {
+    accountsDep = async () => [{ id: 'acc-card', kind: 'credit_card', last4: '4821' } as Account];
+    const id = await service.create({
+      kind: 'subscription',
+      name: 'Streaming de video',
+      amountMinor: 3_890_000,
+      schedule: { periodicity: 'monthly', anchorDay: 28 },
+      categoryId: 'subscriptions',
+      accountId: 'acc-card',
+    });
+    await renderBilletera();
+    const row = await screen.findByTestId(`recurring.subscription.${id}`);
+    await waitFor(() => expect(row).toHaveTextContent(/Tarjeta de crédito · renueva 28 oct/));
+    expect(row).not.toHaveTextContent(/4821/);
   });
 
   it('no savings banner until a subscription is marked "Casi nunca"', async () => {

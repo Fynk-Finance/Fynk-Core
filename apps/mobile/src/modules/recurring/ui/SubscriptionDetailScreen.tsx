@@ -4,18 +4,20 @@
 //
 // Amount, periodicity and next renewal; "¿Cuánto la usas?"; the reminder switch; "Cómo
 // cancelarla" (generic until the merchant catalog gives the steps and the link); "Ya la cancelé"
-// (it stops counting, Fynk cancels nothing); "No es una suscripción"; "Editar". The account or
-// card (M6) and the last 6 charges (M7) come when those modules export them.
+// (it stops counting, Fynk cancels nothing); "No es una suscripción"; "Editar". Also the account
+// or card it is charged to (M6) and its last 6 charges (M7), each one opening its movement.
 import {
   useNavigation,
   useRoute,
   type NavigationProp,
   type ParamListBase,
 } from '@react-navigation/native';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { formatCop } from '@shared/domain/money';
+import type { Account, IsoDate, Transaction } from '@shared/domain/types';
 import {
   AmountText,
   AppText,
@@ -24,6 +26,7 @@ import {
   Chip,
   GhostButton,
   IconTile,
+  ListRow,
   Screen,
   Skeleton,
   Switch,
@@ -35,11 +38,14 @@ import {
 
 import type { RecurringService } from '../application/recurringService';
 import { PERIODICITY_LABEL, dayMonth } from '../domain/card';
+import { chargedAccount, lastCharges } from '../domain/charges';
 import type { StoredRecurringItem } from '../domain/item';
 import { nextCharge } from '../domain/schedule';
 import type { Usage } from '../domain/types';
+import { accountWithNumber } from './accountLabel';
 import { RECURRING_FORM_ROUTE } from './RecurringFormScreen';
 import { recurringStrings } from './strings.es-CO';
+import { useAccounts } from './useAccounts';
 
 const t = recurringStrings.detail;
 const USAGES: readonly Usage[] = ['high', 'some', 'low'];
@@ -47,13 +53,30 @@ const USAGES: readonly Usage[] = ['high', 'some', 'low'];
 export const SUBSCRIPTION_DETAIL_ROUTE = 'recurring.Subscription' as const;
 export type SubscriptionDetailParams = { id: string };
 
+/** The window the last charges are read from: one year, as detection. */
+const CHARGES_WINDOW_DAYS = 365;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The Bogotá day of a movement (UTC-5 all year). */
+const bogotaDay = (bookedAt: string): IsoDate =>
+  new Date(Date.parse(bookedAt) - 5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
 export function createSubscriptionDetailScreen({
   service,
   today,
+  accounts,
+  listMovements,
+  transactionRoute,
 }: {
   service: RecurringService;
   /** Today's date in Bogotá. */
   today: () => string;
+  /** M6 `getAccounts`. */
+  accounts?: () => Promise<Account[]>;
+  /** M7 `getTransactionsBetween`. */
+  listMovements?: (from: IsoDate, to: IsoDate) => Promise<Transaction[]>;
+  /** M7's movement detail, opened with { id }. */
+  transactionRoute?: string;
 }) {
   return function SubscriptionDetailScreen() {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -63,6 +86,27 @@ export function createSubscriptionDetailScreen({
     const insets = useSafeAreaInsets();
     const [item, setItem] = useState<StoredRecurringItem | null | undefined>(undefined);
     const [failure, setFailure] = useState<string | null>(null);
+    const accountList = useAccounts(accounts);
+    const [movements, setMovements] = useState<Transaction[]>([]);
+
+    useEffect(() => {
+      if (!listMovements) return;
+      let alive = true;
+      const to = today();
+      const from = new Date(Date.parse(`${to}T00:00:00Z`) - CHARGES_WINDOW_DAYS * DAY_MS)
+        .toISOString()
+        .slice(0, 10);
+      listMovements(from, to)
+        .then((list) => {
+          if (alive) setMovements(list);
+        })
+        .catch(() => undefined);
+      return () => {
+        alive = false;
+      };
+    }, []);
+
+    const charges = useMemo(() => (item ? lastCharges(item, movements) : []), [item, movements]);
 
     const load = useCallback(async () => {
       try {
@@ -143,6 +187,42 @@ export function createSubscriptionDetailScreen({
               ) : null}
             </View>
           </View>
+        </View>
+
+        {chargedAccount(item, accountList) ? (
+          <View style={styles.field} testID="recurring.subscription.account">
+            <AppText variant="label">{t.chargedTo}</AppText>
+            <AppText variant="body">{accountWithNumber(chargedAccount(item, accountList))}</AppText>
+          </View>
+        ) : null}
+
+        <View style={styles.field} testID="recurring.subscription.charges">
+          <AppText variant="label">{t.lastCharges}</AppText>
+          {charges.length === 0 ? (
+            <AppText variant="caption" color="textSecondary">
+              {item.merchantKey ? t.noCharges : t.noChargesManual}
+            </AppText>
+          ) : (
+            charges.map((tx) => {
+              const day = dayMonth(bogotaDay(tx.bookedAt));
+              return (
+                <ListRow
+                  key={tx.id}
+                  title={day}
+                  icon="arrowDown"
+                  iconSize={40}
+                  trailing={{ kind: 'amount', amountMinor: tx.amountMinor, signed: true }}
+                  accessibilityLabel={t.chargeLabel(day, formatCop(-tx.amountMinor))}
+                  onPress={
+                    transactionRoute
+                      ? () => navigation.navigate(transactionRoute, { id: tx.id })
+                      : undefined
+                  }
+                  testID={`recurring.subscription.charge.${tx.id}`}
+                />
+              );
+            })
+          )}
         </View>
 
         <View style={styles.field}>

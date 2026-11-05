@@ -7,7 +7,7 @@ import { useNavigation, type NavigationProp, type ParamListBase } from '@react-n
 import { StyleSheet, View } from 'react-native';
 
 import { formatCop } from '@shared/domain/money';
-import type { Clock, IsoDate } from '@shared/domain/types';
+import type { Account, Clock, IsoDate } from '@shared/domain/types';
 import {
   AmountText,
   AppText,
@@ -25,13 +25,16 @@ import {
 import { MisCuentasBilletera } from '@modules/accounts';
 
 import type { RecurringService } from '../application/recurringService';
+import { chargedAccount } from '../domain/charges';
 import type { StoredRecurringItem } from '../domain/item';
 import { RecurringCard } from './RecurringCard';
 import { RECURRING_FORM_ROUTE } from './RecurringFormScreen';
 import { SUBSCRIPTION_DETAIL_ROUTE } from './SubscriptionDetailScreen';
 import { SavingsBanner } from './SavingsBanner';
 import { recurringStrings } from './strings.es-CO';
+import { accountKind } from './accountLabel';
 import { SubscriptionRow } from './SubscriptionRow';
+import { useAccounts } from './useAccounts';
 import { useRecurringItems } from './useRecurringItems';
 
 const t = recurringStrings.billetera;
@@ -50,6 +53,8 @@ export interface BilleteraDeps {
   notificationsRoute: string;
   /** The savings banner opens Recomendaciones (inventory row 9). */
   recommendationsRoute: string;
+  /** M6 `getAccounts`: the account or card of each subscription. */
+  accounts?: () => Promise<Account[]>;
 }
 
 export function createBilleteraScreen(deps: BilleteraDeps) {
@@ -57,6 +62,7 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();
     const styles = useThemedStyles(createStyles);
     const { state, reload } = useRecurringItems(deps.service);
+    const accounts = useAccounts(deps.accounts);
     const unread = deps.useUnreadCount();
     const today = bogotaToday(deps.clock.now());
     const add = () => navigation.navigate(RECURRING_FORM_ROUTE);
@@ -149,6 +155,7 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
                       key={item.id}
                       item={item}
                       today={today}
+                      account={accountKind(chargedAccount(item, accounts))}
                       onPress={() =>
                         navigation.navigate(SUBSCRIPTION_DETAIL_ROUTE, { id: item.id })
                       }
