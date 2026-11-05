@@ -44,6 +44,19 @@ export const onboardingStrings = {
       notSaved: 'No pudimos guardar tu nombre. Revisa tu conexión e intenta de nuevo.',
     },
   },
+  // OnbCuentas. M5's BankLinkList and ConnectBankButton and M6's CashInput bring their own copy.
+  accounts: {
+    banks: 'Cuentas bancarias',
+    connected: (n: number) => (n === 1 ? '1 conectada' : `${n} conectadas`),
+    cash: 'Efectivo',
+    total: 'Total registrado',
+    totalDetail: (accounts: number, withCash: boolean) => {
+      const count = accounts === 1 ? '1 cuenta' : `${accounts} cuentas`;
+      return withCash ? `${count} + efectivo` : count;
+    },
+    // Not in the design: new, needs design review.
+    cashNotSaved: 'No pudimos guardar tu efectivo. Intenta de nuevo.',
+  },
   // Steps whose content another module still has to build (not in the design).
   placeholder: {
     comingSoon: 'Paso en construcción',
