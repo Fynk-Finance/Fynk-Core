@@ -216,3 +216,26 @@ func TestAFailedNoticeIsRetriedEveryTenMinutesForADay(t *testing.T) {
 		t.Fatalf("notified %+v", ok)
 	}
 }
+
+// A consent that never got the bank's authorization fails after PendingFor (24 hours): Fynk
+// never received data under it, and the person can ask for a new one from Conectar banco.
+func TestAPendingConsentFailsAfterTwentyFourHours(t *testing.T) {
+	p := pending(t)
+	last := now.Add(PendingFor - time.Second)
+	if p.StatusAt(last) != StatusPending {
+		t.Fatalf("one second before: %s", p.StatusAt(last))
+	}
+	end := now.Add(PendingFor)
+	if p.StatusAt(end) != StatusFailed || p.ActiveAt(end) {
+		t.Fatalf("at 24 hours: %s", p.StatusAt(end))
+	}
+	if _, err := p.Grant("p1", text, end); !errors.Is(err, ErrNotPending) {
+		t.Fatalf("a failed consent was granted: %v", err)
+	}
+	if _, err := p.Revoke(ReasonUserRequest, end); !errors.Is(err, ErrNotRevocable) {
+		t.Fatalf("a failed consent was revoked: %v", err)
+	}
+	if granted, err := p.Grant("p1", text, last); err != nil || granted.StatusAt(end) != StatusActive {
+		t.Fatalf("granted in time: %s, %v", granted.StatusAt(end), err)
+	}
+}
