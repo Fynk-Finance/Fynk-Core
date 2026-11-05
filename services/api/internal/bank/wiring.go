@@ -15,6 +15,7 @@ import (
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/service"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/store"
 	consentports "github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/ports"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/config"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/module"
 )
 
@@ -36,6 +37,9 @@ func newService(d module.Deps) *service.Service {
 	if d.Redis != nil {
 		auths = store.NewRedisAuthorizations(d.Redis)
 		limits = store.NewRedisLimits(d.Redis)
+	}
+	if err := installProductCatalog(d.Config); err != nil {
+		d.Log.Error("bank CDT catalog disabled", "error", err)
 	}
 	providers, fingerprints, err := bankDemoProviders(d)
 	if err != nil {
@@ -94,6 +98,40 @@ func bankDemoProviders(d module.Deps) (service.ProviderMap, keys.Fingerprinter, 
 	}
 	ports.InstallRevoker(revoker{providers})
 	return providers, fingerprints, nil
+}
+
+// installProductCatalog installs the public CDT catalog M15 reads through ports.ProductsOf.
+// Only Banco Demo has CDTs. It needs only the egress: no user, no token and no client
+// assertion, so the Inversión tab has its catalog even while the link settings are missing.
+func installProductCatalog(c config.Config) error {
+	if c.EgressURL == "" {
+		return errNotConfigured
+	}
+	client, err := egress.NewClient(c.EgressCAFile)
+	if err != nil {
+		return err
+	}
+	base, err := egress.BaseURL(c.EgressURL, "banco-demo")
+	if err != nil {
+		return err
+	}
+	a, err := bankdemo.New(bankdemo.Config{Provider: "banco-demo", BaseURL: base, HTTP: client})
+	if err != nil {
+		return err
+	}
+	ports.InstallProductCatalog(productCatalog{"banco-demo": a})
+	return nil
+}
+
+// productCatalog is the ports.ProductCatalog of the providers that publish CDTs.
+type productCatalog map[string]ports.ProductLister
+
+func (p productCatalog) Products(ctx context.Context, provider string) ([]ports.Product, error) {
+	l, ok := p[provider]
+	if !ok {
+		return nil, ports.ErrProviderUnavailable
+	}
+	return l.Products(ctx)
 }
 
 // loadKMS builds the AWS KMS client from the default chain (AWS_REGION and the ECS task
