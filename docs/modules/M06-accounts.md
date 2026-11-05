@@ -37,6 +37,7 @@ You are building module M6 of Fynk: the account model on the phone, balances, co
 * **"N cuentas conectadas"** counts active bank accounts and wallets, without cash and CDTs.
 * Duplicates: one row per `(provider, providerAccountId)`. Cash is a single account with `provider='manual'`, `kind='cash'`.
 * **Ingresos and Gastos** on the Dashboard card come from M10 `getMonthSummary()` (current calendar month). Until M10 lands, compute them with a temporary function marked `TODO(M10)`.
+* **Manual movements change balances** (team decision, 5 Nov 2026). M7 calls `applyManualMovement({ before, after })` for every add, edit and delete. A Gasto subtracts and an Ingreso adds on cash and on disconnected bank accounts (link revoked or closed, never CDTs). A card's debt goes up on a Gasto. Connected accounts keep their bank's balance. Cash never goes below $0: `InsufficientCashError` and nothing is written. Disconnected accounts are offered in `useAccounts().data.disconnectedAccounts`, out of the total and the count. Restores and syncs never apply movements again.
 * Every amount through the shared `formatCop`. Card and account numbers as `•• 4821`.
 * Accounts from simulated providers show the "Simulado" badge.
 

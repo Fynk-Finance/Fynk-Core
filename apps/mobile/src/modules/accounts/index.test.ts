@@ -62,6 +62,21 @@ it('marks the cash account and its history entry dirty on every change', async (
   );
 });
 
+it('backs up the cash a manual movement in Efectivo changes', async () => {
+  const cash = (await accounts.getCash())!;
+  mockBackup.clearDirty();
+  await accounts.applyManualMovement({
+    before: null,
+    after: { accountId: cash.id, amountMinor: -1_000_000 },
+  });
+  expect((await accounts.getCash())?.amountMinor).toBe(59_000_000);
+  expect(mockBackup.dirty('accounts.cash')).toContain(cash.id);
+  await accounts.applyManualMovement({
+    before: { accountId: cash.id, amountMinor: -1_000_000 },
+    after: null,
+  });
+});
+
 it('backs up and restores the cash it registered', async () => {
   const exported = await mockBackup.exportAll();
   expect(exported['accounts.cash']).not.toHaveLength(0);

@@ -21,6 +21,13 @@ export interface AccountsStore {
   saveSynced(accounts: Account[], at: { onDate: IsoDate; createdAt: IsoDateTime }): Promise<void>;
   /** Marks every account of a bank link as revoked. */
   revokeLink(linkId: Id): Promise<void>;
+  /**
+   * Sets balances changed by manual movements, in one transaction. Only disconnected bank
+   * accounts are written: active and manual rows are left as they are.
+   */
+  setManualBalances(
+    balances: { id: Id; balanceMinor: MoneyMinor; availableMinor: MoneyMinor | null }[],
+  ): Promise<void>;
   /** Balance points of the given accounts from a day on, oldest first. */
   balanceHistory(accountIds: Id[], from: IsoDate): Promise<BalancePoint[]>;
 }

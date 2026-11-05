@@ -22,20 +22,24 @@ import { createVaultAccountsStore } from './adapters/vault/vaultAccountsStore';
 import { createVaultCashStore } from './adapters/vault/vaultCashStore';
 import { createAccountsService, type AccountsOverview } from './application/accountsService';
 import { createCashService } from './application/cashService';
+import { createManualBalanceService } from './application/manualBalanceService';
 import type { BalancePoint, Cash } from './application/ports';
 import { ACCOUNTS_QUERY_KEY, createUseAccounts } from './application/useAccounts';
 import { createUseMonthSummary } from './application/useMonthSummary';
+import type { ManualEffect, ManualMovementChange } from './domain/manualBalance';
 import type { ConnectedAccountsSummary } from './domain/netWorth';
 import { ACCOUNT_DETAIL_ROUTE, createAccountDetailScreen } from './ui/AccountDetailScreen';
 import { createDashboardScreen } from './ui/DashboardScreen';
 import { createMisCuentasBilletera, createMisCuentasMiCuenta } from './ui/MisCuentas';
 
 export type { AccountsOverview, BalancePoint, Cash, ConnectedAccountsSummary };
+export type { ManualEffect, ManualMovementChange };
 export type { CashInputProps } from './ui/CashInput';
 export { ACCOUNTS_QUERY_KEY, ACCOUNT_DETAIL_ROUTE };
 export type { AccountDetailParams } from './ui/AccountDetailScreen';
 export { maskedNumber } from './domain/masking';
 export { InvalidCashAmountError } from './domain/cash';
+export { InsufficientCashError } from './domain/manualBalance';
 export { InvalidSyncedAccountError } from './domain/syncedAccounts';
 export { CashInput } from './ui/CashInput';
 
@@ -58,6 +62,12 @@ const cash = createCashService({
 
 // Cash goes into M2's encrypted backup; setCash marks every change dirty there.
 registerBackupCollection(cash.backupCollection);
+
+const manualBalances = createManualBalanceService({
+  store: () => createVaultAccountsStore(getVaultDb()),
+  setCash: cash.setCash,
+  onChanged: service.notifyChanged,
+});
 
 // Derived values are recomputed after a sync and whenever the vault opens or closes.
 appEvents.on('sync.completed', service.notifyChanged);
@@ -106,6 +116,17 @@ export const getCash = (): Promise<Cash | null> => cash.getCash();
 
 /** Registers or updates cash. Throws InvalidCashAmountError below zero or with decimals. */
 export const setCash = (amountMinor: MoneyMinor): Promise<void> => cash.setCash(amountMinor);
+
+// ---- Manual movements, for M7 only ----
+
+/**
+ * Applies a manual movement to the balance of its account: a Gasto subtracts and an Ingreso
+ * adds, on cash and on disconnected accounts. Connected accounts keep their bank's balance.
+ * Pass the movement before and after (null on add or delete) with signed amounts. Throws
+ * InsufficientCashError, writing nothing, when cash would go below $0.
+ */
+export const applyManualMovement = (change: ManualMovementChange): Promise<void> =>
+  manualBalances.applyManualMovement(change);
 
 // ---- Mis cuentas, rendered by other modules ----
 

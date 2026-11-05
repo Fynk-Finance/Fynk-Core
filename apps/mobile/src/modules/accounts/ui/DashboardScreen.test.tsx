@@ -24,6 +24,7 @@ const overviewOf = (accounts = [savings, wallet, cash, card, cdt]): AccountsOver
   const { count, totalMinor } = connectedAccountsSummary(accounts);
   return {
     accounts: sortAccounts(accounts.filter(isActive)),
+    disconnectedAccounts: [],
     balanceTotalMinor: totalMinor,
     connectedCount: count,
   };
