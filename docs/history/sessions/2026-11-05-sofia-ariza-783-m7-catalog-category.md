@@ -6,7 +6,7 @@ module: M7
 jira: [SCRUM-32, SCRUM-31]
 branch: feature/transaction-catalog-category
 tool: Claude Code
-pr: none
+pr: "#272"
 status: partial
 ---
 
@@ -29,7 +29,7 @@ Close two items left open in earlier M7 session logs: "Hook up catalogCategory: 
 
 * Tests: 2448 of 2448 in the app. Lint, typecheck and Prettier clean on the touched files.
 * Removing the catalog step from `categorize.ts` makes the new service test fail.
-* Pull request: on top of Karol's branch, which has no pull request yet.
+* Pull request: #272, on top of Karol's branch, which has no pull request yet.
 
 ## Decisions and problems
 
