@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: fix/configure-analytics-at-startup
 tool: Claude Code
-pr: none
+pr: "#261"
 status: done
 ---
 
@@ -30,7 +30,7 @@ No file of M10 or M11 was edited.
 ## Result
 
 * Tests: full mobile suite 208 suites, 2436 tests pass. `tsc --noEmit`, ESLint on `src/app` and Prettier pass.
-* Pull request: not opened yet.
+* Pull request: #261.
 * M10's screens (Análisis, Topes) and the hooks other modules use now get data once the vault opens. The Recomendaciones tab installs.
 * Not checked on a phone yet.
 
@@ -45,6 +45,6 @@ No file of M10 or M11 was edited.
 
 ## Next step
 
-Rebase on `origin/develop` and open the pull request, with Julián as reviewer for the use of M10 and M11. Then:
+Julián reviews #261 for the use of M10 and M11. Then:
 * M6: Ingresos and Gastos of the Dashboard can use `useMonthSummary()` (the `TODO(M10)`).
 * M11 `navigation`: pass M8's `openPaydayReminder` and M1's name hook once they are exported.
