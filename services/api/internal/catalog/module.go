@@ -1,45 +1,46 @@
 package catalog
 
 import (
-	"context"
+	"io/fs"
 
 	"github.com/go-chi/chi/v5"
 
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/catalog/http"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/catalog/migrations"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/module"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/problem"
 )
 
-// New returns the catalog module. Until M9 implements it, only the example health path of
-// contracts/modules/catalog.yaml answers. Every other route answers 501.
+// New returns the catalog module (M9): the shared merchant catalog with cancellation links.
 func New(d module.Deps) module.Module {
-	return stub{
-		Stub: module.Stub{ModuleName: "catalog", Prefixes: []string{"/catalog"}},
+	return mod{
+		Stub: module.Stub{ModuleName: "catalog"},
 		deps: d,
+		srv:  server{store: pgStore{db: d.DB}},
 	}
 }
 
-type stub struct {
+type mod struct {
 	module.Stub
 	deps module.Deps
+	srv  server
 }
 
-// Routes mounts the server generated from the contract, then the 501 stub routes.
-func (s stub) Routes(r chi.Router) {
-	strict := httpapi.NewStrictHandlerWithOptions(server{}, nil, httpapi.StrictHTTPServerOptions{
+// Routes mounts the server generated from the contract behind auth.Require.
+func (m mod) Routes(r chi.Router) {
+	strict := httpapi.NewStrictHandlerWithOptions(m.srv, nil, httpapi.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc:  problem.RequestError,
-		ResponseErrorHandlerFunc: problem.ResponseErrorHandler(s.deps.Log),
+		ResponseErrorHandlerFunc: problem.ResponseErrorHandler(m.deps.Log),
 	})
-	httpapi.HandlerWithOptions(strict, httpapi.ChiServerOptions{
-		BaseRouter:       r,
-		ErrorHandlerFunc: problem.RequestError,
+	r.Group(func(g chi.Router) {
+		g.Use(auth.Require)
+		httpapi.HandlerWithOptions(strict, httpapi.ChiServerOptions{
+			BaseRouter:       g,
+			ErrorHandlerFunc: problem.RequestError,
+		})
 	})
-	s.Stub.Routes(r)
 }
 
-// server implements the generated httpapi.StrictServerInterface.
-type server struct{}
-
-func (server) CatalogHealth(context.Context, httpapi.CatalogHealthRequestObject) (httpapi.CatalogHealthResponseObject, error) {
-	return httpapi.CatalogHealth200JSONResponse{Module: "catalog", Status: httpapi.Stub}, nil
-}
+// Migrations implements module.Module: the catalog schema.
+func (mod) Migrations() fs.FS { return migrations.FS }

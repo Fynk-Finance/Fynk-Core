@@ -1,31 +1,123 @@
 # Contract of the catalog module, owned by M9 (see CODEOWNERS).
 # Only M9 edits this file. Shared parts come from ../openapi.yaml.
-# The health path below is M0's example so generation works from day one.
-# Replace it with the real endpoints of docs/modules/00-shared-contracts.md, section 5.
+# The merchant catalog is the same for every user and holds no personal data: names, categories,
+# the patterns that recognise a merchant in a movement, and how to cancel it. Fynk never cancels
+# anything: the app only shows the steps and opens the official page in the browser.
 openapi: 3.1.0
 info:
   title: Fynk API · Catalog
-  version: 0.1.0
+  version: 1.0.0
 tags:
   - name: catalog
     description: 'Shared merchant catalog with cancellation links (M9).'
 paths:
-  /catalog/health:
+  /catalog/merchants:
     get:
       tags: [catalog]
-      operationId: catalogHealth
-      summary: Example health path of the catalog module
-      description: Public. Answers while the module is a stub. Removed when the module adds real endpoints.
-      security: []
+      operationId: getCatalogMerchants
+      summary: The whole merchant catalog, with an ETag
+      description: >-
+        Every merchant of the catalog. The phone keeps it in the vault and asks again at most once
+        a day while the app is open, sending the ETag it has in `If-None-Match`. When nothing
+        changed the answer is `304` with no body.
+      parameters:
+        - name: If-None-Match
+          in: header
+          required: false
+          description: The ETag of the copy the phone has.
+          schema:
+            type: string
+          example: '"c1-2026-11-05"'
       responses:
         '200':
-          description: The module is mounted.
+          description: The catalog.
+          headers:
+            ETag:
+              description: Version of this catalog, for the next `If-None-Match`.
+              schema:
+                type: string
+              example: '"c1-2026-11-05"'
           content:
             application/json:
               schema:
-                $ref: '../openapi.yaml#/components/schemas/ModuleHealth'
+                $ref: '#/components/schemas/CatalogMerchantList'
               example:
-                module: catalog
-                status: stub
+                updatedAt: '2026-11-05T15:00:00Z'
+                merchants:
+                  - key: netflix
+                    displayName: Netflix
+                    category: subscriptions
+                    isSubscription: true
+                    matchPatterns: [netflix]
+                    cancelUrl: https://www.netflix.com/cancelplan
+                    cancelSteps:
+                      - Entra a netflix.com e inicia sesión.
+                      - Abre Cuenta y elige Cancelar membresía.
+                      - Confirma la cancelación.
+                  - key: empresa de servicios
+                    displayName: Servicios públicos
+                    category: utilities
+                    isSubscription: false
+                    matchPatterns: [empresa de servicios]
+                    cancelUrl: null
+                    cancelSteps: []
+        '304':
+          description: The phone's copy is current. No body.
+          headers:
+            ETag:
+              description: The same version the phone sent.
+              schema:
+                type: string
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
+components:
+  schemas:
+    CatalogMerchantList:
+      type: object
+      required: [updatedAt, merchants]
+      properties:
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the newest merchant was changed.
+        merchants:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogMerchant'
+    CatalogMerchant:
+      type: object
+      required: [key, displayName, category, isSubscription, matchPatterns, cancelUrl, cancelSteps]
+      properties:
+        key:
+          type: string
+          description: The merchant key as the phone normalizes it (shared normalizeMerchant()).
+          example: netflix
+        displayName:
+          type: string
+          example: Netflix
+        category:
+          type: string
+          description: A movement category id of the app (shared contracts, CategoryId).
+          example: subscriptions
+        isSubscription:
+          type: boolean
+        matchPatterns:
+          type: array
+          description: >-
+            Normalized words that recognise the merchant inside a normalized movement description,
+            as whole words.
+          items:
+            type: string
+          example: [netflix]
+        cancelUrl:
+          type: ['string', 'null']
+          format: uri
+          description: The merchant's official page to cancel. Null when it cannot be cancelled online.
+          example: https://www.netflix.com/cancelplan
+        cancelSteps:
+          type: array
+          description: Short steps in Spanish (Colombia), shown in order. Empty when there are none.
+          items:
+            type: string
