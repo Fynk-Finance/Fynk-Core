@@ -10,7 +10,8 @@ export interface RecurringStore {
   get(id: Id): Promise<StoredRecurringItem | null>;
   /** Inserts, or replaces the editable fields of an item with the same id. */
   save(item: StoredRecurringItem): Promise<void>;
-  remove(id: Id): Promise<void>;
+  /** Deletes the item (a tombstone, so the backup carries the deletion). */
+  remove(id: Id, at: IsoDateTime): Promise<void>;
   /** "Ya la cancelé": the item stays as a record with status cancelled and the time. */
   markCancelled(id: Id, at: IsoDateTime): Promise<void>;
 }

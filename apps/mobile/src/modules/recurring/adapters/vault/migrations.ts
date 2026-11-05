@@ -30,4 +30,22 @@ export const recurringMigrations: VaultMigration[] = [
       CREATE INDEX recurring_items_status ON recurring_items (status);
     `,
   },
+  {
+    // HU-045: the encrypted backup of M2. Every write bumps `version` (the highest one wins on a
+    // restore), and deleting an item leaves a tombstone, so the deletion reaches the other
+    // phone. The usage mark is a column of the item, so it travels with it. The rows that exist
+    // before this version wait in `recurring_backup_pending` until the vault opens.
+    version: 2,
+    up: `
+      ALTER TABLE recurring_items ADD COLUMN version INTEGER NOT NULL DEFAULT 1;
+      ALTER TABLE recurring_items ADD COLUMN deleted_at TEXT;
+      CREATE TABLE recurring_backup_pending (
+        collection TEXT NOT NULL,
+        record_id TEXT NOT NULL,
+        PRIMARY KEY (collection, record_id)
+      );
+      INSERT INTO recurring_backup_pending (collection, record_id)
+        SELECT 'recurring.items', id FROM recurring_items;
+    `,
+  },
 ];

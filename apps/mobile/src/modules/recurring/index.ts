@@ -12,8 +12,14 @@ import {
   onNotificationSettingsChanged,
   useUnreadCount,
 } from '@modules/notifications';
-import { getVaultDb, registerVaultMigrations } from '@modules/vault';
+import {
+  getVaultDb,
+  markDirty,
+  registerBackupCollection,
+  registerVaultMigrations,
+} from '@modules/vault';
 
+import { createRecurringBackup } from './adapters/backup/recurringBackup';
 import { recurringMigrations } from './adapters/vault/migrations';
 import { createVaultRecurringStore } from './adapters/vault/vaultRecurringStore';
 import { createRecurringService } from './application/recurringService';
@@ -38,7 +44,7 @@ registerVaultMigrations('recurring', recurringMigrations);
 const clock: Clock = { now: () => new Date() };
 
 const service = createRecurringService({
-  store: () => createVaultRecurringStore(getVaultDb()),
+  store: () => createVaultRecurringStore(getVaultDb(), markDirty),
   clock,
   newId: randomUUID,
   reminders: createReminderScheduler({
@@ -56,6 +62,20 @@ const refreshReminders = () => {
 appEvents.on('vault.unlocked', refreshReminders);
 appEvents.on('sync.completed', refreshReminders);
 onNotificationSettingsChanged(refreshReminders);
+
+// HU-045: fixed expenses and subscriptions, with their usage marks, in the encrypted backup.
+const backup = createRecurringBackup({
+  db: getVaultDb,
+  markDirty,
+  onImported: () => {
+    service.notifyChanged();
+    refreshReminders();
+  },
+});
+registerBackupCollection(backup.items);
+appEvents.on('vault.unlocked', () => {
+  void backup.flushPending().catch(() => undefined);
+});
 
 /** "Gastos fijos de este mes": every active item counted by its charges in the current month. */
 export const getFixedExpensesThisMonth = (): Promise<MoneyMinor> =>
