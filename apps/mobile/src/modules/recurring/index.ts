@@ -26,7 +26,11 @@ import { recurringMigrations } from './adapters/vault/migrations';
 import { createVaultPriceAlertStore } from './adapters/vault/vaultPriceAlertStore';
 import { createVaultProposalStore } from './adapters/vault/vaultProposalStore';
 import { createVaultRecurringStore } from './adapters/vault/vaultRecurringStore';
+import { createCatalogApi } from './adapters/api/catalogApi';
+import { createVaultCatalogCache } from './adapters/vault/vaultCatalogCache';
+import { createCatalogService } from './application/catalogService';
 import { createDetectionService } from './application/detectionService';
+import { forDetection } from './domain/catalog';
 import { createPriceAlertService } from './application/priceAlertService';
 import { createRecurringService } from './application/recurringService';
 import { createReminderScheduler } from './application/reminders';
@@ -86,15 +90,33 @@ appEvents.on('vault.unlocked', () => {
   void backup.flushPending().catch(() => undefined);
 });
 
+// SCRUM-58: the shared merchant catalog. The vault copy is read when the vault opens, and a new
+// one is asked at most once a day while the app is open (ETag). It holds no personal data.
+const catalog = createCatalogService({
+  cache: () => createVaultCatalogCache(getVaultDb()),
+  api: createCatalogApi(),
+  clock,
+});
+appEvents.on('vault.unlocked', () => {
+  void catalog
+    .load()
+    .then(() => catalog.refresh())
+    .catch(() => undefined);
+});
+
+/** The category the catalog gives a merchant, for M7's categorization. Null when unknown. */
+export const getCatalogCategory = (merchantKey: string): string | null =>
+  catalog.lookup(merchantKey)?.category ?? null;
+
 // SCRUM-55: after every sync (the first full one included), detection runs over 12 months of
-// M7's outflows. New proposals emit `recurring.detected`; the person confirms or dismisses
-// each one. The merchant catalog (SCRUM-58) is not built yet, so nothing is looked up.
+// M7's outflows, with the catalog's names and kinds. New proposals emit `recurring.detected`;
+// the person confirms or dismisses each one.
 const detectedStrings = recurringStrings.detected;
 const detection = createDetectionService({
   proposals: () => createVaultProposalStore(getVaultDb()),
   items: () => createVaultRecurringStore(getVaultDb()).list(),
   listMovements: getTransactionsBetween,
-  catalog: () => null,
+  catalog: (merchantKey) => forDetection(catalog.lookup(merchantKey)),
   recurring: service,
   clock,
   onDetected: (count) => {
@@ -184,6 +206,7 @@ export const routes: ModuleRoutes = {
         listMovements: getTransactionsBetween,
         transactionRoute: TRANSACTION_DETAIL_ROUTE,
         priceAlerts,
+        catalog: (merchantKey) => catalog.lookup(merchantKey),
       }),
       path: 'billetera/suscripciones/:id',
     },

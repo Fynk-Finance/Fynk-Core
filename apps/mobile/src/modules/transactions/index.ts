@@ -23,6 +23,7 @@ import {
   registerVaultMigrations,
 } from '@modules/vault';
 
+import { createCatalogCategory } from './adapters/catalog/catalogCategory';
 import { transactionsMigrations } from './adapters/vault/migrations';
 import { createVaultCategoryStore } from './adapters/vault/vaultCategoryStore';
 import { createVaultManualStore } from './adapters/vault/vaultManualStore';
@@ -63,7 +64,14 @@ const service = createTransactionsService({
   store: () => createVaultTransactionsStore(getVaultDb()),
   events: appEvents,
   treatsThreshold: () => getTreatsThreshold(),
-  // TODO(M9) catalogCategory: getCatalogCategory, once M9 exports it.
+  // M9 loads on first use, never while this file loads: M9 imports this module and reads its
+  // exports while it loads, so a top-level import here would leave them undefined. Until the
+  // catalog is in memory (vault.unlocked), every merchant counts as unknown.
+  catalogCategory: createCatalogCategory(
+    () =>
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- import cycle, see above
+      (require('@modules/recurring') as typeof import('@modules/recurring')).getCatalogCategory,
+  ),
 });
 
 // New movements of a sync are categorized once (HU-018). A locked vault or a failure leaves

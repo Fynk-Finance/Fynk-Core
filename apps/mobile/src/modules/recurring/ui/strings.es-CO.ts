@@ -125,9 +125,14 @@ export const recurringStrings = {
     reminderOn: 'Te avisaremos antes de cada cobro',
     reminderOff: 'Desactivado',
     howToCancel: 'Cómo cancelarla',
-    // Until the merchant catalog (SCRUM-58 backend) gives the steps and the link.
+    // When the merchant is not in the shared catalog (SCRUM-58).
     howToCancelGeneric:
       'Entra a la app o página del servicio y cancela desde tu cuenta. Fynk no cancela nada por ti.',
+    step: (n: number, text: string) => `${n}. ${text}`,
+    openCancelPage: 'Abrir página de cancelación',
+    openCancelPageHint: (name: string) => `Abre la página oficial de ${name} en el navegador`,
+    openFailed: 'No pudimos abrir la página. Intenta de nuevo.',
+    fynkNeverCancels: 'Fynk no cancela nada por ti: cuando termines, toca "Ya la cancelé".',
     cancelled: 'Ya la cancelé',
     confirmCancel: {
       title: (name: string) => `¿Ya cancelaste ${name}?`,
