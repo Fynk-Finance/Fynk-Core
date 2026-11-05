@@ -48,4 +48,21 @@ export const recurringMigrations: VaultMigration[] = [
         SELECT 'recurring.items', id FROM recurring_items;
     `,
   },
+  {
+    // SCRUM-55: what detection proposed and what the person decided. A dismissed proposal
+    // keeps its amount, so it comes back only when the amount changes by more than 30 %. A
+    // confirmed one is not proposed again, even after its item is deleted.
+    version: 3,
+    up: `
+      CREATE TABLE recurring_proposals (
+        merchant_key TEXT PRIMARY KEY,
+        score REAL NOT NULL,
+        data_json TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('pending', 'dismissed', 'confirmed')),
+        amount_minor INTEGER NOT NULL,
+        detected_at TEXT NOT NULL,
+        decided_at TEXT
+      );
+    `,
+  },
 ];
