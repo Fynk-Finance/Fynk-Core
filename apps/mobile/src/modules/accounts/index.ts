@@ -9,6 +9,7 @@ import { registerSlot, type ModuleRoutes } from '@shared/navigation';
 
 import { useMonthSummary as useAnalyticsMonthSummary } from '@modules/analytics';
 import { NOTIFICATIONS_ROUTE, useUnreadCount } from '@modules/notifications';
+import { useDisplayName } from '@modules/onboarding';
 import { NEW_TRANSACTION_ROUTE, TransactionList, TransactionPreview } from '@modules/transactions';
 import {
   getVaultDb,
@@ -149,8 +150,8 @@ export const routes: ModuleRoutes = {
     useAccounts,
     useMonthSummary,
     useUnreadCount,
-    // TODO(M3) the name typed in onboarding, once M3 exports it.
-    useDisplayName: () => null,
+    // The name typed in onboarding, read only when the screen renders (safe in an import cycle).
+    useDisplayName: () => useDisplayName(),
     accountRoute: 'identity.Account',
     notificationsRoute: NOTIFICATIONS_ROUTE,
     // M7 imports this module too: its values are read only when the screen renders.
