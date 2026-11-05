@@ -170,6 +170,23 @@ it('keeps the sync result even when the notice cannot be written', async () => {
   expect(controller.getState().status).toBe('idle');
 });
 
+it('starts while the vault is still locked without throwing (the app loads it on open)', async () => {
+  const controller = createSyncController({
+    engine: { syncAll: jest.fn() },
+    links: () => {
+      throw new Error('The vault is locked');
+    },
+    entityName: async () => '',
+    notify: jest.fn(),
+    clock,
+  });
+  const { t, listeners } = triggers();
+  expect(() => controller.start(t)).not.toThrow();
+  await Promise.resolve();
+  expect(listeners.unlocked).toBeDefined();
+  expect(controller.getState().lastSyncedAt).toBeNull();
+});
+
 it('does nothing and calls no one without an engine (M6 and M7 not wired yet)', async () => {
   const controller = createSyncController({
     engine: null,
