@@ -41,6 +41,7 @@ const (
 	BankTokenRefreshed       = "bank.token_refreshed"
 	BackupUploaded           = "backup.uploaded"
 	BackupRestored           = "backup.restored"
+	BackupReset              = "backup.reset"
 	RecoveryKeySet           = "recovery_key.set"
 	PrivacyDeletionRequested = "privacy.deletion_requested"
 	PrivacyDeletionCompleted = "privacy.deletion_completed"

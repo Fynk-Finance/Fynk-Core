@@ -19,10 +19,6 @@ const (
 	Skew = time.Minute
 )
 
-// AuditBackupReset is the audit event type of a backup reset (shared contracts, section 4.3).
-// It is defined here, not in audit/ports (another module), and should move there when M13 adds it.
-const AuditBackupReset = "backup.reset"
-
 // Errors the service returns. None carries an id, a time or a session id.
 var (
 	ErrNotActive  = errors.New("reset: device not active")

@@ -37,7 +37,7 @@ type fake struct {
 }
 
 func (f *fake) Get(context.Context, string, string) (identity.DeviceInfo, error) {
-	return identity.DeviceInfo{ID: "d-new", Status: f.status}, f.getErr
+	return identity.DeviceInfo{ID: devID, Status: f.status}, f.getErr
 }
 func (f *fake) RemoveOthers(_ context.Context, _, keep string) error {
 	f.order = append(f.order, "remove")
@@ -72,6 +72,9 @@ func (f *fake) DeleteBackup(context.Context, string) error {
 }
 func (f *fake) Record(_ context.Context, e audit.Event) error {
 	f.order = append(f.order, "audit")
+	if err := audit.ValidateEvent(e); err != nil {
+		return err
+	}
 	if f.auditErr != nil {
 		return f.auditErr
 	}
@@ -90,7 +93,9 @@ func run(f *fake, u auth.User) error {
 	return s.Reset(context.Background(), u)
 }
 
-var caller = auth.User{ID: "u1", DeviceID: "d-new", SessionID: "sid-1"}
+const devID = "11111111-1111-4111-8111-111111111111"
+
+var caller = auth.User{ID: "u1", DeviceID: devID, SessionID: "sid-1"}
 
 func TestNotAllowed(t *testing.T) {
 	cases := map[string]func(*fake){
@@ -116,7 +121,7 @@ func TestNotAllowed(t *testing.T) {
 	}
 	t.Run("no session id", func(t *testing.T) {
 		f := good()
-		if err := run(f, auth.User{ID: "u1", DeviceID: "d-new"}); !errors.Is(err, reset.ErrNotAllowed) {
+		if err := run(f, auth.User{ID: "u1", DeviceID: devID}); !errors.Is(err, reset.ErrNotAllowed) {
 			t.Fatalf("err = %v", err)
 		}
 	})
@@ -173,7 +178,7 @@ func TestPendingCallerIsReset(t *testing.T) {
 		t.Fatalf("events = %v", f.events)
 	}
 	e := f.events[0]
-	if e.Type != "backup.reset" || e.UserID != "u1" || e.DeviceID != "d-new" || !e.At.Equal(now) ||
+	if e.Type != audit.BackupReset || e.UserID != "u1" || e.DeviceID != devID || !e.At.Equal(now) ||
 		len(e.Meta) != 1 || e.Meta["method"] != "email_code" {
 		t.Fatalf("event = %+v", e)
 	}
@@ -235,7 +240,7 @@ func TestPortErrorsAreReturnedNotMasked(t *testing.T) {
 func TestErrorsCarryNoPersonalData(t *testing.T) {
 	f := good()
 	f.hasReset = false
-	err := run(f, auth.User{ID: "user-secret", DeviceID: "d-new", SessionID: "sid-secret"})
+	err := run(f, auth.User{ID: "user-secret", DeviceID: devID, SessionID: "sid-secret"})
 	if err == nil || strings.Contains(err.Error(), "secret") {
 		t.Fatalf("err = %v", err)
 	}

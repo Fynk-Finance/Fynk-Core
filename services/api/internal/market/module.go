@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	bankports "github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/market/catalog"
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/market/http"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/market/migrations"
@@ -20,8 +21,8 @@ import (
 )
 
 // settings of the module, from the environment. The Alpaca keys are secrets (Secrets Manager in
-// AWS, .env locally) and are never logged. Banco Demo and Alpaca are reached through the egress of
-// the shared config (EGRESS_URL, EGRESS_CA_FILE), at /banco-demo and /alpaca.
+// AWS, .env locally) and are never logged. Alpaca is reached through the egress of the shared
+// config (EGRESS_URL, EGRESS_CA_FILE), at /alpaca; Banco Demo's catalog comes from M5 (bank/ports).
 type settings struct {
 	BanrepCSVURL string // MARKET_BANREP_CDT_CSV_URL, the published weekly rates file
 	AlpacaKeyID  string // ALPACA_API_KEY_ID
@@ -51,10 +52,9 @@ func New(d module.Deps) module.Module {
 	}
 	client, err := egressClient(d.Config.EgressCAFile)
 	if err != nil {
-		log.Warn("market: the egress CA could not be read, calls to Banco Demo and Alpaca will fail", "error", err)
+		log.Warn("market: the egress CA could not be read, calls to Alpaca will fail", "error", err)
 		client = &http.Client{Timeout: 10 * time.Second}
 	}
-	bankDemoURL := egressPath(d.Config.EgressURL, "banco-demo")
 	alpacaURL := egressPath(d.Config.EgressURL, "alpaca")
 
 	var cache interface {
@@ -65,17 +65,15 @@ func New(d module.Deps) module.Module {
 		cache = redisCache{rdb: d.Redis}
 	}
 
-	var sources []catalog.Source
-	if bankDemoURL != "" {
-		// Until M5 exports its Banco Demo provider, its Products() is read here (ADR 0006).
-		sources = append(sources, catalog.FromProvider{
-			Lister:    catalog.BankDemoProducts{BaseURL: bankDemoURL, Client: client},
-			Issuer:    "Banco Demo",
-			Simulated: true,
-		})
+	// The CDT catalog comes from M5 through bank/ports (rule 7): Banco Demo's public catalog,
+	// installed by the bank module with the egress. Until it is installed it fails closed (503).
+	bankDemo := catalog.FromProvider{
+		Lister:    bankports.ProductsOf("banco-demo"),
+		Issuer:    "Banco Demo",
+		Simulated: true,
 	}
 	srv := server{
-		catalog:   catalog.NewService(cache, now, sources...),
+		catalog:   catalog.NewService(cache, now, bankDemo),
 		reference: reference.NewService(pgReferenceStore{db: d.DB}, reference.HTTPFetcher{URL: cfg.BanrepCSVURL, Client: client}, now),
 		quotes: quotes.NewService(quotes.Alpaca{
 			BaseURL: alpacaURL, KeyID: cfg.AlpacaKeyID, SecretKey: cfg.AlpacaSecret, Client: client,

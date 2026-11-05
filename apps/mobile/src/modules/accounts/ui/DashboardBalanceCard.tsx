@@ -32,7 +32,8 @@ export interface DashboardBalanceCardProps {
   /** Null while the accounts load. */
   totalMinor: MoneyMinor | null;
   connectedCount: number;
-  summary: MonthSummary;
+  /** Ingresos and Gastos, or null while they load. */
+  summary: MonthSummary | null;
 }
 
 export function DashboardBalanceCard({
@@ -98,10 +99,15 @@ export function DashboardBalanceCard({
         </AppText>
       </View>
       <View style={styles.pills}>
-        <Pill label={t.income} amountMinor={summary.incomeMinor} icon="arrowUpRight" tone="link" />
+        <Pill
+          label={t.income}
+          amountMinor={summary?.incomeMinor ?? null}
+          icon="arrowUpRight"
+          tone="link"
+        />
         <Pill
           label={t.spending}
-          amountMinor={summary.spendingMinor}
+          amountMinor={summary?.spendingMinor ?? null}
           icon="arrowDownLeft"
           tone="primaryDark"
         />
@@ -112,7 +118,7 @@ export function DashboardBalanceCard({
 
 function Pill(props: {
   label: string;
-  amountMinor: MoneyMinor;
+  amountMinor: MoneyMinor | null;
   icon: IconName;
   tone: 'link' | 'primaryDark';
 }) {
@@ -127,7 +133,11 @@ function Pill(props: {
         <AppText variant="caption" color="onPrimary" style={styles.pillLabel}>
           {props.label}
         </AppText>
-        <AmountText amountMinor={props.amountMinor} size={13} color="onPrimary" />
+        {props.amountMinor === null ? (
+          <Skeleton width={72} height={16} />
+        ) : (
+          <AmountText amountMinor={props.amountMinor} size={13} color="onPrimary" />
+        )}
       </View>
     </View>
   );

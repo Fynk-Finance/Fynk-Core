@@ -121,6 +121,18 @@ export function createVaultAccountsStore(db: VaultDb): AccountsStore {
       ]);
     },
 
+    async setManualBalances(balances) {
+      await db.transaction(async (tx) => {
+        for (const b of balances) {
+          await tx.execute(
+            `UPDATE accounts_accounts SET balance_minor = ?, available_minor = ?
+             WHERE id = ? AND status <> 'active' AND provider <> 'manual'`,
+            [b.balanceMinor, b.availableMinor, b.id],
+          );
+        }
+      });
+    },
+
     async balanceHistory(accountIds: Id[], from: IsoDate) {
       if (accountIds.length === 0) return [];
       const marks = accountIds.map(() => '?').join(', ');

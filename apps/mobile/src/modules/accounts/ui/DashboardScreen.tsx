@@ -21,7 +21,8 @@ const t = accountsStrings.dashboard;
 
 export interface DashboardDeps {
   useAccounts: () => Pick<UseQueryResult<AccountsOverview>, 'data' | 'isError' | 'refetch'>;
-  useMonthSummary: () => MonthSummary;
+  /** null while M10 computes the month. */
+  useMonthSummary: () => MonthSummary | null;
   /** Unread notifications for the bell (M12). */
   useUnreadCount: () => number;
   useDisplayName: () => string | null;

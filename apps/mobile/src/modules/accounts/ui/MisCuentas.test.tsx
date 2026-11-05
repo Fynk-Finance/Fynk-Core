@@ -30,7 +30,12 @@ function Target({ route }: { route: { name: string; params?: { accountId?: strin
 const depsOf = (accounts: Account[] | null): MisCuentasDeps => ({
   useAccounts: () => ({
     data: accounts
-      ? { accounts: sortAccounts(accounts), balanceTotalMinor: 0, connectedCount: 0 }
+      ? {
+          accounts: sortAccounts(accounts),
+          disconnectedAccounts: [],
+          balanceTotalMinor: 0,
+          connectedCount: 0,
+        }
       : undefined,
     isPending: accounts === null,
   }),

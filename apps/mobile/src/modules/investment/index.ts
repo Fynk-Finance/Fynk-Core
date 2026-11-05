@@ -1,8 +1,72 @@
-// Public API of the investment module. Other modules import only from this file.
-import { createPlaceholderScreen, type ModuleRoutes } from '@shared/navigation';
+// Public API of the investment module (M15). Other modules import only from this file.
+import type { Clock } from '@shared/domain';
+import type { ModuleRoutes } from '@shared/navigation';
 
-// Placeholder routes from M0 (M15 replaces them with the real screens).
+import { getBalanceHistory, getCdtAccounts } from '@modules/accounts';
+
+import { createMarketApi } from './adapters/api/marketApi';
+import { setInvestmentDeps } from './application/hooks';
+import type { AccountsPort } from './application/ports';
+import { totalPerDay } from './domain/investment';
+import { createInvestmentScreen } from './ui/InvestmentScreen';
+
+export type { AccountsPort };
+
+let displayName: () => string = () => 'Invitado';
+
 export const routes: ModuleRoutes = {
   module: 'investment',
-  tab: createPlaceholderScreen({ title: 'Inversión', owner: 'M15 · Inversión', withHeader: true }),
+  tab: createInvestmentScreen(() => displayName()),
 };
+
+export interface InvestmentConfig {
+  accounts: AccountsPort; // M6 getCdtAccounts()
+  clock: Clock;
+  /** Banco Demo portal base, e.g. https://bancodemo.fynk.co (EXPO_PUBLIC_BANCO_DEMO_PORTAL_URL). */
+  bancoDemoPortalUrl: string;
+  /** Header name (M1). Optional. */
+  useDisplayName?: () => string;
+}
+
+/** Installs the module once at startup. */
+export function configureInvestment(config: InvestmentConfig): void {
+  if (config.useDisplayName) displayName = config.useDisplayName;
+  setInvestmentDeps({
+    accounts: config.accounts,
+    market: createMarketApi(),
+    clock: config.clock,
+    // The simulator serves CDT opening at /portal/actions (docs/adr/0006-market-data.md).
+    portalUrl: `${config.bancoDemoPortalUrl.replace(/\/$/, '')}/portal/actions`,
+  });
+}
+
+/** Local Banco Demo simulator (docker-compose publishes its portal on 8082). */
+const DEFAULT_PORTAL_URL = 'https://localhost:8082';
+/** Since when the chart reads the history: everything M6 keeps ("Todo"). */
+const HISTORY_FROM = '2000-01-01';
+
+/** M6: the user's CDT accounts and the daily total of their balances, for the chart. */
+export const cdtAccounts: AccountsPort = {
+  getCdtAccounts: () => getCdtAccounts(),
+  async getCdtBalanceHistory() {
+    const cdts = await getCdtAccounts();
+    if (cdts.length === 0) return [];
+    return totalPerDay(
+      await getBalanceHistory(
+        cdts.map((a) => a.id),
+        HISTORY_FROM,
+      ),
+    );
+  },
+};
+
+/**
+ * The module installs itself when the app loads it, like M7, M8 and M9: its CDTs come from M6
+ * and "+ Invertir" opens the Banco Demo portal of EXPO_PUBLIC_BANCO_DEMO_PORTAL_URL. The header
+ * shows "Invitado" until M1 exports the profile name.
+ */
+configureInvestment({
+  accounts: cdtAccounts,
+  clock: { now: () => new Date() },
+  bancoDemoPortalUrl: process.env.EXPO_PUBLIC_BANCO_DEMO_PORTAL_URL ?? DEFAULT_PORTAL_URL,
+});

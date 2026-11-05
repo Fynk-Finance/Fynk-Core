@@ -55,6 +55,8 @@ export async function createTestModule() {
     store: () => createVaultTransactionsStore(vault.db),
     manual: () => createVaultManualStore(vault.db),
     events,
+    // M6's balances: tested in M6 and in manualService.test.ts.
+    balances: { apply: async () => undefined },
     newId: () => `manual-${++ids}`,
     markDirty: jest.fn(),
     treatsThreshold: async () => 2_000_000,

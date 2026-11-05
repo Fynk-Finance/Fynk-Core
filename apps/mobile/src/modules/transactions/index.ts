@@ -13,7 +13,7 @@ import type {
 import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
-import { useAccounts } from '@modules/accounts';
+import { applyManualMovement, InsufficientCashError, useAccounts } from '@modules/accounts';
 import { getTreatsThreshold } from '@modules/analytics';
 import { syncNow } from '@modules/bank';
 import {
@@ -86,6 +86,9 @@ const manual = createManualService({
   store: () => createVaultTransactionsStore(getVaultDb()),
   manual: () => createVaultManualStore(getVaultDb()),
   events: appEvents,
+  // M6 updates cash and disconnected accounts. Called only inside the use cases: M6 imports
+  // this module too.
+  balances: { apply: (change) => applyManualMovement(change) },
   newId: randomUUID,
   markDirty: (collection, id) => markDirty(collection, id),
   treatsThreshold: () => getTreatsThreshold(),
@@ -134,8 +137,10 @@ export const changeCategory = (
 ): Promise<Id[]> => categories.changeCategory(id, categoryId, opts);
 
 /**
- * Registers a gasto or ingreso by hand, in cash or any account (Nuevo movimiento manual). It is
- * a record only: no balance changes. Throws InvalidManualTransactionError on bad input.
+ * Registers a gasto or ingreso by hand, in cash or any account (Nuevo movimiento manual). In
+ * cash or a disconnected account it changes that balance; a connected account keeps its bank's.
+ * Throws InvalidManualTransactionError on bad input, and M6's InsufficientCashError, saving
+ * nothing, when a Gasto is bigger than the cash.
  */
 export const addManualTransaction = (input: ManualInput): Promise<Transaction> =>
   manual.addManualTransaction(input);
@@ -231,6 +236,7 @@ export const routes: ModuleRoutes = {
         useAccounts: () => useAccounts(),
         add: (input) => manual.addManualTransaction(input),
         update: (id, input) => manual.updateManualTransaction(id, input),
+        cashShortOf: (e) => (e instanceof InsufficientCashError ? e.cashMinor : null),
         clock,
       }),
       transition: 'sheet',

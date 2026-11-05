@@ -27,6 +27,9 @@ import (
 type recAudit struct{ types []string }
 
 func (r *recAudit) Record(_ context.Context, e audit.Event) error {
+	if err := audit.ValidateEvent(e); err != nil {
+		return err
+	}
 	r.types = append(r.types, e.Type)
 	return nil
 }

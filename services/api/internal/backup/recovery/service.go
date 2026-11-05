@@ -61,7 +61,7 @@ func (s *Service) Set(ctx context.Context, user auth.User, k Key) error {
 	if err := s.repo.Put(ctx, user.ID, k); err != nil {
 		return err
 	}
-	return s.record(ctx, user, audit.RecoveryKeySet, map[string]string{"kdf": k.KDF})
+	return s.record(ctx, user, audit.RecoveryKeySet, nil)
 }
 
 // Get returns the key without its proof hash. Any device that is not removed may read it.

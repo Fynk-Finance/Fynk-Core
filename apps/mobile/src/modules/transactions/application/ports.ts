@@ -1,5 +1,5 @@
 // What the transactions use cases need from the outside world.
-import type { CategoryId, Id, IsoDateTime, Transaction } from '@shared/domain/types';
+import type { CategoryId, Id, IsoDateTime, MoneyMinor, Transaction } from '@shared/domain/types';
 import type { BackupRecord } from '@shared/ports';
 
 import type { CategoryChange, CategoryOverride } from '../domain/categoryChange';
@@ -61,6 +61,20 @@ export interface CategoryStore {
 }
 
 /** Manual movements and their backup (transactions.manual). Bank rows are never touched. */
+/** A manual movement before and after a change, with signed amounts (null on add or delete). */
+export interface ManualBalanceChange {
+  before: { accountId: Id; amountMinor: MoneyMinor } | null;
+  after: { accountId: Id; amountMinor: MoneyMinor } | null;
+}
+
+/**
+ * M6's applyManualMovement: changes the balance of cash and of disconnected accounts. Rejects,
+ * writing nothing, when a Gasto is bigger than the cash.
+ */
+export interface ManualBalancePort {
+  apply(change: ManualBalanceChange): Promise<void>;
+}
+
 export interface ManualStore {
   /** Inserts or updates a manual movement; its backup version goes up by one. */
   save(tx: Transaction): Promise<void>;

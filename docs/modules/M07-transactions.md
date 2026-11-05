@@ -35,6 +35,7 @@ You are building module M7 Transactions of Fynk: the movement list, filters, sea
 * **Todos los movimientos** (new, from "Ver todo"): search bar at the top, chips for quick filters (Todos, Ingresos, Gastos, and the top 4 categories), a filter sheet (date range presets "Este mes", "Mes anterior", "Últimos 3 meses" or custom, amount min and max, accounts, categories), list grouped by day with sticky day headers ("Hoy", "Ayer", "Lunes 20 sep"), infinite scroll of 50 rows, pull to refresh calls M5 `syncNow()`.
 * **Detalle de movimiento** (new): amount, date and time, account, description, merchant, category with "Cambiar categoría", history of category changes ("Cambiaste de Otros a Restaurantes el 21 sep"), and for manual movements edit and delete.
 * **Nuevo movimiento manual** (new, button "+" on the list): amount, ingreso or gasto, account (including Efectivo), date, description, category.
+* **Manual movements and balances** (team decision, 5 Nov 2026): every add, edit and delete first calls M6 `applyManualMovement({ before, after })`. In Efectivo or a disconnected account (offered in the sheet as "· Desconectada") the balance changes: Gasto subtracts, Ingreso adds. A connected account keeps its bank's balance. A Gasto bigger than the cash saves nothing and shows "Tu efectivo es $X" under Monto. If the save fails after M6 applied the change, it is given back. Restores and syncs never touch balances. The note under the form says which balance the movement changes.
 
 ## Technical design
 
