@@ -2,9 +2,12 @@
 import type { Clock } from '@shared/domain';
 import type { ModuleRoutes } from '@shared/navigation';
 
+import { getBalanceHistory, getCdtAccounts } from '@modules/accounts';
+
 import { createMarketApi } from './adapters/api/marketApi';
 import { setInvestmentDeps } from './application/hooks';
 import type { AccountsPort } from './application/ports';
+import { totalPerDay } from './domain/investment';
 import { createInvestmentScreen } from './ui/InvestmentScreen';
 
 export type { AccountsPort };
@@ -36,3 +39,34 @@ export function configureInvestment(config: InvestmentConfig): void {
     portalUrl: `${config.bancoDemoPortalUrl.replace(/\/$/, '')}/portal/actions`,
   });
 }
+
+/** Local Banco Demo simulator (docker-compose publishes its portal on 8082). */
+const DEFAULT_PORTAL_URL = 'https://localhost:8082';
+/** Since when the chart reads the history: everything M6 keeps ("Todo"). */
+const HISTORY_FROM = '2000-01-01';
+
+/** M6: the user's CDT accounts and the daily total of their balances, for the chart. */
+export const cdtAccounts: AccountsPort = {
+  getCdtAccounts: () => getCdtAccounts(),
+  async getCdtBalanceHistory() {
+    const cdts = await getCdtAccounts();
+    if (cdts.length === 0) return [];
+    return totalPerDay(
+      await getBalanceHistory(
+        cdts.map((a) => a.id),
+        HISTORY_FROM,
+      ),
+    );
+  },
+};
+
+/**
+ * The module installs itself when the app loads it, like M7, M8 and M9: its CDTs come from M6
+ * and "+ Invertir" opens the Banco Demo portal of EXPO_PUBLIC_BANCO_DEMO_PORTAL_URL. The header
+ * shows "Invitado" until M1 exports the profile name.
+ */
+configureInvestment({
+  accounts: cdtAccounts,
+  clock: { now: () => new Date() },
+  bancoDemoPortalUrl: process.env.EXPO_PUBLIC_BANCO_DEMO_PORTAL_URL ?? DEFAULT_PORTAL_URL,
+});

@@ -13,6 +13,7 @@ import {
   parseRateInput,
   portfolioSummary,
   termLabel,
+  totalPerDay,
   type CdtProduct,
 } from './investment';
 
@@ -86,6 +87,20 @@ describe('own CDTs', () => {
       estimatedInterestMinor(200_000_000, 1050, 127) +
         estimatedInterestMinor(100_000_000, 1200, 90),
     );
+  });
+
+  it('adds the balances of every CDT per day for the chart, oldest first', () => {
+    expect(
+      totalPerDay([
+        { onDate: '2026-10-02', balanceMinor: 300_000_000 },
+        { onDate: '2026-10-01', balanceMinor: 100_000_000 },
+        { onDate: '2026-10-02', balanceMinor: 100_500_000 },
+      ]),
+    ).toEqual([
+      { date: '2026-10-01', balanceMinor: 100_000_000 },
+      { date: '2026-10-02', balanceMinor: 400_500_000 },
+    ]);
+    expect(totalPerDay([])).toEqual([]);
   });
 
   it('has no rate and no maturity without CDTs', () => {

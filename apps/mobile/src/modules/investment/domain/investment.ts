@@ -146,6 +146,20 @@ export interface BalancePoint {
   balanceMinor: MoneyMinor;
 }
 
+/**
+ * The total of the user's CDTs per day, oldest first, from M6's balance of each account per day.
+ * A day without a balance for an account counts that account as zero.
+ */
+export function totalPerDay(
+  points: readonly { onDate: IsoDate; balanceMinor: MoneyMinor }[],
+): BalancePoint[] {
+  const totals = new Map<IsoDate, MoneyMinor>();
+  for (const p of points) totals.set(p.onDate, (totals.get(p.onDate) ?? 0) + p.balanceMinor);
+  return [...totals]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, balanceMinor]) => ({ date, balanceMinor }));
+}
+
 /** The points of the chart for a period, oldest first. */
 export function chartPoints(
   history: readonly BalancePoint[],
