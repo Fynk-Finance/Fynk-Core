@@ -6,7 +6,7 @@ module: M6
 jira: [SCRUM-71, SCRUM-28]
 branch: feature/dashboard-month-summary-and-cash-backup
 tool: Claude Code
-pr: none
+pr: "#262"
 status: done
 ---
 
@@ -33,7 +33,7 @@ No file outside M6 was edited.
 ## Result
 
 * Tests: full mobile suite 210 suites, 2440 tests pass. `tsc --noEmit`, ESLint and Prettier pass. The first commit passes the M6 tests on its own too.
-* Pull request: none yet.
+* Pull request: #262, stacked on #261 (stack #263).
 * Not checked on a phone yet.
 
 ## Decisions and problems
