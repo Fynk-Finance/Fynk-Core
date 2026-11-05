@@ -28,6 +28,7 @@ function setup(initial: Account[]) {
       accounts = [...accounts, ...next];
     },
     revokeLink: async () => undefined,
+    setManualBalances: async () => undefined,
     balanceHistory: async () => [],
   };
   const service = createAccountsService({
@@ -53,6 +54,7 @@ describe('useAccounts', () => {
     await waitFor(() =>
       expect(result.current.data).toEqual({
         accounts: [savings, cash],
+        disconnectedAccounts: [],
         balanceTotalMinor: 380_000_000,
         connectedCount: 1,
       }),

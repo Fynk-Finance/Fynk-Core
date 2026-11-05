@@ -66,6 +66,7 @@ describe('totals', () => {
     });
     expect(await service.getOverview()).toEqual({
       accounts: [savings, wallet, card, cdt],
+      disconnectedAccounts: [],
       balanceTotalMinor: 730_000_000,
       connectedCount: 3,
     });
@@ -76,6 +77,11 @@ describe('totals', () => {
     await service.markLinkRevoked('link-banco-demo');
     expect(await service.getOverview()).toEqual({
       accounts: [wallet],
+      // Offered for manual movements; the CDT is not.
+      disconnectedAccounts: [
+        { ...savings, status: 'revoked' },
+        { ...card, status: 'revoked' },
+      ],
       balanceTotalMinor: 460_000_000,
       connectedCount: 1,
     });
