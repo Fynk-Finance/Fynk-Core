@@ -1,8 +1,11 @@
 // RecurringStore on the SQLCipher vault (tables in ./migrations.ts). The schedule is stored in
 // three columns: anchor_day (monthly), weekdays_mask (daily, weekly), anchor_date (biweekly,
-// yearly); the others stay null.
+// yearly); the others stay null. Every write bumps the version and marks the row dirty for M2's
+// encrypted backup (HU-045); deleting leaves a tombstone.
 import type { CategoryId, Id } from '@shared/domain/types';
-import type { VaultDb } from '@shared/ports';
+import type { MarkDirty, VaultDb } from '@shared/ports';
+
+import { RECURRING_BACKUP_COLLECTIONS } from '../backup/collections';
 
 import type { StoredRecurringItem } from '../../domain/item';
 import type { Periodicity, Schedule, Usage } from '../../domain/types';
@@ -27,7 +30,9 @@ interface Row {
   created_at: string;
 }
 
-function scheduleOf(r: Row): Schedule {
+export function scheduleOf(
+  r: Pick<Row, 'periodicity' | 'anchor_day' | 'weekdays_mask' | 'anchor_date'>,
+): Schedule {
   switch (r.periodicity) {
     case 'monthly':
       return { periodicity: 'monthly', anchorDay: r.anchor_day ?? 1 };
@@ -40,7 +45,9 @@ function scheduleOf(r: Row): Schedule {
   }
 }
 
-function scheduleColumns(s: Schedule): [Periodicity, number | null, number | null, string | null] {
+export function scheduleColumns(
+  s: Schedule,
+): [Periodicity, number | null, number | null, string | null] {
   switch (s.periodicity) {
     case 'monthly':
       return ['monthly', s.anchorDay, null, null];
@@ -72,18 +79,25 @@ const toItem = (r: Row): StoredRecurringItem => ({
 const COLUMNS = `id, kind, name, category_id, merchant_key, amount_minor, periodicity, anchor_day,
   weekdays_mask, anchor_date, account_id, status, usage, reminder_enabled, source, created_at`;
 
-export function createVaultRecurringStore(db: VaultDb): RecurringStore {
+const noDirty: MarkDirty = () => undefined;
+
+export function createVaultRecurringStore(
+  db: VaultDb,
+  markDirty: MarkDirty = noDirty,
+): RecurringStore {
+  const dirty = (id: Id) => markDirty(RECURRING_BACKUP_COLLECTIONS.items, id);
   return {
     async list() {
       const rows = await db.query<Row>(
-        `SELECT ${COLUMNS} FROM recurring_items ORDER BY created_at, id`,
+        `SELECT ${COLUMNS} FROM recurring_items WHERE deleted_at IS NULL ORDER BY created_at, id`,
       );
       return rows.map(toItem);
     },
     async get(id: Id) {
-      const [row] = await db.query<Row>(`SELECT ${COLUMNS} FROM recurring_items WHERE id = ?`, [
-        id,
-      ]);
+      const [row] = await db.query<Row>(
+        `SELECT ${COLUMNS} FROM recurring_items WHERE id = ? AND deleted_at IS NULL`,
+        [id],
+      );
       return row ? toItem(row) : null;
     },
     async save(item) {
@@ -97,7 +111,8 @@ export function createVaultRecurringStore(db: VaultDb): RecurringStore {
            anchor_day = excluded.anchor_day, weekdays_mask = excluded.weekdays_mask,
            anchor_date = excluded.anchor_date, account_id = excluded.account_id,
            status = excluded.status, usage = excluded.usage,
-           reminder_enabled = excluded.reminder_enabled`,
+           reminder_enabled = excluded.reminder_enabled,
+           version = recurring_items.version + 1`,
         [
           item.id,
           item.kind,
@@ -117,15 +132,23 @@ export function createVaultRecurringStore(db: VaultDb): RecurringStore {
           item.createdAt,
         ],
       );
+      dirty(item.id);
     },
-    async remove(id) {
-      await db.execute('DELETE FROM recurring_items WHERE id = ?', [id]);
+    async remove(id, at) {
+      await db.execute(
+        `UPDATE recurring_items SET deleted_at = ?, version = version + 1
+         WHERE id = ? AND deleted_at IS NULL`,
+        [at, id],
+      );
+      dirty(id);
     },
     async markCancelled(id, at) {
       await db.execute(
-        `UPDATE recurring_items SET status = 'cancelled', cancelled_at = ? WHERE id = ?`,
+        `UPDATE recurring_items SET status = 'cancelled', cancelled_at = ?, version = version + 1
+         WHERE id = ?`,
         [at, id],
       );
+      dirty(id);
     },
   };
 }

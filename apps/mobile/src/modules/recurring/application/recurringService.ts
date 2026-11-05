@@ -48,6 +48,8 @@ export interface RecurringService {
   refreshReminders(): Promise<void>;
   /** Called after every change. Returns a function that unsubscribes. */
   subscribe(listener: () => void): () => void;
+  /** Tells the listeners that the items changed outside the service (a backup restore). */
+  notifyChanged(): void;
 }
 
 export class InvalidRecurringError extends Error {
@@ -146,7 +148,7 @@ export function createRecurringService(deps: RecurringServiceDeps): RecurringSer
     },
 
     async remove(id) {
-      await deps.store().remove(id);
+      await deps.store().remove(id, deps.clock.now().toISOString());
       changed();
       await remind((r) => r.cancel(id));
     },
@@ -184,6 +186,8 @@ export function createRecurringService(deps: RecurringServiceDeps): RecurringSer
       if (!deps.reminders) return;
       for (const item of await deps.store().list()) await remind((r) => r.plan(item));
     },
+
+    notifyChanged: changed,
 
     subscribe(listener) {
       listeners.add(listener);
