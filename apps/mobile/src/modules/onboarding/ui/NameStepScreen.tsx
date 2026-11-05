@@ -1,7 +1,8 @@
 // Step 1 · Nombre (OnbNombre): the avatar with the initials of what is typed, "Hola, <name>!",
 // one name field and the hint. "Continuar" is enabled only for a name PATCH /me accepts; it
 // saves the name first (the first word as the first name, the rest as the last name), then
-// opens the next step. The field starts with the saved name, if there is one.
+// opens the next step. The field starts with the saved name, if there is one. A saved name goes
+// to the greeting cache at once (`useRememberName`), so the Dashboard shows it when the setup ends.
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -9,7 +10,13 @@ import { isApiError } from '@shared/api';
 import { AppText, Avatar, TextField, radius, useThemedStyles, type Theme } from '@shared/ui';
 
 import type { NamePort } from '../application/ports';
-import { greetingName, joinName, nameProblem, splitFullName } from '../domain/name';
+import {
+  greetingName,
+  joinName,
+  nameProblem,
+  splitFullName,
+  type PersonName,
+} from '../domain/name';
 import { StepLayout } from './StepLayout';
 import { onboardingStrings } from './strings.es-CO';
 import { useStepActions } from './useStepActions';
@@ -18,10 +25,16 @@ const copy = onboardingStrings.name;
 const AVATAR = 88;
 const RING = 5;
 
-export function createNameStep(names: NamePort) {
+const noRemember = () => (_name: PersonName) => undefined;
+
+export function createNameStep(
+  names: NamePort,
+  useRememberName: () => (name: PersonName) => void = noRemember,
+) {
   return function NameStepScreen() {
     const styles = useThemedStyles(createStyles);
     const actions = useStepActions('name');
+    const remember = useRememberName();
     const [text, setText] = useState('');
     const [saving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
@@ -61,6 +74,7 @@ export function createNameStep(names: NamePort) {
         setSaving(false);
         return;
       }
+      remember(name);
       setSaving(false);
       await actions.complete();
     };

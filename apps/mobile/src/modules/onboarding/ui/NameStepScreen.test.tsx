@@ -11,6 +11,7 @@ import { onboardingMigrations } from '../adapters/vault/migrations';
 import { createVaultProgressStore } from '../adapters/vault/vaultProgressStore';
 import { createOnboardingService, type OnboardingService } from '../application/onboardingService';
 import type { NamePort } from '../application/ports';
+import type { PersonName } from '../domain/name';
 import { initialProgress } from '../domain/progress';
 import { createNameStep } from './NameStepScreen';
 import { createOnboardingNavigator, placeholderSteps } from './OnboardingNavigator';
@@ -41,6 +42,8 @@ function fakeNames(saved: { firstName?: string; lastName?: string } = {}) {
   };
 }
 
+const remembered = jest.fn<void, [PersonName]>();
+
 async function openNameStep(names: NamePort) {
   vault = await createInMemoryVault();
   vault.registerMigrations('onboarding', onboardingMigrations);
@@ -55,7 +58,7 @@ async function openNameStep(names: NamePort) {
   await service.load();
   const Flow = createOnboardingNavigator(service, {
     ...placeholderSteps,
-    name: createNameStep(names),
+    name: createNameStep(names, () => remembered),
   });
   await render(
     <NavigationContainer>
@@ -70,6 +73,7 @@ const field = () => screen.getByTestId('onboarding.name.field');
 const continueButton = () => screen.getByRole('button', { name: copy.step.continue });
 
 afterEach(() => {
+  remembered.mockClear();
   service.dispose();
   vault.close();
 });
@@ -105,6 +109,8 @@ describe('Nombre', () => {
     await fireEvent.press(continueButton());
 
     expect(names.saveName).toHaveBeenCalledWith({ firstName: 'Laura', lastName: 'Gómez Ruiz' });
+    // The Dashboard greeting gets the saved name without asking the API again.
+    expect(remembered).toHaveBeenCalledWith({ firstName: 'Laura', lastName: 'Gómez Ruiz' });
     await waitFor(() => expect(screen.getByText('Paso 2 de 4')).toBeTruthy());
     expect(await saved()).toMatchObject({ step: 'accounts', completed: ['name'] });
   });
@@ -128,6 +134,7 @@ describe('Nombre', () => {
 
     expect(await screen.findByText(copy.name.errors.notSaved)).toBeTruthy();
     expect(await saved()).toMatchObject({ step: 'name', completed: [] });
+    expect(remembered).not.toHaveBeenCalled();
   });
 
   it('shows the name rule when the API answers invalid_profile', async () => {
