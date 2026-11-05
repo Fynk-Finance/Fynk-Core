@@ -2,7 +2,7 @@
 // movement linked to the goal, and "Deshacer". Fynk never moves money: nothing here talks to a
 // bank, it only records money the person already set aside. Linking a movement marks it in M7
 // ("Aporte a plan de ahorro"); undoing it clears the mark.
-import type { Clock, Id, Transaction } from '@shared/domain/types';
+import type { Clock, Id, IsoDate, Transaction } from '@shared/domain/types';
 
 import {
   contributionFromMovement,
@@ -22,6 +22,8 @@ export interface ContributionServiceDeps {
   newId: () => Id;
   /** M7's setTransactionGoal. Until M7 exports it, movements cannot be linked. */
   movements?: MovementGoalLinker;
+  /** M7's getTransactionsBetween (Bogotá days, both included), for the movement picker. */
+  listMovements?: (from: IsoDate, to: IsoDate) => Promise<Transaction[]>;
   /** Saved amounts changed: Metas and the carousel reload (goalService.notifyChanged). */
   onChange: () => void;
 }
@@ -40,6 +42,11 @@ export interface ContributionService {
     goalId: Id,
     tx: Pick<Transaction, 'id' | 'amountMinor' | 'bookedAt' | 'status' | 'goalId'>,
   ): Promise<Id>;
+  /**
+   * "Vincular un movimiento" picker (M8 prompt): the outflows of the last 60 days that are
+   * booked and not linked to a goal yet, newest first.
+   */
+  linkableMovements(): Promise<Transaction[]>;
   /** "Deshacer": the contribution stops counting, and a linked movement is freed. */
   undo(contributionId: Id): Promise<void>;
   /** Before a goal is deleted: frees every movement linked to it. */
@@ -80,6 +87,13 @@ export class MovementsUnavailableError extends Error {
     this.name = 'MovementsUnavailableError';
   }
 }
+
+/** The picker shows the outflows of the last 60 days (M8 prompt). */
+export const LINK_WINDOW_DAYS = 60;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const addDays = (date: IsoDate, days: number): IsoDate =>
+  new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 
 export function createContributionService(deps: ContributionServiceDeps): ContributionService {
   const today = () => bogotaToday(deps.clock.now());
@@ -137,6 +151,15 @@ export function createContributionService(deps: ContributionServiceDeps): Contri
       }
       deps.onChange();
       return id;
+    },
+
+    async linkableMovements() {
+      if (!deps.listMovements) return [];
+      const to = today();
+      const all = await deps.listMovements(addDays(to, -LINK_WINDOW_DAYS), to);
+      return all
+        .filter((tx) => contributionFromMovement(tx) !== null)
+        .sort((a, b) => (a.bookedAt < b.bookedAt ? 1 : -1));
     },
 
     async undo(contributionId) {

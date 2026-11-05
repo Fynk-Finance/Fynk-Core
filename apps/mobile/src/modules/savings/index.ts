@@ -7,6 +7,7 @@ import type { ModuleRoutes } from '@shared/navigation';
 
 import type { GoalSummary as AnalyticsGoal, PaydayContribution } from '@modules/analytics';
 import { notificationsPort } from '@modules/notifications';
+import { getTransactionsBetween, setTransactionGoal } from '@modules/transactions';
 import {
   getVaultDb,
   markDirty,
@@ -26,6 +27,7 @@ import { goalForAnalytics, paydayContribution } from './domain/analytics';
 import type { GoalSummary } from './domain/goal';
 import { createGoalFormScreen, GOAL_FORM_ROUTE } from './ui/GoalFormScreen';
 import { createGoalsCarousel, GoalCardCompact } from './ui/GoalsCarousel';
+import { createLinkMovementScreen, LINK_MOVEMENT_ROUTE } from './ui/LinkMovementScreen';
 import { createMetasScreen, METAS_ROUTE } from './ui/MetasScreen';
 
 export type { GoalSummary };
@@ -46,12 +48,14 @@ const service = createGoalService({
   beforeRemove: (goalId) => contributions.unlinkGoal(goalId),
 });
 
-// SCRUM-52. Movements can be linked once M7 exports setTransactionGoal (`movements`).
+// SCRUM-52: manual aportes, and movements of M7 linked as aportes ("Vincular un movimiento").
 const contributions = createContributionService({
   store: () => createVaultContributionStore(getVaultDb(), markDirty),
   goals: () => createVaultGoalStore(getVaultDb(), markDirty),
   clock,
   newId: randomUUID,
+  movements: { setTransactionGoal },
+  listMovements: getTransactionsBetween,
   onChange: () => service.notifyChanged(),
 });
 
@@ -107,13 +111,23 @@ export const routes: ModuleRoutes = {
     {
       name: METAS_ROUTE,
       // "23 % de tus ingresos" needs the monthly income of M10, not exported yet.
-      component: createMetasScreen({ service, monthlyIncome: async () => null, contributions }),
+      component: createMetasScreen({
+        service,
+        monthlyIncome: async () => null,
+        contributions,
+        canLink: true,
+      }),
       path: 'metas',
     },
     {
       name: GOAL_FORM_ROUTE,
       component: createGoalFormScreen({ service }),
       path: 'metas/nueva',
+    },
+    {
+      name: LINK_MOVEMENT_ROUTE,
+      component: createLinkMovementScreen({ goals: service, contributions }),
+      path: 'metas/:goalId/vincular',
     },
   ],
 };

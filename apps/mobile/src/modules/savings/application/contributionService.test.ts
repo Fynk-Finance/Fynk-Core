@@ -17,6 +17,8 @@ import {
   type ContributionService,
 } from './contributionService';
 import { createGoalService, type GoalService } from './goalService';
+import type { Transaction } from '@shared/domain/types';
+
 import type { MovementGoalLinker } from './contributionPorts';
 
 const pesos = (n: number) => n * 100;
@@ -41,6 +43,10 @@ const movement = (id: string, amount: number, over: object = {}) => ({
 });
 
 /** `null`: M7 does not export setTransactionGoal yet. */
+/** M7's movements for the picker: a list of fakes. */
+let movementsInM7: Transaction[] = [];
+let listed: [string, string] | null = null;
+
 function build(movements: MovementGoalLinker | null = linker) {
   let n = 0;
   contributions = createContributionService({
@@ -49,6 +55,12 @@ function build(movements: MovementGoalLinker | null = linker) {
     clock,
     newId: () => `c${++n}`,
     movements: movements ?? undefined,
+    listMovements: movements
+      ? async (from, to) => {
+          listed = [from, to];
+          return movementsInM7;
+        }
+      : undefined,
     onChange: () => goals.notifyChanged(),
   });
 }
@@ -181,6 +193,50 @@ describe('linked movement ("Vincular un movimiento")', () => {
     await expect(contributions.linkMovement(goalId, movement('t1', -300_000))).rejects.toThrow(
       MovementsUnavailableError,
     );
+  });
+});
+
+describe('"Vincular un movimiento" picker', () => {
+  const tx = (id: string, amount: number, bookedAt: string, over: Partial<Transaction> = {}) =>
+    ({
+      id,
+      accountId: 'a1',
+      providerTxId: id,
+      source: 'bank',
+      bookedAt,
+      amountMinor: pesos(amount),
+      description: `Movimiento ${id}`,
+      merchantRaw: null,
+      merchantKey: null,
+      categoryId: 'transfers',
+      categorySource: 'bank',
+      status: 'booked',
+      goalId: null,
+      ...over,
+    }) as Transaction;
+
+  it('offers the outflows of the last 60 days, newest first', async () => {
+    movementsInM7 = [
+      tx('old', -100_000, '2026-09-01T15:00:00Z'),
+      tx('new', -200_000, '2026-10-27T15:00:00Z'),
+    ];
+    expect((await contributions.linkableMovements()).map((m) => m.id)).toEqual(['new', 'old']);
+    expect(listed).toEqual(['2026-08-29', '2026-10-28']);
+  });
+
+  it('leaves out money that came in, pending movements and those already linked', async () => {
+    movementsInM7 = [
+      tx('salary', 5_000_000, '2026-10-01T15:00:00Z'),
+      tx('pending', -50_000, '2026-10-27T15:00:00Z', { status: 'pending' }),
+      tx('linked', -50_000, '2026-10-26T15:00:00Z', { goalId: 'g9' }),
+      tx('ok', -50_000, '2026-10-25T15:00:00Z'),
+    ];
+    expect((await contributions.linkableMovements()).map((m) => m.id)).toEqual(['ok']);
+  });
+
+  it('is empty until M7 is wired', async () => {
+    build(null);
+    expect(await contributions.linkableMovements()).toEqual([]);
   });
 });
 
