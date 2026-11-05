@@ -1,4 +1,4 @@
-// Screens of M10: Gastos por categoría, Tendencias, Ingresos recurrentes, Topes and the cap form.
+// Screens of M10: Estadísticas (with Tendencias and Ingresos recurrentes), Topes and the cap form.
 import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { setAnalyticsService } from '../application/hooks';
@@ -35,17 +35,27 @@ afterEach(async () => {
   setAnalyticsService(null);
 });
 
-describe('Gastos por categoría', () => {
-  it('shows the total, the shares and the daily average of this month', async () => {
+describe('Estadísticas', () => {
+  it('shows the design numbers of the last 30 days (HU-021)', async () => {
     const h = await setupAnalytics(octoberTxs);
     setAnalyticsService(h.service);
     await renderScreens({ screens, initial: 'analytics.Spending' });
-    expect(await screen.findByText('$3.482.400')).toBeOnTheScreen();
-    expect(screen.getByText('40 % · 1 movimiento')).toBeOnTheScreen();
-    expect(screen.getByText('13 % · 1 movimiento')).toBeOnTheScreen();
-    // 28 days of October so far.
-    expect(screen.getByTestId('analytics.dailyAverage')).toHaveTextContent(
-      'Promedio diario: $124.371',
+    expect(await screen.findByTestId('analytics.statistics.dailyAverage')).toHaveTextContent(
+      'Promedio diario$116.080Últimos 30 días',
+    );
+    expect(screen.getByTestId('analytics.statistics.spent')).toHaveTextContent('$3.482.400');
+    expect(screen.getByTestId('analytics.statistics.income')).toHaveTextContent('$5.580.000');
+    expect(screen.getByTestId('analytics.statistics.balance')).toHaveTextContent(
+      'Balance +$2.097.600',
+    );
+    expect(screen.getByTestId('analytics.total')).toHaveTextContent('$3.482.400');
+    expect(screen.getByText('40 %')).toBeOnTheScreen();
+    expect(screen.getByTestId('analytics.statistics.highest')).toHaveTextContent(
+      'Gasto más alto$1.400.000COMERCIO RENT · 1 oct',
+    );
+    expect(screen.getByTestId('analytics.statistics.chart')).toHaveProp(
+      'accessibilityLabel',
+      'Gasto acumulado en últimos 30 días: $3.482.400. Ingresos: $5.580.000. 3382 % más que el mes anterior',
     );
   });
 
@@ -53,20 +63,44 @@ describe('Gastos por categoría', () => {
     const h = await setupAnalytics(octoberTxs);
     setAnalyticsService(h.service);
     await renderScreens({ screens, initial: 'analytics.Spending' });
-    await screen.findByText('$3.482.400');
-    await fireEvent.press(screen.getByTestId('analytics.period.last_month'));
-    expect(await screen.findByText('100 % · 1 movimiento')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByTestId('analytics.category.restaurants'));
+    await screen.findByTestId('analytics.statistics.dailyAverage');
+    await fireEvent.press(screen.getByTestId('analytics.statistics.period-year'));
+    expect(await screen.findByText('Gastaste en el último año')).toBeOnTheScreen();
+    await fireEvent.press(await screen.findByTestId('analytics.category.restaurants'));
     expect(await screen.findByTestId('probe.route')).toHaveTextContent(
-      'transactions.All {"categoryId":"restaurants","from":"2026-09-01","to":"2026-09-30"}',
+      'transactions.All {"categoryId":"restaurants","from":"2025-10-29","to":"2026-10-28"}',
     );
+  });
+
+  it('works in dark with the same numbers', async () => {
+    const h = await setupAnalytics(octoberTxs);
+    setAnalyticsService(h.service);
+    await renderScreens({ screens, initial: 'analytics.Spending', preference: 'dark' });
+    expect(await screen.findByTestId('analytics.statistics.balance')).toHaveTextContent(
+      'Balance +$2.097.600',
+    );
+  });
+
+  it('shows the weekday bars, where the person spends the most, and opens Topes', async () => {
+    const h = await setupAnalytics(octoberTxs);
+    setAnalyticsService(h.service);
+    await renderScreens({ screens, initial: 'analytics.Spending' });
+    // Thursday 1 October carries the rent, so Thursdays stand out.
+    expect(await screen.findByTestId('analytics.statistics.weekdayPeak')).toHaveTextContent(
+      /^Los jueves gastas en promedio/,
+    );
+    // Rent and utilities are fixed bills: Billetera shows them, not "Dónde más gastas".
+    expect(screen.getByTestId('analytics.statistics.place.1')).toHaveTextContent(
+      '1COMERCIO GROCERIES1 compra · Mercado$627.000',
+    );
+    await fireEvent.press(screen.getByTestId('analytics.statistics.caps'));
+    expect(await screen.findByText('Aún no tienes topes.')).toBeOnTheScreen();
   });
 
   it('shows the trend with the month over month change', async () => {
     const h = await setupAnalytics(octoberTxs);
     setAnalyticsService(h.service);
     await renderScreens({ screens, initial: 'analytics.Spending' });
-    await fireEvent.press(await screen.findByText('Tendencias'));
     expect(await screen.findByTestId('analytics.trend.last')).toHaveTextContent('$3.482.400');
     expect(screen.getByTestId('analytics.trend.change')).toHaveTextContent(
       '+3382 % frente al mes anterior',

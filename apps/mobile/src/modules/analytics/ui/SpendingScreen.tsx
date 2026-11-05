@@ -1,29 +1,27 @@
-// Gastos por categoría (new screen from the Dashboard "Gastos" pill, needs design review). Built
-// from shared components in the style of Estadisticas: period control, donut in the
-// Recomendaciones style, categories with share and a mini bar, a Tendencias tab with the line
-// chart of Inversión, and the recurring income section (HU-021, HU-022, HU-023).
+// Estadísticas (design screen 14, Estadisticas.html), opened from the Dashboard chart icon and the
+// "Gastos" pill: the blue summary card that shrinks while the page scrolls, "Gastos por
+// categoría" (a tap opens M7's list filtered), "Tus estadísticas", "Por día de la semana" and
+// "Dónde más gastas". Under the design, for HU-022, HU-023 and HU-043 (new sections, need design
+// review): Tendencias (3, 6 or 12 months), Ingresos recurrentes and the way into Topes.
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { categoryLabel, formatCop, type CategoryId } from '@shared/domain';
+import { categoryLabel, type CategoryId } from '@shared/domain';
 import {
   AmountText,
   AppText,
   Badge,
   Card,
   Chip,
-  Donut,
   EmptyState,
   ErrorState,
   Icon,
   LineChart,
-  ProgressBar,
-  Screen,
   SectionHeader,
-  SegmentedControl,
   Skeleton,
-  TextField,
   spacing,
   useTheme,
   useThemedStyles,
@@ -34,179 +32,117 @@ import {
   useAnalyticsService,
   useRecurringIncome,
   useSpendByCategory,
+  useStatistics,
   useTrend,
 } from '../application/hooks';
-import { periodRange, rangeDays, type SpendingPeriod } from '../domain/periods';
-import { dailyAverageMinor } from '../domain/spending';
-import { segmentColor } from './chartColors';
+import { periodRange } from '../domain/periods';
+import type { StatsPeriod } from '../domain/statistics';
+import { CAPS_ROUTE } from './CapsScreen';
+import { CARD_HEIGHT, CARD_SHRINK, SummaryCard } from './statistics/SummaryCard';
+import { CategoriesCard, StatTiles, TopPlaces, WeekdayCard } from './statistics/Sections';
 import { analyticsStrings } from './strings.es-CO';
 
 const s = analyticsStrings;
+const t = analyticsStrings.statistics;
 
 /** Route of M7's movements list; it reads `categoryId`, `from` and `to` to filter. */
 export const TRANSACTIONS_ROUTE = 'transactions.All';
 
-type Tab = 'categories' | 'trends';
+/** The design's scroll content starts 21 px under the open card (584 − 563). */
+const CONTENT_GAP = 21;
 
 export function SpendingScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const styles = useThemedStyles(createStyles);
   const { colors } = useTheme();
-  const [tab, setTab] = useState<Tab>('categories');
+  const insets = useSafeAreaInsets();
+  const [period, setPeriod] = useState<StatsPeriod>('month');
+  const query = useStatistics(period);
+  const view = query.data;
+
+  const progress = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    progress.value = Math.min(1, Math.max(0, e.contentOffset.y / CARD_SHRINK));
+  });
+
+  const back = () => (navigation.canGoBack() ? navigation.goBack() : undefined);
 
   return (
-    <Screen scroll gap={spacing.section} testID="analytics.spending">
-      <View style={styles.top}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-          testID="analytics.spending.back"
-          hitSlop={12}
-        >
-          <Icon name="chevronLeft" size={24} strokeWidth={2.4} color={colors.primaryDark} />
-        </Pressable>
-        <AppText variant="screenTitle" accessibilityRole="header">
-          {s.spending.title}
-        </AppText>
-      </View>
-      <SegmentedControl
-        options={[
-          { value: 'categories', label: s.spending.tabs.categories },
-          { value: 'trends', label: s.spending.tabs.trends },
+    <View style={styles.root} testID="analytics.spending">
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + CARD_HEIGHT + CONTENT_GAP, paddingBottom: insets.bottom + 40 },
         ]}
-        value={tab}
-        onChange={setTab}
-        accessibilityLabel={s.spending.title}
-        testID="analytics.spending.tabs"
-      />
-      {tab === 'categories' ? <CategoriesTab /> : <TrendsTab />}
-      <RecurringIncomeSection />
-    </Screen>
-  );
-}
-
-function CategoriesTab() {
-  const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const styles = useThemedStyles(createStyles);
-  const { colors } = useTheme();
-  const service = useAnalyticsService();
-  const [period, setPeriod] = useState<SpendingPeriod>('this_month');
-  const [custom, setCustom] = useState({ from: '', to: '' });
-  const today = service?.today() ?? null;
-  const range = useMemo(
-    () => (today ? periodRange(period, today, custom) : null),
-    [today, period, custom],
-  );
-  const query = useSpendByCategory(range);
-  const periods: [SpendingPeriod, string][] = [
-    ['this_month', s.spending.periods.thisMonth],
-    ['last_month', s.spending.periods.lastMonth],
-    ['last_3_months', s.spending.periods.last3Months],
-    ['custom', s.spending.periods.custom],
-  ];
-
-  const data = query.data;
-  return (
-    <View style={styles.block}>
-      <View style={styles.chips} accessibilityRole="radiogroup">
-        {periods.map(([value, label]) => (
-          <Chip
-            key={value}
-            label={label}
-            selected={period === value}
-            onPress={() => setPeriod(value)}
-            testID={`analytics.period.${value}`}
-          />
-        ))}
-      </View>
-      {period === 'custom' ? (
-        <View style={styles.block}>
-          <TextField
-            label={s.spending.customFrom}
-            value={custom.from}
-            onChangeText={(from) => setCustom((c) => ({ ...c, from }))}
-            autoCapitalize="none"
-            testID="analytics.custom.from"
-          />
-          <TextField
-            label={s.spending.customTo}
-            value={custom.to}
-            onChangeText={(to) => setCustom((c) => ({ ...c, to }))}
-            autoCapitalize="none"
-            error={custom.from && custom.to && !range ? s.spending.customInvalid : undefined}
-            testID="analytics.custom.to"
-          />
-        </View>
-      ) : null}
-
-      {query.unavailable || (data && data.categories.length === 0) ? (
-        <EmptyState icon="chartLine" title={s.spending.empty} message={s.spending.emptyHint} />
-      ) : query.isError ? (
-        <ErrorState message={s.errors.load} onRetry={() => void query.refetch()} />
-      ) : !data ? (
-        range ? (
+      >
+        {query.unavailable ? (
+          <EmptyState icon="chartLine" title={s.spending.empty} message={s.spending.emptyHint} />
+        ) : query.isError ? (
+          <ErrorState message={s.errors.load} onRetry={() => void query.refetch()} />
+        ) : !view ? (
           <Skeleton height={220} />
-        ) : null
-      ) : (
-        <>
-          <Card style={styles.donutCard}>
-            <Donut
-              segments={data.categories.map((c, i) => ({
-                value: c.amountMinor,
-                color: segmentColor(i),
-              }))}
-              accessibilityLabel={s.spending.donutLabel(formatCop(data.totalMinor))}
-            >
-              <AppText variant="caption" color="textSecondary">
-                {s.spending.total}
-              </AppText>
-              <AmountText amountMinor={data.totalMinor} size={22} testID="analytics.total" />
-            </Donut>
-            <AppText variant="small" color="textSecondary" testID="analytics.dailyAverage">
-              {`${s.spending.dailyAverage}: ${formatCop(
-                dailyAverageMinor(data.totalMinor, rangeDays(data)),
-              )}`}
-            </AppText>
-          </Card>
-          <Card style={styles.list}>
-            {data.categories.map((c, i) => (
-              <Pressable
-                key={c.categoryId}
-                onPress={() =>
+        ) : (
+          <>
+            {view.byCategory.categories.length === 0 ? (
+              <EmptyState icon="chartLine" title={t.empty} message={s.spending.emptyHint} />
+            ) : (
+              <CategoriesCard
+                data={view.byCategory}
+                periodLabel={t.lastDays[period]}
+                onOpen={(categoryId: CategoryId) =>
                   navigation.navigate(TRANSACTIONS_ROUTE, {
-                    categoryId: c.categoryId,
-                    from: data.from,
-                    to: data.to,
+                    categoryId,
+                    from: view.summary.range.from,
+                    to: view.summary.range.to,
                   })
                 }
-                accessibilityRole="button"
-                accessibilityLabel={`${categoryLabel(c.categoryId)}, ${formatCop(c.amountMinor)}, ${c.sharePercent} %`}
-                testID={`analytics.category.${c.categoryId}`}
-                style={({ pressed }) => [styles.row, pressed ? styles.pressed : null]}
-              >
-                {/* Same token as the donut segment of the row. */}
-                <View style={[styles.dot, { backgroundColor: colors[segmentColor(i)] }]} />
-                <View style={styles.rowBody}>
-                  <View style={styles.rowTop}>
-                    <AppText variant="label">{categoryLabel(c.categoryId)}</AppText>
-                    <AmountText amountMinor={c.amountMinor} size={15} />
-                  </View>
-                  <AppText variant="caption" color="textSecondary">
-                    {s.spending.categoryRow(c.sharePercent, c.count)}
-                  </AppText>
-                  <ProgressBar progress={c.sharePercent / 100} height={4} />
-                </View>
-              </Pressable>
-            ))}
-          </Card>
-        </>
-      )}
+              />
+            )}
+            <StatTiles
+              stats={view.stats}
+              periodLabel={t.lastDays[period]}
+              previousLabel={t.previousOf[period]}
+            />
+            <WeekdayCard pattern={view.weekdays} />
+            <TopPlaces places={view.places} />
+          </>
+        )}
+        <Pressable
+          onPress={() => navigation.navigate(CAPS_ROUTE)}
+          accessibilityRole="button"
+          accessibilityLabel={`${t.caps}. ${t.capsHint}`}
+          testID="analytics.statistics.caps"
+          style={({ pressed }) => [styles.capsRow, pressed ? styles.pressed : null]}
+        >
+          <View style={styles.capsIcon}>
+            <Icon name="goal" size={18} color={colors.primaryDark} />
+          </View>
+          <View style={styles.flex}>
+            <AppText variant="label">{t.caps}</AppText>
+            <AppText variant="caption" color="textSecondary">
+              {t.capsHint}
+            </AppText>
+          </View>
+          <Icon name="chevronRight" size={20} color={colors.textSecondary} />
+        </Pressable>
+        <TrendsSection />
+        <RecurringIncomeSection />
+      </Animated.ScrollView>
+      <SummaryCard
+        summary={view?.summary ?? null}
+        period={period}
+        onPeriod={setPeriod}
+        onBack={back}
+        progress={progress}
+      />
     </View>
   );
 }
 
-function TrendsTab() {
+function TrendsSection() {
   const styles = useThemedStyles(createStyles);
   const { width } = useWindowDimensions();
   const [months, setMonths] = useState(6);
@@ -219,7 +155,8 @@ function TrendsTab() {
   const change = query.data?.changePercent ?? null;
 
   return (
-    <View style={styles.block}>
+    <View style={styles.block} testID="analytics.trends">
+      <SectionHeader title={t.trends} />
       <View style={styles.chips}>
         {[3, 6, 12].map((m) => (
           <Chip
@@ -322,7 +259,27 @@ function RecurringIncomeSection() {
 function createStyles(theme: Theme) {
   const { colors } = theme;
   return StyleSheet.create({
-    top: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+    root: { flex: 1, backgroundColor: colors.background },
+    // Estadisticas.html: 16 px sides, 24 px between sections.
+    content: { paddingHorizontal: 16, gap: 24 },
+    capsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xl,
+      padding: spacing.xl,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.borderBlue,
+      backgroundColor: colors.background,
+    },
+    capsIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 12,
+      backgroundColor: colors.surfaceBlue,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     block: { gap: spacing.xl },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
     donutCard: { alignItems: 'center', gap: spacing.xl, paddingVertical: spacing.block },
@@ -343,6 +300,6 @@ function createStyles(theme: Theme) {
     },
     dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary },
     flex: { flex: 1 },
-    pressed: { opacity: 0.7 },
+    pressed: { backgroundColor: colors.surfaceBlueSoft },
   });
 }
