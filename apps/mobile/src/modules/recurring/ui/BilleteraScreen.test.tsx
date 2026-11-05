@@ -84,7 +84,11 @@ function Target({ route }: { route: { name: string; params?: { id?: string } } }
   return <Text>{`arrived:${route.name}:${route.params?.id ?? ''}`}</Text>;
 }
 
-async function renderBilletera(preference: ThemePreference = 'light', unread = 0) {
+async function renderBilletera(
+  preference: ThemePreference = 'light',
+  unread = 0,
+  params?: { filter?: 'low_use' },
+) {
   const Billetera = createBilleteraScreen({
     service,
     clock,
@@ -98,7 +102,7 @@ async function renderBilletera(preference: ThemePreference = 'light', unread = 0
     <ThemeProvider initialPreference={preference} store={noStore}>
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Billetera" component={Billetera} />
+          <Stack.Screen name="Billetera" component={Billetera} initialParams={params} />
           <Stack.Screen name={RECURRING_FORM_ROUTE} component={Target} />
           <Stack.Screen name="notifications.Inbox" component={Target} />
           <Stack.Screen name="identity.Account" component={Target} />
@@ -124,6 +128,20 @@ async function markLowUse() {
 }
 
 describe('Billetera', () => {
+  it('Recomendaciones "Revisar" shows only the low use subscriptions, until the chip is tapped', async () => {
+    await addAll();
+    await markLowUse();
+    await renderBilletera('light', 0, { filter: 'low_use' });
+    const section = await screen.findByTestId('recurring.billetera.subscriptions');
+    expect(section).toHaveTextContent(/Solo poco uso/);
+    expect(screen.getByTestId('recurring.subscription.r6')).toBeTruthy();
+    expect(screen.getByTestId('recurring.subscription.r8')).toBeTruthy();
+    expect(screen.queryByTestId('recurring.subscription.r5')).toBeNull();
+    await fireEvent.press(screen.getByTestId('recurring.billetera.lowUseFilter'));
+    expect(await screen.findByTestId('recurring.subscription.r5')).toBeTruthy();
+    expect(screen.queryByTestId('recurring.billetera.lowUseFilter')).toBeNull();
+  });
+
   it('shows "Gastos fijos de este mes $1.930.600", as in the design', async () => {
     await addAll();
     await renderBilletera();
