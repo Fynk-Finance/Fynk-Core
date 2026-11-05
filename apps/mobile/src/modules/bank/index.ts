@@ -6,8 +6,10 @@ import type { Clock } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
+import { markLinkRevoked, upsertFromSync as upsertAccounts } from '@modules/accounts';
 import { onConsentRevoked } from '@modules/consents';
 import { notificationsPort } from '@modules/notifications';
+import { upsertFromSync as upsertTransactions } from '@modules/transactions';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
 import { createBankApi } from './adapters/bankApi';
@@ -17,8 +19,9 @@ import { bankMigrations } from './adapters/vault/migrations';
 import { createVaultLinkStore } from './adapters/vault/vaultLinkStore';
 import { linkBank } from './application/linkBank';
 import { revokeLinksOfConsent } from './application/linkRevocation';
+import { syncNewLink } from './application/firstSync';
 import { createSyncController } from './application/syncController';
-import type { SyncReport } from './application/syncEngine';
+import { createSyncEngine, type SyncReport } from './application/syncEngine';
 import { useSync as useSyncWith } from './application/useSync';
 import { useProviders as useProvidersWith } from './application/useProviders';
 import type { BankLink } from './domain/link';
@@ -39,9 +42,11 @@ const clock: Clock = { now: () => new Date() };
 // Read on every call: the vault may be locked when the module loads.
 const links = () => createVaultLinkStore(getVaultDb());
 
-// HU-008: a revoked consent ends its links on the phone at once and deletes their tokens.
+// HU-008: a revoked consent ends its links on the phone at once, deletes their tokens, and
+// M6 marks their accounts revoked ("Reconecta <Entidad>").
 onConsentRevoked(async (event) => {
-  await revokeLinksOfConsent({ store: links, clock }, event);
+  const revoked = await revokeLinksOfConsent({ store: links, clock }, event);
+  for (const linkId of revoked) await markLinkRevoked(linkId);
 });
 
 /** Every bank link, active or revoked, oldest first. Never includes tokens. */
@@ -50,9 +55,17 @@ export const getLinks = (): Promise<BankLink[]> => links().getLinks();
 const providersApi = createProvidersApi();
 const bankApi = createBankApi(api, () => newNonce(secureRandom));
 
-// The sync engine is built (application/syncEngine.ts) but gets no writers until M6's
-// upsertFromSync and M7's writer for synced movements are on develop. Until then syncNow()
-// answers 'unavailable' and asks nothing of any bank, and no trigger is started.
+// The sync writes accounts through M6 and movements through M7 (they are the only places that
+// store them). M6 and M7 are used only inside functions, never while this file loads: M7
+// imports this module too, and an import cycle must not see an undefined value.
+const engine = createSyncEngine({
+  api: bankApi,
+  store: links,
+  accounts: () => ({ upsertFromSync: upsertAccounts, markLinkRevoked }),
+  transactions: () => ({ upsertFromSync: upsertTransactions }),
+  events: appEvents,
+  clock,
+});
 let providerNames: Promise<Map<string, string>> | null = null;
 const entityName = async (provider: string) => {
   providerNames ??= providersApi
@@ -66,7 +79,7 @@ const entityName = async (provider: string) => {
   }
 };
 const sync = createSyncController({
-  engine: null,
+  engine,
   links: () => links().getLinks(),
   entityName,
   notify: (n) => notificationsPort.notify(n),
@@ -92,11 +105,16 @@ export const useProviders = () => useProvidersWith(providersApi);
 /** Conectar banco: the entity selector with M4's consent cards and authorization. */
 export const ConnectBankScreen = createConnectBankScreen({
   providers: providersApi,
-  link: (input) =>
-    linkBank(
+  link: async (input) => {
+    const outcome = await linkBank(
       { api: bankApi, browser: systemBrowser, store: links, random: secureRandom, clock },
       input,
-    ),
+    );
+    // Link flow step 5: the first sync (12 months) starts at once. Its result reaches the
+    // screens through useSync and M12's notice, so the link result never waits for it.
+    if (outcome.kind === 'linked') void syncNewLink(syncNow, outcome.linkId).catch(() => undefined);
+    return outcome;
+  },
 });
 
 export const routes: ModuleRoutes = {
