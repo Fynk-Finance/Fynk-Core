@@ -1,25 +1,92 @@
 // Copy of the analytics module (Spanish, Colombia).
 export const analyticsStrings = {
   spending: {
-    // New screen from the Dashboard "Gastos" pill (needs design review), styled as Estadisticas.
-    title: 'Gastos por categoría',
-    tabs: { categories: 'Categorías', trends: 'Tendencias' },
-    periods: {
-      thisMonth: 'Este mes',
-      lastMonth: 'Mes anterior',
-      last3Months: 'Últimos 3 meses',
-      custom: 'Personalizado',
-    },
-    customFrom: 'Desde (AAAA-MM-DD)',
-    customTo: 'Hasta (AAAA-MM-DD)',
-    customInvalid: 'Escribe fechas válidas, la primera antes que la segunda.',
     total: 'Total',
-    donutLabel: (total: string) => `Gastos por categoría, total ${total}`,
-    categoryRow: (share: number, count: number) =>
-      `${share} % · ${count} ${count === 1 ? 'movimiento' : 'movimientos'}`,
-    dailyAverage: 'Promedio diario',
     empty: 'No hay gastos en este periodo.',
     emptyHint: 'Cuando tengas movimientos, aquí verás en qué se va tu dinero.',
+  },
+  // Estadísticas (design screen 14).
+  statistics: {
+    title: 'Estadísticas',
+    back: 'Volver',
+    spentIn: {
+      '3d': 'Gastaste en los últimos 3 días',
+      week: 'Gastaste en los últimos 7 días',
+      month: 'Gastaste en los últimos 30 días',
+      year: 'Gastaste en el último año',
+    },
+    lastDays: {
+      '3d': 'Últimos 3 días',
+      week: 'Últimos 7 días',
+      month: 'Últimos 30 días',
+      year: 'Último año',
+    },
+    previousOf: {
+      '3d': 'los 3 días anteriores',
+      week: 'la semana anterior',
+      month: 'el mes anterior',
+      year: 'el año anterior',
+    },
+    periods: { '3d': '3 días', week: 'Semana', month: 'Mes', year: 'Año' },
+    periodGroup: 'Periodo de la gráfica',
+    income: 'Ingresos',
+    incomeLabel: (amount: string) => `Ingresos: ${amount}`,
+    thisPeriod: 'Este periodo',
+    previousPeriod: 'Periodo anterior',
+    balance: (signed: string) => `Balance ${signed}`,
+    today: 'Hoy',
+    chartLabel: (what: string, spent: string, income: string, change: string) =>
+      `Gasto acumulado en ${what}: ${spent}. Ingresos: ${income}. ${change}`,
+    changeVs: (pct: number, previous: string) =>
+      pct === 0
+        ? `Igual que ${previous}`
+        : `${Math.abs(pct)} % ${pct < 0 ? 'menos' : 'más'} que ${previous}`,
+    byCategory: 'Gastos por categoría',
+    yourStats: 'Tus estadísticas',
+    dailyAverage: 'Promedio diario',
+    highest: 'Gasto más alto',
+    highestDetail: (label: string, date: string) => `${label} · ${date}`,
+    movements: 'Movimientos',
+    movementsDelta: (delta: number, previous: string) =>
+      delta === 0
+        ? `Los mismos que ${previous}`
+        : `${Math.abs(delta)} ${delta > 0 ? 'más' : 'menos'} que ${previous}`,
+    saved: 'Ahorraste',
+    spentMore: 'Gastaste de más',
+    versus: (previous: string) => `Frente a ${previous}`,
+    byWeekday: 'Por día de la semana',
+    average: 'Promedio',
+    weekdaysShort: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+    weekdaysPlural: ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábados', 'domingos'],
+    weekdayChart: (bars: string) => `Gasto promedio por día: ${bars}`,
+    times: (percent: number) =>
+      percent >= 190 && percent <= 210
+        ? 'el doble'
+        : percent >= 290 && percent <= 310
+          ? 'el triple'
+          : `un ${percent - 100} % más`,
+    weekdayPeak: (day: string, times: string, againstWeekdays: boolean) =>
+      [
+        'Los ',
+        day,
+        ` gastas en promedio ${times} que ${againstWeekdays ? 'entre semana' : 'el resto de la semana'}.`,
+      ] as const,
+    weekdayEven: 'Gastas parecido todos los días de la semana.',
+    topPlaces: 'Dónde más gastas',
+    placeCount: (count: number, categoryId: string) => {
+      const [one, many] =
+        categoryId === 'transport'
+          ? ['recarga', 'recargas']
+          : ['restaurants', 'cinema', 'treats'].includes(categoryId)
+            ? ['visita', 'visitas']
+            : ['compra', 'compras'];
+      return `${count} ${count === 1 ? one : many}`;
+    },
+    caps: 'Topes de gasto',
+    capsHint: 'Fija cuánto quieres gastar por categoría',
+    trends: 'Tendencias',
+    months: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+    empty: 'Aún no hay gastos en este periodo.',
   },
   trends: {
     months: (n: number) => `${n} meses`,

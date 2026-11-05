@@ -13,7 +13,7 @@ import {
   type ParamListBase,
 } from '@react-navigation/native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, Linking, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatCop } from '@shared/domain/money';
@@ -40,6 +40,7 @@ import type { PriceAlert } from '../application/priceAlertPorts';
 import { isMonthly, type PriceAlertService } from '../application/priceAlertService';
 import type { RecurringService } from '../application/recurringService';
 import { PERIODICITY_LABEL, dayMonth } from '../domain/card';
+import { safeCancelUrl, type CatalogEntry } from '../domain/catalog';
 import { chargedAccount, lastCharges } from '../domain/charges';
 import type { StoredRecurringItem } from '../domain/item';
 import { nextCharge } from '../domain/schedule';
@@ -70,6 +71,8 @@ export function createSubscriptionDetailScreen({
   listMovements,
   transactionRoute,
   priceAlerts,
+  catalog,
+  openUrl = (url) => Linking.openURL(url),
 }: {
   service: RecurringService;
   /** Today's date in Bogotá. */
@@ -82,6 +85,10 @@ export function createSubscriptionDetailScreen({
   transactionRoute?: string;
   /** Open price alerts (SCRUM-61). */
   priceAlerts?: Pick<PriceAlertService, 'openByItem' | 'dismiss'>;
+  /** The shared merchant catalog (SCRUM-58): steps and official page to cancel. */
+  catalog?: (merchantKey: string | null) => CatalogEntry | null;
+  /** Opens the merchant's page in the system browser. */
+  openUrl?: (url: string) => Promise<unknown>;
 }) {
   return function SubscriptionDetailScreen() {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -192,6 +199,8 @@ export function createSubscriptionDetailScreen({
       );
 
     const next = nextCharge(item.schedule, today());
+    const guide = catalog?.(item.merchantKey) ?? null;
+    const cancelUrl = safeCancelUrl(guide);
     return (
       <Screen header={header} scroll padded testID="recurring.subscription">
         <View style={styles.hero} testID="recurring.subscription.summary">
@@ -300,11 +309,33 @@ export function createSubscriptionDetailScreen({
           />
         </View>
 
-        <View style={styles.cancelBox}>
+        <View style={styles.cancelBox} testID="recurring.subscription.cancelGuide">
           <AppText variant="label">{t.howToCancel}</AppText>
-          <AppText variant="small" color="textSecondary">
-            {t.howToCancelGeneric}
-          </AppText>
+          {guide && guide.cancelSteps.length > 0 ? (
+            guide.cancelSteps.map((step, i) => (
+              <AppText key={i} variant="small" color="textSecondary">
+                {t.step(i + 1, step)}
+              </AppText>
+            ))
+          ) : (
+            <AppText variant="small" color="textSecondary">
+              {t.howToCancelGeneric}
+            </AppText>
+          )}
+          {guide && cancelUrl ? (
+            <GhostButton
+              label={t.openCancelPage}
+              icon="arrowUpRight"
+              onPress={() => void openUrl(cancelUrl).catch(() => setFailure(t.openFailed))}
+              accessibilityHint={t.openCancelPageHint(guide.displayName)}
+              testID="recurring.subscription.cancelPage"
+            />
+          ) : null}
+          {guide ? (
+            <AppText variant="caption" color="textSecondary">
+              {t.fynkNeverCancels}
+            </AppText>
+          ) : null}
         </View>
 
         {failure ? (

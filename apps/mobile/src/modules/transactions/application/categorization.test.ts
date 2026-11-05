@@ -120,6 +120,70 @@ describe('categorizeNew', () => {
     expect(await categoryOf('netflix')).toBe('cinema');
   });
 
+  it('uses the merchant catalog of M9 after the person overrides and before the rules', async () => {
+    const entries = { netflix: 'cinema', 'juan valdez': 'restaurants', epm: 'utilities' } as const;
+    const catalog = jest.fn((key: string) => entries[key as keyof typeof entries] ?? null);
+    service = createTransactionsService({
+      store: () => createVaultTransactionsStore(vault.db),
+      events: { emit },
+      treatsThreshold: async () => threshold,
+      catalogCategory: catalog,
+    });
+    await vault.db.execute(
+      "INSERT INTO transactions_category_overrides VALUES ('epm', 'rent', '2026-09-01T00:00:00Z', 1)",
+    );
+    const { newIds } = await sync([
+      // The rules say subscriptions; the catalog wins.
+      bankTx({
+        id: 'netflix',
+        bookedAt: '2026-09-21T15:00:00Z',
+        description: 'NETFLIX.COM',
+        merchantRaw: 'NETFLIX.COM',
+        merchantKey: 'netflix',
+        amountMinor: -3_890_000,
+      }),
+      // Food under the Antojos threshold is still treats.
+      bankTx({
+        id: 'coffee',
+        bookedAt: '2026-09-21T16:00:00Z',
+        description: 'JUAN VALDEZ',
+        merchantRaw: 'JUAN VALDEZ',
+        merchantKey: 'juan valdez',
+        amountMinor: -980_000,
+      }),
+      // The person's category for the merchant wins over the catalog.
+      bankTx({
+        id: 'epm',
+        bookedAt: '2026-09-21T17:00:00Z',
+        description: 'EPM SERVICIOS',
+        merchantRaw: 'EPM',
+        merchantKey: 'epm',
+        amountMinor: -18_600_000,
+      }),
+      // No merchant key: the catalog is not asked and the rules decide.
+      bankTx({
+        id: 'market',
+        bookedAt: '2026-09-21T18:00:00Z',
+        description: 'SUPERMERCADO DEMO',
+        merchantRaw: null,
+        merchantKey: null,
+        amountMinor: -18_430_000,
+      }),
+    ]);
+    await service.categorizeNew(newIds);
+    expect(await service.getTransaction('netflix')).toMatchObject({
+      categoryId: 'cinema',
+      categorySource: 'rule',
+    });
+    expect(await categoryOf('coffee')).toBe('treats');
+    expect(await service.getTransaction('epm')).toMatchObject({
+      categoryId: 'rent',
+      categorySource: 'user',
+    });
+    expect(await categoryOf('market')).toBe('groceries');
+    expect(catalog.mock.calls.map(([key]) => key).sort()).toEqual(['juan valdez', 'netflix']);
+  });
+
   it('does nothing for no ids or unknown ids', async () => {
     expect(await service.categorizeNew([])).toEqual([]);
     expect(await service.categorizeNew(['nope'])).toEqual([]);
