@@ -151,6 +151,17 @@ export const recurringStrings = {
     cdt: 'CDT',
     cash: 'Efectivo',
   },
+  // Price increase alerts (SCRUM-61, M9 prompt "Price increase").
+  priceUp: {
+    chip: 'Subió',
+    // "Streaming de series subió de $32.900 a $36.900 (+$4.000 al mes)."
+    noticeBody: (name: string, before: string, after: string, diff: string, monthly: boolean) =>
+      `${name} subió de ${before} a ${after} (+${diff} ${monthly ? 'al mes' : 'por cobro'}).`,
+    title: 'Subió de precio',
+    detail: (before: string, after: string, diff: string, monthly: boolean) =>
+      `Pasó de ${before} a ${after}: +${diff} ${monthly ? 'al mes' : 'por cobro'}.`,
+    dismiss: 'Entendido',
+  },
   // Lun, Mar… in the order of the weekday mask bits (Sunday first).
   weekdayShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
 } as const;

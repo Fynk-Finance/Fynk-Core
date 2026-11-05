@@ -23,9 +23,11 @@ import {
 
 import { createRecurringBackup } from './adapters/backup/recurringBackup';
 import { recurringMigrations } from './adapters/vault/migrations';
+import { createVaultPriceAlertStore } from './adapters/vault/vaultPriceAlertStore';
 import { createVaultProposalStore } from './adapters/vault/vaultProposalStore';
 import { createVaultRecurringStore } from './adapters/vault/vaultRecurringStore';
 import { createDetectionService } from './application/detectionService';
+import { createPriceAlertService } from './application/priceAlertService';
 import { createRecurringService } from './application/recurringService';
 import { createReminderScheduler } from './application/reminders';
 import type { SubscriptionsSummary } from './domain/amounts';
@@ -114,6 +116,21 @@ appEvents.on('sync.completed', () => {
   void detection.run().catch(() => undefined);
 });
 
+// SCRUM-61: after every sync, the newest charge of each detected subscription against the one
+// before it. Above max(5 %, $1.000): one alert per charge, an inbox notice and the red chip.
+const priceAlerts = createPriceAlertService({
+  store: () => createVaultPriceAlertStore(getVaultDb()),
+  items: () => service.list(),
+  listMovements: getTransactionsBetween,
+  notifications: notificationsPort,
+  clock,
+  newId: randomUUID,
+  onChange: () => service.notifyChanged(),
+});
+appEvents.on('sync.completed', () => {
+  void priceAlerts.check().catch(() => undefined);
+});
+
 /** "Gastos fijos de este mes": every active item counted by its charges in the current month. */
 export const getFixedExpensesThisMonth = (): Promise<MoneyMinor> =>
   service.fixedExpensesThisMonth();
@@ -135,6 +152,7 @@ export const routes: ModuleRoutes = {
     accounts: getAccounts,
     pendingProposals: async () => (await detection.pending()).length,
     detectedRoute: DETECTED_ROUTE,
+    priceUpItems: async () => new Set((await priceAlerts.openByItem()).keys()),
   }),
   screens: [
     {
@@ -164,6 +182,7 @@ export const routes: ModuleRoutes = {
         accounts: getAccounts,
         listMovements: getTransactionsBetween,
         transactionRoute: TRANSACTION_DETAIL_ROUTE,
+        priceAlerts,
       }),
       path: 'billetera/suscripciones/:id',
     },

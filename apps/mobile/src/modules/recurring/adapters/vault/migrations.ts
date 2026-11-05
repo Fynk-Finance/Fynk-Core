@@ -65,4 +65,21 @@ export const recurringMigrations: VaultMigration[] = [
       );
     `,
   },
+  {
+    // SCRUM-61: one alert per charge whose price went up, so the same charge is never noticed
+    // twice. Open until the person dismisses it ("Entendido"); then the red chip goes away.
+    version: 4,
+    up: `
+      CREATE TABLE recurring_price_alerts (
+        id TEXT PRIMARY KEY,
+        item_id TEXT NOT NULL,
+        transaction_id TEXT NOT NULL UNIQUE,
+        previous_minor INTEGER NOT NULL,
+        new_minor INTEGER NOT NULL,
+        detected_at TEXT NOT NULL,
+        dismissed_at TEXT
+      );
+      CREATE INDEX recurring_price_alerts_item ON recurring_price_alerts (item_id);
+    `,
+  },
 ];

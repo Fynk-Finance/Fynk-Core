@@ -19,6 +19,7 @@ import {
 import { dayMonth } from '../domain/card';
 import type { StoredRecurringItem } from '../domain/item';
 import { nextCharge } from '../domain/schedule';
+import { PriceUpChip } from './PriceUpChip';
 import { recurringStrings } from './strings.es-CO';
 
 const t = recurringStrings.billetera;
@@ -28,10 +29,12 @@ export interface SubscriptionRowProps {
   today: IsoDate;
   /** "Tarjeta de crédito": the kind of account it is charged to, when known. */
   account?: string | null;
+  /** An open price alert: the red "Subió" chip (SCRUM-61). */
+  priceUp?: boolean;
   onPress: (item: StoredRecurringItem) => void;
 }
 
-export function SubscriptionRow({ item, today, account, onPress }: SubscriptionRowProps) {
+export function SubscriptionRow({ item, today, account, priceUp, onPress }: SubscriptionRowProps) {
   const styles = useThemedStyles(createStyles);
   const next = nextCharge(item.schedule, today);
   const renews = next
@@ -44,7 +47,13 @@ export function SubscriptionRow({ item, today, account, onPress }: SubscriptionR
     <Pressable
       onPress={() => onPress(item)}
       accessibilityRole="button"
-      accessibilityLabel={[item.name, lowUse ? t.lowUse : '', renews, formatCop(item.amountMinor)]
+      accessibilityLabel={[
+        item.name,
+        lowUse ? t.lowUse : '',
+        priceUp ? recurringStrings.priceUp.chip : '',
+        renews,
+        formatCop(item.amountMinor),
+      ]
         .filter(Boolean)
         .join(', ')}
       testID={`recurring.subscription.${item.id}`}
@@ -57,6 +66,7 @@ export function SubscriptionRow({ item, today, account, onPress }: SubscriptionR
             {item.name}
           </AppText>
           {lowUse ? <Badge label={t.lowUse} tone="success" size="md" /> : null}
+          {priceUp ? <PriceUpChip /> : null}
         </View>
         {renews ? (
           <AppText variant="caption" color="textSecondary" numberOfLines={1}>
