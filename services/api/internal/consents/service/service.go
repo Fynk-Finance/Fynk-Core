@@ -30,6 +30,9 @@ type Store interface {
 	Activate(ctx context.Context, c domain.Consent) error
 	// ExpireDue marks active consents whose term ended at now as expired and returns them.
 	ExpireDue(ctx context.Context, now time.Time) ([]domain.Consent, error)
+	// FailPending marks pending consents created at or before createdBy as failed and
+	// returns them.
+	FailPending(ctx context.Context, createdBy time.Time) ([]domain.Consent, error)
 	// MarkRevoked writes a revoked consent if it is still active or pending, or returns
 	// ErrNotRevocable.
 	MarkRevoked(ctx context.Context, c domain.Consent) error
@@ -174,8 +177,20 @@ func (s *Service) ExpireDue(ctx context.Context) (int, error) {
 	return len(expired), nil
 }
 
-// RunExpiry runs ExpireDue now and then every interval until ctx ends. Active already
-// treats an ended term as inactive, so the job only keeps the stored status and audit current.
+// FailStalePending marks the consents still pending after domain.PendingFor as failed.
+// StatusAt already reports them as failed, so this only keeps the stored status current.
+// There is no audit event for it yet: M13's audit list has no consent.failed type.
+func (s *Service) FailStalePending(ctx context.Context) (int, error) {
+	failed, err := s.store.FailPending(ctx, s.clock.Now().Add(-domain.PendingFor))
+	if err != nil {
+		return 0, err
+	}
+	return len(failed), nil
+}
+
+// RunExpiry runs ExpireDue and FailStalePending now and then every interval until ctx ends.
+// Active and StatusAt already treat an ended term and a stale pending consent as not active,
+// so the job only keeps the stored status and audit current.
 func (s *Service) RunExpiry(ctx context.Context, every time.Duration) {
 	t := time.NewTicker(every)
 	defer t.Stop()
@@ -184,6 +199,11 @@ func (s *Service) RunExpiry(ctx context.Context, every time.Duration) {
 			s.log.ErrorContext(ctx, "consent expiry failed", "error", err)
 		} else if n > 0 {
 			s.log.InfoContext(ctx, "consents expired", "count", n)
+		}
+		if n, err := s.FailStalePending(ctx); err != nil {
+			s.log.ErrorContext(ctx, "marking stale pending consents failed", "error", err)
+		} else if n > 0 {
+			s.log.InfoContext(ctx, "stale pending consents failed", "count", n)
 		}
 		select {
 		case <-ctx.Done():
@@ -197,12 +217,37 @@ func (s *Service) RunExpiry(ctx context.Context, every time.Duration) {
 // next query answers 409 consent_revoked. Then it tells the entity; if that fails, the retry
 // job tries again every 10 minutes for 24 hours. An already revoked consent is returned as is.
 func (s *Service) Revoke(ctx context.Context, userID, id string) (domain.Consent, error) {
+	return s.revoke(ctx, userID, id, domain.ReasonUserRequest)
+}
+
+// RevokeAll ends every active and pending consent of the user with reason (M13's account
+// deletion uses domain.ReasonAccountDeleted). Each one goes through the same path as Revoke,
+// so it is audited and its entity is told, with the same retries. Revoked, expired and failed
+// consents keep their status and reason.
+func (s *Service) RevokeAll(ctx context.Context, userID, reason string) error {
+	list, err := s.List(ctx, userID)
+	if err != nil {
+		return err
+	}
+	for _, c := range list {
+		if c.Status != domain.StatusActive && c.Status != domain.StatusPending {
+			continue
+		}
+		// ErrNotRevocable: its term ended since List. Nothing to end then.
+		if _, err := s.revoke(ctx, userID, c.ID, reason); err != nil && !errors.Is(err, domain.ErrNotRevocable) {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) revoke(ctx context.Context, userID, id, reason string) (domain.Consent, error) {
 	c, err := s.Get(ctx, userID, id)
 	if err != nil {
 		return domain.Consent{}, err
 	}
 	now := s.clock.Now()
-	revoked, err := c.Revoke(domain.ReasonUserRequest, now)
+	revoked, err := c.Revoke(reason, now)
 	if errors.Is(err, domain.ErrAlreadyRevoked) {
 		return c, nil
 	}

@@ -175,7 +175,7 @@ func contains(list []Scope, s Scope) bool {
 // Grant activates a pending consent once the bank returned tokens. text is the version the
 // consent references: a consent cannot become active without evidence of that exact text.
 func (c Consent) Grant(providerConsentID string, text Text, now time.Time) (Consent, error) {
-	if c.Status != StatusPending {
+	if c.StatusAt(now) != StatusPending {
 		return Consent{}, ErrNotPending
 	}
 	if !c.Evidence.complete() {
@@ -204,8 +204,18 @@ func (c Consent) StatusAt(now time.Time) Status {
 	if c.Status == StatusActive && c.ExpiresAt != nil && !now.Before(*c.ExpiresAt) {
 		return StatusExpired
 	}
+	if c.Status == StatusPending && !now.Before(c.CreatedAt.Add(PendingFor)) {
+		return StatusFailed
+	}
 	return c.Status
 }
+
+// PendingFor is how long a consent waits for the entity's authorization. After it the consent
+// failed: Fynk never received data under it, and the person asks for a new one from Conectar
+// banco (decided by the owner on 5 Nov 2026). It is much longer than the 10 minute bank
+// authorization so that "Intentar de nuevo", which reuses the same pending consent while
+// the screen is open, never meets a consent that already failed.
+const PendingFor = 24 * time.Hour
 
 // ActiveAt reports whether Fynk may receive data under this consent at now.
 func (c Consent) ActiveAt(now time.Time) bool { return c.StatusAt(now) == StatusActive }
@@ -213,6 +223,8 @@ func (c Consent) ActiveAt(now time.Time) bool { return c.StatusAt(now) == Status
 // Revocation reasons stored in revoked_reason.
 const (
 	ReasonUserRequest = "user_request"
+	// ReasonAccountDeleted: the person deleted their Fynk account (M13, Ley 1581).
+	ReasonAccountDeleted = "account_deleted"
 )
 
 // How long and how often Fynk tries to tell the entity about a revocation (M4 prompt).

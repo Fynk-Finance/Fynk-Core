@@ -157,3 +157,25 @@ export function monthLabel(month: string): string {
   const [year, m] = month.split('-').map(Number) as [number, number];
   return `${MONTHS_SHORT[m - 1]} ${year}`;
 }
+
+// Payday reminder (M8 prompt, from Recomendaciones "Programar"). New screen, needs design review.
+export const paydayStrings = {
+  title: 'Recordatorio de día de pago',
+  back: 'Volver',
+  intro: (goal: string) => `Cada mes, el día de tu salario, te recordamos apartar para ${goal}.`,
+  amount: 'Monto a apartar',
+  day: 'Día de pago',
+  dayHelper: 'Si el mes es más corto, te avisamos el último día.',
+  dayFromSalary: (day: number) => `Tomado de tu nómina: llega el día ${day}.`,
+  note: 'Fynk no mueve tu dinero: es solo un recordatorio.',
+  save: 'Programar recordatorio',
+  update: 'Guardar cambios',
+  remove: 'Quitar recordatorio',
+  errors: { amount: 'Escribe un monto mayor a $0.', day: 'Escribe un día entre 1 y 31.' },
+  failed: 'No pudimos guardar. Intenta de nuevo.',
+  notFound: 'Esta meta ya no existe.',
+  // M12 local notification.
+  noticeTitle: 'Día de pago',
+  noticeBody: (amount: string, goal: string) =>
+    `Hoy es día de pago: aparta ${amount} para ${goal}.`,
+} as const;

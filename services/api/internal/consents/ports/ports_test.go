@@ -71,3 +71,28 @@ func TestPendingReaderPassesNotFoundForAnotherUsersConsent(t *testing.T) {
 		t.Fatalf("got %v, want ErrConsentNotFound", err)
 	}
 }
+
+type fakeAllRevoker struct {
+	user, reason string
+	err          error
+}
+
+func (f *fakeAllRevoker) RevokeAll(_ context.Context, userID, reason string) error {
+	f.user, f.reason = userID, reason
+	return f.err
+}
+
+// M13's account deletion calls RevokeAll: the consents end with the reason account_deleted.
+func TestConsentsRevokerRevokesAllWithTheAccountDeletedReason(t *testing.T) {
+	f := &fakeAllRevoker{}
+	if err := (consentsRevoker{svc: f}).RevokeAll(context.Background(), "u1"); err != nil {
+		t.Fatal(err)
+	}
+	if f.user != "u1" || f.reason != domain.ReasonAccountDeleted {
+		t.Fatalf("got %q, %q", f.user, f.reason)
+	}
+	f.err = errors.New("db down")
+	if err := (consentsRevoker{svc: f}).RevokeAll(context.Background(), "u1"); !errors.Is(err, f.err) {
+		t.Fatalf("err = %v", err)
+	}
+}

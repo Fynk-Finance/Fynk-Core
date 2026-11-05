@@ -139,6 +139,16 @@ func (p *Postgres) ExpireDue(ctx context.Context, now time.Time) ([]domain.Conse
 	return list, nil
 }
 
+// FailPending implements service.Store. Like ExpireDue, each row is returned by one run only.
+func (p *Postgres) FailPending(ctx context.Context, createdBy time.Time) ([]domain.Consent, error) {
+	list, err := p.query(ctx, `UPDATE consents.consents SET status = 'failed'
+		WHERE status = 'pending' AND created_at <= $1 RETURNING `+consentColumns, createdBy)
+	if err != nil {
+		return nil, fmt.Errorf("consents: fail pending: %w", err)
+	}
+	return list, nil
+}
+
 // MarkRevoked implements service.Store. The status check in the WHERE makes it safe against a
 // concurrent revoke, grant or expiry.
 func (p *Postgres) MarkRevoked(ctx context.Context, c domain.Consent) error {

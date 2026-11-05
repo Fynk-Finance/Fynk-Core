@@ -106,6 +106,38 @@ func TestConsentRoundTripGrantAndExpiry(t *testing.T) {
 	}
 }
 
+// Pending consents nobody finished fail after 24 hours (domain.PendingFor). Active ones stay.
+func TestFailPendingMarksOnlyOldPendingConsentsOnce(t *testing.T) {
+	p := open(t)
+	ctx := context.Background()
+	stale, _, _ := p.Insert(ctx, pendingConsent(t, p, "0192f0a0-0000-7000-8000-0000000000f1", "u1"), "")
+	active, _, _ := p.Insert(ctx, pendingConsent(t, p, "0192f0a0-0000-7000-8000-0000000000f2", "u1"), "")
+	text, _ := p.CurrentText(ctx)
+	granted, err := active.Grant("bd-1", text, t0.Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Activate(ctx, granted); err != nil {
+		t.Fatal(err)
+	}
+	if list, _ := p.FailPending(ctx, t0.Add(-time.Second)); len(list) != 0 {
+		t.Fatal("failed a consent created after the cutoff")
+	}
+	list, err := p.FailPending(ctx, t0)
+	if err != nil || len(list) != 1 || list[0].ID != stale.ID || list[0].Status != domain.StatusFailed {
+		t.Fatalf("FailPending = %+v, %v", list, err)
+	}
+	if list, _ := p.FailPending(ctx, t0); len(list) != 0 {
+		t.Fatal("failed twice")
+	}
+	if got, _ := p.Get(ctx, active.ID); got.Status != domain.StatusActive {
+		t.Fatalf("active consent became %s", got.Status)
+	}
+	if err := p.Activate(ctx, stale); !errors.Is(err, domain.ErrNotPending) {
+		t.Fatalf("a failed consent was activated: %v", err)
+	}
+}
+
 func TestIdempotencyKeyIsPerUser(t *testing.T) {
 	p := open(t)
 	ctx := context.Background()

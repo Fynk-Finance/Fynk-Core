@@ -487,3 +487,130 @@ func TestOnlyTheOwnerCanRevokeAndOnlyWhileItLasts(t *testing.T) {
 		t.Fatalf("expired: err = %v", err)
 	}
 }
+
+// Pending consents nobody finished fail after 24 hours (decided by Juan Carlos, 5 Nov 2026).
+func TestFailStalePendingMarksOldPendingConsentsOnce(t *testing.T) {
+	s, st, _, clk := setup(t)
+	ctx := context.Background()
+	old := create(t, s, "u1")
+	granted := grantedConsent(t, s, "u1")
+	clk.Advance(domain.PendingFor - time.Minute)
+	fresh := create(t, s, "u1")
+	if n, _ := s.FailStalePending(ctx); n != 0 {
+		t.Fatalf("failed %d before 24 hours", n)
+	}
+	clk.Advance(time.Minute)
+	if got, _ := s.Get(ctx, "u1", old.ID); got.Status != domain.StatusFailed {
+		t.Fatalf("the list must show it failed before the job runs, got %s", got.Status)
+	}
+	if n, err := s.FailStalePending(ctx); n != 1 || err != nil {
+		t.Fatalf("FailStalePending = %d, %v", n, err)
+	}
+	if n, _ := s.FailStalePending(ctx); n != 0 {
+		t.Fatal("a second run fails nothing")
+	}
+	for id, want := range map[string]domain.Status{
+		old.ID: domain.StatusFailed, fresh.ID: domain.StatusPending, granted.ID: domain.StatusActive,
+	} {
+		if stored, _ := st.Get(ctx, id); stored.Status != want {
+			t.Fatalf("%s stored %s, want %s", id, stored.Status, want)
+		}
+	}
+	if err := s.MarkGranted(ctx, old.ID, "bd-late"); !errors.Is(err, domain.ErrNotPending) {
+		t.Fatalf("a failed consent was granted: %v", err)
+	}
+}
+
+func TestRunExpiryAlsoFailsStalePendingConsents(t *testing.T) {
+	s, st, _, clk := setup(t)
+	c := create(t, s, "u1")
+	clk.Advance(domain.PendingFor)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { s.RunExpiry(ctx, time.Hour); close(done) }()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		if stored, _ := st.Get(context.Background(), c.ID); stored.Status == domain.StatusFailed {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("RunExpiry did not fail the stale pending consent")
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	cancel()
+	<-done
+}
+
+// M13 account deletion (Ley 1581): every consent that still lets Fynk receive data ends at once,
+// through the same path as a revoke by the person, so the entity is told and it is audited.
+func TestRevokeAllEndsActiveAndPendingConsentsWithTheReason(t *testing.T) {
+	s, _, rec, clk, b := setupWithBank(t)
+	ctx := context.Background()
+	expired := grantedConsent(t, s, "u1")
+	clk.Advance(366 * 24 * time.Hour)
+	active := grantedConsent(t, s, "u1")
+	pending := create(t, s, "u1")
+	byUser := grantedConsent(t, s, "u1")
+	if _, err := s.Revoke(ctx, "u1", byUser.ID); err != nil {
+		t.Fatal(err)
+	}
+	other := grantedConsent(t, s, "u2")
+	notices, events := b.count(), len(rec.types())
+
+	if err := s.RevokeAll(ctx, "u1", domain.ReasonAccountDeleted); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, c := range []domain.Consent{active, pending} {
+		got, _ := s.Get(ctx, "u1", c.ID)
+		if got.Status != domain.StatusRevoked || got.RevokedReason != domain.ReasonAccountDeleted {
+			t.Fatalf("%s: %s, %q", c.ID, got.Status, got.RevokedReason)
+		}
+		if ok, _ := s.Active(ctx, "u1", c.ID); ok {
+			t.Fatalf("%s is still active", c.ID)
+		}
+	}
+	if got, _ := s.Get(ctx, "u1", byUser.ID); got.RevokedReason != domain.ReasonUserRequest {
+		t.Fatalf("an already revoked consent changed its reason: %q", got.RevokedReason)
+	}
+	if got, _ := s.Get(ctx, "u1", expired.ID); got.Status != domain.StatusExpired {
+		t.Fatalf("expired consent became %s", got.Status)
+	}
+	if ok, _ := s.Active(ctx, "u2", other.ID); !ok {
+		t.Fatal("another user's consent was revoked")
+	}
+	// Only the active one has an entity consent to end; the pending one never reached the bank.
+	if b.count()-notices != 1 || b.calls[len(b.calls)-1] != "banco-demo/bd-"+active.ID[30:] {
+		t.Fatalf("bank calls %v", b.calls[notices:])
+	}
+	added := rec.types()[events:]
+	if strings.Join(added, ",") != audit.ConsentRevoked+","+audit.ConsentRevoked {
+		t.Fatalf("audit %v", added)
+	}
+}
+
+func TestRevokeAllForAUserWithoutConsentsDoesNothing(t *testing.T) {
+	s, _, rec, _, b := setupWithBank(t)
+	if err := s.RevokeAll(context.Background(), "nobody", domain.ReasonAccountDeleted); err != nil {
+		t.Fatal(err)
+	}
+	if b.count() != 0 || len(rec.types()) != 0 {
+		t.Fatalf("%d bank calls, audit %v", b.count(), rec.types())
+	}
+}
+
+// An entity that cannot be reached does not stop the deletion: the consent is revoked in Fynk
+// and the retry job keeps telling the entity, as for any revoke.
+func TestRevokeAllWithAnUnreachableEntityStillRevokesAndRetries(t *testing.T) {
+	s, _, _, _, b := setupWithBank(t)
+	c := grantedConsent(t, s, "u1")
+	b.setDown(true)
+	if err := s.RevokeAll(context.Background(), "u1", domain.ReasonAccountDeleted); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := s.Get(context.Background(), "u1", c.ID)
+	if got.Status != domain.StatusRevoked || got.ProviderNotifiedAt != nil || got.NextNotifyAt == nil {
+		t.Fatalf("got %+v", got)
+	}
+}

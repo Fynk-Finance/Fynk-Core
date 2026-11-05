@@ -106,7 +106,9 @@ func (c LocalChecker) MarkGranted(context.Context, string, string) error {
 	return nil
 }
 
-// ConsentsRevoker revokes all active and pending consents belonging to a user.
+// ConsentsRevoker revokes all active and pending consents belonging to a user. M13 calls it
+// when the person deletes their account (Ley 1581): the consents end with the reason
+// account_deleted, are audited, and their entities are told, as with any revoke.
 type ConsentsRevoker interface {
 	RevokeAll(ctx context.Context, userID string) error
 }
@@ -123,21 +125,15 @@ type noopConsentsRevoker struct{}
 
 func (noopConsentsRevoker) RevokeAll(context.Context, string) error { return nil }
 
+// allRevoker is the part of the service consentsRevoker needs.
+type allRevoker interface {
+	RevokeAll(ctx context.Context, userID, reason string) error
+}
+
 type consentsRevoker struct {
-	svc *service.Service
+	svc allRevoker
 }
 
 func (r consentsRevoker) RevokeAll(ctx context.Context, userID string) error {
-	list, err := r.svc.List(ctx, userID)
-	if err != nil {
-		return err
-	}
-	for _, c := range list {
-		if c.Status == domain.StatusActive || c.Status == domain.StatusPending {
-			if _, err := r.svc.Revoke(ctx, userID, c.ID); err != nil && !errors.Is(err, domain.ErrAlreadyRevoked) {
-				return err
-			}
-		}
-	}
-	return nil
+	return r.svc.RevokeAll(ctx, userID, domain.ReasonAccountDeleted)
 }
