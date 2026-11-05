@@ -2,6 +2,33 @@
 import type { RecurringError } from '../domain/item';
 
 export const recurringStrings = {
+  // Detectamos pagos recurrentes (SCRUM-55, M9 prompt, new screen, needs design review).
+  detected: {
+    title: 'Detectamos pagos recurrentes',
+    subtitle:
+      'Los encontramos en tus movimientos. Confirma los que son tuyos; Fynk no agrega nada sin ti.',
+    back: 'Volver a Billetera',
+    subscription: 'Suscripción',
+    fixed: 'Gasto fijo',
+    next: (date: string) => `Próximo cobro ${date}`,
+    confirm: 'Confirmar',
+    dismiss: 'Descartar',
+    confirmLabel: (name: string) => `Confirmar ${name}`,
+    dismissLabel: (name: string) => `Descartar ${name}`,
+    emptyTitle: 'No hay pagos por revisar',
+    emptyMessage: 'Cuando sincronices y encontremos cobros que se repiten, aparecerán aquí.',
+    failed: 'No pudimos guardar. Intenta de nuevo.',
+    // Billetera, above "Gastos recurrentes".
+    banner: (count: number) =>
+      count === 1 ? 'Detectamos 1 pago recurrente' : `Detectamos ${count} pagos recurrentes`,
+    bannerAction: 'Revisar',
+    // Inbox entry after a sync with new proposals (M12, kind sync_result).
+    noticeTitle: 'Pagos recurrentes',
+    noticeBody: (count: number) =>
+      count === 1
+        ? 'Encontramos 1 pago que se repite. Revísalo en Billetera.'
+        : `Encontramos ${count} pagos que se repiten. Revísalos en Billetera.`,
+  },
   form: {
     newTitle: 'Nuevo gasto recurrente',
     editTitle: 'Editar gasto recurrente',
