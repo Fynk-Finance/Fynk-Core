@@ -25,7 +25,7 @@ export interface SyncTriggers {
 }
 
 export interface SyncControllerDeps {
-  /** Null until M6 and M7 can take what a sync brings: then nothing is asked to any bank. */
+  /** Null means no writers: nothing is asked to any bank (index.ts wires M6 and M7). */
   engine: Pick<SyncEngine, 'syncAll'> | null;
   links: () => Promise<BankLink[]>;
   entityName: (provider: string) => Promise<string>;
@@ -118,8 +118,10 @@ export function createSyncController(deps: SyncControllerDeps) {
           if (due) quiet();
         }),
       ];
-      void deps
-        .links()
+      // The app starts this while it loads, before the vault is unlocked: a store that throws
+      // right away (VaultLockedError) must not escape, so the read starts inside a promise.
+      void Promise.resolve()
+        .then(() => deps.links())
         .then((links) => set({ lastSyncedAt: latest(links) }))
         .catch(() => undefined);
       return () => stops.forEach((stop) => stop());
