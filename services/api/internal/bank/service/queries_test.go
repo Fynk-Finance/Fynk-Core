@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -173,9 +174,20 @@ func TestAReplayedNonceIsRejected(t *testing.T) {
 	if err := f.svc.CheckNonce(ctx, owner, "nonce-0123456789abcdef"); err != nil {
 		t.Fatalf("after 5 minutes: %v", err)
 	}
-	for _, n := range []string{"", "short"} {
+	for _, n := range []string{"", "short", strings.Repeat("n", MaxNonceLength+1)} {
 		if err := f.svc.CheckNonce(ctx, owner, n); !errors.Is(err, ErrNonceRequired) {
-			t.Fatalf("%q: got %v, want nonce_required", n, err)
+			t.Fatalf("%d characters: got %v, want nonce_required", len(n), err)
+		}
+	}
+}
+
+// The lengths match X-Request-Nonce in contracts/modules/bank.yaml (16 to 64 characters).
+// The phone sends 32 (24 random bytes in base64url).
+func TestANonceOfTheContractLengthsIsAccepted(t *testing.T) {
+	f := setup(t)
+	for _, n := range []int{MinNonceLength, 32, MaxNonceLength} {
+		if err := f.svc.CheckNonce(context.Background(), owner, strings.Repeat("a", n-1)+"b"); err != nil {
+			t.Fatalf("%d characters: %v", n, err)
 		}
 	}
 }

@@ -23,6 +23,8 @@ import { createContributionService } from './application/contributionService';
 import { createGoalService } from './application/goalService';
 import { createMilestoneNotifier } from './application/milestoneNotifier';
 import { createVaultMilestoneStore } from './adapters/vault/vaultMilestoneStore';
+import { createVaultPaydayStore } from './adapters/vault/vaultPaydayStore';
+import { createPaydayService } from './application/paydayService';
 import { goalForAnalytics, paydayContribution } from './domain/analytics';
 import type { GoalSummary } from './domain/goal';
 import { createGoalFormScreen, GOAL_FORM_ROUTE } from './ui/GoalFormScreen';
@@ -44,8 +46,11 @@ const service = createGoalService({
   store: () => createVaultGoalStore(getVaultDb(), markDirty),
   clock,
   newId: randomUUID,
-  // Deleting a goal frees the movements linked to it first.
-  beforeRemove: (goalId) => contributions.unlinkGoal(goalId),
+  // Deleting a goal frees the movements linked to it and drops its payday reminder first.
+  beforeRemove: async (goalId) => {
+    await contributions.unlinkGoal(goalId);
+    await payday.remove(goalId);
+  },
 });
 
 // SCRUM-52: manual aportes, and movements of M7 linked as aportes ("Vincular un movimiento").
@@ -72,6 +77,18 @@ const checkMilestones = () => {
 };
 appEvents.on('vault.unlocked', checkMilestones);
 service.subscribe(checkMilestones);
+
+// The payday reminder (M8 prompt, Recomendaciones "Programar"). M12 notifications fire once, so
+// the next month is scheduled again whenever the vault opens. Its screen comes next.
+const payday = createPaydayService({
+  store: () => createVaultPaydayStore(getVaultDb()),
+  goals: () => service.list(),
+  notifications: notificationsPort,
+  clock,
+});
+appEvents.on('vault.unlocked', () => {
+  void payday.refresh().catch(() => undefined);
+});
 
 // HU-045: goals before contributions, which reference them.
 const backup = createSavingsBackup({

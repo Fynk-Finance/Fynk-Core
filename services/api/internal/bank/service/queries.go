@@ -16,7 +16,9 @@ import (
 const (
 	QueriesPerMinute = 30
 	NonceTTL         = 5 * time.Minute
-	MinNonceLength   = 16
+	// X-Request-Nonce lengths, as in contracts/modules/bank.yaml (BankNonce).
+	MinNonceLength = 16
+	MaxNonceLength = 64
 )
 
 // More errors of the bank proxy.
@@ -24,7 +26,7 @@ var (
 	ErrLinkNotFound    = &Error{404, "link_not_found", "The link does not exist."}
 	ErrConsentRevoked  = &Error{409, "consent_revoked", "The consent for this bank was revoked or expired."}
 	ErrRefreshMismatch = &Error{409, "refresh_token_mismatch", "The refresh token is not this link's current one."}
-	ErrNonceRequired   = &Error{400, "nonce_required", "Every bank request needs a new X-Request-Nonce of 16 to 128 characters."}
+	ErrNonceRequired   = &Error{400, "nonce_required", "Every bank request needs a new X-Request-Nonce of 16 to 64 characters."}
 	ErrReplayed        = &Error{409, "replayed_request", "This request was already received."}
 )
 
@@ -38,7 +40,7 @@ func (e *RateLimited) Error() string { return "rate_limited" }
 // CheckNonce refuses a request whose X-Request-Nonce the user already sent in the last
 // 5 minutes (replay protection).
 func (s *Service) CheckNonce(ctx context.Context, u User, nonce string) error {
-	if len(nonce) < MinNonceLength || len(nonce) > 128 {
+	if len(nonce) < MinNonceLength || len(nonce) > MaxNonceLength {
 		return ErrNonceRequired
 	}
 	fresh, err := s.d.Nonces.FirstUse(ctx, u.ID, nonce, NonceTTL)

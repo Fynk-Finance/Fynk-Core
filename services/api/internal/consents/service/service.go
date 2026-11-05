@@ -217,12 +217,37 @@ func (s *Service) RunExpiry(ctx context.Context, every time.Duration) {
 // next query answers 409 consent_revoked. Then it tells the entity; if that fails, the retry
 // job tries again every 10 minutes for 24 hours. An already revoked consent is returned as is.
 func (s *Service) Revoke(ctx context.Context, userID, id string) (domain.Consent, error) {
+	return s.revoke(ctx, userID, id, domain.ReasonUserRequest)
+}
+
+// RevokeAll ends every active and pending consent of the user with reason (M13's account
+// deletion uses domain.ReasonAccountDeleted). Each one goes through the same path as Revoke,
+// so it is audited and its entity is told, with the same retries. Revoked, expired and failed
+// consents keep their status and reason.
+func (s *Service) RevokeAll(ctx context.Context, userID, reason string) error {
+	list, err := s.List(ctx, userID)
+	if err != nil {
+		return err
+	}
+	for _, c := range list {
+		if c.Status != domain.StatusActive && c.Status != domain.StatusPending {
+			continue
+		}
+		// ErrNotRevocable: its term ended since List. Nothing to end then.
+		if _, err := s.revoke(ctx, userID, c.ID, reason); err != nil && !errors.Is(err, domain.ErrNotRevocable) {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) revoke(ctx context.Context, userID, id, reason string) (domain.Consent, error) {
 	c, err := s.Get(ctx, userID, id)
 	if err != nil {
 		return domain.Consent{}, err
 	}
 	now := s.clock.Now()
-	revoked, err := c.Revoke(domain.ReasonUserRequest, now)
+	revoked, err := c.Revoke(reason, now)
 	if errors.Is(err, domain.ErrAlreadyRevoked) {
 		return c, nil
 	}
