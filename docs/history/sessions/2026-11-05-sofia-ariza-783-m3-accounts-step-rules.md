@@ -6,7 +6,7 @@ module: M3
 jira: [SCRUM-69]
 branch: feature/onboarding-accounts-step-rules
 tool: Claude Code
-pr: none
+pr: "#276"
 status: done
 ---
 
@@ -26,7 +26,7 @@ Sofia asked to replace the onboarding placeholders with the parts already export
 ## Result
 
 * Tests: onboarding domain and accounts suites, 181 pass. `tsc`, ESLint and Prettier are clean.
-* Pull request: not opened yet. Bottom of the stack, targets `develop`.
+* Pull request: #276. Bottom of the stack, targets `develop`.
 
 ## Decisions and problems
 
