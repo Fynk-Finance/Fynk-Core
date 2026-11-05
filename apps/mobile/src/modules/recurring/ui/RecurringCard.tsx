@@ -21,7 +21,7 @@ import { PERIODICITY_LABEL, chargeLabel, chargeState, scheduleLabel } from '../d
 import type { StoredRecurringItem } from '../domain/item';
 import { recurringStrings } from './strings.es-CO';
 
-const ICONS: Partial<Record<CategoryId, IconName>> = {
+export const CATEGORY_ICONS: Partial<Record<CategoryId, IconName>> = {
   rent: 'home',
   utilities: 'bolt',
   telecom: 'phone',
@@ -65,7 +65,7 @@ export function RecurringCard({ item, today, onPress }: RecurringCardProps) {
       style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]}
     >
       <View style={styles.row}>
-        <IconTile icon={ICONS[item.categoryId] ?? 'card'} tone="soft" size={26} />
+        <IconTile icon={CATEGORY_ICONS[item.categoryId] ?? 'card'} tone="soft" size={26} />
         <AppText variant="captionStrong" numberOfLines={1} style={styles.name}>
           {item.name}
         </AppText>
