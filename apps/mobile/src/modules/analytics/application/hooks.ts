@@ -7,6 +7,7 @@ import { useSyncExternalStore } from 'react';
 
 import type { CategoryId, IsoDate, MoneyMinor } from '@shared/domain';
 
+import type { StatsPeriod } from '../domain/statistics';
 import type { CapPeriod } from '../domain/types';
 import type { AnalyticsService, CapInput } from './analyticsService';
 
@@ -63,6 +64,11 @@ export function useSpendByCategory(range: { from: IsoDate; to: IsoDate } | null)
 
 export function useTrend(categoryId: CategoryId | 'all', months: number) {
   return useAnalyticsQuery(['trend', categoryId, months], (s) => s.getTrend(categoryId, months));
+}
+
+/** Estadísticas for "3 días", "Semana", "Mes" or "Año". */
+export function useStatistics(period: StatsPeriod) {
+  return useAnalyticsQuery(['statistics', period], (s) => s.getStatistics(period));
 }
 
 export function useRecurringIncome() {
