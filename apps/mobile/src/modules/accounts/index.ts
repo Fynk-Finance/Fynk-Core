@@ -7,6 +7,7 @@ import type { Account, Clock, Id, IsoDate, MoneyMinor } from '@shared/domain/typ
 import { appEvents } from '@shared/events/appEvents';
 import { registerSlot, type ModuleRoutes } from '@shared/navigation';
 
+import { useMonthSummary as useAnalyticsMonthSummary } from '@modules/analytics';
 import { NOTIFICATIONS_ROUTE, useUnreadCount } from '@modules/notifications';
 import { NEW_TRANSACTION_ROUTE, TransactionList, TransactionPreview } from '@modules/transactions';
 import {
@@ -23,7 +24,7 @@ import { createAccountsService, type AccountsOverview } from './application/acco
 import { createCashService } from './application/cashService';
 import type { BalancePoint, Cash } from './application/ports';
 import { ACCOUNTS_QUERY_KEY, createUseAccounts } from './application/useAccounts';
-import { monthSummary } from './domain/dashboard';
+import { createUseMonthSummary } from './application/useMonthSummary';
 import type { ConnectedAccountsSummary } from './domain/netWorth';
 import { ACCOUNT_DETAIL_ROUTE, createAccountDetailScreen } from './ui/AccountDetailScreen';
 import { createDashboardScreen } from './ui/DashboardScreen';
@@ -117,9 +118,8 @@ export const MisCuentasMiCuenta = createMisCuentasMiCuenta({ useAccounts });
 // close an import cycle (vault imports identity).
 registerSlot('miCuenta.misCuentas', MisCuentasMiCuenta);
 
-// TODO(M10) take Ingresos and Gastos from M10's useMonthSummary(), which reads M7's
-// movements, once the app configures M10. Until then the temporary summary shows $0.
-const useMonthSummary = () => monthSummary([], clock.now());
+// Ingresos and Gastos of this month come from M10, which src/app/startup.ts configures.
+const useMonthSummary = createUseMonthSummary(() => useAnalyticsMonthSummary());
 
 export const routes: ModuleRoutes = {
   module: 'accounts',
