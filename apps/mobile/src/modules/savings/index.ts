@@ -5,7 +5,12 @@ import type { Clock, MoneyMinor } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
-import type { GoalSummary as AnalyticsGoal, PaydayContribution } from '@modules/analytics';
+import {
+  getMonthSummary,
+  getRecurringIncome,
+  type GoalSummary as AnalyticsGoal,
+  type PaydayContribution,
+} from '@modules/analytics';
 import { notificationsPort } from '@modules/notifications';
 import { getTransactionsBetween, setTransactionGoal } from '@modules/transactions';
 import {
@@ -14,20 +19,25 @@ import {
   registerBackupCollection,
   registerVaultMigrations,
 } from '@modules/vault';
+// M10's income sources, for the salary day of the payday reminder.
+import { getRecurringIncome as getIncomeSources } from '@modules/analytics';
 
 import { createSavingsBackup } from './adapters/backup/savingsBackup';
 import { savingsMigrations } from './adapters/vault/migrations';
 import { createVaultContributionStore } from './adapters/vault/vaultContributionStore';
 import { createVaultGoalStore } from './adapters/vault/vaultGoalStore';
 import { createContributionService } from './application/contributionService';
-import { createGoalService } from './application/goalService';
+import { bogotaToday, createGoalService } from './application/goalService';
 import { createMilestoneNotifier } from './application/milestoneNotifier';
 import { createVaultMilestoneStore } from './adapters/vault/vaultMilestoneStore';
 import { createVaultPaydayStore } from './adapters/vault/vaultPaydayStore';
 import { createPaydayService } from './application/paydayService';
+import { salaryDay } from './domain/payday';
 import { goalForAnalytics, paydayContribution } from './domain/analytics';
+import { monthlyIncome, previousMonth } from './domain/income';
 import type { GoalSummary } from './domain/goal';
 import { createGoalFormScreen, GOAL_FORM_ROUTE } from './ui/GoalFormScreen';
+import { createPaydayReminderScreen, PAYDAY_REMINDER_ROUTE } from './ui/PaydayReminderScreen';
 import { createGoalsCarousel, GoalCardCompact } from './ui/GoalsCarousel';
 import { createLinkMovementScreen, LINK_MOVEMENT_ROUTE } from './ui/LinkMovementScreen';
 import { createMetasScreen, METAS_ROUTE } from './ui/MetasScreen';
@@ -79,7 +89,7 @@ appEvents.on('vault.unlocked', checkMilestones);
 service.subscribe(checkMilestones);
 
 // The payday reminder (M8 prompt, Recomendaciones "Programar"). M12 notifications fire once, so
-// the next month is scheduled again whenever the vault opens. Its screen comes next.
+// the next month is scheduled again whenever the vault opens.
 const payday = createPaydayService({
   store: () => createVaultPaydayStore(getVaultDb()),
   goals: () => service.list(),
@@ -89,6 +99,15 @@ const payday = createPaydayService({
 appEvents.on('vault.unlocked', () => {
   void payday.refresh().catch(() => undefined);
 });
+
+export { PAYDAY_REMINDER_ROUTE };
+
+/** "Programar" in Recomendaciones (M11): opens the payday reminder of the goal with the amount. */
+export const openPaydayReminder = (
+  nav: { navigate: (route: string, params: object) => void },
+  goalId: string,
+  amountMinor: MoneyMinor,
+) => nav.navigate(PAYDAY_REMINDER_ROUTE, { goalId, amountMinor });
 
 // HU-045: goals before contributions, which reference them.
 const backup = createSavingsBackup({
@@ -122,15 +141,31 @@ export const getGoalsForSnapshot = async (): Promise<AnalyticsGoal[]> =>
 export const getPaydayContribution = async (): Promise<PaydayContribution | null> =>
   paydayContribution(await service.list());
 
+/**
+ * "23 % de tus ingresos" (design Metas): M10's recurring income, or the income of the last full
+ * month. Null while M10 is not configured or there is no income, and Metas then hides the share.
+ */
+const incomeForMetas = async () => {
+  const [sources, lastMonth] = await Promise.all([
+    getRecurringIncome().catch(() => []),
+    getMonthSummary(previousMonth(bogotaToday(clock.now())))
+      .then((m) => m.incomeMinor)
+      .catch(() => null),
+  ]);
+  return monthlyIncome(
+    sources.map((s) => s.estimatedMonthlyMinor),
+    lastMonth,
+  );
+};
+
 export const routes: ModuleRoutes = {
   module: 'savings',
   screens: [
     {
       name: METAS_ROUTE,
-      // "23 % de tus ingresos" needs the monthly income of M10, not exported yet.
       component: createMetasScreen({
         service,
-        monthlyIncome: async () => null,
+        monthlyIncome: incomeForMetas,
         contributions,
         canLink: true,
       }),
@@ -145,6 +180,17 @@ export const routes: ModuleRoutes = {
       name: LINK_MOVEMENT_ROUTE,
       component: createLinkMovementScreen({ goals: service, contributions }),
       path: 'metas/:goalId/vincular',
+    },
+    {
+      // "Programar" in Recomendaciones; Metas opens it from M11's params.
+      name: PAYDAY_REMINDER_ROUTE,
+      component: createPaydayReminderScreen({
+        goals: service,
+        payday,
+        salaryDay: async () => salaryDay(await getIncomeSources()),
+        homeRoute: METAS_ROUTE,
+      }),
+      path: 'metas/:goalId/dia-de-pago',
     },
   ],
 };
