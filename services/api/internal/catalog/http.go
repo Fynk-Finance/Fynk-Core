@@ -16,7 +16,7 @@ func (s server) GetCatalogMerchants(ctx context.Context, req httpapi.GetCatalogM
 	}
 	if req.Params.IfNoneMatch != nil && Matches(*req.Params.IfNoneMatch, c.ETag) {
 		return httpapi.GetCatalogMerchants304Response{
-			Headers: httpapi.GetCatalogMerchants304ResponseHeaders{ETag: c.ETag},
+			Headers: httpapi.GetCatalogMerchants304ResponseHeaders{ETag: &c.ETag},
 		}, nil
 	}
 	body := httpapi.CatalogMerchantList{
@@ -36,7 +36,7 @@ func (s server) GetCatalogMerchants(ctx context.Context, req httpapi.GetCatalogM
 	}
 	return httpapi.GetCatalogMerchants200JSONResponse{
 		Body:    body,
-		Headers: httpapi.GetCatalogMerchants200ResponseHeaders{ETag: c.ETag},
+		Headers: httpapi.GetCatalogMerchants200ResponseHeaders{ETag: &c.ETag},
 	}, nil
 }
 
