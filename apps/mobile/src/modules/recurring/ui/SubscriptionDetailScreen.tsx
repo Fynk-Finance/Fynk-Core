@@ -36,6 +36,8 @@ import {
   type Theme,
 } from '@shared/ui';
 
+import type { PriceAlert } from '../application/priceAlertPorts';
+import { isMonthly, type PriceAlertService } from '../application/priceAlertService';
 import type { RecurringService } from '../application/recurringService';
 import { PERIODICITY_LABEL, dayMonth } from '../domain/card';
 import { chargedAccount, lastCharges } from '../domain/charges';
@@ -67,6 +69,7 @@ export function createSubscriptionDetailScreen({
   accounts,
   listMovements,
   transactionRoute,
+  priceAlerts,
 }: {
   service: RecurringService;
   /** Today's date in Bogotá. */
@@ -77,6 +80,8 @@ export function createSubscriptionDetailScreen({
   listMovements?: (from: IsoDate, to: IsoDate) => Promise<Transaction[]>;
   /** M7's movement detail, opened with { id }. */
   transactionRoute?: string;
+  /** Open price alerts (SCRUM-61). */
+  priceAlerts?: Pick<PriceAlertService, 'openByItem' | 'dismiss'>;
 }) {
   return function SubscriptionDetailScreen() {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -105,6 +110,21 @@ export function createSubscriptionDetailScreen({
         alive = false;
       };
     }, []);
+
+    const [alert, setAlert] = useState<PriceAlert | null>(null);
+    useEffect(() => {
+      if (!priceAlerts || !item) return;
+      let alive = true;
+      priceAlerts
+        .openByItem()
+        .then((byItem) => {
+          if (alive) setAlert(byItem.get(item.id) ?? null);
+        })
+        .catch(() => undefined);
+      return () => {
+        alive = false;
+      };
+    }, [item]);
 
     const charges = useMemo(() => (item ? lastCharges(item, movements) : []), [item, movements]);
 
@@ -188,6 +208,28 @@ export function createSubscriptionDetailScreen({
             </View>
           </View>
         </View>
+
+        {alert ? (
+          <View style={styles.priceUp} testID="recurring.subscription.priceUp">
+            <AppText variant="label" color="danger">
+              {recurringStrings.priceUp.title}
+            </AppText>
+            <AppText variant="small">
+              {recurringStrings.priceUp.detail(
+                formatCop(alert.previousMinor),
+                formatCop(alert.newMinor),
+                formatCop(alert.newMinor - alert.previousMinor),
+                isMonthly(item),
+              )}
+            </AppText>
+            <GhostButton
+              label={recurringStrings.priceUp.dismiss}
+              tone="neutral"
+              onPress={() => run(() => priceAlerts!.dismiss(alert.id).then(() => setAlert(null)))}
+              testID="recurring.subscription.priceUp.dismiss"
+            />
+          </View>
+        ) : null}
 
         {chargedAccount(item, accountList) ? (
           <View style={styles.field} testID="recurring.subscription.account">
@@ -320,6 +362,14 @@ const createStyles = ({ colors }: Theme) =>
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
     reminder: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
     reminderText: { flexGrow: 1, flexShrink: 1, gap: 2 },
+    priceUp: {
+      gap: spacing.md,
+      padding: 16,
+      borderRadius: radius.tile,
+      borderWidth: 1,
+      borderColor: colors.dangerBorder,
+      backgroundColor: colors.dangerSurface,
+    },
     cancelBox: {
       gap: 4,
       padding: 16,

@@ -37,6 +37,7 @@ import { accountKind } from './accountLabel';
 import { SubscriptionRow } from './SubscriptionRow';
 import { useAccounts } from './useAccounts';
 import { usePendingProposals } from './usePendingProposals';
+import { usePriceUpItems } from './usePriceUpItems';
 import { useRecurringItems } from './useRecurringItems';
 
 const t = recurringStrings.billetera;
@@ -60,6 +61,8 @@ export interface BilleteraDeps {
   /** How many detected proposals wait for the person (SCRUM-55), and the screen to review them. */
   pendingProposals?: () => Promise<number>;
   detectedRoute?: string;
+  /** Ids of the subscriptions with an open price alert (SCRUM-61). */
+  priceUpItems?: () => Promise<Set<string>>;
 }
 
 export function createBilleteraScreen(deps: BilleteraDeps) {
@@ -69,6 +72,7 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
     const { state, reload } = useRecurringItems(deps.service);
     const accounts = useAccounts(deps.accounts);
     const detected = usePendingProposals(deps.pendingProposals, state);
+    const priceUp = usePriceUpItems(deps.priceUpItems, state);
     const unread = deps.useUnreadCount();
     const today = bogotaToday(deps.clock.now());
     const add = () => navigation.navigate(RECURRING_FORM_ROUTE);
@@ -168,6 +172,7 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
                       item={item}
                       today={today}
                       account={accountKind(chargedAccount(item, accounts))}
+                      priceUp={priceUp.has(item.id)}
                       onPress={() =>
                         navigation.navigate(SUBSCRIPTION_DETAIL_ROUTE, { id: item.id })
                       }
