@@ -111,6 +111,21 @@ func (m *Memory) ExpireDue(_ context.Context, now time.Time) ([]domain.Consent, 
 	return out, nil
 }
 
+// FailPending implements service.Store.
+func (m *Memory) FailPending(_ context.Context, createdBy time.Time) ([]domain.Consent, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []domain.Consent
+	for id, c := range m.rows {
+		if c.Status == domain.StatusPending && !c.CreatedAt.After(createdBy) {
+			c.Status = domain.StatusFailed
+			m.rows[id] = c
+			out = append(out, c)
+		}
+	}
+	return out, nil
+}
+
 // MarkRevoked implements service.Store.
 func (m *Memory) MarkRevoked(_ context.Context, c domain.Consent) error {
 	m.mu.Lock()
