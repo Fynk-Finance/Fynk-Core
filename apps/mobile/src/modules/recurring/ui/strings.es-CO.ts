@@ -65,6 +65,8 @@ export const recurringStrings = {
       `${count} ${count === 1 ? 'activa' : 'activas'} · ${amount}/mes`,
     lowUse: 'Poco uso',
     renews: (date: string) => `Renueva ${date}`,
+    // "Tarjeta de crédito · renueva 28 sep" (design Billetera).
+    renewsFrom: (account: string, date: string) => `${account} · renueva ${date}`,
     savings: {
       overline: 'Oportunidad de ahorro',
       before: 'Ahorra ',
@@ -107,6 +109,20 @@ export const recurringStrings = {
     edit: 'Editar',
     failed: 'No pudimos guardar. Intenta de nuevo.',
     notFound: 'Esta suscripción ya no existe.',
+    chargedTo: 'Se cobra a',
+    lastCharges: 'Últimos cobros',
+    noChargesManual: 'Los cobros aparecen cuando la suscripción viene de un pago detectado.',
+    noCharges: 'Todavía no hay cobros sincronizados.',
+    chargeLabel: (day: string, amount: string) => `${day}, ${amount}`,
+  },
+  // Account kinds as M6 names them ("Mis cuentas").
+  accountKinds: {
+    savings: 'Cuenta de ahorros',
+    checking: 'Cuenta corriente',
+    wallet: 'Billetera digital',
+    credit_card: 'Tarjeta de crédito',
+    cdt: 'CDT',
+    cash: 'Efectivo',
   },
   // Lun, Mar… in the order of the weekday mask bits (Sunday first).
   weekdayShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],

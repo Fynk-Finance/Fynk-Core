@@ -5,6 +5,7 @@ import type { Clock, MoneyMinor } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
+import { getAccounts } from '@modules/accounts';
 import {
   getPaymentReminderLeadDays,
   NOTIFICATIONS_ROUTE,
@@ -12,7 +13,7 @@ import {
   onNotificationSettingsChanged,
   useUnreadCount,
 } from '@modules/notifications';
-import { getTransactionsBetween } from '@modules/transactions';
+import { getTransactionsBetween, TRANSACTION_DETAIL_ROUTE } from '@modules/transactions';
 import {
   getVaultDb,
   markDirty,
@@ -116,6 +117,7 @@ export const routes: ModuleRoutes = {
     accountRoute: 'identity.Account',
     notificationsRoute: NOTIFICATIONS_ROUTE,
     recommendationsRoute: 'Recomendaciones',
+    accounts: getAccounts,
   }),
   screens: [
     {
@@ -136,6 +138,9 @@ export const routes: ModuleRoutes = {
       component: createSubscriptionDetailScreen({
         service,
         today: () => bogotaToday(clock.now()),
+        accounts: getAccounts,
+        listMovements: getTransactionsBetween,
+        transactionRoute: TRANSACTION_DETAIL_ROUTE,
       }),
       path: 'billetera/suscripciones/:id',
     },

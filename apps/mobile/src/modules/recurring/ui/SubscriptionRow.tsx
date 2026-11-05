@@ -1,7 +1,6 @@
 // One row of "Otros gastos" (design Billetera, `.row`): lime icon tile, name with the "Poco uso"
 // pill, "Renueva 28 sep" and the amount. Tapping it opens Detalle de suscripción.
-// The design also shows the account or card ("Tarjeta de crédito · renueva 28 sep"); it comes
-// when M6 exports the accounts.
+// With the account or card from M6: "Tarjeta de crédito · renueva 28 sep".
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { formatCop } from '@shared/domain/money';
@@ -27,13 +26,19 @@ const t = recurringStrings.billetera;
 export interface SubscriptionRowProps {
   item: StoredRecurringItem;
   today: IsoDate;
+  /** "Tarjeta de crédito": the kind of account it is charged to, when known. */
+  account?: string | null;
   onPress: (item: StoredRecurringItem) => void;
 }
 
-export function SubscriptionRow({ item, today, onPress }: SubscriptionRowProps) {
+export function SubscriptionRow({ item, today, account, onPress }: SubscriptionRowProps) {
   const styles = useThemedStyles(createStyles);
   const next = nextCharge(item.schedule, today);
-  const renews = next ? t.renews(dayMonth(next)) : '';
+  const renews = next
+    ? account
+      ? t.renewsFrom(account, dayMonth(next))
+      : t.renews(dayMonth(next))
+    : (account ?? '');
   const lowUse = item.usage === 'low';
   return (
     <Pressable
