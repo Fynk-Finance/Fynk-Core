@@ -179,3 +179,16 @@ export const paydayStrings = {
   noticeBody: (amount: string, goal: string) =>
     `Hoy es día de pago: aparta ${amount} para ${goal}.`,
 } as const;
+
+// Onboarding step 4 (design OnbMetas): the goals of the setup, built by M8 and placed by M3.
+export const setupStrings = {
+  newGoal: 'Nueva meta',
+  summary: (category: string, target: string) => `${category} · ${target}`,
+  add: 'Agregar otra meta',
+  addFirst: 'Agregar una meta',
+  save: 'Guardar meta',
+  delete: 'Eliminar meta',
+  expand: (name: string) => `${name}, toca para editar`,
+  collapse: (name: string) => `${name}, toca para cerrar`,
+  failed: 'No pudimos guardar. Intenta de nuevo.',
+} as const;

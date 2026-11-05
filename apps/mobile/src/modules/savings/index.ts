@@ -39,6 +39,7 @@ import type { GoalSummary } from './domain/goal';
 import { createGoalFormScreen, GOAL_FORM_ROUTE } from './ui/GoalFormScreen';
 import { createPaydayReminderScreen, PAYDAY_REMINDER_ROUTE } from './ui/PaydayReminderScreen';
 import { createGoalsCarousel, GoalCardCompact } from './ui/GoalsCarousel';
+import { createGoalsSetup } from './ui/GoalsSetup';
 import { createLinkMovementScreen, LINK_MOVEMENT_ROUTE } from './ui/LinkMovementScreen';
 import { createMetasScreen, METAS_ROUTE } from './ui/MetasScreen';
 
@@ -201,3 +202,10 @@ export const routes: ModuleRoutes = {
  */
 export const GoalsCarousel = createGoalsCarousel({ service });
 export { GoalCardCompact };
+
+/**
+ * Onboarding step 4, "Crea tus metas" (design OnbMetas): the collapsible goal cards with the goal
+ * fields and "Agregar otra meta". M3 renders `<GoalsSetup />` inside its step frame, above
+ * "Continuar".
+ */
+export const GoalsSetup = createGoalsSetup({ service });
