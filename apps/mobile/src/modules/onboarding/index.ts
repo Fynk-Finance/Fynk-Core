@@ -1,8 +1,12 @@
 // Public API of the onboarding module. Other modules import only from this file.
+import { createElement } from 'react';
+
 import type { Clock } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
+import { CashInput, isConnected, setCash, useAccounts } from '@modules/accounts';
+import { BankLinkList, ConnectBankButton, ConnectBankScreen } from '@modules/bank';
 import { userId } from '@modules/identity';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
@@ -11,6 +15,7 @@ import { onboardingMigrations } from './adapters/vault/migrations';
 import { createVaultProgressStore } from './adapters/vault/vaultProgressStore';
 import { createOnboardingService } from './application/onboardingService';
 import { createDisplayName } from './application/useDisplayName';
+import { createAccountsStep } from './ui/AccountsStepScreen';
 import { createNameStep } from './ui/NameStepScreen';
 import { createOnboardingNavigator, placeholderSteps } from './ui/OnboardingNavigator';
 import { createUseOnboardingGate } from './ui/useOnboardingGate';
@@ -32,11 +37,28 @@ const names = createProfileNameApi();
 // userId is read on every render, never while this file loads.
 const displayName = createDisplayName(names, () => userId());
 
-/** The guided setup: Aviso, Nombre, Cuentas, Metas, Gastos recurrentes and Omitir. */
-export const OnboardingNavigator = createOnboardingNavigator(service, {
-  ...placeholderSteps,
-  name: createNameStep(names, displayName.useRememberName),
+// Accounts and bank import each other and, through accounts, this module: their values are read
+// only on render, never while this file loads.
+const accountsStep = createAccountsStep({
+  useAccounts: () => useAccounts(),
+  isConnected: (account) => isConnected(account),
+  setCash: (amountMinor) => setCash(amountMinor),
+  renderLinkList: (items) => createElement(BankLinkList, { items }),
+  renderConnectButton: () => createElement(ConnectBankButton),
+  renderCashInput: (props) => createElement(CashInput, props),
 });
+const ConnectBank = () => createElement(ConnectBankScreen);
+
+/** The guided setup: Aviso, Nombre, Cuentas, Metas, Gastos recurrentes, Omitir, Conectar banco. */
+export const OnboardingNavigator = createOnboardingNavigator(
+  service,
+  {
+    ...placeholderSteps,
+    name: createNameStep(names, displayName.useRememberName),
+    accounts: accountsStep,
+  },
+  ConnectBank,
+);
 
 /**
  * The name typed in the Nombre step ("Laura Gómez"), for greetings. Null while it loads, when

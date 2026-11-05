@@ -1,4 +1,5 @@
-// The onboarding flow shown by its gate: Aviso, the four steps (pushed), and Omitir (modal).
+// The onboarding flow shown by its gate: Aviso, the four steps (pushed), Omitir (modal), and
+// Conectar banco (M5, pushed from Cuentas).
 // It opens on the saved step with the earlier screens behind it, so back still works after the
 // app was closed. The stack has its own container: it starts from the saved state, and the gate
 // replaces the whole flow with the tabs when the setup ends. Until the progress is read it draws
@@ -27,11 +28,17 @@ import { IntroScreen } from './IntroScreen';
 import { OnboardingProvider, useOnboardingState } from './OnboardingContext';
 import { createPlaceholderStep } from './PlaceholderStep';
 import { SkipWarningScreen } from './SkipWarningScreen';
-import { SKIP_ROUTE, STEP_ROUTES, type OnboardingParamList, type StepParams } from './routes';
+import {
+  CONNECT_BANK_ROUTE,
+  SKIP_ROUTE,
+  STEP_ROUTES,
+  type OnboardingParamList,
+  type StepParams,
+} from './routes';
 
 const Stack = createNativeStackNavigator<OnboardingParamList>();
 
-/** The screen of each step. Steps 2 to 4 wait for M5, M6, M8 and M9 (see PlaceholderStep). */
+/** The screen of each step. Metas and Gastos wait for M8 and M9 (see PlaceholderStep). */
 export type StepScreens = Record<StepId, ComponentType>;
 
 export const placeholderSteps: StepScreens = {
@@ -46,7 +53,13 @@ export function initialStateFor(step: WizardStep): InitialState {
   return { index: screens.length - 1, routes: screens.map((s) => ({ name: STEP_ROUTES[s] })) };
 }
 
-function Steps({ initialStep, steps }: { initialStep: WizardStep; steps: StepScreens }) {
+interface StepsProps {
+  initialStep: WizardStep;
+  steps: StepScreens;
+  connectBank?: ComponentType;
+}
+
+function Steps({ initialStep, steps, connectBank }: StepsProps) {
   const navigationTheme = useNavigationTheme();
   const reduceMotion = useReducedMotion();
   // Read once: later moves are made by the screens themselves.
@@ -83,6 +96,8 @@ function Steps({ initialStep, steps }: { initialStep: WizardStep; steps: StepScr
             component={SkipWarningScreen}
             options={screenOptionsFor({ transition: 'modal' }, { reduceMotion })}
           />
+          {/* Inventory row 29: pushed with the default transition. */}
+          {connectBank ? <Stack.Screen name={CONNECT_BANK_ROUTE} component={connectBank} /> : null}
         </Stack.Navigator>
       </NavigationContainer>
     </NavigationIndependentTree>
@@ -92,6 +107,8 @@ function Steps({ initialStep, steps }: { initialStep: WizardStep; steps: StepScr
 export function createOnboardingNavigator(
   service: OnboardingService,
   steps: StepScreens = placeholderSteps,
+  /** M5's Conectar banco, opened by "Agregar otra cuenta". */
+  connectBank?: ComponentType,
 ) {
   return function OnboardingNavigator() {
     const styles = useThemedStyles(createStyles);
@@ -113,7 +130,7 @@ export function createOnboardingNavigator(
 
     return (
       <OnboardingProvider value={service}>
-        <Steps initialStep={state.progress.step} steps={steps} />
+        <Steps initialStep={state.progress.step} steps={steps} connectBank={connectBank} />
       </OnboardingProvider>
     );
   };

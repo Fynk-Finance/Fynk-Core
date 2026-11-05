@@ -1,8 +1,6 @@
-// Steps whose content is still to be built: Cuentas (M5 bank links, M6 cash),
-// Metas (M8 goal form) and Gastos recurrentes (M9 recurring form). The frame, the step bar,
-// "Omitir" and "Continuar" already work, so the setup can be finished end to end.
-// TODO(M5) SCRUM-23 embed BankLinkList and ConnectBankButton from @modules/bank.
-// TODO(M6) SCRUM-69 embed CashInput from @modules/accounts.
+// Steps whose content is still to be built: Metas (M8 goal form) and Gastos recurrentes (M9
+// recurring form). The frame, the step bar, "Omitir" and "Continuar" already work, so the setup
+// can be finished end to end. Tests also use it for the steps they do not look at.
 // TODO(M8) SCRUM-51 embed GoalForm and GoalCardCompact from @modules/savings.
 // TODO(M9) SCRUM-54 embed RecurringQuickList and RecurringForm from @modules/recurring.
 import { StyleSheet, View } from 'react-native';
