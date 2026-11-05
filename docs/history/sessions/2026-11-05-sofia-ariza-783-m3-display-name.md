@@ -6,7 +6,7 @@ module: M3
 jira: [SCRUM-69]
 branch: feature/onboarding-display-name
 tool: Claude Code
-pr: none
+pr: "#275"
 status: done
 ---
 
@@ -28,7 +28,7 @@ Sofia asked to continue the onboarding work: "Doesn't export the name typed in o
 ## Result
 
 * Tests: onboarding, accounts and app suites, 252 pass. `tsc`, ESLint and Prettier are clean.
-* Pull request: not opened yet.
+* Pull request: #275.
 
 ## Decisions and problems
 
