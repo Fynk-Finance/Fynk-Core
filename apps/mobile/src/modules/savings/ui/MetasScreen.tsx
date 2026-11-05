@@ -39,6 +39,7 @@ import { MetasStats } from './MetasStats';
 import { MONTHS_SHORT, savingsStrings } from './strings.es-CO';
 import { UndoToast } from './UndoToast';
 import { useGoals } from './useGoals';
+import { usePaydayParams } from './usePaydayParams';
 
 const t = savingsStrings.metas;
 const ta = savingsStrings.abonar;
@@ -72,6 +73,7 @@ export function createMetasScreen({
     const styles = useThemedStyles(createStyles);
     const insets = useSafeAreaInsets();
     const { state, reload } = useGoals(service, monthlyIncome);
+    usePaydayParams();
     const [open, setOpen] = useState<string | null>(null);
     const [toast, setToast] = useState<Toast | null>(null);
     const hideToast = useCallback(() => setToast(null), []);

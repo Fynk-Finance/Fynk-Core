@@ -14,6 +14,8 @@ import {
   registerBackupCollection,
   registerVaultMigrations,
 } from '@modules/vault';
+// M10's income sources, for the salary day of the payday reminder.
+import { getRecurringIncome as getIncomeSources } from '@modules/analytics';
 
 import { createSavingsBackup } from './adapters/backup/savingsBackup';
 import { savingsMigrations } from './adapters/vault/migrations';
@@ -25,9 +27,11 @@ import { createMilestoneNotifier } from './application/milestoneNotifier';
 import { createVaultMilestoneStore } from './adapters/vault/vaultMilestoneStore';
 import { createVaultPaydayStore } from './adapters/vault/vaultPaydayStore';
 import { createPaydayService } from './application/paydayService';
+import { salaryDay } from './domain/payday';
 import { goalForAnalytics, paydayContribution } from './domain/analytics';
 import type { GoalSummary } from './domain/goal';
 import { createGoalFormScreen, GOAL_FORM_ROUTE } from './ui/GoalFormScreen';
+import { createPaydayReminderScreen, PAYDAY_REMINDER_ROUTE } from './ui/PaydayReminderScreen';
 import { createGoalsCarousel, GoalCardCompact } from './ui/GoalsCarousel';
 import { createLinkMovementScreen, LINK_MOVEMENT_ROUTE } from './ui/LinkMovementScreen';
 import { createMetasScreen, METAS_ROUTE } from './ui/MetasScreen';
@@ -79,7 +83,7 @@ appEvents.on('vault.unlocked', checkMilestones);
 service.subscribe(checkMilestones);
 
 // The payday reminder (M8 prompt, Recomendaciones "Programar"). M12 notifications fire once, so
-// the next month is scheduled again whenever the vault opens. Its screen comes next.
+// the next month is scheduled again whenever the vault opens.
 const payday = createPaydayService({
   store: () => createVaultPaydayStore(getVaultDb()),
   goals: () => service.list(),
@@ -89,6 +93,15 @@ const payday = createPaydayService({
 appEvents.on('vault.unlocked', () => {
   void payday.refresh().catch(() => undefined);
 });
+
+export { PAYDAY_REMINDER_ROUTE };
+
+/** "Programar" in Recomendaciones (M11): opens the payday reminder of the goal with the amount. */
+export const openPaydayReminder = (
+  nav: { navigate: (route: string, params: object) => void },
+  goalId: string,
+  amountMinor: MoneyMinor,
+) => nav.navigate(PAYDAY_REMINDER_ROUTE, { goalId, amountMinor });
 
 // HU-045: goals before contributions, which reference them.
 const backup = createSavingsBackup({
@@ -145,6 +158,17 @@ export const routes: ModuleRoutes = {
       name: LINK_MOVEMENT_ROUTE,
       component: createLinkMovementScreen({ goals: service, contributions }),
       path: 'metas/:goalId/vincular',
+    },
+    {
+      // "Programar" in Recomendaciones; Metas opens it from M11's params.
+      name: PAYDAY_REMINDER_ROUTE,
+      component: createPaydayReminderScreen({
+        goals: service,
+        payday,
+        salaryDay: async () => salaryDay(await getIncomeSources()),
+        homeRoute: METAS_ROUTE,
+      }),
+      path: 'metas/:goalId/dia-de-pago',
     },
   ],
 };
