@@ -92,7 +92,7 @@ func TestAConsentEndedAtTheBankIsConsentRevoked(t *testing.T) {
 // must not ask anyone to reconnect. A 401 about the token still does.
 func TestA401AboutFynksClientIsUnavailableNotInvalidGrant(t *testing.T) {
 	for _, body := range []string{
-		`{"error":"invalid_client","error_description":"Client certificate not recieved. MTLS connection not established"}`,
+		`{"error":"invalid_client","error_description":"Client certificate not received. MTLS connection not established"}`,
 		`{"error":"invalid_client","error_description":"Client certificate is not valid or is not issued by a trusted CA."}`,
 	} {
 		a, bank, _ := setup(t)
