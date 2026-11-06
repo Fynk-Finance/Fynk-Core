@@ -5,7 +5,7 @@ Fynk is a personal finance app for Colombian users, built as a university projec
 Plan and prompts:
 
 * Overview of all modules and decisions: the doc "Fynk Implementation Plan by Modules".
-* One prompt per module with every technical detail: `docs/modules/M00-foundations.md` to `docs/modules/M16-banco-demo.md`.
+* One prompt per module with every technical detail: `docs/modules/M00-foundations.md` to `docs/modules/M16-banco-demo.md`. `docs/modules/M16b-simulated-banks.md` extends M16.
 * Shared contracts every module builds on: `docs/modules/00-shared-contracts.md`.
 * Phases, order of work and gate checklists: `docs/modules/00-phases-and-gates.md`.
 
@@ -43,7 +43,7 @@ These rules are not up for debate inside a task. Changing one needs a team decis
 5. **Code calculates, the LLM writes.** Every number comes from deterministic code in the analytics module. Bedrock only receives the aggregate snapshot and writes text. Raw movements never leave the phone.
 6. **Fynk never moves money.** No transfers, payments, investments or cancellations from the app. "Programar" means a reminder. "+ Invertir" opens the Banco Demo portal.
 7. **One port for every bank.** All bank access goes through the provider port. Banco Demo, Billetera Demo and Bancolombia are adapters. A new bank or an aggregator must be addable without touching the domain.
-8. **Banco Demo is a separate simulated bank.** It has its own login and web portal where money actions happen. Fynk reads it through the same consent, OAuth and mTLS flow as a real bank. Its data is always labeled "Simulado".
+8. **Banco Demo is a separate simulated bank.** It has its own login and web portal where money actions happen. Fynk reads it through the same consent, OAuth and mTLS flow as a real bank. Its data is always labeled "Simulado". For the demo only, the simulator creates a new user's accounts at sign up (ADR 0008).
 9. **Investment is informative only.** The Inversión tab shows the user's own CDTs, a catalog that is the same for every user, and a calculator. Fynk never filters, sorts or highlights products by the user's balance or profile (Decreto 2555, art. 2.40.1.1.2 and 2.40.1.1.3).
 10. **No cédula.** It is not asked for and not stored. The bank identifies the user in its own login.
 
@@ -106,7 +106,7 @@ fynk/
 
 | Person | GitHub | Modules | Points |
 | --- | --- | --- | --- |
-| Daniel Palacios | `@Komi-yes` | M1 Identity, M2 Vault and backup | 39 |
+| Daniel Palacios | `@Komi-yes` | M1 Identity, M2 Vault and backup, simulated banks (M16b) | 54 |
 | Sofia Nicolle Ariza | `@sofia-ariza-783` | M0 Foundations, M3 Onboarding, M6 Accounts, M7 Transactions | 42 |
 | Juan Carlos Leal | `@JuanLeal05` | M4 Consents, M5 Bank and sync | 41 |
 | Juan Pablo Contreras | `@juancontrerasp` | M13 Compliance and audit, M14 Infrastructure, M16 Banco Demo | 35 |
@@ -132,7 +132,7 @@ Each person reviews the pull requests of their modules (see `.github/CODEOWNERS`
 | Audit events | Cloud, append only, hash chained |
 | Nonces, refresh rate limits, caches | Redis |
 | Theme preference (Sistema, Claro, Oscuro) | Phone, plain app storage outside the vault, not backed up |
-| Banco Demo customers and their simulated data | Its own schema `bankdemo` |
+| Banco Demo customers and their simulated data | Its own schema `bankdemo`. A Fynk user's customer id there is their Keycloak `sub`, never the email, name or cédula |
 
 If you are about to store something that is not in this table, ask before you do it.
 
@@ -284,7 +284,7 @@ These rules let 17 modules work in parallel without stepping on each other.
 | Login and recovery | Keycloak for login and password reset. Vault key separate from the password. New phone: approval from the old phone or recovery code |
 | Cédula | Not asked, not stored |
 | Sync | On open, pull to refresh, foreground after 15 minutes, 60 second cooldown, incremental |
-| Simulated bank | Banco Demo with its own portal for money actions, fictional names, accounts created at consent |
+| Simulated bank | Banco Demo with its own portal for money actions, fictional names, accounts created at consent (replaced on 6 Nov, see Simulated banks) |
 | Caps | Weekly or monthly caps per category, "Antojos" under $20.000 by default, alerts at 80 % and 100 % |
 | Ver plan | Removed |
 | Subscriptions | User marks usage, sees the account or card of each subscription, price increase alerts |
@@ -299,6 +299,7 @@ These rules let 17 modules work in parallel without stepping on each other.
 | Email codes (27 Oct) | Email verification at sign up and password reset use a 6 digit code sent by email, as in the design, instead of Keycloak's links. A Keycloak extension in `services/keycloak/extensions/email-code` does it: 10 minutes, 5 attempts per code, a new code every 60 s, 10 wrong codes in 12 h per user. See `docs/adr/0007-email-codes.md` |
 | Offline sessions (27 Oct) | No `offline_access`. The app keeps a normal refresh session (30 days idle, 90 days max) |
 | Stacked pull requests (28 Oct) | Dependent pull requests are chained as a GitHub stack with `gh stack`, merged bottom-up. See Git workflow › Pull requests |
+| Simulated banks (6 Nov) | Four fictional entities (Banco Demo, Billetera Demo, Banco Digital Demo, Cooperativa Demo) with random non-negative balances, created at the first part of sign up. Only the Keycloak `sub` is sent. See `docs/adr/0008-simulated-bank-provisioning.md` and `docs/modules/M16b-simulated-banks.md` |
 
 ## Open items (ask the team, do not decide in code)
 
