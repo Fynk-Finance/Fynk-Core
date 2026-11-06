@@ -4,6 +4,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -63,6 +64,28 @@ type Config struct {
 	BancoDemoClientID     string
 	BancoDemoIssuer       string
 	BancoDemoAuthorizeURL string
+
+	// Bancolombia's Open Finance APIs (M5, docs/adr/0003-bancolombia-sandbox.md). Every one is
+	// optional: without the client id and secret Bancolombia is not offered.
+	//
+	// BancolombiaClientID and BancolombiaClientSecret are the credentials of Fynk's application
+	// in Bancolombia's API Market (the Client-Id and Client-Secret headers). Never log the secret.
+	BancolombiaClientID     string
+	BancolombiaClientSecret string
+	// BancolombiaIssuer is the issuer the client assertion is addressed to, and
+	// BancolombiaAuthorizeURL the authorization page the phone opens (both from Bancolombia's
+	// /.well-known/openid-configuration).
+	BancolombiaIssuer       string
+	BancolombiaAuthorizeURL string
+	// BancolombiaSandbox marks Bancolombia's sandbox: its data is fictional, so the app shows
+	// "Simulado". Bancolombia's consent API asks for the customer's ID document, which Fynk
+	// never asks (CLAUDE.md, rule 10), so outside the sandbox Bancolombia is not offered.
+	BancolombiaSandbox bool
+	// BancolombiaSandboxOwner* is the fictional customer of the sandbox, sent as the consent's
+	// AccountOwner. Only allowed with BancolombiaSandbox.
+	BancolombiaSandboxOwnerIDType string
+	BancolombiaSandboxOwnerID     string
+	BancolombiaSandboxOwnerName   string
 }
 
 // IsLocal reports whether the API runs on a developer machine.
@@ -93,6 +116,14 @@ func Load(getenv func(string) string) (Config, error) {
 		BancoDemoClientID:       getenv("BANCO_DEMO_CLIENT_ID"),
 		BancoDemoIssuer:         getenv("BANCO_DEMO_ISSUER"),
 		BancoDemoAuthorizeURL:   getenv("BANCO_DEMO_AUTHORIZE_URL"),
+
+		BancolombiaClientID:           getenv("BANCOLOMBIA_CLIENT_ID"),
+		BancolombiaClientSecret:       getenv("BANCOLOMBIA_CLIENT_SECRET"),
+		BancolombiaIssuer:             getenv("BANCOLOMBIA_ISSUER"),
+		BancolombiaAuthorizeURL:       getenv("BANCOLOMBIA_AUTHORIZE_URL"),
+		BancolombiaSandboxOwnerIDType: getenv("BANCOLOMBIA_SANDBOX_OWNER_ID_TYPE"),
+		BancolombiaSandboxOwnerID:     getenv("BANCOLOMBIA_SANDBOX_OWNER_ID"),
+		BancolombiaSandboxOwnerName:   getenv("BANCOLOMBIA_SANDBOX_OWNER_NAME"),
 	}
 	if c.Port == "" {
 		c.Port = "8080"
@@ -105,6 +136,13 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 
 	var errs []error
+	if v := getenv("BANCOLOMBIA_SANDBOX"); v != "" {
+		sandbox, err := strconv.ParseBool(v)
+		if err != nil {
+			errs = append(errs, errors.New("BANCOLOMBIA_SANDBOX must be true or false"))
+		}
+		c.BancolombiaSandbox = sandbox
+	}
 	switch c.AppEnv {
 	case EnvLocal, EnvStaging, EnvProd:
 	case "":
@@ -126,6 +164,15 @@ func Load(getenv func(string) string) (Config, error) {
 	if c.BancoDemoAuthorizeURL != "" && c.AppEnv != EnvLocal &&
 		!strings.HasPrefix(c.BancoDemoAuthorizeURL, "https://") {
 		errs = append(errs, errors.New("BANCO_DEMO_AUTHORIZE_URL must start with https://"))
+	}
+	if c.BancolombiaAuthorizeURL != "" && c.AppEnv != EnvLocal &&
+		!strings.HasPrefix(c.BancolombiaAuthorizeURL, "https://") {
+		errs = append(errs, errors.New("BANCOLOMBIA_AUTHORIZE_URL must start with https://"))
+	}
+	// Fynk never asks a person for their cédula (rule 10): an owner is only the sandbox's.
+	if !c.BancolombiaSandbox && (c.BancolombiaSandboxOwnerIDType != "" || c.BancolombiaSandboxOwnerID != "" ||
+		c.BancolombiaSandboxOwnerName != "") {
+		errs = append(errs, errors.New("BANCOLOMBIA_SANDBOX_OWNER_* is only allowed with BANCOLOMBIA_SANDBOX=true"))
 	}
 	return c, errors.Join(errs...)
 }
