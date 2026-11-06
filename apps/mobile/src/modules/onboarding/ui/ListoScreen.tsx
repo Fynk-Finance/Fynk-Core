@@ -4,6 +4,7 @@
 // 27): the gesture is off in the navigator and the Android back button is held here.
 // The numbers come from the owning modules through `loadSummary`, read again whenever Listo is on
 // top, so a recovery code saved from the pending row shows as "Guardado" on return.
+// The motion of the design is in ListoMotion.tsx.
 import {
   useFocusEffect,
   useNavigation,
@@ -13,6 +14,7 @@ import {
 } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
 
@@ -33,6 +35,17 @@ import {
 
 import { greetingName } from '../domain/name';
 import { summaryRows, type SummaryInput, type SummaryRow } from '../domain/summary';
+import {
+  DrawnCheck,
+  ListoBurst,
+  OK_DELAY,
+  ROW_DELAY,
+  ROW_STEP,
+  useFadeUp,
+  useHeroMotion,
+  usePop,
+  useSheetMotion,
+} from './ListoMotion';
 import { useOnboarding } from './OnboardingContext';
 import { RECOVERY_CODE_ROUTE } from './routes';
 import { onboardingStrings } from './strings.es-CO';
@@ -100,6 +113,80 @@ function detailOf(row: SummaryRow): string[] {
   }
 }
 
+/** One row of the sheet: it fades up, then its check pops, 0.08 s after the row above. */
+function SummaryRowView({
+  row,
+  index,
+  last,
+  onOpenRecoveryCode,
+}: {
+  row: SummaryRow;
+  index: number;
+  last: boolean;
+  onOpenRecoveryCode: () => void;
+}) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const fade = useFadeUp(ROW_DELAY + index * ROW_STEP, 450);
+  const pop = usePop(OK_DELAY + index * ROW_STEP, 450);
+  const label = copy.rows[row.id];
+  const detail = detailOf(row);
+  const icon = ICONS[row.id];
+  const content = (
+    <>
+      {icon === 'repeat' ? (
+        <View style={styles.tile}>
+          <RepeatIcon color={colors.primaryDark} />
+        </View>
+      ) : (
+        <IconTile icon={icon} tone="soft" size={40} />
+      )}
+      <AppText variant="label" style={styles.label}>
+        {label}
+      </AppText>
+      <View>
+        {detail.map((line) => (
+          <AppText key={line} variant="small" color="textSecondary" style={styles.end}>
+            {line}
+          </AppText>
+        ))}
+      </View>
+      {row.done ? (
+        <Animated.View style={[styles.ok, pop]}>
+          <Icon name="check" size={16} color={colors.onPrimary} strokeWidth={3.4} />
+        </Animated.View>
+      ) : (
+        <View style={styles.todo} />
+      )}
+    </>
+  );
+  const style = [styles.row, last ? null : styles.rowLine];
+  return (
+    <Animated.View style={fade}>
+      {row.id === 'recoveryCode' && !row.done ? (
+        <Pressable
+          style={style}
+          onPress={onOpenRecoveryCode}
+          accessibilityRole="button"
+          accessibilityLabel={`${label}. ${copy.pending}. ${copy.saveCode}`}
+          testID={`onboarding.listo.${row.id}`}
+        >
+          {content}
+        </Pressable>
+      ) : (
+        <View
+          style={style}
+          accessible
+          accessibilityLabel={`${label}. ${detail.join(', ')}${row.done ? `. ${copy.completed}` : ''}`}
+          testID={`onboarding.listo.${row.id}`}
+        >
+          {content}
+        </View>
+      )}
+    </Animated.View>
+  );
+}
+
 export function createListoScreen(deps: ListoDeps) {
   return function ListoScreen() {
     const { colors } = useTheme();
@@ -112,6 +199,13 @@ export function createListoScreen(deps: ListoDeps) {
     const [loadFailed, setLoadFailed] = useState(false);
     const [busy, setBusy] = useState(false);
     const [failed, setFailed] = useState(false);
+    // The design's sheet is 429 px high; the real height replaces it once measured.
+    const [sheetHeight, setSheetHeight] = useState(429);
+    const hero = useHeroMotion();
+    const checkPop = usePop(80, 550);
+    const title = useFadeUp(500);
+    const subtitle = useFadeUp(620);
+    const sheet = useSheetMotion(sheetHeight);
 
     // Listo has no way back: the Android back button does nothing here.
     usePreventRemove(true, () => undefined);
@@ -151,30 +245,30 @@ export function createListoScreen(deps: ListoDeps) {
     return (
       <View style={styles.root} testID="onboarding.listo">
         <HeroShapes />
-        <View style={[styles.hero, { paddingTop: insets.top + 24 }]}>
-          <View style={styles.ring}>
-            <View style={styles.check}>
-              <Svg width={56} height={56} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M20 6 9 17l-5-5"
-                  stroke={colors.onPrimary}
-                  strokeWidth={3}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-            </View>
+        <Animated.View style={[styles.hero, { paddingTop: insets.top + 24 }, hero]}>
+          <View style={styles.checkBox}>
+            <Animated.View style={[styles.ring, checkPop]}>
+              <View style={styles.check}>
+                <DrawnCheck color={colors.onPrimary} />
+              </View>
+            </Animated.View>
+            <ListoBurst />
           </View>
-          <AppText color="onPrimary" accessibilityRole="header" style={styles.title}>
-            {copy.title(firstName)}
-          </AppText>
-          <AppText color="onPrimary" style={styles.subtitle}>
-            {copy.subtitle}
-          </AppText>
-        </View>
+          <Animated.View style={title}>
+            <AppText color="onPrimary" accessibilityRole="header" style={styles.title}>
+              {copy.title(firstName)}
+            </AppText>
+          </Animated.View>
+          <Animated.View style={subtitle}>
+            <AppText color="onPrimary" style={styles.subtitle}>
+              {copy.subtitle}
+            </AppText>
+          </Animated.View>
+        </Animated.View>
 
-        <View
-          style={[styles.sheet, { paddingBottom: Math.max(32, insets.bottom + 16) }]}
+        <Animated.View
+          style={[styles.sheet, { paddingBottom: Math.max(32, insets.bottom + 16) }, sheet]}
+          onLayout={(e) => setSheetHeight(e.nativeEvent.layout.height)}
           accessibilityLabel={copy.sheet}
         >
           <View style={styles.handle} />
@@ -187,63 +281,15 @@ export function createListoScreen(deps: ListoDeps) {
                 {copy.notLoaded}
               </AppText>
             ) : null}
-            {(rows ?? []).map((row, i, all) => {
-              const label = copy.rows[row.id];
-              const detail = detailOf(row);
-              const pendingCode = row.id === 'recoveryCode' && !row.done;
-              const icon = ICONS[row.id];
-              const content = (
-                <>
-                  {icon === 'repeat' ? (
-                    <View style={styles.tile}>
-                      <RepeatIcon color={colors.primaryDark} />
-                    </View>
-                  ) : (
-                    <IconTile icon={icon} tone="soft" size={40} />
-                  )}
-                  <AppText variant="label" style={styles.label}>
-                    {label}
-                  </AppText>
-                  <View>
-                    {detail.map((line) => (
-                      <AppText key={line} variant="small" color="textSecondary" style={styles.end}>
-                        {line}
-                      </AppText>
-                    ))}
-                  </View>
-                  {row.done ? (
-                    <View style={styles.ok}>
-                      <Icon name="check" size={16} color={colors.onPrimary} strokeWidth={3.4} />
-                    </View>
-                  ) : (
-                    <View style={styles.todo} />
-                  )}
-                </>
-              );
-              const style = [styles.row, i < all.length - 1 ? styles.rowLine : null];
-              return pendingCode ? (
-                <Pressable
-                  key={row.id}
-                  style={style}
-                  onPress={() => navigation.navigate(RECOVERY_CODE_ROUTE)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${label}. ${copy.pending}. ${copy.saveCode}`}
-                  testID={`onboarding.listo.${row.id}`}
-                >
-                  {content}
-                </Pressable>
-              ) : (
-                <View
-                  key={row.id}
-                  style={style}
-                  accessible
-                  accessibilityLabel={`${label}. ${detail.join(', ')}${row.done ? `. ${copy.completed}` : ''}`}
-                  testID={`onboarding.listo.${row.id}`}
-                >
-                  {content}
-                </View>
-              );
-            })}
+            {(rows ?? []).map((row, i, all) => (
+              <SummaryRowView
+                key={row.id}
+                row={row}
+                index={i}
+                last={i === all.length - 1}
+                onOpenRecoveryCode={() => navigation.navigate(RECOVERY_CODE_ROUTE)}
+              />
+            ))}
           </ScrollView>
           {failed ? (
             <AppText variant="small" color="danger" accessibilityLiveRegion="polite">
@@ -257,7 +303,7 @@ export function createListoScreen(deps: ListoDeps) {
             loading={busy}
             testID="onboarding.listo.finish"
           />
-        </View>
+        </Animated.View>
       </View>
     );
   };
@@ -277,6 +323,7 @@ const createStyles = ({ colors }: Theme) =>
       paddingHorizontal: 24,
       paddingBottom: 56,
     },
+    checkBox: { width: 140, height: 140 },
     ring: { padding: 10, borderRadius: 44, backgroundColor: colors.onPrimaryFaint },
     check: {
       width: 120,

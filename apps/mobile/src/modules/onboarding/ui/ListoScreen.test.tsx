@@ -4,6 +4,7 @@
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Pressable, Text } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 
 import { createAppEvents } from '@shared/events/appEvents';
 import { createFixedClock, createInMemoryVault, type InMemoryVault } from '@shared/testing';
@@ -28,6 +29,7 @@ jest.mock('react-native-reanimated', () => {
   };
 });
 
+const reduceMotion = useReducedMotion as jest.Mock;
 const NOW = '2026-11-06T15:00:00.000Z';
 const copy = onboardingStrings.listo;
 
@@ -91,6 +93,8 @@ async function openListo(
 }
 
 const saved = () => createVaultProgressStore(vault.db).load();
+
+beforeEach(() => reduceMotion.mockReturnValue(true));
 
 afterEach(() => {
   service.dispose();
@@ -167,5 +171,17 @@ describe('Listo', () => {
   it('has no back button', async () => {
     await openListo(async () => DESIGN);
     expect(screen.queryByRole('button', { name: 'Volver' })).toBeNull();
+  });
+
+  it('throws the burst around the check when motion is allowed', async () => {
+    reduceMotion.mockReturnValue(false);
+    await openListo(async () => DESIGN);
+    expect(screen.getByTestId('onboarding.listo.burst')).toBeTruthy();
+    expect(screen.getByText('3 registradas')).toBeTruthy();
+  });
+
+  it('draws no burst with Reduce Motion', async () => {
+    await openListo(async () => DESIGN);
+    expect(screen.queryByTestId('onboarding.listo.burst')).toBeNull();
   });
 });
