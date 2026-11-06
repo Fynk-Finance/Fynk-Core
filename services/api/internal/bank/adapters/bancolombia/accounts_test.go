@@ -87,6 +87,29 @@ func TestAConsentEndedAtTheBankIsConsentRevoked(t *testing.T) {
 	}
 }
 
+// The sandbox's gateway answers 401 invalid_client when Fynk's mTLS certificate or API Market
+// credentials are missing or not trusted. That is Fynk's setup, not the person's consent: it
+// must not ask anyone to reconnect. A 401 about the token still does.
+func TestA401AboutFynksClientIsUnavailableNotInvalidGrant(t *testing.T) {
+	for _, body := range []string{
+		`{"error":"invalid_client","error_description":"Client certificate not received. MTLS connection not established"}`,
+		`{"error":"invalid_client","error_description":"Client certificate is not valid or is not issued by a trusted CA."}`,
+	} {
+		a, bank, _ := setup(t)
+		bank.answers["GET "+balancesPath] = jsonAnswer(401, body)
+		_, err := a.Accounts(context.Background(), "access-1")
+		if !errors.Is(err, ports.ErrProviderUnavailable) || errors.Is(err, ports.ErrInvalidGrant) {
+			t.Fatalf("got %v", err)
+		}
+	}
+	a, bank, _ := setup(t)
+	bank.answers["GET "+balancesPath] = jsonAnswer(401,
+		`{"Code":"NAUT","Message":"Unauthorized","Errors":[{"ErrorCode":"BP40153001","Detail":"Invalid token."}]}`)
+	if _, err := a.Accounts(context.Background(), "access-1"); !errors.Is(err, ports.ErrInvalidGrant) {
+		t.Fatalf("an invalid token: got %v", err)
+	}
+}
+
 const txPath = "/api/open-banking/v1/deposits/accounts/afebcd15690aefd4/transactions"
 
 // From the documented examples, with a rejected and a pending one added.
