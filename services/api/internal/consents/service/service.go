@@ -312,7 +312,13 @@ func (s *Service) notify(ctx context.Context, c domain.Consent) domain.Consent {
 		c = c.Notified(now)
 	} else {
 		c = c.NoticeFailed(now)
-		if c.NextNotifyAt == nil {
+		if errors.Is(err, bankports.ErrRevocationNotSupported) {
+			// Retrying cannot help: the entity has no revocation API for third parties. The
+			// consent stays revoked in Fynk; the person revokes it in the entity's channels.
+			c.NextNotifyAt = nil
+			s.log.WarnContext(ctx, "consent revocation notice not supported by the entity",
+				"consent_id", c.ID, "provider", c.Provider, "error_code", errorCode(err))
+		} else if c.NextNotifyAt == nil {
 			s.log.ErrorContext(ctx, "consent revocation notice gave up after 24 hours",
 				"consent_id", c.ID, "provider", c.Provider, "attempts", c.NotifyAttempts, "error_code", errorCode(err))
 		} else {
