@@ -55,7 +55,7 @@ func deps(c config.Config) module.Deps {
 
 func TestWithEverySettingBothDemoProvidersAreBuiltAndTheRevokerIsInstalled(t *testing.T) {
 	t.Cleanup(func() { ports.InstallRevoker(nil) })
-	providers, fingerprints, err := bankDemoProviders(deps(linkSettings(t)))
+	providers, fingerprints, err := bankProviders(deps(linkSettings(t)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func TestAMissingSettingDisablesTheLinkAndKeepsTheUnavailableRevoker(t *testing.
 	} {
 		c := full
 		drop(&c)
-		if p, _, err := bankDemoProviders(deps(c)); err == nil || p != nil {
+		if p, _, err := bankProviders(deps(c)); err == nil || p != nil {
 			t.Errorf("%s: want the link disabled, got %v %v", name, p, err)
 		}
 	}
@@ -122,7 +122,7 @@ func TestTheKMSKeysReplaceTheFilesInAWS(t *testing.T) {
 	c := linkSettings(t)
 	c.BankSignerKeyFile, c.BankFingerprintKeyFile = "", ""
 	c.BankSignerKMSKeyID, c.BankFingerprintKMSKeyID = "alias/signer", "alias/fingerprint"
-	providers, fingerprints, err := bankDemoProviders(deps(c))
+	providers, fingerprints, err := bankProviders(deps(c))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +139,7 @@ func TestTheKMSKeysReplaceTheFilesInAWS(t *testing.T) {
 
 func TestLocalKeyFilesNeverLoadAWS(t *testing.T) {
 	calls := useKMS(t, func(context.Context) (keys.KMS, error) { return stubKMS{}, nil })
-	_, fingerprints, err := bankDemoProviders(deps(linkSettings(t)))
+	_, fingerprints, err := bankProviders(deps(linkSettings(t)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +152,7 @@ func TestAKMSClientThatCannotLoadKeepsTheLinkOff(t *testing.T) {
 	useKMS(t, func(context.Context) (keys.KMS, error) { return nil, errors.New("no region") })
 	c := linkSettings(t)
 	c.BankSignerKMSKeyID = "alias/signer"
-	if p, _, err := bankDemoProviders(deps(c)); err == nil || p != nil {
+	if p, _, err := bankProviders(deps(c)); err == nil || p != nil {
 		t.Fatalf("want the link disabled, got %v %v", p, err)
 	}
 	if err := ports.InstalledRevoker().RevokeConsent(context.Background(), "banco-demo", "x"); !errors.Is(err, ports.ErrProviderUnavailable) {
@@ -199,5 +199,73 @@ func TestWithoutTheEgressTheCDTCatalogStaysUnavailable(t *testing.T) {
 	}
 	if _, err := ports.ProductsOf("banco-demo").Products(context.Background()); !errors.Is(err, ports.ErrProviderUnavailable) {
 		t.Fatalf("got %v, want provider_unavailable", err)
+	}
+}
+
+// bancolombiaSandbox adds the sandbox settings of Bancolombia (ADR 0003) to c.
+func bancolombiaSandbox(c config.Config) config.Config {
+	c.BancolombiaClientID, c.BancolombiaClientSecret = "fynk-sandbox", "market-secret"
+	c.BancolombiaIssuer = "https://auth1-api-open-finance-sandbox.example"
+	c.BancolombiaAuthorizeURL = "https://auth1-api-open-finance-sandbox.example/authorize"
+	c.BancolombiaSandbox = true
+	c.BancolombiaSandboxOwnerIDType, c.BancolombiaSandboxOwnerID = "CC", "78965432"
+	return c
+}
+
+func TestBancolombiasSandboxIsBuiltAndOfferedNextToBancoDemo(t *testing.T) {
+	t.Cleanup(func() { ports.InstallRevoker(nil); ports.Offer() })
+	providers, _, err := bankProviders(deps(bancolombiaSandbox(linkSettings(t))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"banco-demo", "billetera-demo", "bancolombia"} {
+		if _, ok := providers.Provider(id); !ok {
+			t.Fatalf("no %s", id)
+		}
+	}
+	p, ok := ports.Lookup("bancolombia")
+	if !ok || !p.IsSimulated || p.Kind != ports.KindBank || len(p.Scopes) != 3 {
+		t.Fatalf("offered %+v, %v", p, ok)
+	}
+	// M4 reaches Bancolombia through the same revoker, which says it cannot revoke there.
+	if err := ports.InstalledRevoker().RevokeConsent(context.Background(), "bancolombia", "c"); !errors.Is(err, ports.ErrRevocationNotSupported) {
+		t.Fatalf("revoker: %v", err)
+	}
+}
+
+func TestBancolombiaAloneIsEnough(t *testing.T) {
+	t.Cleanup(func() { ports.InstallRevoker(nil); ports.Offer() })
+	c := bancolombiaSandbox(linkSettings(t))
+	c.BancoDemoClientID = ""
+	providers, fingerprints, err := bankProviders(deps(c))
+	if err != nil || fingerprints == nil {
+		t.Fatal(err)
+	}
+	if _, ok := providers.Provider("banco-demo"); ok {
+		t.Fatal("Banco Demo without its client id")
+	}
+	if _, ok := providers.Provider("bancolombia"); !ok {
+		t.Fatal("no Bancolombia")
+	}
+}
+
+// Outside the sandbox Fynk has no customer document to send (rule 10): Bancolombia is not
+// offered, and Banco Demo keeps working.
+func TestBancolombiaOutsideTheSandboxIsNotOffered(t *testing.T) {
+	t.Cleanup(func() { ports.InstallRevoker(nil); ports.Offer() })
+	c := bancolombiaSandbox(linkSettings(t))
+	c.BancolombiaSandbox, c.BancolombiaSandboxOwnerIDType, c.BancolombiaSandboxOwnerID = false, "", ""
+	providers, _, err := bankProviders(deps(c))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := providers.Provider("bancolombia"); ok {
+		t.Fatal("Bancolombia built outside the sandbox")
+	}
+	if _, ok := ports.Lookup("bancolombia"); ok {
+		t.Fatal("Bancolombia offered outside the sandbox")
+	}
+	if _, ok := providers.Provider("banco-demo"); !ok {
+		t.Fatal("Banco Demo must keep working")
 	}
 }

@@ -86,3 +86,25 @@ func TestTheRevokerIsUnavailableUntilInstalled(t *testing.T) {
 		t.Fatalf("after uninstall: err = %v", err)
 	}
 }
+
+// A real bank is offered only after the bank module built its adapter at startup.
+func TestAnOfferedBankIsListedAfterTheSimulatedOnes(t *testing.T) {
+	t.Cleanup(func() { Offer() })
+	Offer(Info{ID: "bancolombia", DisplayName: "Bancolombia", Kind: KindBank, IsSimulated: true, LogoKey: "bancolombia",
+		Scopes: []Scope{ScopeBalances, ScopeTransactions, ScopeAccountDetails}})
+	list := Providers()
+	if len(list) != 3 || list[2].ID != "bancolombia" {
+		t.Fatalf("providers %+v", list)
+	}
+	if p, ok := Lookup("bancolombia"); !ok || p.DisplayName != "Bancolombia" || len(p.Scopes) != 3 {
+		t.Fatalf("lookup %+v, %v", p, ok)
+	}
+	list[2].Scopes[0] = "changed"
+	if p, _ := Lookup("bancolombia"); p.Scopes[0] != ScopeBalances {
+		t.Fatal("a caller changed the offered provider")
+	}
+	Offer()
+	if _, ok := Lookup("bancolombia"); ok || len(Providers()) != 2 {
+		t.Fatal("Offer() must take it out again")
+	}
+}
