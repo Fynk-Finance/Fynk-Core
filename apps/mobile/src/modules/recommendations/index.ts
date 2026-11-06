@@ -3,6 +3,8 @@ import type { Clock } from '@shared/domain';
 import type { ModuleRoutes } from '@shared/navigation';
 import type { RegisterVaultMigrations, VaultDb } from '@shared/ports';
 import { getAnalyticsReport, snapshotDataRange } from '@modules/analytics';
+import { useDisplayName as useOnboardingName } from '@modules/onboarding';
+import { openPaydayReminder } from '@modules/savings';
 
 import { createRecommendationsApi } from './adapters/api/recommendationsApi';
 import { recommendationsMigrations } from './adapters/vault/migrations';
@@ -14,11 +16,24 @@ import {
   defaultNavigation,
   type RecommendationsNavigation,
 } from './ui/RecommendationsScreen';
+import { recommendationsStrings } from './ui/strings.es-CO';
 
 export { useAiRecommendationsSetting } from './application/hooks';
 export type { RecommendationsNavigation };
 
-let navigationTargets: RecommendationsNavigation = defaultNavigation;
+/** The name typed in onboarding (M3), or "Invitado". Read only while the screen renders. */
+function useHeaderName(): string {
+  return useOnboardingName() ?? recommendationsStrings.guestName;
+}
+
+/** "Programar" opens M8's payday reminder, "Revisar" M9's low use filter, the name is M3's. */
+const installedNavigation: RecommendationsNavigation = {
+  ...defaultNavigation,
+  openPaydayReminder: (nav, goalId, amountMinor) => openPaydayReminder(nav, goalId, amountMinor),
+  useDisplayName: useHeaderName,
+};
+
+let navigationTargets: RecommendationsNavigation = installedNavigation;
 
 const RecommendationsTab = createRecommendationsScreen({
   openPaydayReminder: (...args) => navigationTargets.openPaydayReminder(...args),
@@ -35,14 +50,14 @@ export interface RecommendationsDeps {
   getVaultDb: () => VaultDb; // M2
   registerVaultMigrations: RegisterVaultMigrations; // M2
   clock: Clock;
-  /** Where "Programar", "Revisar" and the header name come from (M8, M9, M1). Optional. */
+  /** Overrides where "Programar", "Revisar" and the header name come from (M8, M9, M3). */
   navigation?: Partial<RecommendationsNavigation>;
 }
 
 /** Installs the module once at startup, after M2's vault and configureAnalytics(). */
 export function configureRecommendations(deps: RecommendationsDeps): void {
   deps.registerVaultMigrations('recommendations', recommendationsMigrations);
-  navigationTargets = { ...defaultNavigation, ...deps.navigation };
+  navigationTargets = { ...installedNavigation, ...deps.navigation };
   setRecommendationsService(
     createRecommendationsService({
       analytics: { getReport: getAnalyticsReport },

@@ -3,16 +3,23 @@ import type { Clock } from '@shared/domain';
 import type { ModuleRoutes } from '@shared/navigation';
 
 import { getBalanceHistory, getCdtAccounts } from '@modules/accounts';
+import { useDisplayName as useOnboardingName } from '@modules/onboarding';
 
 import { createMarketApi } from './adapters/api/marketApi';
 import { setInvestmentDeps } from './application/hooks';
 import type { AccountsPort } from './application/ports';
 import { totalPerDay } from './domain/investment';
 import { createInvestmentScreen } from './ui/InvestmentScreen';
+import { investmentStrings } from './ui/strings.es-CO';
 
 export type { AccountsPort };
 
-let displayName: () => string = () => 'Invitado';
+/** The name typed in onboarding (M3), or "Invitado". Read only while the screen renders. */
+function useHeaderName(): string {
+  return useOnboardingName() ?? investmentStrings.guestName;
+}
+
+let displayName: () => string = useHeaderName;
 
 export const routes: ModuleRoutes = {
   module: 'investment',
@@ -24,7 +31,7 @@ export interface InvestmentConfig {
   clock: Clock;
   /** Banco Demo portal base, e.g. https://bancodemo.fynk.co (EXPO_PUBLIC_BANCO_DEMO_PORTAL_URL). */
   bancoDemoPortalUrl: string;
-  /** Header name (M1). Optional. */
+  /** Overrides the header name, M3's by default. */
   useDisplayName?: () => string;
 }
 
@@ -63,7 +70,7 @@ export const cdtAccounts: AccountsPort = {
 /**
  * The module installs itself when the app loads it, like M7, M8 and M9: its CDTs come from M6
  * and "+ Invertir" opens the Banco Demo portal of EXPO_PUBLIC_BANCO_DEMO_PORTAL_URL. The header
- * shows "Invitado" until M1 exports the profile name.
+ * greets the person with the name typed in onboarding (M3).
  */
 configureInvestment({
   accounts: cdtAccounts,

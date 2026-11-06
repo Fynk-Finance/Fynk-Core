@@ -1,9 +1,14 @@
+import { screen } from '@testing-library/react-native';
+
+import { renderScreens } from './testing/renderScreen';
+
 // The module installs itself from index.ts with M6's CDTs (SCRUM-66): the Inversión tab shows the
 // user's own CDTs and their total over time, and "+ Invertir" opens the Banco Demo portal.
 jest.mock('@modules/accounts', () => ({
   getCdtAccounts: jest.fn(),
   getBalanceHistory: jest.fn(),
 }));
+jest.mock('@modules/onboarding', () => ({ useDisplayName: jest.fn(() => 'Julián') }));
 
 /* eslint-disable @typescript-eslint/no-require-imports -- the mock above must load first */
 const accounts = jest.requireMock<{ getCdtAccounts: jest.Mock; getBalanceHistory: jest.Mock }>(
@@ -35,5 +40,22 @@ describe('investment module wiring', () => {
     accounts.getBalanceHistory.mockClear();
     expect(await cdtAccounts.getCdtBalanceHistory!()).toEqual([]);
     expect(accounts.getBalanceHistory).not.toHaveBeenCalled();
+  });
+});
+
+describe('investment header', () => {
+  const onboarding = jest.requireMock<{ useDisplayName: jest.Mock }>('@modules/onboarding');
+
+  it('greets the person with the name typed in onboarding (M3)', async () => {
+    accounts.getCdtAccounts.mockResolvedValue([]);
+    await renderScreens({ screens: { Inversion: routes.tab! }, initial: 'Inversion' });
+    expect(await screen.findByText('Julián')).toBeOnTheScreen();
+  });
+
+  it('shows "Invitado" before the person types a name', async () => {
+    onboarding.useDisplayName.mockReturnValue(null);
+    accounts.getCdtAccounts.mockResolvedValue([]);
+    await renderScreens({ screens: { Inversion: routes.tab! }, initial: 'Inversion' });
+    expect(await screen.findByText('Invitado')).toBeOnTheScreen();
   });
 });
