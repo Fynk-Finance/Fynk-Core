@@ -7,6 +7,12 @@
 //	BANCOLOMBIA_CLIENT_ID=... BANCOLOMBIA_CLIENT_SECRET=... \
 //	  go test -tags integration -count=1 -v -run Sandbox ./internal/bank/adapters/bancolombia/
 //
+// The resource server requires mTLS with a client certificate issued by the sandbox's own test
+// CA ("Ozone Unsecured Certificates", NON-PROD-ONLY), which Bancolombia gives to each app. In
+// staging the Caddy egress presents it; here, point BANCOLOMBIA_SANDBOX_CERT_FILE and
+// BANCOLOMBIA_SANDBOX_KEY_FILE at its PEM files (in certs/, never committed). Without them the
+// resource calls answer 401 invalid_client (ADR 0003, finding 7).
+//
 // The sandbox is a set of mocks: each API answers its documented examples, chosen by the value
 // of the authorization header or the account id, so these tests use those documented values
 // ("4uth0r1z4t100n" and friends) instead of a person's token. They prove that Fynk reaches the
@@ -15,6 +21,7 @@ package bancolombia
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -60,13 +67,30 @@ func sandbox(t *testing.T) *Adapter {
 		ClientID:        id, ClientSecret: secret,
 		Audience: "sandbox", AuthorizeURL: "https://sandbox/authorize",
 		Owner:   Owner{IDType: "CC", ID: "78965432", Name: "Pepito Perez"},
-		Sandbox: true, Signer: &signer{}, HTTP: &http.Client{Timeout: 20 * time.Second},
+		Sandbox: true, Signer: &signer{}, HTTP: sandboxHTTP(t),
 		Clock: clock.NewFixed(time.Now()),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	return a
+}
+
+// sandboxHTTP presents the sandbox client certificate when its files are set, as the egress does.
+func sandboxHTTP(t *testing.T) *http.Client {
+	t.Helper()
+	c := &http.Client{Timeout: 20 * time.Second}
+	certFile, keyFile := os.Getenv("BANCOLOMBIA_SANDBOX_CERT_FILE"), os.Getenv("BANCOLOMBIA_SANDBOX_KEY_FILE")
+	if certFile == "" || keyFile == "" {
+		t.Log("no BANCOLOMBIA_SANDBOX_CERT_FILE/KEY_FILE: resource calls will be refused without mTLS")
+		return c
+	}
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		t.Fatalf("sandbox client certificate: %v", err)
+	}
+	c.Transport = &http.Transport{TLSClientConfig: &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}}
+	return c
 }
 
 // The discovery document gives the issuer and the authorization endpoint for the settings
