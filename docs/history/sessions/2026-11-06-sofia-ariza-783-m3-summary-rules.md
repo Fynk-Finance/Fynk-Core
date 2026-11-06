@@ -6,7 +6,7 @@ module: M3
 jira: [SCRUM-69]
 branch: feature/onboarding-summary-rules
 tool: Claude Code
-pr: none
+pr: "#297"
 status: done
 ---
 
@@ -24,7 +24,7 @@ Part of Sofia's request to "complete all the onboarding module". Listo has to su
 ## Result
 
 * Tests: onboarding domain, 4 suites, 67 pass. `tsc`, ESLint and Prettier are clean.
-* Pull request: in the M3 stack, on top of M2's #296.
+* Pull request: #297, in the M3 stack, on top of M2's #296.
 
 ## Decisions and problems
 
