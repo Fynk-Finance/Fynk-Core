@@ -17,6 +17,7 @@ import {
 import { createCompleteRestore } from '../application/completeRestore';
 import { createLockController } from '../application/lockController';
 import { createRecoveryCodeService } from '../application/recoveryCode';
+import { createRecoveryCodeStatus } from '../application/recoveryCodeStatus';
 import { createResetBackup } from '../application/resetBackup';
 import { createRestoreState } from '../application/restoreState';
 import { createRestoreWithApproval } from '../application/restoreWithApproval';
@@ -75,4 +76,10 @@ export const lockController = createLockController({
   }),
   // No other phone and no code: the server deletes the backup after an email code reset.
   resetBackup: createResetBackup({ api: createBackupResetApi({ deviceId: () => deviceId() }) }),
+});
+
+/** Whether the recovery code is saved (the server holds the key wrapped with it). */
+export const recoveryCodeStatus = createRecoveryCodeStatus({
+  backupEnabled: () => backupEnabled(),
+  recoveryKey: recoveryKeyApi,
 });

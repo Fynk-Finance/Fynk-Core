@@ -8,13 +8,14 @@ import { signOut, useSession } from '@modules/identity';
 import { watchAppState } from './adapters/appStateLock';
 import { approveDevice, startApprovalNotifier } from './adapters/defaultApproval';
 import { backupRegistry, backupSync } from './adapters/defaultBackup';
-import { lockController } from './adapters/defaultLock';
+import { lockController, recoveryCodeStatus } from './adapters/defaultLock';
 import { copyText } from './adapters/clipboard';
 import { vault } from './adapters/defaultVault';
 import { createNewRecoveryCodeScreen } from './ui/NewRecoveryCodeScreen';
 import { RECOVERY_CODE_ROUTE, RecoveryCodeRow } from './ui/RecoveryCodeRow';
 import { createApproveDeviceScreen } from './ui/ApproveDeviceScreen';
 import { createUnlockSetting } from './ui/UnlockSetting';
+import type { RecoveryCodeStatus } from './application/recoveryCodeStatus';
 import { createVaultFlow } from './ui/VaultFlow';
 import { createUseVaultGate } from './ui/useVaultGate';
 
@@ -24,6 +25,12 @@ import { createUseVaultGate } from './ui/useVaultGate';
 // Route name of identity's Seguridad screen. A literal, because identity is still loading when
 // this file loads (import cycle), so a constant imported from it could be undefined here.
 const SECURITY_ROUTE = 'identity.Security';
+
+/** "Generar un código nuevo": a fresh login, the new code, and "Ya lo guardé"; then it goes back. */
+export const NewRecoveryCodeScreen = createNewRecoveryCodeScreen({
+  controller: lockController,
+  copyText,
+});
 
 const ApproveDeviceScreen = createApproveDeviceScreen({
   service: approveDevice,
@@ -46,7 +53,7 @@ export const routes: ModuleRoutes = {
     {
       // "Generar un código nuevo", pushed from Seguridad with the default transition.
       name: RECOVERY_CODE_ROUTE,
-      component: createNewRecoveryCodeScreen({ controller: lockController, copyText }),
+      component: NewRecoveryCodeScreen,
       path: 'boveda/recuperacion',
     },
     {
@@ -97,3 +104,14 @@ export const UnlockSetting = createUnlockSetting(lockController);
 
 /** M2's "Código de recuperación" section on M1's Seguridad screen: "Generar un código nuevo". */
 export { RecoveryCodeRow };
+
+/** Route name of NewRecoveryCodeScreen, for a navigator that pushes it (onboarding's Listo). */
+export { RECOVERY_CODE_ROUTE };
+
+export type { RecoveryCodeStatus };
+
+/**
+ * "Guardado" or "Pendiente" on onboarding's Listo (M3). Asks the server; `unavailable` when it
+ * cannot, or when this build has no backup.
+ */
+export const getRecoveryCodeStatus = (): Promise<RecoveryCodeStatus> => recoveryCodeStatus();
