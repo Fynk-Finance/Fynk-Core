@@ -148,6 +148,16 @@ func (a *Adapter) resource(ctx context.Context, method, path, token string, body
 func resourceError(what string, res *http.Response) error {
 	switch res.StatusCode {
 	case http.StatusUnauthorized:
+		// invalid_client: the gateway refused Fynk's mTLS certificate or API Market credentials.
+		// Fynk's setup is wrong, the person's consent is fine, so nobody is asked to reconnect.
+		var body struct {
+			Error string `json:"error"`
+		}
+		_ = json.NewDecoder(io.LimitReader(res.Body, maxBody)).Decode(&body)
+		if body.Error == "invalid_client" {
+			return fmt.Errorf("bancolombia: %s: invalid_client, check the mTLS certificate and credentials: %w",
+				what, ports.ErrProviderUnavailable)
+		}
 		return fmt.Errorf("bancolombia: %s: %w", what, ports.ErrInvalidGrant)
 	case http.StatusForbidden:
 		return fmt.Errorf("bancolombia: %s: %w", what, ports.ErrConsentRevoked)
