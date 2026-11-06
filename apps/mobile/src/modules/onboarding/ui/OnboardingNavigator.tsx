@@ -1,5 +1,6 @@
-// The onboarding flow shown by its gate: Aviso, the four steps (pushed), Omitir (modal), and
-// Conectar banco (M5, pushed from Cuentas).
+// The onboarding flow shown by its gate: Aviso, the four steps (pushed), Listo (no way back),
+// Omitir (modal), Conectar banco (M5, pushed from Cuentas) and "Generar un código nuevo" (M2,
+// pushed from Listo).
 // It opens on the saved step with the earlier screens behind it, so back still works after the
 // app was closed. The stack has its own container: it starts from the saved state, and the gate
 // replaces the whole flow with the tabs when the setup ends. Until the progress is read it draws
@@ -29,6 +30,7 @@ import { OnboardingProvider, useOnboardingState } from './OnboardingContext';
 import { SkipWarningScreen } from './SkipWarningScreen';
 import {
   CONNECT_BANK_ROUTE,
+  RECOVERY_CODE_ROUTE,
   SKIP_ROUTE,
   STEP_ROUTES,
   type OnboardingParamList,
@@ -37,8 +39,8 @@ import {
 
 const Stack = createNativeStackNavigator<OnboardingParamList>();
 
-/** The screen of each step (index.ts builds them with the other modules' parts). */
-export type StepScreens = Record<StepId, ComponentType>;
+/** The screen of each step and Listo (index.ts builds them with the other modules' parts). */
+export type StepScreens = Record<StepId | 'done', ComponentType>;
 
 export function initialStateFor(step: WizardStep): InitialState {
   const screens = screensUpTo(step);
@@ -49,9 +51,10 @@ interface StepsProps {
   initialStep: WizardStep;
   steps: StepScreens;
   connectBank?: ComponentType;
+  recoveryCode?: ComponentType;
 }
 
-function Steps({ initialStep, steps, connectBank }: StepsProps) {
+function Steps({ initialStep, steps, connectBank, recoveryCode }: StepsProps) {
   const navigationTheme = useNavigationTheme();
   const reduceMotion = useReducedMotion();
   // Read once: later moves are made by the screens themselves.
@@ -82,6 +85,12 @@ function Steps({ initialStep, steps, connectBank }: StepsProps) {
             component={steps.recurring}
             options={stepOptions}
           />
+          {/* Inventory row 27: Listo has no back gesture; its button fades to the tabs. */}
+          <Stack.Screen
+            name={STEP_ROUTES.done}
+            component={steps.done}
+            options={screenOptionsFor({ gesture: 'off' }, { reduceMotion })}
+          />
           {/* Inventory row 28: Omitir is a modal. */}
           <Stack.Screen
             name={SKIP_ROUTE}
@@ -90,6 +99,9 @@ function Steps({ initialStep, steps, connectBank }: StepsProps) {
           />
           {/* Inventory row 29: pushed with the default transition. */}
           {connectBank ? <Stack.Screen name={CONNECT_BANK_ROUTE} component={connectBank} /> : null}
+          {recoveryCode ? (
+            <Stack.Screen name={RECOVERY_CODE_ROUTE} component={recoveryCode} />
+          ) : null}
         </Stack.Navigator>
       </NavigationContainer>
     </NavigationIndependentTree>
@@ -101,6 +113,8 @@ export function createOnboardingNavigator(
   steps: StepScreens,
   /** M5's Conectar banco, opened by "Agregar otra cuenta". */
   connectBank?: ComponentType,
+  /** M2's "Generar un código nuevo", opened by Listo's pending recovery code row. */
+  recoveryCode?: ComponentType,
 ) {
   return function OnboardingNavigator() {
     const styles = useThemedStyles(createStyles);
@@ -122,7 +136,12 @@ export function createOnboardingNavigator(
 
     return (
       <OnboardingProvider value={service}>
-        <Steps initialStep={state.progress.step} steps={steps} connectBank={connectBank} />
+        <Steps
+          initialStep={state.progress.step}
+          steps={steps}
+          connectBank={connectBank}
+          recoveryCode={recoveryCode}
+        />
       </OnboardingProvider>
     );
   };

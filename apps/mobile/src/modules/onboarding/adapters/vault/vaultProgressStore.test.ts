@@ -45,6 +45,12 @@ describe('vaultProgressStore', () => {
     expect(await store.load()).toEqual({ ...initialProgress, step: 'recurring', finishedAt: NOW });
   });
 
+  it('reads back Listo (step done)', async () => {
+    const store = createVaultProgressStore(vault.db);
+    await store.save({ ...initialProgress, step: 'done', completed: ['name'] }, NOW);
+    expect((await store.load())?.step).toBe('done');
+  });
+
   it('drops step ids this build does not know', async () => {
     await vault.db.execute(
       `INSERT INTO onboarding_progress

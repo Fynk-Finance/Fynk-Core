@@ -3,8 +3,9 @@
 # Run with `make e2e` on a device or emulator with the development build installed. Like
 # tabs.yaml, that build uses EXPO_PUBLIC_DEV_AUTH=dev-token, which has no API session, so the
 # Nombre step (it saves with PATCH /me) is skipped with "Omitir" here; NameStepScreen.test.tsx
-# covers saving the name. Cuentas, Metas and Gastos are placeholders until M5, M6, M8 and M9
-# export their components, and Listo comes after them; this flow grows with them.
+# covers saving the name. Cuentas, Metas and Gastos embed the parts of M5, M6, M8 and M9; this
+# flow goes through them without adding data, so Listo shows them as pending. The dev build has
+# no backup, so Listo has no recovery code row.
 appId: com.fynkfinance.app
 ---
 - launchApp:
@@ -43,6 +44,19 @@ appId: com.fynkfinance.app
 # 4 Gastos recurrentes
 - assertVisible: 'Paso 4 de 4'
 - tapOn: 'Terminar configuración'
+
+# Listo, then the app is closed and opened again: the setup is still on Listo.
+- extendedWaitUntil:
+    visible: '¡Todo listo!'
+    timeout: 5000
+- assertVisible: 'Esto es lo que registraste'
+- assertVisible: 'Verificado'
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: '¡Todo listo!'
+    timeout: 20000
+- tapOn: 'Ir a mi dashboard'
 
 # The setup ended: the tabs fade in, and the setup does not come back on the next launch.
 - extendedWaitUntil:

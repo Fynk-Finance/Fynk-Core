@@ -7,6 +7,7 @@ import { VaultLockedError } from '@shared/ports';
 
 import {
   completeStep,
+  finish,
   initialProgress,
   isFinished,
   skipAll,
@@ -49,6 +50,8 @@ export interface OnboardingService {
   visit(step: WizardStep): Promise<void>;
   /** "Omitir de todos modos". */
   skipAll(): Promise<void>;
+  /** "Ir a mi dashboard" on Listo: the setup ends. */
+  finish(): Promise<void>;
   /** Whether the setup ended. Throws VaultLockedError while the vault is locked. */
   isFinished(): Promise<boolean>;
   /** Stops listening to the vault. */
@@ -136,12 +139,12 @@ export function createOnboardingService(deps: OnboardingServiceDeps): Onboarding
 
     begin: () => step(start),
 
-    completeStep: (id) => step((p, at) => completeStep(p, id, at)),
+    completeStep: (id) => step((p) => completeStep(p, id)),
 
     skipStep: (id) =>
       run(
-        (p, at) => {
-          const { progress, showWarning } = skipStep(p, id, at);
+        (p) => {
+          const { progress, showWarning } = skipStep(p, id);
           return { progress, result: { showWarning } };
         },
         { showWarning: false },
@@ -150,6 +153,8 @@ export function createOnboardingService(deps: OnboardingServiceDeps): Onboarding
     visit: (id) => step((p) => visit(p, id)),
 
     skipAll: () => step(skipAll),
+
+    finish: () => step(finish),
 
     async isFinished() {
       if (state.status === 'ready') return isFinished(state.progress);

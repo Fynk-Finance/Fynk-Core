@@ -3,10 +3,13 @@
 // finished setup.
 import type { IsoDateTime } from '@shared/domain/types';
 
-import { FIRST_STEP, LAST_STEP, ONBOARDING_STEPS, nextStep, type StepId } from './steps';
+import { FIRST_STEP, LAST_STEP, ONBOARDING_STEPS, isStepId, nextStep, type StepId } from './steps';
 
-/** The Aviso screen comes before the first step. */
-export type WizardStep = 'intro' | StepId;
+/** The Aviso screen comes before the first step, and Listo (the summary) after the last one. */
+export type WizardStep = 'intro' | StepId | 'done';
+
+export const isWizardStep = (value: unknown): value is WizardStep =>
+  value === 'intro' || value === 'done' || isStepId(value);
 
 export interface OnboardingProgress {
   /** The screen to reopen on: the setup continues where it was left. */
@@ -38,20 +41,16 @@ export function start(progress: OnboardingProgress): OnboardingProgress {
 }
 
 /**
- * The person ends the setup, finished or skipped. Kept separate so the summary screen (Listo)
- * can sit between the last step and this call later.
+ * The person ends the setup: "Ir a mi dashboard" on Listo, or "Omitir de todos modos". The gate
+ * then closes and the app fades to the tabs.
  */
 export function finish(progress: OnboardingProgress, now: IsoDateTime): OnboardingProgress {
   if (isFinished(progress)) return progress;
   return { ...progress, finishedAt: now };
 }
 
-/** "Continuar" on a valid step: the step counts as done and the next one opens. */
-export function completeStep(
-  progress: OnboardingProgress,
-  step: StepId,
-  now: IsoDateTime,
-): OnboardingProgress {
+/** "Continuar" on a valid step: the step counts as done and the next one opens, or Listo. */
+export function completeStep(progress: OnboardingProgress, step: StepId): OnboardingProgress {
   if (isFinished(progress)) return progress;
   const done: OnboardingProgress = {
     ...progress,
@@ -59,7 +58,7 @@ export function completeStep(
     skipped: without(progress.skipped, step),
   };
   const next = nextStep(step);
-  return next ? { ...done, step: next } : finish({ ...done, step }, now);
+  return { ...done, step: next ?? 'done' };
 }
 
 export interface SkipOutcome {
@@ -71,12 +70,8 @@ export interface SkipOutcome {
   showWarning: boolean;
 }
 
-/** The header's "Omitir": this step stays pending and the next one opens. */
-export function skipStep(
-  progress: OnboardingProgress,
-  step: StepId,
-  now: IsoDateTime,
-): SkipOutcome {
+/** The header's "Omitir": this step stays pending and the next one opens, or Listo. */
+export function skipStep(progress: OnboardingProgress, step: StepId): SkipOutcome {
   if (isFinished(progress)) return { progress, showWarning: false };
   const marked: OnboardingProgress = {
     ...progress,
@@ -90,7 +85,7 @@ export function skipStep(
 
   const allSkipped = ONBOARDING_STEPS.every((s) => marked.skipped.includes(s));
   if (allSkipped && step === LAST_STEP) return { progress: { ...marked, step }, showWarning: true };
-  return { progress: finish({ ...marked, step }, now), showWarning: false };
+  return { progress: { ...marked, step: 'done' }, showWarning: false };
 }
 
 /**
@@ -109,8 +104,11 @@ export function skipAll(progress: OnboardingProgress, now: IsoDateTime): Onboard
   return finish({ ...progress, skipped }, now);
 }
 
-/** Aviso and every step up to `step`: the screens behind it, so back works after a restart. */
+/**
+ * Aviso and every step up to `step`: the screens behind it, so back works after a restart.
+ * Listo has no way back, so it opens alone.
+ */
 export function screensUpTo(step: WizardStep): WizardStep[] {
-  if (step === 'intro') return ['intro'];
+  if (step === 'intro' || step === 'done') return [step];
   return ['intro', ...ONBOARDING_STEPS.slice(0, ONBOARDING_STEPS.indexOf(step) + 1)];
 }

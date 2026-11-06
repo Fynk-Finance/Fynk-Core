@@ -18,9 +18,15 @@ export function createPlaceholderStep(step: StepId) {
   };
 }
 
+/** Stand-in for Listo. */
+function PlaceholderListo() {
+  return <Text>placeholder.done</Text>;
+}
+
 export const placeholderSteps: StepScreens = {
   name: createPlaceholderStep('name'),
   accounts: createPlaceholderStep('accounts'),
   goals: createPlaceholderStep('goals'),
   recurring: createPlaceholderStep('recurring'),
+  done: PlaceholderListo,
 };

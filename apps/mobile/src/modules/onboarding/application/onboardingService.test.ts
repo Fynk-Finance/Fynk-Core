@@ -96,13 +96,29 @@ describe('onboardingService', () => {
     expect(await app.isFinished()).toBe(true);
   });
 
-  it('ends after "Terminar configuración" and stays ended after a restart', async () => {
+  it('opens Listo after "Terminar configuración", and a restart reopens Listo', async () => {
     const app = openApp();
     await app.load();
     await app.begin();
     for (const step of ['name', 'accounts', 'goals', 'recurring'] as const) {
       await app.completeStep(step);
     }
+    expect(progressOf(app)).toMatchObject({ step: 'done', finishedAt: null });
+
+    const reopened = openApp();
+    await reopened.load();
+    expect(progressOf(reopened).step).toBe('done');
+    expect(await reopened.isFinished()).toBe(false);
+  });
+
+  it('ends with "Ir a mi dashboard" and stays ended after a restart', async () => {
+    const app = openApp();
+    await app.load();
+    await app.begin();
+    for (const step of ['name', 'accounts', 'goals', 'recurring'] as const) {
+      await app.completeStep(step);
+    }
+    await app.finish();
     expect(progressOf(app).finishedAt).toBe(NOW);
 
     const reopened = openApp();
