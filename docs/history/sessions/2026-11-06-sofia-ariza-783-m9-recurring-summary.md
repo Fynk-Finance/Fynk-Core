@@ -6,7 +6,7 @@ module: M9
 jira: [SCRUM-69]
 branch: feature/recurring-summary-for-onboarding
 tool: Claude Code
-pr: none
+pr: "#295"
 status: done
 ---
 
@@ -26,7 +26,7 @@ While finishing M3, Sofia asked to "complete all the onboarding module". The Lis
 ## Result
 
 * Tests: recurring, 26 suites, 187 pass. `tsc`, ESLint and Prettier are clean.
-* Pull request: in the M3 stack, under the Listo pull requests. Needs @Karol2905's approval.
+* Pull request: #295, in the M3 stack, under the Listo pull requests. Needs @Karol2905's approval.
 
 ## Decisions and problems
 
