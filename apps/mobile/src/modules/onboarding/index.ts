@@ -8,8 +8,6 @@ import type { ModuleRoutes } from '@shared/navigation';
 import { CashInput, isConnected, setCash, useAccounts } from '@modules/accounts';
 import { BankLinkList, ConnectBankButton, ConnectBankScreen } from '@modules/bank';
 import { userId } from '@modules/identity';
-import { RecurringSetup } from '@modules/recurring';
-import { GoalsSetup } from '@modules/savings';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
 import { createProfileNameApi } from './adapters/api/profileNameApi';
@@ -40,9 +38,18 @@ const names = createProfileNameApi();
 // userId is read on every render, never while this file loads.
 const displayName = createDisplayName(names, () => userId());
 
-// Accounts and bank import each other and, through accounts, this module (savings and recurring
-// too, through their own imports): their values are read only on render, never while this file
-// loads.
+// M8 and M9 load on first use, never while this file loads: M6 imports this module, and M9
+// reads M7's exports while it loads, so loading M7 first (M7 → M6 → here → M9 → M7) would leave
+// them undefined. By the first render every module is loaded, so require() only reads them.
+const savings = () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- import cycle, see above
+  require('@modules/savings') as typeof import('@modules/savings');
+const recurring = () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- import cycle, see above
+  require('@modules/recurring') as typeof import('@modules/recurring');
+
+// Accounts and bank import each other and, through accounts, this module: their values are read
+// only on render, never while this file loads.
 const accountsStep = createAccountsStep({
   useAccounts: () => useAccounts(),
   isConnected: (account) => isConnected(account),
@@ -59,8 +66,8 @@ export const OnboardingNavigator = createOnboardingNavigator(
   {
     name: createNameStep(names, displayName.useRememberName),
     accounts: accountsStep,
-    goals: createEmbeddedStep('goals', () => createElement(GoalsSetup)),
-    recurring: createEmbeddedStep('recurring', () => createElement(RecurringSetup)),
+    goals: createEmbeddedStep('goals', () => createElement(savings().GoalsSetup)),
+    recurring: createEmbeddedStep('recurring', () => createElement(recurring().RecurringSetup)),
   },
   ConnectBank,
 );
