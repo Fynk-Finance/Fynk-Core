@@ -26,7 +26,6 @@ import { screensUpTo, type WizardStep } from '../domain/progress';
 import type { StepId } from '../domain/steps';
 import { IntroScreen } from './IntroScreen';
 import { OnboardingProvider, useOnboardingState } from './OnboardingContext';
-import { createPlaceholderStep } from './PlaceholderStep';
 import { SkipWarningScreen } from './SkipWarningScreen';
 import {
   CONNECT_BANK_ROUTE,
@@ -38,15 +37,8 @@ import {
 
 const Stack = createNativeStackNavigator<OnboardingParamList>();
 
-/** The screen of each step. Metas and Gastos wait for M8 and M9 (see PlaceholderStep). */
+/** The screen of each step (index.ts builds them with the other modules' parts). */
 export type StepScreens = Record<StepId, ComponentType>;
-
-export const placeholderSteps: StepScreens = {
-  name: createPlaceholderStep('name'),
-  accounts: createPlaceholderStep('accounts'),
-  goals: createPlaceholderStep('goals'),
-  recurring: createPlaceholderStep('recurring'),
-};
 
 export function initialStateFor(step: WizardStep): InitialState {
   const screens = screensUpTo(step);
@@ -106,7 +98,7 @@ function Steps({ initialStep, steps, connectBank }: StepsProps) {
 
 export function createOnboardingNavigator(
   service: OnboardingService,
-  steps: StepScreens = placeholderSteps,
+  steps: StepScreens,
   /** M5's Conectar banco, opened by "Agregar otra cuenta". */
   connectBank?: ComponentType,
 ) {

@@ -17,7 +17,8 @@ import { createOnboardingService, type OnboardingService } from '../application/
 import { initialProgress } from '../domain/progress';
 import { cash, isConnected, savings, wallet } from '../testing/accounts';
 import { createAccountsStep } from './AccountsStepScreen';
-import { createOnboardingNavigator, placeholderSteps } from './OnboardingNavigator';
+import { placeholderSteps } from '../testing/placeholderSteps';
+import { createOnboardingNavigator } from './OnboardingNavigator';
 import { CONNECT_BANK_ROUTE } from './routes';
 import { onboardingStrings } from './strings.es-CO';
 

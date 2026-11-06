@@ -14,7 +14,8 @@ import type { NamePort } from '../application/ports';
 import type { PersonName } from '../domain/name';
 import { initialProgress } from '../domain/progress';
 import { createNameStep } from './NameStepScreen';
-import { createOnboardingNavigator, placeholderSteps } from './OnboardingNavigator';
+import { placeholderSteps } from '../testing/placeholderSteps';
+import { createOnboardingNavigator } from './OnboardingNavigator';
 import { onboardingStrings } from './strings.es-CO';
 
 jest.mock('react-native-reanimated', () => {
