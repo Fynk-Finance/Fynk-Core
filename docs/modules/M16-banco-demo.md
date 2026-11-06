@@ -27,6 +27,7 @@ You are building module M16 of Fynk: a simulated bank, "Banco Demo", that behave
 **HU-047 Servicio simulado (SCRUM-64)**
 * Mismo flujo que el adaptador de Bancolombia: consentimiento, OAuth 2.0 con PKCE y PAR, private_key_jwt y mTLS.
 * Las cuentas se crean cuando el usuario otorga el consentimiento, nunca al registrarse en Fynk.
+  * Nota: reemplazado el 6 Nov 2026 por SCRUM-73 (HU-056), ver `M16b-simulated-banks.md` y el ADR 0008.
 * Al primer consentimiento genera 12 meses de historial: salario, arriendo, 4 suscripciones, servicios públicos y gastos diarios.
 * Cuenta de ahorros, billetera digital, tarjeta de crédito y CDT.
 * Nombres ficticios ("Banco Demo", "Billetera Demo") y datos marcados como simulados.
