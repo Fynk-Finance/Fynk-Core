@@ -30,6 +30,7 @@ func (s *signer) ClientAssertion(_ context.Context, aud string) (string, error) 
 // call is one request the fake Bancolombia received.
 type call struct {
 	method, path string
+	query        url.Values
 	header       http.Header
 	form         url.Values
 	body         map[string]any
@@ -43,7 +44,7 @@ type fakeBank struct {
 }
 
 func (f *fakeBank) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	c := call{method: r.Method, path: r.URL.Path, header: r.Header.Clone()}
+	c := call{method: r.Method, path: r.URL.Path, query: r.URL.Query(), header: r.Header.Clone()}
 	raw, _ := io.ReadAll(r.Body)
 	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/x-www-form-urlencoded") {
 		c.form, _ = url.ParseQuery(string(raw))
