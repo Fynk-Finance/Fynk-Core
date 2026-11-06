@@ -7,7 +7,7 @@ import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
 import { markLinkRevoked, upsertFromSync as upsertAccounts } from '@modules/accounts';
-import { onConsentRevoked } from '@modules/consents';
+import { onConsentRevoked, revokeConsentAfterCheck } from '@modules/consents';
 import { notificationsPort } from '@modules/notifications';
 import { upsertFromSync as upsertTransactions } from '@modules/transactions';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
@@ -19,6 +19,7 @@ import { bankMigrations } from './adapters/vault/migrations';
 import { createVaultLinkStore } from './adapters/vault/vaultLinkStore';
 import { linkBank } from './application/linkBank';
 import { revokeLinksOfConsent } from './application/linkRevocation';
+import { disconnectLink as disconnectLinkWith } from './application/disconnect';
 import { syncNewLink } from './application/firstSync';
 import { createSyncController } from './application/syncController';
 import { createSyncEngine, type SyncReport } from './application/syncEngine';
@@ -32,6 +33,7 @@ export type { BankProvider, ProviderKind } from './domain/provider';
 export type { BankLink, LinkStatus } from './domain/link';
 export type { SyncReport, LinkSyncResult } from './application/syncEngine';
 export type { UseSync } from './application/useSync';
+export type { DisconnectResult } from './application/disconnect';
 export { BankLinkList, type BankLinkListItem } from './ui/BankLinkList';
 /** "Agregar otra cuenta": opens Conectar banco. For onboarding step 3 (M3) and Billetera (M6). */
 export { CONNECT_BANK_ROUTE, ConnectBankButton } from './ui/ConnectBankButton';
@@ -95,6 +97,17 @@ sync.start({
 
 /** Asks for a sync now (pull to refresh). Waits out the 60 s cooldown per link. */
 export const syncNow = (): Promise<SyncReport> => sync.syncNow();
+
+/**
+ * "Eliminar cuenta" of a connected account (Detalle de cuenta, M6): asks for the identity check
+ * and revokes the link's consent (HU-008). The link and its accounts end through the
+ * revocation notice. 'cancelled' when the person cancelled the check.
+ */
+export const disconnectLink = (linkId: string) =>
+  disconnectLinkWith(
+    { links: () => links().getLinks(), entityName, revoke: revokeConsentAfterCheck },
+    linkId,
+  );
 
 /** Sync state for the screens: status, last update date, refresh(). */
 export const useSync = () => useSyncWith(sync);
