@@ -208,7 +208,7 @@ paths:
               properties:
                 client_id:
                   type: string
-                  example: fynk-mobile
+                  example: fynk
                 client_assertion_type:
                   type: string
                   enum: ['urn:ietf:params:oauth:client-assertion-type:jwt-bearer']
@@ -227,6 +227,12 @@ paths:
                   description: Space separated scopes.
                 state:
                   type: string
+                nonce:
+                  type: string
+                  description: Optional. Echoed in the ID token when there is one.
+                fynk_consent_id:
+                  type: string
+                  description: Optional. Fynk's own consent id (M4), kept with the bank consent for audit.
                 code_challenge:
                   type: string
                   description: PKCE challenge.
@@ -282,7 +288,7 @@ paths:
                   enum: [authorization_code, refresh_token, client_credentials]
                 client_id:
                   type: string
-                  example: fynk-mobile
+                  example: fynk
                 client_assertion_type:
                   type: string
                   enum: ['urn:ietf:params:oauth:client-assertion-type:jwt-bearer']
