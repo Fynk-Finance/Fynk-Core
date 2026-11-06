@@ -20,6 +20,18 @@ export function fixedExpensesInMonth(items: readonly RecurringItem[], ym: YearMo
   return active(items).reduce((sum, item) => sum + amountInMonth(item, ym), 0);
 }
 
+export interface RecurringSummary {
+  /** Active fixed expenses and subscriptions. */
+  count: number;
+  /** Their cost in the month, as in `fixedExpensesInMonth`. */
+  monthlyMinor: MoneyMinor;
+}
+
+/** "4 pagos $1.453.900/mes" on onboarding's Listo (M3): every active item and their month. */
+export function recurringSummary(items: readonly RecurringItem[], ym: YearMonth): RecurringSummary {
+  return { count: active(items).length, monthlyMinor: fixedExpensesInMonth(items, ym) };
+}
+
 export interface SubscriptionsSummary {
   count: number;
   monthlyMinor: MoneyMinor;

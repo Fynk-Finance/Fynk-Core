@@ -34,7 +34,7 @@ import { forDetection } from './domain/catalog';
 import { createPriceAlertService } from './application/priceAlertService';
 import { createRecurringService } from './application/recurringService';
 import { createReminderScheduler } from './application/reminders';
-import type { SubscriptionsSummary } from './domain/amounts';
+import type { RecurringSummary, SubscriptionsSummary } from './domain/amounts';
 import { bogotaToday, createBilleteraScreen } from './ui/BilleteraScreen';
 import { createDetectedScreen, DETECTED_ROUTE } from './ui/DetectedScreen';
 import { recurringStrings } from './ui/strings.es-CO';
@@ -49,7 +49,7 @@ import {
   SUBSCRIPTION_DETAIL_ROUTE,
 } from './ui/SubscriptionDetailScreen';
 
-export type { SubscriptionsSummary };
+export type { RecurringSummary, SubscriptionsSummary };
 export { RECURRING_FORM_ROUTE };
 
 registerVaultMigrations('recurring', recurringMigrations);
@@ -215,6 +215,9 @@ export const routes: ModuleRoutes = {
 
 /** Monthly total of the active fixed expenses and subscriptions (onboarding step 5 and Listo). */
 export const getRecurringMonthlyTotal = (): Promise<MoneyMinor> => service.fixedExpensesThisMonth();
+
+/** "4 pagos $1.453.900/mes" on onboarding's Listo (M3): count and month of the active items. */
+export const getRecurringSummary = (): Promise<RecurringSummary> => service.recurringSummary();
 
 /**
  * Onboarding step 5, "Gastos recurrentes" (design OnbGastos): the collapsible items with the form

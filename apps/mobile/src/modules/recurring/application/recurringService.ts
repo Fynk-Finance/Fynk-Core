@@ -5,7 +5,9 @@ import type { Clock, Id, MoneyMinor } from '@shared/domain/types';
 
 import {
   fixedExpensesInMonth,
+  recurringSummary,
   subscriptionsSummary,
+  type RecurringSummary,
   type SubscriptionsSummary,
 } from '../domain/amounts';
 import { isValidRecurring, type RecurringInput, type StoredRecurringItem } from '../domain/item';
@@ -36,6 +38,8 @@ export interface RecurringService {
   /** "Gastos fijos de este mes" of Billetera: every active item, counted in the current month. */
   fixedExpensesThisMonth(): Promise<MoneyMinor>;
   subscriptionsSummary(): Promise<SubscriptionsSummary>;
+  /** Count and month of the active items, for onboarding's Listo. */
+  recurringSummary(): Promise<RecurringSummary>;
   /** "¿Cuánto la usas?" of a subscription (SCRUM-56), from its detail; null clears it. */
   setUsage(id: Id, usage: Usage | null): Promise<void>;
   /** The reminder switch of an item (SCRUM-57). */
@@ -183,6 +187,10 @@ export function createRecurringService(deps: RecurringServiceDeps): RecurringSer
 
     async subscriptionsSummary() {
       return subscriptionsSummary(await active(), bogotaMonth(deps.clock.now()));
+    },
+
+    async recurringSummary() {
+      return recurringSummary(await active(), bogotaMonth(deps.clock.now()));
     },
 
     async refreshReminders() {

@@ -200,6 +200,8 @@ describe('Billetera totals', () => {
       monthly('Gimnasio', 120_000, 1, { categoryId: 'gym' }),
     ]);
     expect(formatCop(await service.fixedExpensesThisMonth())).toBe('$1.453.900');
+    const s = await service.recurringSummary();
+    expect([s.count, formatCop(s.monthlyMinor)]).toEqual([4, '$1.453.900']);
   });
 });
 

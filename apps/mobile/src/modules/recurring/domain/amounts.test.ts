@@ -1,7 +1,12 @@
 // Reference numbers of the design (shared contracts, section 7).
 import { formatCop } from '@shared/domain/money';
 
-import { amountInMonth, fixedExpensesInMonth, subscriptionsSummary } from './amounts';
+import {
+  amountInMonth,
+  fixedExpensesInMonth,
+  recurringSummary,
+  subscriptionsSummary,
+} from './amounts';
 import { MON_TO_FRI, WEEKDAY, type RecurringItem, type Schedule } from './types';
 
 const pesos = (n: number) => n * 100;
@@ -100,5 +105,22 @@ describe('subscriptionsSummary', () => {
       lowUseCount: 0,
       lowUseMonthlyMinor: 0,
     });
+  });
+});
+
+describe('recurringSummary (Listo of onboarding)', () => {
+  it('counts the active items with the month of Gastos fijos', () => {
+    const s = recurringSummary(billetera, OCTOBER_2026);
+    expect([s.count, formatCop(s.monthlyMinor)]).toEqual([8, '$1.930.600']);
+  });
+
+  it('leaves out a cancelled item', () => {
+    const items = billetera.map((i, n) => (n === 0 ? { ...i, status: 'cancelled' as const } : i));
+    const s = recurringSummary(items, OCTOBER_2026);
+    expect([s.count, formatCop(s.monthlyMinor)]).toEqual([7, '$530.600']);
+  });
+
+  it('is zero with no items', () => {
+    expect(recurringSummary([], OCTOBER_2026)).toEqual({ count: 0, monthlyMinor: 0 });
   });
 });
