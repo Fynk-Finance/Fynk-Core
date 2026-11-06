@@ -57,6 +57,35 @@ export const onboardingStrings = {
     // Not in the design: new, needs design review.
     cashNotSaved: 'No pudimos guardar tu efectivo. Intenta de nuevo.',
   },
+  // OnbListo, plus the "Código de recuperación" row of the M3 prompt.
+  listo: {
+    title: (firstName: string | null) =>
+      firstName ? `¡Todo listo, ${firstName}!` : '¡Todo listo!',
+    subtitle: 'Tu cuenta está configurada.',
+    sheet: 'Resumen de la configuración',
+    heading: 'Esto es lo que registraste',
+    rows: {
+      email: 'Correo',
+      accounts: 'Cuentas y efectivo',
+      goals: 'Metas de ahorro',
+      recurring: 'Gastos recurrentes',
+      recoveryCode: 'Código de recuperación',
+    },
+    verified: 'Verificado',
+    count: {
+      accounts: (n: number) => (n === 1 ? '1 registrada' : `${n} registradas`),
+      goals: (n: number) => (n === 1 ? '1 meta' : `${n} metas`),
+      recurring: (n: number) => (n === 1 ? '1 pago' : `${n} pagos`),
+    },
+    perMonth: (amount: string) => `${amount}/mes`,
+    saved: 'Guardado',
+    completed: 'Completado',
+    cta: 'Ir a mi dashboard',
+    // Not in the design: new, needs design review.
+    pending: 'Pendiente',
+    saveCode: 'Guardar tu código de recuperación',
+    notLoaded: 'No pudimos leer el resumen. Puedes verlo en la aplicación.',
+  },
   skip: {
     back: 'Volver a la configuración',
     title: '¿Seguro que quieres omitir la configuración?',

@@ -5,18 +5,32 @@ import type { Clock } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
-import { CashInput, isConnected, setCash, useAccounts } from '@modules/accounts';
+import {
+  CashInput,
+  getCash,
+  getConnectedAccountsSummary,
+  isConnected,
+  setCash,
+  useAccounts,
+} from '@modules/accounts';
 import { BankLinkList, ConnectBankButton, ConnectBankScreen } from '@modules/bank';
 import { userId } from '@modules/identity';
-import { getVaultDb, registerVaultMigrations } from '@modules/vault';
+import {
+  NewRecoveryCodeScreen,
+  getRecoveryCodeStatus,
+  getVaultDb,
+  registerVaultMigrations,
+} from '@modules/vault';
 
 import { createProfileNameApi } from './adapters/api/profileNameApi';
 import { onboardingMigrations } from './adapters/vault/migrations';
 import { createVaultProgressStore } from './adapters/vault/vaultProgressStore';
 import { createOnboardingService } from './application/onboardingService';
 import { createDisplayName } from './application/useDisplayName';
+import type { SummaryInput } from './domain/summary';
 import { createAccountsStep } from './ui/AccountsStepScreen';
 import { createEmbeddedStep } from './ui/EmbeddedStep';
+import { createListoScreen } from './ui/ListoScreen';
 import { createNameStep } from './ui/NameStepScreen';
 import { createOnboardingNavigator } from './ui/OnboardingNavigator';
 import { createUseOnboardingGate } from './ui/useOnboardingGate';
@@ -59,8 +73,31 @@ const accountsStep = createAccountsStep({
   renderCashInput: (props) => createElement(CashInput, props),
 });
 const ConnectBank = () => createElement(ConnectBankScreen);
+const RecoveryCode = () => createElement(NewRecoveryCodeScreen);
 
-/** The guided setup: Aviso, Nombre, Cuentas, Metas, Gastos recurrentes, Omitir, Conectar banco. */
+/** Listo's numbers, each from the module that owns it. Goals count while they are not reached. */
+async function loadSummary(): Promise<SummaryInput> {
+  const [accounts, cash, goals, goalsMonthly, payments, recoveryCode] = await Promise.all([
+    getConnectedAccountsSummary(),
+    getCash(),
+    savings().getGoals(),
+    savings().getGoalsMonthlyTotal(),
+    recurring().getRecurringSummary(),
+    getRecoveryCodeStatus(),
+  ]);
+  return {
+    accounts,
+    cashMinor: cash?.amountMinor ?? null,
+    goals: { count: goals.filter((g) => !g.done).length, monthlyMinor: goalsMonthly },
+    recurring: payments,
+    recoveryCode,
+  };
+}
+
+/**
+ * The guided setup: Aviso, Nombre, Cuentas, Metas, Gastos recurrentes, Listo, Omitir, Conectar
+ * banco and "Generar un código nuevo".
+ */
 export const OnboardingNavigator = createOnboardingNavigator(
   service,
   {
@@ -68,8 +105,13 @@ export const OnboardingNavigator = createOnboardingNavigator(
     accounts: accountsStep,
     goals: createEmbeddedStep('goals', () => createElement(savings().GoalsSetup)),
     recurring: createEmbeddedStep('recurring', () => createElement(recurring().RecurringSetup)),
+    done: createListoScreen({
+      loadSummary,
+      useDisplayName: () => displayName.useDisplayName(),
+    }),
   },
   ConnectBank,
+  RecoveryCode,
 );
 
 /**

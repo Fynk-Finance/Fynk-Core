@@ -3,7 +3,7 @@
 // to Aviso, so an old saved setup never breaks the app.
 import type { VaultDb } from '@shared/ports';
 
-import type { OnboardingProgress, WizardStep } from '../../domain/progress';
+import { isWizardStep, type OnboardingProgress, type WizardStep } from '../../domain/progress';
 import { isStepId, type StepId } from '../../domain/steps';
 import type { ProgressStore } from '../../application/ports';
 
@@ -23,7 +23,7 @@ function stepList(json: string): StepId[] {
   }
 }
 
-const wizardStep = (value: string): WizardStep => (isStepId(value) ? value : 'intro');
+const wizardStep = (value: string): WizardStep => (isWizardStep(value) ? value : 'intro');
 
 export function createVaultProgressStore(db: VaultDb): ProgressStore {
   return {

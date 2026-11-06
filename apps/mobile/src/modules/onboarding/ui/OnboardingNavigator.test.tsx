@@ -157,10 +157,18 @@ describe('steps', () => {
     expect(await saved()).toMatchObject({ step: 'goals', completed: ['accounts'] });
   });
 
-  it('"Terminar configuración" on the last step ends the setup', async () => {
+  it('"Terminar configuración" on the last step opens Listo without ending the setup', async () => {
     await openOn({ ...initialProgress, step: 'recurring', completed: ['name'] });
     await press(copy.step.finish);
-    await waitFor(async () => expect((await saved())?.finishedAt).toBe(NOW));
+    expect(await screen.findByText('placeholder.done')).toBeTruthy();
+    expect(await saved()).toMatchObject({ step: 'done', finishedAt: null });
+  });
+
+  it('"Omitir" on the last step opens Listo when an earlier step was done', async () => {
+    await openOn({ ...initialProgress, step: 'recurring', completed: ['name'] });
+    await press('Omitir');
+    expect(await screen.findByText('placeholder.done')).toBeTruthy();
+    expect(await saved()).toMatchObject({ step: 'done', skipped: ['recurring'] });
   });
 
   it('the back button returns to the previous step and saves it', async () => {
@@ -173,6 +181,12 @@ describe('steps', () => {
 });
 
 describe('resume', () => {
+  it('reopens Listo alone after the app is closed on it', async () => {
+    await openOn({ ...initialProgress, step: 'done', completed: ['name'] });
+    expect(screen.getByText('placeholder.done')).toBeTruthy();
+    expect(initialStateFor('done')).toEqual({ index: 0, routes: [{ name: 'onboarding.Listo' }] });
+  });
+
   it('reopens on the saved step with the earlier screens behind it', async () => {
     await openOn({ ...initialProgress, step: 'recurring', completed: ['name'] });
     expect(screen.getByText('Paso 4 de 4')).toBeTruthy();

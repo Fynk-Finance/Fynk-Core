@@ -44,10 +44,9 @@ export function useStepActions(step: StepId): StepActions {
     }
   }, []);
 
-  // After the last step the setup is finished: the gate closes and the app fades to the tabs.
+  // After the last step comes Listo, which ends the setup with "Ir a mi dashboard".
   const goNext = useCallback(() => {
-    const next = nextStep(step);
-    if (next) navigation.navigate(STEP_ROUTES[next]);
+    navigation.navigate(STEP_ROUTES[nextStep(step) ?? 'done']);
   }, [navigation, step]);
 
   return {

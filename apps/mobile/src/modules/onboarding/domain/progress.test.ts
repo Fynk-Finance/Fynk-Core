@@ -5,6 +5,7 @@ import {
   finish,
   initialProgress,
   isFinished,
+  isWizardStep,
   screensUpTo,
   skipAll,
   skipStep,
@@ -64,21 +65,21 @@ describe('start', () => {
 
 describe('completeStep', () => {
   it('marks the step done and opens the next one', () => {
-    const p = completeStep(at({ step: 'name' }), 'name', NOW);
+    const p = completeStep(at({ step: 'name' }), 'name');
     expect(p).toEqual(at({ step: 'accounts', completed: ['name'] }));
   });
 
   it('turns a skipped step into a done one when the person comes back to it', () => {
-    const p = completeStep(at({ step: 'name', skipped: ['name'] }), 'name', NOW);
+    const p = completeStep(at({ step: 'name', skipped: ['name'] }), 'name');
     expect(p.completed).toEqual(['name']);
     expect(p.skipped).toEqual([]);
   });
 
-  it('ends the setup after the last step ("Terminar configuración")', () => {
-    const p = completeStep(at({ step: 'recurring' }), 'recurring', NOW);
-    expect(p.step).toBe('recurring');
+  it('opens Listo after the last step ("Terminar configuración") without ending the setup', () => {
+    const p = completeStep(at({ step: 'recurring' }), 'recurring');
+    expect(p.step).toBe('done');
     expect(p.completed).toEqual(['recurring']);
-    expect(p.finishedAt).toBe(NOW);
+    expect(isFinished(p)).toBe(false);
   });
 });
 
@@ -88,7 +89,7 @@ describe('skipStep (each step can be skipped)', () => {
     ['accounts', 'goals'],
     ['goals', 'recurring'],
   ] as const)('skipping %s opens %s and leaves it pending', (step, next) => {
-    const { progress, showWarning } = skipStep(at({ step }), step, NOW);
+    const { progress, showWarning } = skipStep(at({ step }), step);
     expect(progress.step).toBe(next);
     expect(progress.skipped).toEqual([step]);
     expect(showWarning).toBe(false);
@@ -96,7 +97,7 @@ describe('skipStep (each step can be skipped)', () => {
   });
 
   it('keeps a step that was done as done', () => {
-    const { progress } = skipStep(at({ step: 'name', completed: ['name'] }), 'name', NOW);
+    const { progress } = skipStep(at({ step: 'name', completed: ['name'] }), 'name');
     expect(progress.completed).toEqual(['name']);
     expect(progress.skipped).toEqual([]);
   });
@@ -105,7 +106,7 @@ describe('skipStep (each step can be skipped)', () => {
     let p = start(initialProgress);
     let warned = false;
     for (const step of ONBOARDING_STEPS) {
-      const outcome = skipStep(p, step, NOW);
+      const outcome = skipStep(p, step);
       p = outcome.progress;
       warned = outcome.showWarning;
     }
@@ -115,11 +116,13 @@ describe('skipStep (each step can be skipped)', () => {
     expect(isFinished(p)).toBe(false);
   });
 
-  it('ends the setup without a warning when an earlier step was done', () => {
+  it('opens Listo without a warning when an earlier step was done', () => {
     const p = at({ step: 'recurring', completed: ['name'], skipped: ['accounts', 'goals'] });
-    const { progress, showWarning } = skipStep(p, 'recurring', NOW);
+    const { progress, showWarning } = skipStep(p, 'recurring');
     expect(showWarning).toBe(false);
-    expect(progress.finishedAt).toBe(NOW);
+    expect(progress.step).toBe('done');
+    expect(progress.skipped).toEqual(['accounts', 'goals', 'recurring']);
+    expect(isFinished(progress)).toBe(false);
   });
 });
 
@@ -164,8 +167,8 @@ describe('a finished setup', () => {
     const later = '2026-11-01T00:00:00.000Z';
     expect(start(done)).toBe(done);
     expect(visit(done, 'name')).toBe(done);
-    expect(completeStep(done, 'recurring', later)).toBe(done);
-    expect(skipStep(done, 'recurring', later).progress).toBe(done);
+    expect(completeStep(done, 'recurring')).toBe(done);
+    expect(skipStep(done, 'recurring').progress).toBe(done);
     expect(skipAll(done, later)).toBe(done);
     expect(finish(done, later).finishedAt).toBe(NOW);
   });
@@ -176,7 +179,25 @@ describe('screensUpTo (resume where it was left)', () => {
     ['intro', ['intro']],
     ['name', ['intro', 'name']],
     ['recurring', ['intro', 'name', 'accounts', 'goals', 'recurring']],
+    ['done', ['done']],
   ] as const)('%s reopens with %j behind it', (step, screens) => {
     expect(screensUpTo(step)).toEqual(screens);
+  });
+});
+
+describe('Listo (the summary after the last step)', () => {
+  const listo = completeStep(at({ step: 'recurring', completed: ['name'] }), 'recurring');
+
+  it('ends the setup with "Ir a mi dashboard"', () => {
+    const p = finish(listo, NOW);
+    expect(p.finishedAt).toBe(NOW);
+    expect(p.step).toBe('done');
+    expect(p.completed).toEqual(['name', 'recurring']);
+  });
+
+  it('is a saved step, so a restart reopens Listo', () => {
+    expect(isWizardStep(listo.step)).toBe(true);
+    expect(isWizardStep('intro')).toBe(true);
+    expect(isWizardStep('email')).toBe(false);
   });
 });
