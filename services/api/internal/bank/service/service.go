@@ -144,6 +144,7 @@ func (s *Service) CreateAuthorization(ctx context.Context, u User, r StartReques
 	a := link.Authorization{
 		ID: NewID(now), UserID: u.ID, DeviceID: u.DeviceID, ConsentID: consent.ID,
 		Provider: r.Provider, RedirectURI: s.d.RedirectURI, ExpiresAt: now.Add(ttl),
+		ProviderConsentID: par.ProviderConsentID,
 	}
 	if err := s.d.Authorizations.Save(ctx, a, ttl); err != nil {
 		return Started{}, err
@@ -191,7 +192,13 @@ func (s *Service) Exchange(ctx context.Context, u User, authorizationID, code, v
 	if err != nil {
 		return Linked{}, err
 	}
-	if err := s.d.Consents.MarkGranted(ctx, a.ConsentID, tokens.ProviderConsentID); err != nil {
+	// The bank names its consent in the token answer (Banco Demo) or created it before the PAR
+	// (Bancolombia); M4 keeps it to revoke it later.
+	providerConsentID := tokens.ProviderConsentID
+	if providerConsentID == "" {
+		providerConsentID = a.ProviderConsentID
+	}
+	if err := s.d.Consents.MarkGranted(ctx, a.ConsentID, providerConsentID); err != nil {
 		return Linked{}, err
 	}
 	now := s.d.Clock.Now()

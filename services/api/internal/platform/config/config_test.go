@@ -161,3 +161,66 @@ func TestLoadRejectsAPlainHTTPAuthorizePageOutsideLocal(t *testing.T) {
 		t.Fatalf("local may use http: %v", err)
 	}
 }
+
+func TestLoadReadsTheBancolombiaSettings(t *testing.T) {
+	c, err := Load(env(map[string]string{
+		"APP_ENV": "staging", "DATABASE_URL": "d", "REDIS_URL": "r",
+		"BANCOLOMBIA_CLIENT_ID":             "client-123",
+		"BANCOLOMBIA_CLIENT_SECRET":         "secret-456",
+		"BANCOLOMBIA_ISSUER":                "https://auth.bank.example",
+		"BANCOLOMBIA_AUTHORIZE_URL":         "https://auth.bank.example/authorize",
+		"BANCOLOMBIA_SANDBOX":               "true",
+		"BANCOLOMBIA_SANDBOX_OWNER_ID_TYPE": "CC",
+		"BANCOLOMBIA_SANDBOX_OWNER_ID":      "100200300",
+		"BANCOLOMBIA_SANDBOX_OWNER_NAME":    "Cliente Sandbox",
+	}))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if c.BancolombiaClientID != "client-123" || c.BancolombiaClientSecret != "secret-456" ||
+		c.BancolombiaIssuer != "https://auth.bank.example" ||
+		c.BancolombiaAuthorizeURL != "https://auth.bank.example/authorize" || !c.BancolombiaSandbox ||
+		c.BancolombiaSandboxOwnerIDType != "CC" || c.BancolombiaSandboxOwnerID != "100200300" ||
+		c.BancolombiaSandboxOwnerName != "Cliente Sandbox" {
+		t.Fatalf("Bancolombia settings not read: %+v", c)
+	}
+}
+
+func TestLoadLeavesBancolombiaOff(t *testing.T) {
+	c, err := Load(env(map[string]string{"APP_ENV": "prod", "DATABASE_URL": "d", "REDIS_URL": "r"}))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if c.BancolombiaClientID != "" || c.BancolombiaClientSecret != "" || c.BancolombiaSandbox ||
+		c.BancolombiaSandboxOwnerID != "" {
+		t.Fatalf("Bancolombia settings should be empty: %+v", c)
+	}
+}
+
+// Fynk never asks a person for their cédula (CLAUDE.md, rule 10). The sandbox owner is the
+// fictional customer of Bancolombia's sandbox, so it is refused outside sandbox mode.
+func TestLoadRefusesASandboxOwnerOutsideTheSandbox(t *testing.T) {
+	base := map[string]string{
+		"APP_ENV": "staging", "DATABASE_URL": "d", "REDIS_URL": "r",
+		"BANCOLOMBIA_SANDBOX_OWNER_ID": "100200300",
+	}
+	if _, err := Load(env(base)); err == nil || !strings.Contains(err.Error(), "BANCOLOMBIA_SANDBOX_OWNER") {
+		t.Fatalf("want a BANCOLOMBIA_SANDBOX_OWNER error, got %v", err)
+	}
+	base["BANCOLOMBIA_SANDBOX"] = "true"
+	if _, err := Load(env(base)); err != nil {
+		t.Fatalf("sandbox owner in sandbox mode: %v", err)
+	}
+}
+
+func TestLoadRejectsABadBancolombiaSandboxFlagAndAPlainHTTPAuthorizePage(t *testing.T) {
+	base := map[string]string{"APP_ENV": "staging", "DATABASE_URL": "d", "REDIS_URL": "r", "BANCOLOMBIA_SANDBOX": "yes"}
+	if _, err := Load(env(base)); err == nil || !strings.Contains(err.Error(), "BANCOLOMBIA_SANDBOX") {
+		t.Fatalf("want a BANCOLOMBIA_SANDBOX error, got %v", err)
+	}
+	base["BANCOLOMBIA_SANDBOX"] = "false"
+	base["BANCOLOMBIA_AUTHORIZE_URL"] = "http://bank/authorize"
+	if _, err := Load(env(base)); err == nil || !strings.Contains(err.Error(), "BANCOLOMBIA_AUTHORIZE_URL") {
+		t.Fatalf("want a BANCOLOMBIA_AUTHORIZE_URL error, got %v", err)
+	}
+}

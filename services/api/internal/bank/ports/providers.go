@@ -1,5 +1,7 @@
 package ports
 
+import "sync"
+
 // Scope is one kind of data a provider can share. The values are the same as M4's consent scopes.
 type Scope string
 
@@ -29,8 +31,8 @@ type Info struct {
 	LogoKey     string
 }
 
-// catalog lists the providers whose adapter works, in display order. Bancolombia joins it only
-// if the sandbox spike allows delegated access (M5 work plan step 5).
+// catalog lists the simulated providers, always offered, in display order. A real bank joins
+// at startup through Offer, only when its adapter is configured (Bancolombia, ADR 0003).
 var catalog = []Info{
 	{ID: "banco-demo", DisplayName: "Banco Demo", Kind: KindBank, IsSimulated: true, LogoKey: "banco-demo",
 		Scopes: []Scope{ScopeBalances, ScopeTransactions, ScopeAccountDetails}},
@@ -38,10 +40,34 @@ var catalog = []Info{
 		Scopes: []Scope{ScopeBalances, ScopeTransactions, ScopeAccountDetails}},
 }
 
+var (
+	offeredMu sync.RWMutex
+	offered   []Info
+)
+
+// Offer sets the real providers whose adapter the bank module built at startup, listed after
+// the simulated ones. Offer() with nothing takes them out again.
+func Offer(infos ...Info) {
+	list := make([]Info, len(infos))
+	for i, p := range infos {
+		list[i] = p.clone()
+	}
+	offeredMu.Lock()
+	offered = list
+	offeredMu.Unlock()
+}
+
+func all() []Info {
+	offeredMu.RLock()
+	defer offeredMu.RUnlock()
+	return append(append([]Info(nil), catalog...), offered...)
+}
+
 // Providers returns a copy of the providers the user can connect, the same for every user.
 func Providers() []Info {
-	out := make([]Info, len(catalog))
-	for i, p := range catalog {
+	list := all()
+	out := make([]Info, len(list))
+	for i, p := range list {
 		out[i] = p.clone()
 	}
 	return out
@@ -49,7 +75,7 @@ func Providers() []Info {
 
 // Lookup returns one provider, or false when it is unknown or not offered.
 func Lookup(id string) (Info, bool) {
-	for _, p := range catalog {
+	for _, p := range all() {
 		if p.ID == id {
 			return p.clone(), true
 		}

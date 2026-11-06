@@ -14,7 +14,8 @@ import (
 func testAuthorizations(t *testing.T, s Authorizations, id string, expire func()) {
 	ctx := context.Background()
 	a := link.Authorization{ID: id, UserID: "user-a", DeviceID: "device-a", ConsentID: "c-1",
-		Provider: "banco-demo", RedirectURI: "fynk://bank/callback", ExpiresAt: at.Add(10 * time.Minute)}
+		Provider: "banco-demo", RedirectURI: "fynk://bank/callback", ExpiresAt: at.Add(10 * time.Minute),
+		ProviderConsentID: "bank-consent-1"}
 
 	if err := s.Save(ctx, a, time.Minute); err != nil {
 		t.Fatal(err)
@@ -27,7 +28,7 @@ func testAuthorizations(t *testing.T, s Authorizations, id string, expire func()
 		t.Fatal(err)
 	}
 	if got.UserID != "user-a" || got.ConsentID != "c-1" || got.RedirectURI != "fynk://bank/callback" ||
-		!got.ExpiresAt.Equal(a.ExpiresAt) {
+		!got.ExpiresAt.Equal(a.ExpiresAt) || got.ProviderConsentID != "bank-consent-1" {
 		t.Fatalf("got %+v", got)
 	}
 	if _, err := s.Take(ctx, id); !errors.Is(err, link.ErrAuthorizationNotFound) {
