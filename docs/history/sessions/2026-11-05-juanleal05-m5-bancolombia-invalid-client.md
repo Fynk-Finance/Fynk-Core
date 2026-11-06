@@ -6,7 +6,7 @@ module: M5
 jira: [SCRUM-23]
 branch: fix/bancolombia-invalid-client
 tool: Claude Code
-pr: none
+pr: "#291"
 status: done
 ---
 
@@ -25,7 +25,7 @@ The first run of the Bancolombia sandbox tests failed with `invalid_grant`, whil
 ## Result
 
 * Tests: `go test ./internal/bank/...` passes; `gofmt` and `go vet` clean. The sandbox tests still need the certificate from Bancolombia.
-* Pull request: not opened yet.
+* Pull request: #291.
 
 ## Decisions and problems
 
