@@ -58,6 +58,8 @@ type Authorization struct {
 	Provider    string    `json:"provider"`
 	RedirectURI string    `json:"redirect_uri"`
 	ExpiresAt   time.Time `json:"expires_at"`
+	// ProviderConsentID is the bank's consent created before the PAR, if the bank does so.
+	ProviderConsentID string `json:"provider_consent_id,omitempty"`
 }
 
 // Store keeps the links (Postgres in the API, memory in tests).
