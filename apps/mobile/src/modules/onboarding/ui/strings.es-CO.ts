@@ -57,11 +57,6 @@ export const onboardingStrings = {
     // Not in the design: new, needs design review.
     cashNotSaved: 'No pudimos guardar tu efectivo. Intenta de nuevo.',
   },
-  // Steps whose content another module still has to build (not in the design).
-  placeholder: {
-    comingSoon: 'Paso en construcción',
-    builtBy: (owner: string) => `Lo construye el módulo ${owner}.`,
-  },
   skip: {
     back: 'Volver a la configuración',
     title: '¿Seguro que quieres omitir la configuración?',

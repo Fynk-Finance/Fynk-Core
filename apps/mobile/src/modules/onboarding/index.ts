@@ -8,6 +8,8 @@ import type { ModuleRoutes } from '@shared/navigation';
 import { CashInput, isConnected, setCash, useAccounts } from '@modules/accounts';
 import { BankLinkList, ConnectBankButton, ConnectBankScreen } from '@modules/bank';
 import { userId } from '@modules/identity';
+import { RecurringSetup } from '@modules/recurring';
+import { GoalsSetup } from '@modules/savings';
 import { getVaultDb, registerVaultMigrations } from '@modules/vault';
 
 import { createProfileNameApi } from './adapters/api/profileNameApi';
@@ -16,8 +18,9 @@ import { createVaultProgressStore } from './adapters/vault/vaultProgressStore';
 import { createOnboardingService } from './application/onboardingService';
 import { createDisplayName } from './application/useDisplayName';
 import { createAccountsStep } from './ui/AccountsStepScreen';
+import { createEmbeddedStep } from './ui/EmbeddedStep';
 import { createNameStep } from './ui/NameStepScreen';
-import { createOnboardingNavigator, placeholderSteps } from './ui/OnboardingNavigator';
+import { createOnboardingNavigator } from './ui/OnboardingNavigator';
 import { createUseOnboardingGate } from './ui/useOnboardingGate';
 
 registerVaultMigrations('onboarding', onboardingMigrations);
@@ -37,8 +40,9 @@ const names = createProfileNameApi();
 // userId is read on every render, never while this file loads.
 const displayName = createDisplayName(names, () => userId());
 
-// Accounts and bank import each other and, through accounts, this module: their values are read
-// only on render, never while this file loads.
+// Accounts and bank import each other and, through accounts, this module (savings and recurring
+// too, through their own imports): their values are read only on render, never while this file
+// loads.
 const accountsStep = createAccountsStep({
   useAccounts: () => useAccounts(),
   isConnected: (account) => isConnected(account),
@@ -53,9 +57,10 @@ const ConnectBank = () => createElement(ConnectBankScreen);
 export const OnboardingNavigator = createOnboardingNavigator(
   service,
   {
-    ...placeholderSteps,
     name: createNameStep(names, displayName.useRememberName),
     accounts: accountsStep,
+    goals: createEmbeddedStep('goals', () => createElement(GoalsSetup)),
+    recurring: createEmbeddedStep('recurring', () => createElement(RecurringSetup)),
   },
   ConnectBank,
 );

@@ -11,6 +11,7 @@ import { onboardingMigrations } from '../adapters/vault/migrations';
 import { createVaultProgressStore } from '../adapters/vault/vaultProgressStore';
 import { createOnboardingService, type OnboardingService } from '../application/onboardingService';
 import { initialProgress, type OnboardingProgress } from '../domain/progress';
+import { placeholderSteps } from '../testing/placeholderSteps';
 import { MORPH_MS } from './IntroScreen';
 import { createOnboardingNavigator, initialStateFor } from './OnboardingNavigator';
 import { onboardingStrings } from './strings.es-CO';
@@ -45,7 +46,7 @@ async function openOn(progress: OnboardingProgress | null) {
     events: createAppEvents(),
   });
   await service.load();
-  const Flow = createOnboardingNavigator(service);
+  const Flow = createOnboardingNavigator(service, placeholderSteps);
   await render(
     <NavigationContainer>
       <Flow />
@@ -198,7 +199,7 @@ describe('before the progress is read', () => {
       clock: createFixedClock(NOW),
       events: createAppEvents(),
     });
-    const Flow = createOnboardingNavigator(service);
+    const Flow = createOnboardingNavigator(service, placeholderSteps);
     await render(<Flow />);
     await act(async () => {});
     expect(screen.getByTestId('onboarding.loading')).toBeTruthy();
@@ -213,7 +214,7 @@ describe('before the progress is read', () => {
       clock: createFixedClock(NOW),
       events: createAppEvents(),
     });
-    const Flow = createOnboardingNavigator(service);
+    const Flow = createOnboardingNavigator(service, placeholderSteps);
     await render(<Flow />);
     await act(async () => {});
     await press('Reintentar');
