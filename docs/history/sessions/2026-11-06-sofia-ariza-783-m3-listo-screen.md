@@ -6,7 +6,7 @@ module: M3
 jira: [SCRUM-69]
 branch: feature/onboarding-summary
 tool: Claude Code
-pr: none
+pr: "#302"
 status: done
 ---
 
@@ -29,7 +29,7 @@ Part of Sofia's request to "complete all the onboarding module". SCRUM-69: "La p
 
 * Tests: full mobile suite, 235 suites, 2618 pass. `tsc`, ESLint and Prettier are clean.
 * Not run on a phone or emulator: the Maestro flow and the screen against `OnbListo.png` still need a dev build.
-* Pull request: in the M3 stack, on top of #297.
+* Pull request: #302, in the M3 stack, on top of #297.
 
 ## Decisions and problems
 
