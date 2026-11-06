@@ -21,6 +21,9 @@ var (
 	ErrProviderUnavailable = &Error{"provider_unavailable", "This entity is not available right now."}
 	// ErrInvalidGrant: the bank rejected the code or the refresh token.
 	ErrInvalidGrant = &Error{"invalid_grant", "The bank rejected the authorization."}
+	// ErrRevocationNotSupported: the bank has no API for a third party to revoke its consent
+	// (Bancolombia, ADR 0003). M4 does not retry; the person revokes at the bank.
+	ErrRevocationNotSupported = &Error{"revocation_not_supported", "This entity does not let Fynk revoke the consent."}
 )
 
 // RateLimitedError: the bank asked to slow down. M5 passes it back as 429 with Retry-After.

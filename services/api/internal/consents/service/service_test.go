@@ -54,9 +54,10 @@ func (r *recorder) types() []string {
 
 // bank is M5's revoker as M4 sees it: it records each notice and fails while down is set.
 type bank struct {
-	mu    sync.Mutex
-	calls []string
-	down  bool
+	mu          sync.Mutex
+	calls       []string
+	down        bool
+	unsupported bool // the entity has no revocation API (Bancolombia)
 }
 
 func (b *bank) RevokeConsent(_ context.Context, provider, providerConsentID string) error {
@@ -65,6 +66,9 @@ func (b *bank) RevokeConsent(_ context.Context, provider, providerConsentID stri
 	b.calls = append(b.calls, provider+"/"+providerConsentID)
 	if b.down {
 		return fmt.Errorf("bankdemo: revoke: %w", bankports.ErrProviderUnavailable)
+	}
+	if b.unsupported {
+		return fmt.Errorf("bancolombia: revoke consent: %w", bankports.ErrRevocationNotSupported)
 	}
 	return nil
 }
@@ -612,5 +616,27 @@ func TestRevokeAllWithAnUnreachableEntityStillRevokesAndRetries(t *testing.T) {
 	got, _ := s.Get(context.Background(), "u1", c.ID)
 	if got.Status != domain.StatusRevoked || got.ProviderNotifiedAt != nil || got.NextNotifyAt == nil {
 		t.Fatalf("got %+v", got)
+	}
+}
+
+// An entity without a revocation API for third parties (Bancolombia) is asked once: retrying
+// for 24 hours cannot help. The consent stays revoked in Fynk at once.
+func TestAnEntityWithoutARevocationAPIIsNotRetried(t *testing.T) {
+	s, st, _, clk, b := setupWithBank(t)
+	c := grantedConsent(t, s, "u1")
+	b.mu.Lock()
+	b.unsupported = true
+	b.mu.Unlock()
+	got, err := s.Revoke(context.Background(), "u1", c.ID)
+	if err != nil || got.Status != domain.StatusRevoked || got.ProviderNotifiedAt != nil {
+		t.Fatalf("revoke: %+v, %v", got, err)
+	}
+	stored, _ := st.Get(context.Background(), c.ID)
+	if stored.NextNotifyAt != nil || stored.NotifyAttempts != 1 {
+		t.Fatalf("stored %+v", stored)
+	}
+	clk.Advance(time.Hour)
+	if _, _ = s.NotifyDue(context.Background()); b.count() != 1 {
+		t.Fatalf("retried %d times", b.count()-1)
 	}
 }

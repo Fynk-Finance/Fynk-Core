@@ -50,6 +50,9 @@ type PARRequest struct {
 type PARResult struct {
 	AuthorizeURL string
 	ExpiresIn    time.Duration
+	// ProviderConsentID is the bank's consent when the bank creates it before the PAR
+	// (Bancolombia). Empty when the bank names it only in the token answer (Banco Demo).
+	ProviderConsentID string
 }
 
 // CodeExchange trades the authorization code for tokens with PKCE.

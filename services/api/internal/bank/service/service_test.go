@@ -38,6 +38,8 @@ type fakeProvider struct {
 	tokens    ports.TokenSet
 	accounts  []ports.Account
 	err       error
+	// parConsentID is the consent the bank created before the PAR (Bancolombia), if any.
+	parConsentID string
 }
 
 func (f *fakeProvider) ID() string { return f.id }
@@ -48,7 +50,10 @@ func (f *fakeProvider) PushAuthorization(_ context.Context, r ports.PARRequest) 
 	if f.err != nil {
 		return ports.PARResult{}, f.err
 	}
-	return ports.PARResult{AuthorizeURL: "https://bank.example/authorize?request_uri=urn:x", ExpiresIn: 90 * time.Second}, nil
+	return ports.PARResult{
+		AuthorizeURL: "https://bank.example/authorize?request_uri=urn:x", ExpiresIn: 90 * time.Second,
+		ProviderConsentID: f.parConsentID,
+	}, nil
 }
 func (f *fakeProvider) ExchangeCode(_ context.Context, r ports.CodeExchange) (ports.TokenSet, error) {
 	f.mu.Lock()
@@ -335,5 +340,26 @@ func TestNewIDIsAUUIDv7(t *testing.T) {
 	}
 	if NewID(now) == id {
 		t.Fatal("two ids must differ")
+	}
+}
+
+// Bancolombia creates its own consent before the PAR and does not repeat its id in the token
+// answer: the id from the PAR is kept with the authorization and granted with it.
+func TestTheBanksConsentFromThePARIsGrantedWhenTheTokensDoNotNameIt(t *testing.T) {
+	f := setup(t)
+	f.bank.parConsentID = "bc-consent-9"
+	f.bank.tokens.ProviderConsentID = ""
+	f.link(t)
+	if f.consents.granted["c-1"] != "bc-consent-9" {
+		t.Fatalf("granted %v, want the PAR's consent id", f.consents.granted)
+	}
+}
+
+func TestTheTokensConsentIDWinsOverThePARs(t *testing.T) {
+	f := setup(t)
+	f.bank.parConsentID = "from-par"
+	f.link(t)
+	if f.consents.granted["c-1"] != "bank-consent-1" {
+		t.Fatalf("granted %v, want the token answer's consent id", f.consents.granted)
 	}
 }
