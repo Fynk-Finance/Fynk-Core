@@ -31,6 +31,7 @@ Sofia asked: "There are some things missing in M3 Onboarding ... Lets complete a
 ## Decisions and problems
 
 * One small factory for both steps instead of two screens, since both are the same frame around another module's part.
+* **Import cycle, found by CI after the pull request opened.** M6 imports onboarding, and M9 reads M7's exports while it loads, so loading M7 first (M7 → M6 → onboarding → M9 → M7) left them undefined: `bank/loadOrder.test.ts` and `accounts/index.test.ts` failed. Onboarding now loads M8 and M9 with a lazy `require` on first render, the same fix M7 uses for M9. Full mobile suite: 232 suites, 2590 tests pass.
 * "Terminar configuración" still ends the setup at once. The Listo screen comes in its own pull requests higher in the stack.
 
 ## Next step
