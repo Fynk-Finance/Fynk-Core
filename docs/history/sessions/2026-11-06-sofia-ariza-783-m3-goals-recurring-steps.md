@@ -6,7 +6,7 @@ module: M3
 jira: [SCRUM-69]
 branch: feature/onboarding-goals-recurring-steps
 tool: Claude Code
-pr: none
+pr: "#294"
 status: done
 ---
 
@@ -26,7 +26,7 @@ Sofia asked: "There are some things missing in M3 Onboarding ... Lets complete a
 ## Result
 
 * Tests: onboarding, 12 suites, 129 pass. App suite and M8's and M9's setup tests, 40 pass. `tsc`, ESLint and Prettier are clean.
-* Pull request: stacked on #277.
+* Pull request: #294, stacked on #277.
 
 ## Decisions and problems
 
