@@ -84,3 +84,22 @@ describe('identity check', () => {
     expect(check).toHaveBeenCalledWith(request);
   });
 });
+
+// M6's "Eliminar cuenta" on a connected account goes through here (via M5's disconnectLink).
+describe('revokeAfterCheck (HU-008 from Detalle de cuenta)', () => {
+  it('asks for the identity check with the entity, then revokes', async () => {
+    const { api, revocation } = setup();
+    const check = jest.fn(async () => true);
+    revocation.installIdentityCheck(check);
+    await expect(revocation.revokeAfterCheck('c-1', 'Banco Demo')).resolves.toBe('revoked');
+    expect(check).toHaveBeenCalledWith({ reason: 'revoke_consent', entity: 'Banco Demo' });
+    expect(api.revoke).toHaveBeenCalledWith('c-1');
+  });
+
+  it('revokes nothing when the person cancels the check', async () => {
+    const { api, revocation } = setup();
+    revocation.installIdentityCheck(async () => false);
+    await expect(revocation.revokeAfterCheck('c-1', 'Banco Demo')).resolves.toBe('cancelled');
+    expect(api.revoke).not.toHaveBeenCalled();
+  });
+});

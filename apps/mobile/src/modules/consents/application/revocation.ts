@@ -71,6 +71,16 @@ export function createRevocation(api: Pick<ConsentsApiPort, 'revoke'>) {
       );
       return consent;
     },
+    /**
+     * Asks for the identity check (biometrics or password, once M2 installs it), then revokes.
+     * For revocations started outside M4's screens, such as M6's "Eliminar cuenta".
+     */
+    async revokeAfterCheck(id: string, entity: string): Promise<'revoked' | 'cancelled'> {
+      const ok = identityCheck ? await identityCheck({ reason: 'revoke_consent', entity }) : true;
+      if (!ok) return 'cancelled';
+      await this.revokeConsent(id);
+      return 'revoked';
+    },
   };
 }
 

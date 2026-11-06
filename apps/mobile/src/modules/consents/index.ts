@@ -57,6 +57,10 @@ export const useConsents = () => useConsentsWith(deps.api);
  */
 export const revokeConsent = (id: string) => revocation.revokeConsent(id);
 
+/** Identity check, then revoke. M5's disconnectLink uses it for M6's "Eliminar cuenta". */
+export const revokeConsentAfterCheck = (id: string, entity: string) =>
+  revocation.revokeAfterCheck(id, entity);
+
 /** M5 subscribes here to delete the link's bank token from the vault after a revocation. */
 export const onConsentRevoked = revocation.onConsentRevoked;
 
