@@ -6,7 +6,7 @@ module: M3
 jira: [SCRUM-69]
 branch: feature/onboarding-listo-motion
 tool: Claude Code
-pr: none
+pr: "#303"
 status: done
 ---
 
@@ -31,7 +31,7 @@ Last part of Sofia's request to "complete all the onboarding module": the Listo 
 
 * Tests: full mobile suite, 235 suites, 2620 pass. `tsc`, ESLint and Prettier are clean.
 * Not seen on a phone yet: the timing should be checked on a dev build against the design.
-* Pull request: in the M3 stack, on top of #302.
+* Pull request: #303, in the M3 stack, on top of #302.
 
 ## Decisions and problems
 
