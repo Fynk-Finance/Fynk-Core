@@ -6,7 +6,7 @@ module: M2
 jira: [SCRUM-69]
 branch: feature/recovery-code-status
 tool: Claude Code
-pr: none
+pr: "#296"
 status: done
 ---
 
@@ -26,7 +26,7 @@ While finishing M3, Sofia asked to "complete all the onboarding module". The M3 
 ## Result
 
 * Tests: vault and app suites, 45 suites, 658 pass. `tsc`, ESLint and Prettier are clean.
-* Pull request: in the M3 stack, under the Listo pull requests. Needs @Komi-yes's approval.
+* Pull request: #296, in the M3 stack, under the Listo pull requests. Needs @Komi-yes's approval.
 
 ## Decisions and problems
 
