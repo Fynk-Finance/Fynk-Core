@@ -37,10 +37,16 @@ const copy = onboardingStrings;
 /** The design: Banco Demo $3.200.000, Billetera Demo $4.600.000 and $600.000 in cash. */
 const DESIGN: AccountsOverview = {
   accounts: [savings, wallet, cash],
+  disconnectedAccounts: [],
   balanceTotalMinor: 840_000_000,
   connectedCount: 2,
 };
-const EMPTY: AccountsOverview = { accounts: [], balanceTotalMinor: 0, connectedCount: 0 };
+const EMPTY: AccountsOverview = {
+  accounts: [],
+  disconnectedAccounts: [],
+  balanceTotalMinor: 0,
+  connectedCount: 0,
+};
 
 // Stand-in for M5's ConnectBankButton: it navigates to the same route.
 function FakeConnectButton() {
