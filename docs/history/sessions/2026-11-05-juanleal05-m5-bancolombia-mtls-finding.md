@@ -6,7 +6,7 @@ module: M5
 jira: [SCRUM-23]
 branch: docs/bancolombia-sandbox-mtls-finding
 tool: Claude Code
-pr: none
+pr: "#292"
 status: done
 ---
 
@@ -26,7 +26,7 @@ After all M4/M5 pull requests were merged, Juan Carlos asked to "check what's in
 ## Result
 
 * Sandbox test with Fynk's credentials: discovery passes; accounts, transactions and revoked consent get `401 invalid_client`.
-* Pull request: not opened yet.
+* Pull request: #292.
 
 ## Decisions and problems
 
