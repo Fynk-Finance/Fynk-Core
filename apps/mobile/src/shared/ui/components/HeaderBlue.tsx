@@ -1,6 +1,7 @@
 // Blue header with rounded bottom corners (VerdeDashboard, VerdeBilletera, VerdeRecomendaciones):
 // avatar with initials, "Hola," and the name, and the bell with a lime dot when there is
-// something unread. An optional title row and extra content go below.
+// something unread. The Dashboard adds the Estadísticas chart button left of the bell. An optional
+// title row and extra content go below.
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +19,8 @@ export interface HeaderBlueProps {
   hasUnread?: boolean;
   onPressAccount?: () => void;
   onPressNotifications?: () => void;
+  /** The chart button that opens Estadísticas, shown only when set (Dashboard). */
+  onPressStatistics?: () => void;
   title?: string;
   subtitle?: string;
   /** Right side of the title row, e.g. the month's total in Billetera. */
@@ -37,6 +40,7 @@ export function HeaderBlue({
   hasUnread = false,
   onPressAccount,
   onPressNotifications,
+  onPressStatistics,
   title,
   subtitle,
   trailing,
@@ -48,6 +52,19 @@ export function HeaderBlue({
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
+  const bell = (
+    <Pressable
+      onPress={onPressNotifications}
+      disabled={!onPressNotifications}
+      accessibilityRole="button"
+      accessibilityLabel={hasUnread ? uiStrings.notificationsUnread : uiStrings.notifications}
+      style={({ pressed }) => [styles.bell, pressed && styles.pressed]}
+      testID="header-bell"
+    >
+      <Icon name="bell" size={22} color={colors.onPrimary} />
+      {hasUnread ? <View style={styles.dot} testID="header-unread-dot" /> : null}
+    </Pressable>
+  );
   return (
     <View style={styles.shadow}>
       <View
@@ -84,17 +101,22 @@ export function HeaderBlue({
               </AppText>
             </View>
           </Pressable>
-          <Pressable
-            onPress={onPressNotifications}
-            disabled={!onPressNotifications}
-            accessibilityRole="button"
-            accessibilityLabel={hasUnread ? uiStrings.notificationsUnread : uiStrings.notifications}
-            style={({ pressed }) => [styles.bell, pressed && styles.pressed]}
-            testID="header-bell"
-          >
-            <Icon name="bell" size={22} color={colors.onPrimary} />
-            {hasUnread ? <View style={styles.dot} testID="header-unread-dot" /> : null}
-          </Pressable>
+          {onPressStatistics ? (
+            <View style={styles.actions}>
+              <Pressable
+                onPress={onPressStatistics}
+                accessibilityRole="button"
+                accessibilityLabel={uiStrings.statistics}
+                style={({ pressed }) => [styles.bell, pressed && styles.pressed]}
+                testID="header-statistics"
+              >
+                <Icon name="chartBars" size={32} color={colors.onPrimary} />
+              </Pressable>
+              {bell}
+            </View>
+          ) : (
+            bell
+          )}
         </View>
         {title ? (
           <View style={styles.titleRow}>
@@ -130,6 +152,7 @@ const createStyles = ({ colors, shadow }: Theme) =>
       overflow: 'hidden',
     },
     row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs },
     account: {
       flexDirection: 'row',
       alignItems: 'center',

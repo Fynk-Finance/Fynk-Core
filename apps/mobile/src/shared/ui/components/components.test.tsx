@@ -121,6 +121,17 @@ describe('HeaderBlue', () => {
     await fireEvent.press(screen.getByRole('button', { name: uiStrings.notificationsUnread }));
     expect(onPress).toHaveBeenCalled();
   });
+
+  it('shows the Estadísticas chart button only when it can open it (Dashboard)', async () => {
+    const { rerender } = await render(<HeaderBlue name="Laura" />);
+    expect(screen.queryByRole('button', { name: uiStrings.statistics })).toBeNull();
+
+    const onPress = jest.fn();
+    await rerender(<HeaderBlue name="Laura" dashboard onPressStatistics={onPress} />);
+    await fireEvent.press(screen.getByRole('button', { name: uiStrings.statistics }));
+    expect(onPress).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('header-bell')).toBeTruthy();
+  });
 });
 
 describe('ProgressBar', () => {

@@ -15,6 +15,12 @@ export const CURRENT = 'currentColor';
 export const icons = {
   // Headers and navigation (VerdeDashboard, VerdeOnbNombre, VerdeDetalleCuentas)
   bell: p('M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9', 'M10.3 21a1.94 1.94 0 0 0 3.4 0'),
+  // Estadísticas button of the Dashboard header, drawn at 32 px
+  chartBars: [
+    { kind: 'rect', x: 3.5, y: 11, width: 4.5, height: 9.5, rx: 1.5 },
+    { kind: 'rect', x: 9.75, y: 3.5, width: 4.5, height: 17, rx: 1.5 },
+    { kind: 'rect', x: 16, y: 14, width: 4.5, height: 6.5, rx: 1.5 },
+  ],
   chevronLeft: p('m15 18-6-6 6-6'),
   chevronRight: p('m9 6 6 6-6 6'),
   chevronDown: p('m6 9 6 6 6-6'),
