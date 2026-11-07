@@ -299,6 +299,45 @@
       "serviceAccountsEnabled": true,
       "redirectUris": [],
       "webOrigins": []
+    },
+    {
+      "clientId": "banco-demo-broker",
+      "name": "Banco Demo (Ingresar con Fynk)",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${BANCO_DEMO_BROKER_SECRET}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "consentRequired": false,
+      "frontchannelLogout": false,
+      "redirectUris": ["http://localhost:8081/realms/banco-demo/broker/fynk/endpoint"],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false"
+      },
+      "defaultClientScopes": ["basic"],
+      "optionalClientScopes": [],
+      "protocolMappers": [
+        {
+          "name": "fynk-sub-claim",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "config": {
+            "user.attribute": "id",
+            "claim.name": "fynk_sub",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "false",
+            "userinfo.token.claim": "false",
+            "introspection.token.claim": "false"
+          }
+        }
+      ]
     }
   ],
 
