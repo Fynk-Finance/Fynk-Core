@@ -91,6 +91,11 @@ func EntitySummaries(data *CustomerData) []EntitySummary {
 	return out
 }
 
+// EntityDisplayName returns the fictional name of an entity, or "" when unknown.
+func EntityDisplayName(providerID string) string {
+	return entityByID(providerID).DisplayName
+}
+
 func hashOf(parts ...string) [32]byte {
 	s := ""
 	for i, p := range parts {
