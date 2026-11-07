@@ -63,18 +63,18 @@ resource "aws_db_parameter_group" "pg16" {
 }
 
 resource "aws_db_instance" "postgres" {
-  identifier                  = "fynk-${var.environment}-db"
-  engine                      = "postgres"
-  engine_version              = "16.4"
-  instance_class              = var.instance_class
-  allocated_storage           = var.allocated_storage
-  max_allocated_storage       = 50
-  storage_type                = "gp3"
-  storage_encrypted           = true
-  kms_key_id                  = var.kms_key_id
-  db_name                     = "fynk"
-  username                    = "fynk_master"
-  manage_master_user_password = true
+  identifier                    = "fynk-${var.environment}-db"
+  engine                        = "postgres"
+  engine_version                = "16.4"
+  instance_class                = var.instance_class
+  allocated_storage             = var.allocated_storage
+  max_allocated_storage         = 50
+  storage_type                  = "gp3"
+  storage_encrypted             = true
+  kms_key_id                    = var.kms_key_id
+  db_name                       = "fynk"
+  username                      = "fynk_master"
+  manage_master_user_password   = true
   master_user_secret_kms_key_id = var.kms_key_id
 
   db_subnet_group_name   = aws_db_subnet_group.rds.name

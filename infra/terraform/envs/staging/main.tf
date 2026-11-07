@@ -154,6 +154,15 @@ module "ecs_api" {
     { name = "KEYCLOAK_ISSUER", value = "https://auth.${var.domain_name}/realms/fynk" }
   ]
 
+  secrets = [
+    { name = "BANK_SIGNER_KMS_KEY_ID", valueFrom = module.secrets.secret_arns["bank_signer_kms_key_id"] },
+    { name = "BANK_FINGERPRINT_KMS_KEY_ID", valueFrom = module.secrets.secret_arns["bank_fingerprint_kms_key_id"] },
+    { name = "BANK_REDIRECT_URI", valueFrom = module.secrets.secret_arns["bank_redirect_uri"] },
+    { name = "BANCO_DEMO_CLIENT_ID", valueFrom = module.secrets.secret_arns["banco_demo_client_id"] },
+    { name = "BANCO_DEMO_ISSUER", valueFrom = module.secrets.secret_arns["banco_demo_issuer"] },
+    { name = "BANCO_DEMO_AUTHORIZE_URL", valueFrom = module.secrets.secret_arns["banco_demo_authorize_url"] }
+  ]
+
   task_policy_statements = [
     {
       Effect = "Allow"

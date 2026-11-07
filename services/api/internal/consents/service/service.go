@@ -178,12 +178,15 @@ func (s *Service) ExpireDue(ctx context.Context) (int, error) {
 }
 
 // FailStalePending marks the consents still pending after domain.PendingFor as failed.
-// StatusAt already reports them as failed, so this only keeps the stored status current.
-// There is no audit event for it yet: M13's audit list has no consent.failed type.
+// StatusAt already reports them as failed, so this keeps the stored status and audit current.
 func (s *Service) FailStalePending(ctx context.Context) (int, error) {
-	failed, err := s.store.FailPending(ctx, s.clock.Now().Add(-domain.PendingFor))
+	now := s.clock.Now()
+	failed, err := s.store.FailPending(ctx, now.Add(-domain.PendingFor))
 	if err != nil {
 		return 0, err
+	}
+	for _, c := range failed {
+		s.record(ctx, audit.ConsentFailed, c, now)
 	}
 	return len(failed), nil
 }

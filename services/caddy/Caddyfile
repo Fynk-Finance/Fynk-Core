@@ -38,9 +38,17 @@
 		}
 	}
 
-	# Route 2: Bancolombia Sandbox Open Finance API
-	handle_path /bancolombia/* {
-		reverse_proxy https://api.sandbox.bancolombia.com {
+	# Route 2: Bancolombia Sandbox Open Finance API (Auth & Data per ADR 0003)
+	handle_path /bancolombia-auth/* {
+		reverse_proxy https://as1-api-open-finance-sandbox.ambientesbc.com {
+			header_up Host {upstream_hostport}
+			transport http {
+				tls_client_auth /run/secrets/fynk-client.crt /run/secrets/fynk-client.key
+			}
+		}
+	}
+	handle_path /bancolombia-api/* {
+		reverse_proxy https://rs1-api-open-finance-sandbox.ambientesbc.com {
 			header_up Host {upstream_hostport}
 			transport http {
 				tls_client_auth /run/secrets/fynk-client.crt /run/secrets/fynk-client.key

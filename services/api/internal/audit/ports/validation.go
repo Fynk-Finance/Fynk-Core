@@ -70,6 +70,9 @@ var allowedMetaKeys = map[string]map[string]bool{
 	ConsentExpired: {
 		"provider": true, "institution_id": true, "consent_id": true,
 	},
+	ConsentFailed: {
+		"provider": true, "institution_id": true, "consent_id": true, "reason": true,
+	},
 	BankLinkCreated: {
 		"provider": true, "institution_id": true, "link_id": true, "status": true,
 	},

@@ -98,11 +98,11 @@ resource "aws_iam_instance_profile" "caddy" {
 }
 
 resource "aws_instance" "caddy" {
-  ami                  = data.aws_ami.al2023_arm64.id
-  instance_type        = var.instance_type
-  subnet_id            = var.subnet_id
+  ami                    = data.aws_ami.al2023_arm64.id
+  instance_type          = var.instance_type
+  subnet_id              = var.subnet_id
   vpc_security_group_ids = [aws_security_group.caddy.id]
-  iam_instance_profile = aws_iam_instance_profile.caddy.name
+  iam_instance_profile   = aws_iam_instance_profile.caddy.name
 
   root_block_device {
     volume_size           = 15

@@ -35,6 +35,7 @@ const (
 	ConsentGranted           = "consent.granted"
 	ConsentRevoked           = "consent.revoked"
 	ConsentExpired           = "consent.expired"
+	ConsentFailed            = "consent.failed"
 	BankLinkCreated          = "bank.link_created"
 	BankSync                 = "bank.sync"
 	BankSyncFailed           = "bank.sync_failed"
