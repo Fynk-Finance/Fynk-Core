@@ -5,7 +5,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { Alert, Text } from 'react-native';
+import { Alert, BackHandler, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ThemeProvider, type ThemePreference } from '@shared/ui';
@@ -31,8 +31,13 @@ const overviewOf = (accounts = [savings, wallet, cash, card, cdt]): AccountsOver
   };
 };
 
-function Target({ route }: { route: { name: string; params?: { accountId?: string } } }) {
-  return <Text>{`arrived:${route.name}:${route.params?.accountId ?? ''}`}</Text>;
+function Target({
+  route,
+}: {
+  route: { name: string; params?: { accountId?: string; kind?: string } };
+}) {
+  const param = route.params?.accountId ?? route.params?.kind ?? '';
+  return <Text>{`arrived:${route.name}:${param}`}</Text>;
 }
 
 async function renderDashboard(
@@ -281,11 +286,61 @@ describe('Planes de ahorro (M8)', () => {
 });
 
 describe('Movimientos and the FAB (M7)', () => {
-  it('shows the movements of M7 and opens Registrar gasto o ingreso from the FAB', async () => {
+  const fab = () => screen.getByRole('button', { name: 'Registrar gasto o ingreso' });
+
+  it('shows the movements of M7', async () => {
     await renderDashboard({ withMovements: true });
     expect(screen.getByText('movements of M7')).toBeTruthy();
-    await fireEvent.press(screen.getByLabelText('Registrar gasto o ingreso'));
-    expect(await screen.findByText('arrived:transactions.New:')).toBeTruthy();
+  });
+
+  // QA review 2026-11-07, F5 (SCRUM-95): the FAB offers Ingreso or Gasto, each opens M7's sheet.
+  it('offers Ingreso and Gasto, and the plus turns into a close mark', async () => {
+    await renderDashboard({ withMovements: true });
+    expect(screen.queryByRole('button', { name: 'Registrar ingreso' })).toBeNull();
+    expect(fab()).toBeCollapsed();
+    await fireEvent.press(fab());
+    expect(fab()).toBeExpanded();
+    expect(screen.getByRole('button', { name: 'Registrar ingreso' })).toHaveTextContent('Ingreso');
+    expect(screen.getByRole('button', { name: 'Registrar gasto' })).toHaveTextContent('Gasto');
+  });
+
+  it.each([
+    ['Registrar ingreso', 'income'],
+    ['Registrar gasto', 'expense'],
+  ])('"%s" opens the sheet on %s', async (label, kind) => {
+    await renderDashboard({ withMovements: true });
+    await fireEvent.press(fab());
+    await fireEvent.press(screen.getByRole('button', { name: label }));
+    expect(await screen.findByText(`arrived:transactions.New:${kind}`)).toBeTruthy();
+  });
+
+  it('closes the menu from the scrim and from the FAB', async () => {
+    await renderDashboard({ withMovements: true });
+    await fireEvent.press(fab());
+    await fireEvent.press(screen.getByRole('button', { name: 'Cerrar menú' }));
+    expect(screen.queryByRole('button', { name: 'Registrar ingreso' })).toBeNull();
+    await fireEvent.press(fab());
+    await fireEvent.press(fab());
+    expect(screen.queryByRole('button', { name: 'Registrar ingreso' })).toBeNull();
+    expect(fab()).toBeCollapsed();
+  });
+
+  it('closes the menu with the system back button', async () => {
+    type Handler = Parameters<typeof BackHandler.addEventListener>[1];
+    const listeners: Handler[] = [];
+    const add = jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_e, handler) => {
+      listeners.push(handler);
+      return { remove: () => listeners.splice(listeners.indexOf(handler), 1) };
+    });
+    await renderDashboard({ withMovements: true });
+    await fireEvent.press(fab());
+    let handled = false;
+    await act(async () => {
+      handled = !!listeners.at(-1)?.({} as never);
+    });
+    expect(handled).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Registrar ingreso' })).toBeNull();
+    add.mockRestore();
   });
 
   // QA review 2026-11-07, V1 (SCRUM-76): the tab bar sits below the page, so the FAB is placed

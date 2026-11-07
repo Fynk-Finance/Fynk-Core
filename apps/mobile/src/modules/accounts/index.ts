@@ -122,6 +122,12 @@ export const getCash = (): Promise<Cash | null> => cash.getCash();
 /** Registers or updates cash. Throws InvalidCashAmountError below zero or with decimals. */
 export const setCash = (amountMinor: MoneyMinor): Promise<void> => cash.setCash(amountMinor);
 
+/**
+ * The cash account's id, registering cash at $0 first when there is none. M7's sheet calls it
+ * when someone who skipped cash adds a movement in Efectivo (QA review 2026-11-07, F5).
+ */
+export const ensureCashAccount = (): Promise<Id> => cash.ensureCash();
+
 // ---- Manual movements, for M7 only ----
 
 /**

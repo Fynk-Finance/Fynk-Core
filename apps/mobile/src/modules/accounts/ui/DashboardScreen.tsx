@@ -1,10 +1,10 @@
 // Dashboard tab (design Dashboard, inventory rows 5 and 6), owned by M6: the blue header with
 // "Hola, <nombre>", the chart icon that opens Estadísticas (M10) and the bell, the "Balance total" card and Detalle de cuentas, which expands
 // in place. Below, Planes de ahorro (M8's carousel), Movimientos (M7's preview), and the FAB
-// "Registrar gasto o ingreso", which opens M7's sheet.
+// "Registrar gasto o ingreso", whose menu opens M7's sheet on Ingreso or Gasto.
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import type { UseQueryResult } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 
@@ -15,6 +15,7 @@ import { accountRows, type MonthSummary } from '../domain/dashboard';
 import { ACCOUNT_DETAIL_ROUTE } from './AccountDetailScreen';
 import { AccountsPanel, DetailsTab } from './AccountsPanel';
 import { DashboardBalanceCard } from './DashboardBalanceCard';
+import { FAB_BOTTOM, FabMenu } from './FabMenu';
 import { accountsStrings } from './strings.es-CO';
 
 const t = accountsStrings.dashboard;
@@ -39,7 +40,7 @@ export interface DashboardDeps {
   renderGoals?: () => ReactNode;
   /** "Movimientos" with the latest movements (M7's TransactionPreview). */
   renderMovements?: () => ReactNode;
-  /** The route of M7's "Registrar gasto o ingreso" sheet. Read at press time. */
+  /** The route of M7's "Registrar gasto o ingreso" sheet, opened with { kind }. Read at press time. */
   newMovementRoute?: () => string;
   /**
    * Pull to refresh (HU-011): M5's syncNow(). M5 keeps the 60 second cooldown; the accounts
@@ -52,6 +53,8 @@ export function createDashboardScreen(deps: DashboardDeps) {
   return function DashboardScreen() {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();
     const [expanded, setExpanded] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const closeMenu = useCallback(() => setMenuOpen(false), []);
     const accounts = deps.useAccounts();
     const summary = deps.useMonthSummary();
     const unread = deps.useUnreadCount();
@@ -124,10 +127,20 @@ export function createDashboardScreen(deps: DashboardDeps) {
           {deps.renderGoals?.()}
           {deps.renderMovements?.()}
         </Screen>
+        {newMovementRoute && menuOpen ? (
+          <FabMenu
+            onClose={closeMenu}
+            onPick={(kind) => {
+              setMenuOpen(false);
+              navigation.navigate(newMovementRoute(), { kind });
+            }}
+          />
+        ) : null}
         {newMovementRoute ? (
           <Fab
             accessibilityLabel={t.newMovement}
-            onPress={() => navigation.navigate(newMovementRoute())}
+            expanded={menuOpen}
+            onPress={() => setMenuOpen((open) => !open)}
             style={styles.fab}
             testID="accounts.dashboard.fab"
           />
@@ -142,5 +155,5 @@ const styles = StyleSheet.create({
   // Right 16 like the design (`.fab`). The design's bottom 92 counts its 72 px tab bar, which
   // overlaps the page there; here the bar sits below the page, so 12 px keeps the FAB just above
   // it (QA review 2026-11-07, V1).
-  fab: { position: 'absolute', right: 16, bottom: 12 },
+  fab: { position: 'absolute', right: 16, bottom: FAB_BOTTOM },
 });
