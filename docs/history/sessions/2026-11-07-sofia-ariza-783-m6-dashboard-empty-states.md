@@ -6,7 +6,7 @@ module: M6
 jira: [SCRUM-77, SCRUM-80]
 branch: feature/dashboard-empty-states
 tool: Claude Code
-pr: none
+pr: "#336"
 status: done
 ---
 
@@ -26,7 +26,7 @@ Sofia asked to fix the Dashboard findings of the 7 Nov app review (#332): "In pr
 ## Result
 
 * Tests: 2,673 of 2,673 in the app, 128 snapshots. Typecheck, ESLint and Prettier clean.
-* Pull request: not opened yet. Stacked on the GhostCard pull request.
+* Pull request: #336, in stack #337 on top of #335. Stacked on the GhostCard pull request.
 
 ## Decisions and problems
 
