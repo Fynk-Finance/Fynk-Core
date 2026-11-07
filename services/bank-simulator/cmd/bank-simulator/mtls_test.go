@@ -132,7 +132,7 @@ func TestOpenFinanceAPIOverMTLSListener(t *testing.T) {
 
 	// 5. Subsequent call with revoked consent token must return 403 consent_revoked
 	afterReq, _ := http.NewRequest(http.MethodGet, server.URL+"/open-finance/v1/accounts", nil)
-	afterReq.Header.Set("Authorization", "Bearer consent-demo-001")
+	afterReq.Header.Set("Authorization", "Bearer dev-token")
 	afterResp, err := validClient.Do(afterReq)
 	if err != nil {
 		t.Fatalf("call after revocation failed: %v", err)
