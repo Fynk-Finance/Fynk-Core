@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: feature/button-trailing-icon-and-screen-refresh
 tool: Claude Code
-pr: none
+pr: "#328"
 status: done
 ---
 
@@ -26,7 +26,7 @@ From the follow-ups of the M4 and M5 end-to-end test: "In the 'Connect Bank' des
 ## Result
 
 * Tests: 91 of 91 pass in `shared/ui/components` and `shared/ui/icons`. ESLint, Prettier and `tsc --noEmit` are clean.
-* Pull request: not opened yet (bottom of a stack with the Dashboard branch).
+* Pull request: #328, bottom of stack #330 (#328 → #329).
 
 ## Decisions and problems
 
