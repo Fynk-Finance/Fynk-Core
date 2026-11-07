@@ -6,7 +6,7 @@ module: M7
 jira: [SCRUM-29]
 branch: fix/transaction-account-after-revoke
 tool: Claude Code
-pr: none
+pr: "#331"
 status: done
 ---
 
@@ -26,7 +26,7 @@ From the follow-ups of the M4 and M5 end-to-end test: "After revoking a bank con
 ## Result
 
 * Tests: 351 of 351 pass in `transactions` and `accounts`. ESLint, Prettier and `tsc --noEmit` are clean.
-* Pull request: not opened yet.
+* Pull request: #331.
 
 ## Decisions and problems
 
