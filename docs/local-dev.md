@@ -28,7 +28,7 @@ The first `make dev` downloads the images and builds the API: about 5 minutes on
 
 1. Checks that Docker is running.
 2. Creates `.env` from `.env.example` when it is missing. Only fake local values are used.
-3. Creates the local certificates in `certs/` the first time (`make certs`).
+3. Creates the local certificates and the API's bank keys in `certs/` when any of them is missing (`make certs`).
 4. Generates the Go handlers from the contract (`make generate-go`).
 5. Starts Postgres, Redis, Keycloak and Mailpit, and waits until they are healthy.
 6. Runs the migrations of every backend module (`make migrate`).
@@ -115,6 +115,7 @@ CI runs the same test against its own Postgres.
 `make certs` creates a local CA and the certificates of the stack in `certs/`. It runs the pinned `smallstep/step-cli` image, so nothing is installed on your machine. `certs/` is gitignored and **never committed**.
 * Leaf certificates last 90 days. When they expire, run `make certs FORCE=1` and then `make dev`.
 * The CA key (`ca.key`) never enters a container.
+* It also creates the two keys the API uses to link Banco Demo (M5): `bank-signer.pem` signs the client assertions and `bank-fingerprint.key` fingerprints the bank tokens. In AWS both are KMS keys (M14). Without them the API logs `bank link disabled` and no bank can be linked.
 * These files are for your machine only. Staging uses certificates kept in Secrets Manager (M14).
 
 ## 7. Reset
@@ -133,6 +134,7 @@ make dev                    # recreates the databases, the realms and the schema
 | A shell script fails inside a container with `\r` errors | Line endings became CRLF. The repository forces LF (`.gitattributes`). Run `git config core.autocrlf false`, then `git checkout -- scripts/` |
 | Keycloak takes long the first time | It builds its database on the first start (about 1 minute). `make dev` waits for it |
 | HTTPS on localhost shows another issuer (for example "Avast Web/Mail Shield") | Antivirus HTTPS scanning intercepts TLS on your machine. Use the `docker compose exec` commands above, which stay inside Docker, or turn off HTTPS scanning for localhost |
+| The API logs `bank link disabled` | The bank keys are missing in `certs/`. Run `make certs` (it keeps the files you already have), then `make dev` |
 | `The generated handlers are missing` while building the API | Run `make generate-go`. `make dev` does it for you |
 | A realm change does not show | Keycloak imports a realm only once. Reset (section 7) |
 | `go test -coverprofile=…` or a tool started with `go run` hangs without output (Windows) | Antivirus behavior checks (for example Avast CyberCapture) can hold a freshly built, unsigned Go tool such as `covdata`. Plain `make test` does not use coverage. CI on Linux measures coverage. To run it locally, exclude your Go build cache (`go env GOCACHE`) from the scan |
