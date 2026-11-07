@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useThemedStyles, type Theme } from '../theme';
+import { useTheme, useThemedStyles, type Theme } from '../theme';
 import { spacing } from '../tokens';
 
 export interface ScreenProps {
@@ -15,6 +15,12 @@ export interface ScreenProps {
   /** Leaves room for the bottom tab bar (104 px in the design). */
   withTabBar?: boolean;
   gap?: number;
+  /**
+   * Pull to refresh of a scroll screen (HU-011), e.g. M5's syncNow(). The spinner stays until
+   * the promise settles; a failure is left to the caller, the screen only stops spinning.
+   */
+  refresh?: () => Promise<unknown>;
+  /** The root view; the scroll view gets `<testID>.scroll`. */
   testID?: string;
 }
 
@@ -25,9 +31,21 @@ export function Screen({
   padded = true,
   withTabBar = false,
   gap = spacing.section,
+  refresh,
   testID,
 }: ScreenProps) {
   const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = async () => {
+    if (!refresh) return;
+    setRefreshing(true);
+    try {
+      await refresh().catch(() => undefined);
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const insets = useSafeAreaInsets();
   const content = [
     padded ? styles.padded : null,
@@ -43,9 +61,21 @@ export function Screen({
       {header}
       {scroll ? (
         <ScrollView
+          testID={testID ? `${testID}.scroll` : undefined}
           contentContainerStyle={content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          refreshControl={
+            refresh ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => void onRefresh()}
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+                progressBackgroundColor={colors.background}
+              />
+            ) : undefined
+          }
         >
           {children}
         </ScrollView>
