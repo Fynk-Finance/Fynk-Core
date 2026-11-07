@@ -186,6 +186,11 @@ func TestHistoryFixedItems(t *testing.T) {
 }
 
 func TestHistoryRunsFast(t *testing.T) {
+	// CI runs go test with -race and coverage, which makes the generator about ten times
+	// slower, so a wall-clock budget there fails at random. The other tests still run there.
+	if raceEnabled {
+		t.Skip("timing budget is only meaningful without -race")
+	}
 	start := time.Now()
 	for i := 0; i < manyCustomers; i++ {
 		GenerateCustomerData(testCustomerID(i), testRef)
