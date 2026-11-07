@@ -22,6 +22,14 @@ export const accountsStrings = {
     guest: 'Invitado',
     // The FAB of the Dashboard (M7 opens the sheet).
     newMovement: 'Registrar gasto o ingreso',
+    // Its menu (QA review 2026-11-07, F5): new copy, needs design review.
+    fabMenu: {
+      income: 'Ingreso',
+      expense: 'Gasto',
+      incomeLabel: 'Registrar ingreso',
+      expenseLabel: 'Registrar gasto',
+      close: 'Cerrar menú',
+    },
     balanceTotal: 'Balance total',
     connected: (n: number) => `COP · ${n} ${n === 1 ? 'cuenta conectada' : 'cuentas conectadas'}`,
     income: 'Ingresos',

@@ -147,3 +147,19 @@ describe('backup accounts.cash', () => {
     expect((await cash.getCash())?.amountMinor).toBe(45_000_000);
   });
 });
+
+// QA review 2026-11-07, F5 (SCRUM-95): M7's sheet adds money in cash even when it was skipped.
+describe('ensureCash', () => {
+  it('registers cash at $0 when there is none, and returns its account', async () => {
+    const id = await cash.ensureCash();
+    expect(await cash.getCash()).toMatchObject({ id, amountMinor: 0 });
+    expect(backup.dirty('accounts.cash')).toContain(id);
+  });
+
+  it('returns the cash there is, without changing it', async () => {
+    await cash.setCash(60_000_000);
+    const before = await cash.getCash();
+    expect(await cash.ensureCash()).toBe(before!.id);
+    expect(await cash.getCash()).toEqual(before);
+  });
+});

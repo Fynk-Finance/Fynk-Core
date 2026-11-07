@@ -18,12 +18,14 @@ export interface CashServiceDeps {
 export interface CashService {
   getCash(): Promise<Cash | null>;
   setCash(amountMinor: MoneyMinor): Promise<void>;
+  /** The cash account's id, registering cash at $0 first when there is none (M7, F5). */
+  ensureCash(): Promise<Id>;
   /** The accounts.cash collection for M2's encrypted backup. */
   backupCollection: BackupCollection<CashBackupData>;
 }
 
 export function createCashService(deps: CashServiceDeps): CashService {
-  return {
+  const service: CashService = {
     getCash: () => deps.store().get(),
 
     async setCash(amountMinor) {
@@ -40,6 +42,15 @@ export function createCashService(deps: CashServiceDeps): CashService {
       deps.onChanged();
     },
 
+    async ensureCash() {
+      const existing = await service.getCash();
+      if (existing) return existing.id;
+      await service.setCash(0);
+      const created = await service.getCash();
+      if (!created) throw new Error('Cash was not registered');
+      return created.id;
+    },
+
     backupCollection: {
       module: 'accounts',
       collection: CASH_BACKUP_COLLECTION,
@@ -50,4 +61,5 @@ export function createCashService(deps: CashServiceDeps): CashService {
       },
     },
   };
+  return service;
 }
