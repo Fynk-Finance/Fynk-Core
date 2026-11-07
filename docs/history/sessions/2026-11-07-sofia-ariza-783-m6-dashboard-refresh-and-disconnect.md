@@ -6,7 +6,7 @@ module: M6
 jira: [SCRUM-25, SCRUM-22]
 branch: feature/dashboard-refresh-and-disconnect
 tool: Claude Code
-pr: none
+pr: "#329"
 status: done
 ---
 
@@ -27,7 +27,7 @@ From the follow-ups of the M4 and M5 end-to-end test: "Pull-to-refresh on the Da
 ## Result
 
 * Tests: 157 of 157 pass in `accounts`, and 627 of 627 in bank, transactions, onboarding, consents and app. ESLint, Prettier and `tsc --noEmit` are clean.
-* Pull request: not opened yet (stacked on the shared UI branch).
+* Pull request: #329, on top of #328 (stack #330).
 
 ## Decisions and problems
 
