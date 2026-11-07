@@ -34,6 +34,11 @@ export interface DashboardDeps {
   renderMovements?: () => ReactNode;
   /** The route of M7's "Registrar gasto o ingreso" sheet. Read at press time. */
   newMovementRoute?: () => string;
+  /**
+   * Pull to refresh (HU-011): M5's syncNow(). M5 keeps the 60 second cooldown; the accounts
+   * are read again afterwards.
+   */
+  refresh?: () => Promise<unknown>;
 }
 
 export function createDashboardScreen(deps: DashboardDeps) {
@@ -82,10 +87,24 @@ export function createDashboardScreen(deps: DashboardDeps) {
     );
 
     const newMovementRoute = deps.newMovementRoute;
-    // TODO(M5) pull to refresh starts a sync once M5 exports it (CLAUDE.md rule 4).
+    const sync = deps.refresh;
+    const refresh = sync
+      ? async () => {
+          await sync().catch(() => undefined);
+          await accounts.refetch();
+        }
+      : undefined;
     return (
       <View style={styles.root}>
-        <Screen header={header} scroll withTabBar padded gap={spacing.block}>
+        <Screen
+          header={header}
+          scroll
+          withTabBar
+          padded
+          gap={spacing.block}
+          refresh={refresh}
+          testID="accounts.dashboard"
+        >
           {accounts.isError ? (
             <ErrorState message={t.loadError} onRetry={() => void accounts.refetch()} />
           ) : null}

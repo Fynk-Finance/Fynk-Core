@@ -1,5 +1,6 @@
 // Buttons of the design:
-//   PrimaryButton: blue, 56 px, white bold text, optional arrow ("Ingresar", "Continuar");
+//   PrimaryButton: blue, 56 px, white bold text, optional arrow ("Ingresar", "Continuar") or
+//   icon after the label ("Ir al portal de Banco Demo ↗");
 //   AccentButton: lime, 56 px, lime shadow ("Empezar");
 //   GhostButton: white with grey border, 52 px ("Ahora no"), danger tone ("Eliminar cuenta"),
 //   or 56 px with dark text ("Huella o Face ID").
@@ -18,6 +19,8 @@ interface BaseProps {
   icon?: IconName;
   /** Arrow after the label, as in "Continuar →". */
   withArrow?: boolean;
+  /** Icon after the label, 16 px, as in "Ir al portal de Banco Demo" with externalLink. */
+  iconAfter?: IconName;
   style?: ViewStyle;
   testID?: string;
   accessibilityHint?: string;
@@ -42,6 +45,7 @@ function BaseButton({
   loading = false,
   icon,
   withArrow = false,
+  iconAfter,
   style,
   testID,
   accessibilityHint,
@@ -72,7 +76,8 @@ function BaseButton({
       {loading ? (
         <ActivityIndicator color={look.textColor} />
       ) : (
-        <View style={styles.content}>
+        // The design puts 8 px between the label and a trailing icon (ConectarBanco).
+        <View style={iconAfter ? [styles.content, styles.contentTight] : styles.content}>
           {icon ? <Icon name={icon} size={18} color={look.textColor} strokeWidth={2.2} /> : null}
           <Text
             style={{ color: look.textColor, fontFamily: look.fontFamily, fontSize: look.fontSize }}
@@ -84,6 +89,14 @@ function BaseButton({
             <Icon
               name="arrowRight"
               size={20}
+              color={look.textColor}
+              strokeWidth={look.arrowStroke}
+            />
+          ) : null}
+          {iconAfter ? (
+            <Icon
+              name={iconAfter}
+              size={16}
               color={look.textColor}
               strokeWidth={look.arrowStroke}
             />
@@ -173,5 +186,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   content: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  contentTight: { gap: 8 },
   disabled: { opacity: 0.5 },
 });

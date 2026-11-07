@@ -10,7 +10,7 @@ import { bankTx } from '../testing/fixtures';
 import { createTestModule, renderScreens } from '../testing/renderScreen';
 import { createAllTransactionsScreen } from './AllTransactionsScreen';
 import { createCategoryPickerSheet } from './CategoryPickerSheet';
-import { dateTimeLabel } from './labels';
+import { dateTimeLabel, knownAccounts } from './labels';
 import { CATEGORY_ROUTE, DETAIL_ROUTE, TRANSACTIONS_ROUTE } from './routes';
 import { createTransactionDetailScreen } from './TransactionDetailScreen';
 
@@ -21,7 +21,10 @@ const accounts = [
 
 type Buttons = Parameters<typeof Alert.alert>[2];
 
-async function setup(answer: 'Solo este' | 'Aplicar a todos' = 'Solo este') {
+async function setup(
+  answer: 'Solo este' | 'Aplicar a todos' = 'Solo este',
+  opts: { disconnected?: boolean } = {},
+) {
   const m = await createTestModule();
   await m.seed([
     bankTx({
@@ -44,7 +47,10 @@ async function setup(answer: 'Solo este' | 'Aplicar a todos' = 'Solo este') {
   const ask = jest.fn((_title: string, _message?: string, buttons?: Buttons) => {
     buttons?.find((b) => b.text === answer)?.onPress?.();
   });
-  const useAccounts = () => ({ data: { accounts } });
+  // disconnected: the bank link was revoked, so M6 lists its accounts apart (HU-008).
+  const useAccounts = () => ({
+    data: opts.disconnected ? { accounts: [], disconnectedAccounts: accounts } : { accounts },
+  });
   await renderScreens({
     screens: {
       [TRANSACTIONS_ROUTE]: createAllTransactionsScreen({
@@ -82,6 +88,11 @@ describe('Detalle de movimiento', () => {
     expect(screen.getByTestId('transactions.detail.category')).toHaveTextContent('Otros');
   });
 
+  it('keeps the account of a movement whose bank link was revoked', async () => {
+    await setup('Solo este', { disconnected: true });
+    expect(screen.getByText('Bancolombia · Cuenta de ahorros')).toBeTruthy();
+  });
+
   it('changes only this movement and shows the history line', async () => {
     const m = await setup('Solo este');
     await fireEvent.press(screen.getByText('Cambiar categoría'));
@@ -112,6 +123,17 @@ describe('Detalle de movimiento', () => {
       m.events.emit({ type: 'transactions.changed', ids: ['c1'] });
     });
     expect(await screen.findByText('Este movimiento ya no está')).toBeTruthy();
+  });
+});
+
+describe('knownAccounts', () => {
+  it('joins active and disconnected accounts, and is empty without data', () => {
+    const gone = { id: 'acc-gone', kind: 'checking', displayName: 'Banco Demo · Corriente' };
+    expect(
+      knownAccounts({ accounts, disconnectedAccounts: [gone] as Account[] }).map((a) => a.id),
+    ).toEqual(['acc-ahorros', 'acc-gone']);
+    expect(knownAccounts({ accounts }).map((a) => a.id)).toEqual(['acc-ahorros']);
+    expect(knownAccounts(undefined)).toEqual([]);
   });
 });
 
