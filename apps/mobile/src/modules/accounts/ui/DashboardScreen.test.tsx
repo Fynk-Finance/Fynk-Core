@@ -180,6 +180,24 @@ describe('Detalle de cuentas', () => {
     expect(screen.queryByTestId('accounts.panel')).toBeNull();
   });
 
+  // QA review 2026-11-07, V3 (SCRUM-78): the tab hangs below the header, open or closed, in the
+  // header's own blue (light #2FA8D8, dark #428FAF), so it reads as part of the card.
+  it.each([
+    ['light', '#2FA8D8'],
+    ['dark', '#428FAF'],
+  ] as const)('hangs below the header in its color, in the %s theme', async (theme, blue) => {
+    await renderDashboard({ theme });
+    const tab = () => screen.getByTestId('accounts.detailsTab');
+    // react-native-svg keeps a fill as { type: 0, payload: <ARGB number> }.
+    const shape = () => screen.getByTestId('accounts.detailsTab.shape');
+    const fill = { type: 0, payload: 0xff000000 + parseInt(blue.slice(1), 16) };
+    expect(tab()).toHaveStyle({ marginTop: -1 });
+    expect(shape().props.fill).toEqual(fill);
+    await openDetails();
+    expect(tab()).toHaveStyle({ marginTop: -1 });
+    expect(shape().props.fill).toEqual(fill);
+  });
+
   it('lists each account with entity, type, masked number and balance', async () => {
     await renderDashboard();
     await openDetails();

@@ -106,12 +106,12 @@ export function DetailsTab({ expanded, onToggle }: { expanded: boolean; onToggle
         accessibilityRole="button"
         accessibilityLabel={expanded ? t.hideDetails : t.showDetails}
         accessibilityState={{ expanded }}
-        style={[styles.tab, { marginTop: expanded ? -(spacing.screen + 1) : -12 }]}
+        style={styles.tab}
         hitSlop={8}
         testID="accounts.detailsTab"
       >
         <Svg width={148} height={26} viewBox="0 0 74 13" preserveAspectRatio="none">
-          <Path d={TAB_PATH} fill={expanded ? colors.accountsPanel : colors.pullTab} />
+          <Path d={TAB_PATH} fill={colors.headerDashboard} testID="accounts.detailsTab.shape" />
         </Svg>
         <View style={[styles.chevron, expanded && styles.flipped]}>
           <Icon name="chevronDown" size={16} strokeWidth={3.2} color={colors.onPrimary} />
@@ -135,7 +135,9 @@ const createStyles = ({ colors }: Theme) =>
     entity: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     entityText: { lineHeight: 18, flexShrink: 1 },
     detail: { fontSize: fontSize[11], lineHeight: 14, opacity: 0.85 },
-    tab: { alignSelf: 'center', width: 148, height: 24, zIndex: 2, elevation: 2 },
+    // Hangs below the header, open or closed, in the header's blue: 1 px up hides the seam
+    // (design Dashboard and DashboardDetalles PNGs; QA review 2026-11-07, V3).
+    tab: { alignSelf: 'center', width: 148, height: 24, marginTop: -1, zIndex: 2, elevation: 2 },
     chevron: { position: 'absolute', left: 66, top: 4 },
     flipped: { transform: [{ rotate: '180deg' }] },
     pressed: { opacity: 0.8 },
