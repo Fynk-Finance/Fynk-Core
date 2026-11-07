@@ -4,13 +4,12 @@ import { useNavigation, type NavigationProp, type ParamListBase } from '@react-n
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import type { Account } from '@shared/domain/types';
 import { AppText, SectionHeader, Skeleton } from '@shared/ui';
 
 import type { TransactionHooks } from '../application/useTransactions';
 import type { TransactionFilter } from '../domain/query';
 import { DETAIL_ROUTE, TRANSACTIONS_ROUTE } from './routes';
-import { previewSubtitle, titleOf } from './labels';
+import { knownAccounts, previewSubtitle, titleOf, type AccountsData } from './labels';
 import { transactionsStrings as s } from './strings.es-CO';
 import { TransactionRow } from './TransactionRow';
 
@@ -19,15 +18,15 @@ const ALL: TransactionFilter = {};
 
 export interface TransactionPreviewDeps {
   hooks: Pick<TransactionHooks, 'useTransactionPages'>;
-  useAccounts: () => { data?: { accounts: Account[] } };
+  useAccounts: () => { data?: AccountsData };
 }
 
 export function createTransactionPreview({ hooks, useAccounts }: TransactionPreviewDeps) {
   return function TransactionPreview() {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();
     const pages = hooks.useTransactionPages(ALL, PREVIEW_ROWS);
-    const accounts = useAccounts().data?.accounts;
-    const kinds = useMemo(() => new Map((accounts ?? []).map((a) => [a.id, a.kind])), [accounts]);
+    const data = useAccounts().data;
+    const kinds = useMemo(() => new Map(knownAccounts(data).map((a) => [a.id, a.kind])), [data]);
     const items = pages.data?.pages[0]?.items ?? [];
 
     return (

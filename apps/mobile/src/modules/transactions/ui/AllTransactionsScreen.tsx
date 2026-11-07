@@ -14,7 +14,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, SectionList, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { Account, Clock, Transaction } from '@shared/domain/types';
+import type { Clock, Transaction } from '@shared/domain/types';
 import {
   AmountText,
   AppText,
@@ -35,7 +35,15 @@ import type { TransactionHooks } from '../application/useTransactions';
 import { groupByDay, type DayGroup } from '../domain/dayGroups';
 import { activeFilterCount, filterFromParams } from '../domain/filter';
 import type { TransactionFilter } from '../domain/query';
-import { dayHeader, entityNames, listSubtitle, summaryLine, titleOf } from './labels';
+import {
+  dayHeader,
+  entityNames,
+  knownAccounts,
+  listSubtitle,
+  summaryLine,
+  titleOf,
+  type AccountsData,
+} from './labels';
 import { transactionsStrings as s } from './strings.es-CO';
 import { LoadMoreButton } from './LoadMoreButton';
 import { DETAIL_ROUTE, FILTERS_ROUTE, TRANSACTIONS_ROUTE } from './routes';
@@ -61,7 +69,7 @@ export type AllTransactionsParams =
 export interface AllTransactionsDeps {
   hooks: Pick<TransactionHooks, 'useTransactionPages' | 'useTransactionSummary'>;
   /** The person's accounts, for the "Mercado · Bancolombia" subtitles (M6). */
-  useAccounts: () => { data?: { accounts: Account[] } };
+  useAccounts: () => { data?: AccountsData };
   /** Pull to refresh: M5's syncNow(). */
   refresh: () => Promise<unknown>;
   clock: Clock;
@@ -89,11 +97,11 @@ export function createAllTransactionsScreen({
     const active = activeFilterCount(base);
     const pages = hooks.useTransactionPages(filter);
     const summary = hooks.useTransactionSummary(filter);
-    const accounts = useAccounts().data?.accounts;
+    const accounts = useAccounts().data;
     const [refreshing, setRefreshing] = useState(false);
 
     const items = useMemo(() => pages.data?.pages.flatMap((p) => p.items) ?? [], [pages.data]);
-    const entities = useMemo(() => entityNames(accounts ?? []), [accounts]);
+    const entities = useMemo(() => entityNames(knownAccounts(accounts)), [accounts]);
     const sections = useMemo<Section[]>(
       () => groupByDay(items, clock.now()).map((g) => ({ ...g, data: g.items })),
       [items],

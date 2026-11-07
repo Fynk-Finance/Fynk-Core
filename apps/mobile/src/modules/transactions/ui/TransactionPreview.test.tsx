@@ -49,6 +49,18 @@ describe('TransactionPreview', () => {
     expect(await screen.findByTestId('probe.route')).toHaveTextContent('transactions.All {}');
   });
 
+  // A revoked bank link moves its accounts to disconnectedAccounts (M6, HU-008).
+  it('keeps the account kind of a movement whose bank link was revoked', async () => {
+    const m = await createTestModule();
+    await m.seed([bankTx({ id: 'old', bookedAt: '2026-10-26T15:00:00Z' })]);
+    const Preview = createTransactionPreview({
+      hooks: m.hooks,
+      useAccounts: () => ({ data: { accounts: [], disconnectedAccounts: accounts } }),
+    });
+    await renderScreens({ screens: { Home: Preview }, initial: 'Home' });
+    expect(await screen.findByText('Cuenta de ahorros · 26 oct')).toBeTruthy();
+  });
+
   it('says there are no movements yet', async () => {
     const m = await createTestModule();
     const Preview = createTransactionPreview({ hooks: m.hooks, useAccounts: () => ({}) });

@@ -21,6 +21,21 @@ export function entityOf(account: Pick<Account, 'kind' | 'displayName'>): string
   return account.displayName.split(' · ')[0]?.trim() || account.displayName;
 }
 
+/** What M6's useAccounts gives: active accounts, and the ones whose bank link was revoked. */
+export interface AccountsData {
+  accounts: Account[];
+  disconnectedAccounts?: Account[];
+}
+
+/**
+ * Every account a movement can belong to: active ones and disconnected ones. A revoked link
+ * moves its accounts to disconnectedAccounts, and their movements keep their account name.
+ */
+export function knownAccounts(data: AccountsData | undefined): Account[] {
+  if (!data) return [];
+  return [...data.accounts, ...(data.disconnectedAccounts ?? [])];
+}
+
 /** Account ids to their entity, for the "Mercado · Efectivo" subtitles. */
 export function entityNames(accounts: readonly Account[]): ReadonlyMap<Id, string> {
   return new Map(accounts.map((a) => [a.id, entityOf(a)]));
