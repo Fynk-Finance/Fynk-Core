@@ -53,8 +53,8 @@ func deps(c config.Config) module.Deps {
 	}
 }
 
-func TestWithEverySettingBothDemoProvidersAreBuiltAndTheRevokerIsInstalled(t *testing.T) {
-	t.Cleanup(func() { ports.InstallRevoker(nil) })
+func TestWithEverySettingEverySimulatedEntityIsBuiltAndTheRevokerAndProvisionerAreInstalled(t *testing.T) {
+	t.Cleanup(func() { ports.InstallRevoker(nil); ports.InstallDemoProvisioner(nil) })
 	providers, fingerprints, err := bankProviders(deps(linkSettings(t)))
 	if err != nil {
 		t.Fatal(err)
@@ -62,8 +62,13 @@ func TestWithEverySettingBothDemoProvidersAreBuiltAndTheRevokerIsInstalled(t *te
 	if _, ok := providers.Provider("banco-demo"); !ok {
 		t.Fatal("no Banco Demo")
 	}
-	if _, ok := providers.Provider("billetera-demo"); !ok {
-		t.Fatal("no Billetera Demo")
+	for _, id := range []string{"billetera-demo", "banco-digital-demo", "cooperativa-demo"} {
+		if _, ok := providers.Provider(id); !ok {
+			t.Fatalf("no adapter for %s", id)
+		}
+	}
+	if _, err := ports.InstalledDemoProvisioner().Provision(context.Background(), "sub"); errors.Is(err, ports.ErrDemoProvisioningDisabled) {
+		t.Fatal("the demo provisioner is not installed")
 	}
 	if _, ok := providers.Provider("bancolombia"); ok {
 		t.Fatal("Bancolombia must stay out until its spike")
@@ -78,6 +83,7 @@ func TestWithEverySettingBothDemoProvidersAreBuiltAndTheRevokerIsInstalled(t *te
 
 func TestAMissingSettingDisablesTheLinkAndKeepsTheUnavailableRevoker(t *testing.T) {
 	ports.InstallRevoker(nil)
+	ports.InstallDemoProvisioner(nil)
 	full := linkSettings(t)
 	for name, drop := range map[string]func(*config.Config){
 		"egress":       func(c *config.Config) { c.EgressURL = "" },
@@ -96,6 +102,9 @@ func TestAMissingSettingDisablesTheLinkAndKeepsTheUnavailableRevoker(t *testing.
 	}
 	if err := ports.InstalledRevoker().RevokeConsent(context.Background(), "banco-demo", "x"); !errors.Is(err, ports.ErrProviderUnavailable) {
 		t.Fatalf("revoker: got %v, want provider_unavailable", err)
+	}
+	if _, err := ports.InstalledDemoProvisioner().Provision(context.Background(), "sub"); !errors.Is(err, ports.ErrDemoProvisioningDisabled) {
+		t.Fatalf("provisioner: got %v, want disabled", err)
 	}
 }
 
@@ -157,6 +166,9 @@ func TestAKMSClientThatCannotLoadKeepsTheLinkOff(t *testing.T) {
 	}
 	if err := ports.InstalledRevoker().RevokeConsent(context.Background(), "banco-demo", "x"); !errors.Is(err, ports.ErrProviderUnavailable) {
 		t.Fatalf("revoker: got %v, want provider_unavailable", err)
+	}
+	if _, err := ports.InstalledDemoProvisioner().Provision(context.Background(), "sub"); !errors.Is(err, ports.ErrDemoProvisioningDisabled) {
+		t.Fatalf("provisioner: got %v, want disabled", err)
 	}
 }
 
