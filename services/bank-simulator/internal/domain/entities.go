@@ -187,6 +187,9 @@ func (b accountBuilder) card(rng *rand.Rand) Account {
 	acc.CreditLimitMinor = &limit
 	dueDays := []int{5, 10, 15, 20}
 	due := dueDays[rng.Intn(len(dueDays))]
+	if b.entity.ProviderID == ProviderBancoDemo {
+		due = 5 // same as the demo user
+	}
 	acc.PaymentDueDate = &due
 	return acc
 }
@@ -267,12 +270,13 @@ func generateRandomCustomer(customerID string, refTime time.Time) *CustomerData 
 			accounts = append(accounts, entityAccounts(customerID, e, refTime)...)
 		}
 	}
+	txs, subs := buildHistory(customerID, accounts, refTime)
 	return &CustomerData{
 		CustomerID:    customerID,
 		DisplayName:   "Cliente Demo",
 		Accounts:      accounts,
-		Transactions:  buildTransactions(accounts, refTime),
-		Subscriptions: []Subscription{},
+		Transactions:  txs,
+		Subscriptions: subs,
 		CdtProducts:   DefaultCdtProducts(),
 	}
 }

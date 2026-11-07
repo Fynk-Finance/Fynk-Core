@@ -41,26 +41,16 @@ func openingLabel(acc Account) string {
 	}
 }
 
-// buildTransactions returns the transactions of all accounts, newest first,
-// with ids unique per customer.
-func buildTransactions(accounts []Account, refTime time.Time) []Transaction {
-	start := windowStart(refTime)
-	var txs []Transaction
-	for _, acc := range accounts {
-		if acc.BalanceMinor == 0 {
-			continue
-		}
-		txs = append(txs, openingTx(acc, acc.BalanceMinor, start))
-	}
-	return finishTransactions(txs)
-}
-
-// finishTransactions sorts newest first and numbers the transactions.
-// The sort is stable, so equal times keep their build order.
+// finishTransactions returns the transactions newest first and numbers them.
+// Equal times keep their build order when read oldest first, so walking the
+// list backwards gives the same order the history was built in.
 func finishTransactions(txs []Transaction) []Transaction {
 	sort.SliceStable(txs, func(i, j int) bool {
-		return txs[i].BookingDateTime.After(txs[j].BookingDateTime)
+		return txs[i].BookingDateTime.Before(txs[j].BookingDateTime)
 	})
+	for i, j := 0, len(txs)-1; i < j; i, j = i+1, j-1 {
+		txs[i], txs[j] = txs[j], txs[i]
+	}
 	for i := range txs {
 		txs[i].ID = fmt.Sprintf("tx-%05d", i+1)
 	}
