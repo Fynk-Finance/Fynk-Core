@@ -1,5 +1,5 @@
 // Dashboard tab (design Dashboard, inventory rows 5 and 6), owned by M6: the blue header with
-// "Hola, <nombre>" and the bell, the "Balance total" card and Detalle de cuentas, which expands
+// "Hola, <nombre>", the chart icon that opens Estadísticas (M10) and the bell, the "Balance total" card and Detalle de cuentas, which expands
 // in place. Below, Movimientos (M7's preview), and the FAB "Registrar gasto o ingreso", which
 // opens M7's sheet. Planes de ahorro (M8) goes there too when M8 exports it.
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
@@ -28,6 +28,8 @@ export interface DashboardDeps {
   useDisplayName: () => string | null;
   accountRoute: string;
   notificationsRoute: string;
+  /** Estadísticas (M10), opened from the chart icon of the header. */
+  statisticsRoute: string;
   /** "Movimientos" with the latest movements (M7's TransactionPreview). */
   renderMovements?: () => ReactNode;
   /** The route of M7's "Registrar gasto o ingreso" sheet. Read at press time. */
@@ -51,6 +53,7 @@ export function createDashboardScreen(deps: DashboardDeps) {
           name={name}
           hasUnread={unread > 0}
           onPressAccount={() => navigation.navigate(deps.accountRoute)}
+          onPressStatistics={() => navigation.navigate(deps.statisticsRoute)}
           onPressNotifications={() => navigation.navigate(deps.notificationsRoute)}
         >
           <Animated.View layout={LinearTransition.duration(motion.slow)}>

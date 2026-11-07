@@ -1,6 +1,7 @@
 // Dashboard card and Detalle de cuentas (HU-012 SCRUM-26, HU-014 SCRUM-28): balance total,
 // "N cuentas conectadas", Ingresos and Gastos, one row per account with only 4 digits, the
-// cash row, no CDTs, the Simulado badge, "Cómo se calcula", and both themes.
+// cash row, no CDTs, the Simulado badge, "Cómo se calcula", the chart icon that opens
+// Estadísticas (M10), and both themes.
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { fireEvent, render, screen } from '@testing-library/react-native';
@@ -60,6 +61,7 @@ async function renderDashboard(
     useDisplayName: () => (opts.name === undefined ? 'Laura Gómez' : opts.name),
     accountRoute: 'identity.Account',
     notificationsRoute: 'notifications.Inbox',
+    statisticsRoute: 'analytics.Spending',
     ...(opts.withMovements
       ? {
           renderMovements: () => <Text>movements of M7</Text>,
@@ -75,6 +77,7 @@ async function renderDashboard(
             <Stack.Screen name="Dashboard" component={Dashboard} />
             <Stack.Screen name="identity.Account" component={Target} />
             <Stack.Screen name="notifications.Inbox" component={Target} />
+            <Stack.Screen name="analytics.Spending" component={Target} />
             <Stack.Screen name={ACCOUNT_DETAIL_ROUTE} component={Target} />
             <Stack.Screen name="transactions.New" component={Target} />
           </Stack.Navigator>
@@ -145,6 +148,12 @@ describe('Dashboard balance card', () => {
     expect(await screen.findByText('arrived:identity.Account:')).toBeTruthy();
   });
 
+  it('opens Estadísticas from the chart icon next to the bell', async () => {
+    await renderDashboard();
+    await fireEvent.press(screen.getByRole('button', { name: 'Estadísticas' }));
+    expect(await screen.findByText('arrived:analytics.Spending:')).toBeTruthy();
+  });
+
   it('offers to retry when the accounts cannot load', async () => {
     const { refetch } = await renderDashboard({ isError: true });
     expect(screen.getByText('No pudimos cargar tus cuentas.')).toBeTruthy();
@@ -155,6 +164,7 @@ describe('Dashboard balance card', () => {
   it('renders in the dark theme', async () => {
     await renderDashboard({ theme: 'dark' });
     expect(screen.getByTestId('accounts.total')).toHaveTextContent('$7.900.000');
+    expect(screen.getByRole('button', { name: 'Estadísticas' })).toBeTruthy();
   });
 });
 
