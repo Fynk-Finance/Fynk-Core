@@ -8,12 +8,10 @@ import (
 
 // Money helpers, all in centavos.
 const (
-	peso         = 100
-	tenThousand  = 10_000 * peso
-	oneThousand  = 1_000 * peso
-	maxChunk     = 300_000 * peso // largest extra purchase added by the fixer
-	cardCapPct   = 35             // monthly card charges stay under this share of the limit
-	maxFixerLoop = 10_000
+	peso        = 100
+	tenThousand = 10_000 * peso
+	oneThousand = 1_000 * peso
+	cardCapPct  = 35 // monthly card charges stay under this share of the limit
 )
 
 // event is one movement of one account before it becomes a Transaction.
@@ -397,49 +395,59 @@ func (h *historyBuilder) assemble(accounts []Account) []Transaction {
 }
 
 // keepAboveZero makes sure the running balance of a deposit account never goes
-// below zero. Where it would, it adds extra purchases later than the lowest
-// point. That raises every earlier balance and leaves the final one alone.
-// The fixed items are never changed.
+// below zero. Where it would, it adds extra purchases after the movement that
+// brings the balance back to zero or more for the last time, spread up to refTime.
+// A purchase raises every earlier balance by its amount and leaves the later ones
+// alone, so one pass is enough.
+// The final balance and the fixed items never change.
 func (h *historyBuilder) keepAboveZero(accID string, final int64, evs []event, start time.Time) []event {
-	for loop := 0; loop < maxFixerLoop; loop++ {
-		order := make([]int, len(evs))
-		for i := range order {
-			order[i] = i
+	sorted := append([]event(nil), evs...)
+	sort.SliceStable(sorted, func(a, b int) bool { return sorted[a].at.Before(sorted[b].at) })
+	var sum int64
+	for _, e := range sorted {
+		sum += e.amount
+	}
+	running := final - sum // opening balance
+	lowest := running
+	recovered := start // time of the last movement that ends a negative stretch
+	negative := running < 0
+	for _, e := range sorted {
+		running += e.amount
+		if running < lowest {
+			lowest = running
 		}
-		sort.SliceStable(order, func(a, b int) bool { return evs[order[a]].at.Before(evs[order[b]].at) })
-
-		var sum int64
-		for _, e := range evs {
-			sum += e.amount
+		if running < 0 {
+			negative = true
+		} else if negative {
+			negative, recovered = false, e.at
 		}
-		running := final - sum // opening balance
-		lowest, lowestAt := running, start
-		for _, i := range order {
-			running += evs[i].amount
-			if running < lowest {
-				lowest, lowestAt = running, evs[i].at
-			}
+	}
+	if lowest >= 0 {
+		return evs
+	}
+	var chunks []int64
+	for deficit := -lowest; deficit > 0; {
+		chunk := min(deficit, (80_000+h.rng.Int63n(220_001))*peso)
+		if deficit-chunk < 20_000*peso {
+			chunk = deficit
 		}
-		if lowest >= 0 {
-			return evs
+		chunks = append(chunks, chunk)
+		deficit -= chunk
+	}
+	step := h.refTime.Sub(recovered) / time.Duration(len(chunks)+1)
+	for k, chunk := range chunks {
+		desc, merchant, cat := "SUPERMERCADO DEMO", "SUPERMERCADO DEMO", "groceries"
+		if k%2 == 1 {
+			desc, merchant, cat = "COMPRA COMERCIO DEMO", "TIENDA DEMO", "shopping"
 		}
-		deficit := -lowest
-		for k := 0; deficit > 0; k++ {
-			chunk := min(deficit, (80_000+h.rng.Int63n(220_001))*peso)
-			if deficit-chunk < 20_000*peso {
-				chunk = deficit
-			}
-			at := lowestAt.Add(time.Duration(k+1) * 30 * time.Minute)
-			if at.After(h.refTime) {
-				at = h.refTime
-			}
-			desc, merchant, cat := "SUPERMERCADO DEMO", "SUPERMERCADO DEMO", "groceries"
-			if k%2 == 1 {
-				desc, merchant, cat = "COMPRA COMERCIO DEMO", "TIENDA DEMO", "shopping"
-			}
-			evs = append(evs, event{accID, at, -chunk, desc, merchant, cat})
-			deficit -= chunk
+		at := recovered.Add(step * time.Duration(k+1)).Truncate(time.Minute)
+		if !at.After(recovered) {
+			at = recovered.Add(time.Minute)
 		}
+		if at.After(h.refTime) {
+			at = h.refTime
+		}
+		evs = append(evs, event{accID, at, -chunk, desc, merchant, cat})
 	}
 	return evs
 }
