@@ -53,6 +53,29 @@ func (server) ListProviders(context.Context, httpapi.ListProvidersRequestObject)
 	return httpapi.ListProviders200JSONResponse{Items: items}, nil
 }
 
+// ListSimulatedEntities asks the bank simulator to provision the caller's demo accounts (it is
+// idempotent, so it also retries a sign-up provisioning that failed) and lists the simulated
+// entities where the caller has accounts, in catalog order. Only ids of the catalog are
+// returned. Nothing is stored. A disabled or failing simulator answers 503 provider_unavailable
+// through errorHandler, and the app then lists every simulated entity.
+func (server) ListSimulatedEntities(ctx context.Context, _ httpapi.ListSimulatedEntitiesRequestObject) (httpapi.ListSimulatedEntitiesResponseObject, error) {
+	ids, err := ports.InstalledDemoProvisioner().Provision(ctx, userOf(ctx).ID)
+	if err != nil {
+		return nil, err
+	}
+	has := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		has[id] = true
+	}
+	out := make([]string, 0, len(ids))
+	for _, id := range ports.Simulated() {
+		if has[id] {
+			out = append(out, id)
+		}
+	}
+	return httpapi.ListSimulatedEntities200JSONResponse{ProviderIds: out}, nil
+}
+
 func (s server) CreateBankAuthorization(ctx context.Context, req httpapi.CreateBankAuthorizationRequestObject) (httpapi.CreateBankAuthorizationResponseObject, error) {
 	if s.svc == nil {
 		return nil, errNotConfigured

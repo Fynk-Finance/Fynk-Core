@@ -57,7 +57,46 @@ paths:
                     isSimulated: true
                     supportedScopes: [balances, transactions, account_details]
                     logoKey: billetera-demo
+                  - id: banco-digital-demo
+                    displayName: Banco Digital Demo
+                    kind: bank
+                    isSimulated: true
+                    supportedScopes: [balances, transactions, account_details]
+                    logoKey: banco-digital-demo
+                  - id: cooperativa-demo
+                    displayName: Cooperativa Demo
+                    kind: bank
+                    isSimulated: true
+                    supportedScopes: [balances, transactions, account_details]
+                    logoKey: cooperativa-demo
         '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        default:
+          $ref: '../openapi.yaml#/components/responses/Problem'
+  /bank/simulated-entities:
+    get:
+      tags: [bank]
+      operationId: listSimulatedEntities
+      summary: Simulated entities where the user has accounts, for the Cuentas step and Conectar banco
+      description: |
+        Demo only (ADR 0008). Asks the bank simulator to create the user's demo accounts if they do
+        not exist yet (idempotent, so it also retries a sign-up provisioning that failed) and returns
+        the provider ids of the entities where the user has accounts. Only the user's id travels to
+        the simulator, in a request body. Nothing is stored in Fynk.
+        Answers 503 provider_unavailable when the simulator is not configured or does not answer;
+        the app then lists every simulated entity from GET /providers.
+      responses:
+        '200':
+          description: Provider ids of the simulated entities with accounts for this user, in catalog order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankSimulatedEntityList'
+              example:
+                providerIds: [banco-demo, billetera-demo, cooperativa-demo]
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '503':
           $ref: '../openapi.yaml#/components/responses/Problem'
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
@@ -354,6 +393,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BankProvider'
+    BankSimulatedEntityList:
+      type: object
+      required: [providerIds]
+      properties:
+        providerIds:
+          type: array
+          description: Ids of providers in GET /providers, kind simulated.
+          items:
+            type: string
     BankAuthorizationRequest:
       type: object
       required: [provider, consentId, codeChallenge, codeChallengeMethod, state]
