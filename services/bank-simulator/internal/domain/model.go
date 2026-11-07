@@ -32,6 +32,7 @@ const (
 type ConsentStatus string
 
 const (
+	ConsentStatusPending ConsentStatus = "pending"
 	ConsentStatusActive  ConsentStatus = "active"
 	ConsentStatusRevoked ConsentStatus = "revoked"
 )
@@ -82,6 +83,7 @@ type Consent struct {
 	ID         string        `json:"id"`
 	CustomerID string        `json:"customerId"`
 	ClientID   string        `json:"clientId"`
+	ProviderID string        `json:"providerId"`
 	Scopes     []string      `json:"scopes"`
 	Purpose    string        `json:"purpose"`
 	TermDays   int           `json:"termDays"`
