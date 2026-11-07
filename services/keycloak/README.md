@@ -35,6 +35,12 @@ Clients:
 | `fynk-api` | Bearer-only | Audience of the access tokens the API accepts |
 | `fynk-admin` | Confidential, service account only, `realm-management` roles `view-users`, `manage-users` and `view-events` | The API, to read and update the profile, end a removed device's session, and import authentication events for M13. Keycloak cannot narrow `manage-users` to those operations, so the API only calls those endpoints |
 
+| `banco-demo-broker` | Confidential, standard flow only, PKCE S256, secret `${BANCO_DEMO_BROKER_SECRET}`, redirect `http://localhost:8081/realms/banco-demo/broker/fynk/endpoint`. Default scope `basic` only (the `sub`), plus one ID token claim `fynk_sub` that repeats the `sub` | The `banco-demo` realm, for "Ingresar con Fynk" (HU-057). No email or name leaves the fynk realm |
+
+### Banco Demo: "Ingresar con Fynk" (realm `banco-demo`, M16b)
+
+The realm `banco-demo` has an OIDC identity provider `fynk` ("Ingresar con Fynk") that logs in against the fynk realm with the client `banco-demo-broker`. The browser goes to `localhost:8081`; Keycloak itself calls `keycloak:8080` for the token and the keys (`KC_HOSTNAME` plus `KC_HOSTNAME_BACKCHANNEL_DYNAMIC`), so the URLs are fixed in the file and `issuer` stays `http://localhost:8081/realms/fynk`. The first login uses the flow `fynk first broker login` (create the user, link if it exists, no review-profile form). An attribute importer stores the Fynk id as the user attribute `fynk_sub`, a username template (`fynk.<id>`) names the user, and the simulator's client `bank-portal` puts `fynk_sub`, `preferred_username` and `sub` in its ID token. The realm signs with PS256 (`bank-ps256` key), the only algorithm the simulator accepts. `registrationEmailAsUsername` is off and the email is optional in the realm's user profile, because a brokered user has no email. The staging URLs are not in the file yet (M14).
+
 ### Things that are easy to break
 
 * **Password on the registration form.** While email verification is on, Keycloak 26 does not take the password on the registration form, against account pre-hijacking (someone registering your email with a password they know). The team decided to follow the design's "Crear cuenta" screen (email, password, terms, then the code), so the `registration-password-action` execution has `always_set_password_on_register_form: true`. Keycloak marks that option deprecated: check it still exists before upgrading Keycloak. Pre-hijacking stays harmless: an account whose email is not verified never gets tokens, and the real owner takes it back with the reset flow, which verifies the email and ends every other session.
@@ -65,6 +71,8 @@ cd services/keycloak/extensions/email-code && mvn -B verify   # unit tests, JDK 
 | Variable | Local value | Staging (M14, Secrets Manager) |
 | --- | --- | --- |
 | `FYNK_ADMIN_CLIENT_SECRET` | from `.env` | Random secret, also given to the API. **Required**: without it the client secret is the literal text `${FYNK_ADMIN_CLIENT_SECRET}` |
+| `BANCO_DEMO_BROKER_SECRET` | from `.env` | Random secret shared by the client `banco-demo-broker` (fynk realm) and the identity provider `fynk` (banco-demo realm). **Required**: without it both hold the literal text and the login fails |
+| `BANK_PORTAL_CLIENT_SECRET` | from `.env` | Random secret of the client `bank-portal`, also given to the bank simulator as `BANK_OIDC_CLIENT_SECRET`. **Required** |
 | `FYNK_DEMO_USER_PASSWORD` | from `.env` | Password of the seeded `demo@fynk.local` |
 | `FYNK_SMTP_HOST`, `FYNK_SMTP_PORT` | `mailpit`, `1025` (defaults) | Amazon SES SMTP endpoint, `587` |
 | `FYNK_SMTP_FROM` | `no-reply@fynk.local` (default) | The verified SES sender |
@@ -99,6 +107,8 @@ pnpm build-keycloak-theme         # needs a JDK and Maven; writes dist_keycloak/
 * Account console of the fynk realm: http://localhost:8081/realms/fynk/account
 * The image: `docker build -t fynk-keycloak services/keycloak`. Staging runs `start --optimized --import-realm`.
 * Android emulator: the token issuer is `http://localhost:8081/realms/fynk`, so run `adb reverse tcp:8081 tcp:8081` rather than using `10.0.2.2`.
+
+**Existing local volumes need a re-import.** Keycloak imports a realm only when it does not exist. The two new secrets and the `fynk` identity provider reach an existing local Keycloak only after the reset below. Copy `BANCO_DEMO_BROKER_SECRET` and `BANK_PORTAL_CLIENT_SECRET` from `.env.example` into `.env` first, or `docker compose` refuses to start.
 
 **Reset after changing a realm file.** Either delete the realm in the admin console (http://localhost:8081/admin) and run `docker compose restart keycloak`, or run `docker compose down -v && make dev`, which also deletes all local Postgres data.
 
