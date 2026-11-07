@@ -3,7 +3,7 @@
 // SCRUM-56: "Otros gastos" with the subscriptions, "Poco uso" and the savings banner.
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
 import type { Account } from '@shared/domain/types';
@@ -62,6 +62,7 @@ const billetera: RecurringInput[] = [
 let vault: InMemoryVault;
 let service: RecurringService;
 let accountsDep: (() => Promise<Account[]>) | undefined;
+let refreshDep: (() => Promise<unknown>) | undefined;
 
 beforeEach(async () => {
   vault = await createInMemoryVault();
@@ -78,6 +79,7 @@ beforeEach(async () => {
 afterEach(() => {
   vault.close();
   accountsDep = undefined;
+  refreshDep = undefined;
 });
 
 function Target({ route }: { route: { name: string; params?: { id?: string } } }) {
@@ -97,6 +99,7 @@ async function renderBilletera(
     notificationsRoute: 'notifications.Inbox',
     recommendationsRoute: 'Recomendaciones',
     accounts: accountsDep,
+    refresh: refreshDep,
   });
   await render(
     <ThemeProvider initialPreference={preference} store={noStore}>
@@ -128,6 +131,61 @@ async function markLowUse() {
 }
 
 describe('Billetera', () => {
+  it('pull to refresh calls M5 syncNow and reloads the items (HU-011)', async () => {
+    let calls = 0;
+    // A sync that brings a new fixed expense, written to the vault without notifying Billetera.
+    refreshDep = async () => {
+      calls++;
+      await createVaultRecurringStore(vault.db).save({
+        id: 'synced',
+        kind: 'fixed',
+        name: 'Arriendo',
+        categoryId: 'rent',
+        merchantKey: null,
+        amountMinor: 120_000_000,
+        schedule: { periodicity: 'monthly', anchorDay: 5 },
+        accountId: null,
+        status: 'active',
+        usage: null,
+        reminderEnabled: true,
+        source: 'manual',
+        createdAt: '2026-10-28T15:00:00.000Z',
+      });
+    };
+    await renderBilletera();
+    const scroll = await screen.findByTestId('recurring.billetera.scroll');
+    expect(screen.queryByText('Arriendo')).toBeNull();
+    await act(async () => {
+      await scroll.props.refreshControl.props.onRefresh();
+    });
+    expect(calls).toBe(1);
+    expect(await screen.findByText('Arriendo')).toBeTruthy();
+    expect(
+      screen.getByTestId('recurring.billetera.scroll').props.refreshControl.props.refreshing,
+    ).toBe(false);
+  });
+
+  it('a failed sync still ends the refresh and keeps Billetera', async () => {
+    refreshDep = async () => {
+      throw new Error('cooldown');
+    };
+    await renderBilletera();
+    const scroll = await screen.findByTestId('recurring.billetera.scroll');
+    await act(async () => {
+      await scroll.props.refreshControl.props.onRefresh();
+    });
+    expect(
+      screen.getByTestId('recurring.billetera.scroll').props.refreshControl.props.refreshing,
+    ).toBe(false);
+    expect(screen.getByTestId('recurring.billetera')).toBeTruthy();
+  });
+
+  it('has no pull to refresh when M5 is not wired', async () => {
+    await renderBilletera();
+    const scroll = await screen.findByTestId('recurring.billetera.scroll');
+    expect(scroll.props.refreshControl).toBeUndefined();
+  });
+
   it('Recomendaciones "Revisar" shows only the low use subscriptions, until the chip is tapped', async () => {
     await addAll();
     await markLowUse();

@@ -6,6 +6,7 @@ import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
 import { getAccounts } from '@modules/accounts';
+import { syncNow } from '@modules/bank';
 import {
   getPaymentReminderLeadDays,
   NOTIFICATIONS_ROUTE,
@@ -176,6 +177,7 @@ export const routes: ModuleRoutes = {
     pendingProposals: async () => (await detection.pending()).length,
     detectedRoute: DETECTED_ROUTE,
     priceUpItems: async () => new Set((await priceAlerts.openByItem()).keys()),
+    refresh: () => syncNow(),
   }),
   screens: [
     {

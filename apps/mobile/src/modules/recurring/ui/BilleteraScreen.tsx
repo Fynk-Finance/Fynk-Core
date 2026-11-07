@@ -9,7 +9,8 @@ import {
   type NavigationProp,
   type ParamListBase,
 } from '@react-navigation/native';
-import { StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { formatCop } from '@shared/domain/money';
 import type { Account, Clock, IsoDate } from '@shared/domain/types';
@@ -25,6 +26,7 @@ import {
   Skeleton,
   radius,
   spacing,
+  useTheme,
   useThemedStyles,
 } from '@shared/ui';
 
@@ -70,6 +72,11 @@ export interface BilleteraDeps {
   /** How many detected proposals wait for the person (SCRUM-55), and the screen to review them. */
   pendingProposals?: () => Promise<number>;
   detectedRoute?: string;
+  /**
+   * Pull to refresh (HU-011): M5's syncNow(). M5 keeps the 60 second cooldown, so Billetera
+   * only calls it and reloads.
+   */
+  refresh?: () => Promise<unknown>;
   /** Ids of the subscriptions with an open price alert (SCRUM-61). */
   priceUpItems?: () => Promise<Set<string>>;
 }
@@ -78,7 +85,18 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
   return function BilleteraScreen() {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();
     const styles = useThemedStyles(createStyles);
+    const { colors } = useTheme();
     const { state, reload } = useRecurringItems(deps.service);
+    const [refreshing, setRefreshing] = useState(false);
+    const onRefresh = async () => {
+      setRefreshing(true);
+      try {
+        await deps.refresh?.().catch(() => undefined);
+        await reload();
+      } finally {
+        setRefreshing(false);
+      }
+    };
     // Recomendaciones "Revisar" opens Billetera with { filter: 'low_use' } (M11).
     const lowUseOnly = (useRoute().params as BilleteraParams | undefined)?.filter === 'low_use';
     const accounts = useAccounts(deps.accounts);
@@ -112,101 +130,112 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
     );
 
     return (
-      <Screen
-        header={header}
-        scroll
-        withTabBar
-        padded
-        gap={spacing.md}
-        testID="recurring.billetera"
-      >
-        <MisCuentasBilletera />
-        {detected > 0 && deps.detectedRoute ? (
-          <DetectedBanner
-            count={detected}
-            onPress={() => deps.detectedRoute && navigation.navigate(deps.detectedRoute)}
-          />
-        ) : null}
-        <SectionHeader title={t.recurring} actionLabel={t.add} onAction={add} />
-        {state.status === 'loading' ? (
-          <View style={styles.grid}>
-            {[0, 1, 2, 3].map((i) => (
-              <View key={i} style={styles.skeleton}>
-                <Skeleton height={86} radius={radius.tileLg} />
-              </View>
-            ))}
-          </View>
-        ) : state.status === 'error' ? (
-          <ErrorState message={t.error} onRetry={() => void reload()} />
-        ) : state.items.length === 0 ? (
-          <EmptyState
-            title={t.emptyTitle}
-            message={t.emptyMessage}
-            icon="calendar"
-            actionLabel={t.emptyAction}
-            onAction={add}
-          />
-        ) : (
-          <>
-            <View style={styles.grid} testID="recurring.billetera.grid">
-              {state.items
-                .filter((item) => item.kind === 'fixed')
-                .map((item) => (
-                  <RecurringCard key={item.id} item={item} today={today} onPress={edit} />
-                ))}
-            </View>
-            {state.subscriptions.lowUseCount > 0 ? (
-              <SavingsBanner
-                monthlyMinor={state.subscriptions.lowUseMonthlyMinor}
-                count={state.subscriptions.lowUseCount}
-                onPress={() => navigation.navigate(deps.recommendationsRoute)}
+      <Screen header={header} padded={false} gap={0} testID="recurring.billetera">
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          testID="recurring.billetera.scroll"
+          refreshControl={
+            deps.refresh ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => void onRefresh()}
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+                progressBackgroundColor={colors.background}
               />
-            ) : null}
-            {state.subscriptions.count > 0 ? (
-              <View style={styles.subscriptions} testID="recurring.billetera.subscriptions">
-                <SectionHeader
-                  title={t.subscriptions}
-                  meta={
-                    <AppText variant="captionStrong" color="textSecondary">
-                      {t.subscriptionsMeta(
-                        state.subscriptions.count,
-                        formatCop(state.subscriptions.monthlyMinor),
-                      )}
-                    </AppText>
-                  }
-                />
-                {lowUseOnly ? (
-                  <View style={styles.filter}>
-                    <Chip
-                      label={t.lowUseOnly}
-                      selected
-                      onPress={() => navigation.setParams({ filter: undefined })}
-                      testID="recurring.billetera.lowUseFilter"
-                    />
-                    <AppText variant="caption" color="textSecondary">
-                      {t.lowUseOnlyHint}
-                    </AppText>
-                  </View>
-                ) : null}
+            ) : undefined
+          }
+        >
+          <MisCuentasBilletera />
+          {detected > 0 && deps.detectedRoute ? (
+            <DetectedBanner
+              count={detected}
+              onPress={() => deps.detectedRoute && navigation.navigate(deps.detectedRoute)}
+            />
+          ) : null}
+          <SectionHeader title={t.recurring} actionLabel={t.add} onAction={add} />
+          {state.status === 'loading' ? (
+            <View style={styles.grid}>
+              {[0, 1, 2, 3].map((i) => (
+                <View key={i} style={styles.skeleton}>
+                  <Skeleton height={86} radius={radius.tileLg} />
+                </View>
+              ))}
+            </View>
+          ) : state.status === 'error' ? (
+            <ErrorState message={t.error} onRetry={() => void reload()} />
+          ) : state.items.length === 0 ? (
+            <EmptyState
+              title={t.emptyTitle}
+              message={t.emptyMessage}
+              icon="calendar"
+              actionLabel={t.emptyAction}
+              onAction={add}
+            />
+          ) : (
+            <>
+              <View style={styles.grid} testID="recurring.billetera.grid">
                 {state.items
-                  .filter((item) => item.kind === 'subscription')
-                  .filter((item) => !lowUseOnly || item.usage === 'low')
+                  .filter((item) => item.kind === 'fixed')
                   .map((item) => (
-                    <SubscriptionRow
-                      key={item.id}
-                      item={item}
-                      today={today}
-                      account={accountKind(chargedAccount(item, accounts))}
-                      priceUp={priceUp.has(item.id)}
-                      onPress={() =>
-                        navigation.navigate(SUBSCRIPTION_DETAIL_ROUTE, { id: item.id })
-                      }
-                    />
+                    <RecurringCard key={item.id} item={item} today={today} onPress={edit} />
                   ))}
               </View>
-            ) : null}
-          </>
-        )}
+              {state.subscriptions.lowUseCount > 0 ? (
+                <SavingsBanner
+                  monthlyMinor={state.subscriptions.lowUseMonthlyMinor}
+                  count={state.subscriptions.lowUseCount}
+                  onPress={() => navigation.navigate(deps.recommendationsRoute)}
+                />
+              ) : null}
+              {state.subscriptions.count > 0 ? (
+                <View style={styles.subscriptions} testID="recurring.billetera.subscriptions">
+                  <SectionHeader
+                    title={t.subscriptions}
+                    meta={
+                      <AppText variant="captionStrong" color="textSecondary">
+                        {t.subscriptionsMeta(
+                          state.subscriptions.count,
+                          formatCop(state.subscriptions.monthlyMinor),
+                        )}
+                      </AppText>
+                    }
+                  />
+                  {lowUseOnly ? (
+                    <View style={styles.filter}>
+                      <Chip
+                        label={t.lowUseOnly}
+                        selected
+                        onPress={() => navigation.setParams({ filter: undefined })}
+                        testID="recurring.billetera.lowUseFilter"
+                      />
+                      <AppText variant="caption" color="textSecondary">
+                        {t.lowUseOnlyHint}
+                      </AppText>
+                    </View>
+                  ) : null}
+                  {state.items
+                    .filter((item) => item.kind === 'subscription')
+                    .filter((item) => !lowUseOnly || item.usage === 'low')
+                    .map((item) => (
+                      <SubscriptionRow
+                        key={item.id}
+                        item={item}
+                        today={today}
+                        account={accountKind(chargedAccount(item, accounts))}
+                        priceUp={priceUp.has(item.id)}
+                        onPress={() =>
+                          navigation.navigate(SUBSCRIPTION_DETAIL_ROUTE, { id: item.id })
+                        }
+                      />
+                    ))}
+                </View>
+              ) : null}
+            </>
+          )}
+        </ScrollView>
       </Screen>
     );
   };
@@ -214,6 +243,13 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
 
 const createStyles = () =>
   StyleSheet.create({
+    // What Screen gives a padded scroll above the tab bar, here with the pull to refresh.
+    content: {
+      paddingHorizontal: spacing.screen,
+      paddingTop: spacing.block,
+      paddingBottom: spacing.tabBarClearance,
+      gap: spacing.md,
+    },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
     skeleton: { flexBasis: '48%', flexGrow: 1 },
     subscriptions: { gap: spacing.md, marginTop: spacing.md },
