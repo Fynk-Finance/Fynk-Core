@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { Text } from 'react-native';
 
 import { uiStrings } from '../strings.es-CO';
 import { lightColors as colors } from '../tokens';
@@ -10,6 +11,7 @@ import { Chip } from './Chip';
 import { donutArcs } from './Donut';
 import { HeaderBlue } from './HeaderBlue';
 import { ProgressBar } from './ProgressBar';
+import { Screen } from './Screen';
 import { StepProgress } from './StepProgress';
 import { TextField } from './TextField';
 
@@ -69,6 +71,65 @@ describe('buttons', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Dos' }));
     expect(onPress).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Dos' })).toBeBusy();
+  });
+
+  it('draws iconAfter after the label, without the arrow (ConectarBanco)', async () => {
+    await render(<PrimaryButton label="Ir al portal de Banco Demo" iconAfter="externalLink" />);
+    const json = JSON.stringify(screen.toJSON());
+    const label = json.indexOf('Ir al portal de Banco Demo');
+    const external = json.indexOf('M10 14 21 3');
+    expect(label).toBeGreaterThan(-1);
+    expect(external).toBeGreaterThan(label);
+    expect(json).not.toContain('M13 6l6 6-6 6');
+  });
+});
+
+describe('Screen', () => {
+  it('runs refresh on pull and spins until it settles', async () => {
+    let finish: () => void = () => undefined;
+    const refresh = jest.fn(() => new Promise<void>((resolve) => (finish = resolve)));
+    await render(
+      <Screen scroll refresh={refresh} testID="s">
+        <Text>Contenido</Text>
+      </Screen>,
+    );
+    const control = () =>
+      (
+        screen.getByTestId('s.scroll').props as {
+          refreshControl: { props: { refreshing: boolean; onRefresh: () => void } };
+        }
+      ).refreshControl.props;
+    await act(async () => control().onRefresh());
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(control().refreshing).toBe(true);
+    await act(async () => finish());
+    expect(control().refreshing).toBe(false);
+  });
+
+  it('stops spinning when refresh fails', async () => {
+    const refresh = jest.fn(() => Promise.reject(new Error('offline')));
+    await render(
+      <Screen scroll refresh={refresh} testID="s">
+        <Text>Contenido</Text>
+      </Screen>,
+    );
+    const props = () =>
+      (
+        screen.getByTestId('s.scroll').props as {
+          refreshControl: { props: { refreshing: boolean; onRefresh: () => void } };
+        }
+      ).refreshControl.props;
+    await act(async () => props().onRefresh());
+    expect(props().refreshing).toBe(false);
+  });
+
+  it('has no pull to refresh without refresh', async () => {
+    await render(
+      <Screen scroll testID="s">
+        <Text>Contenido</Text>
+      </Screen>,
+    );
+    expect(screen.getByTestId('s.scroll').props.refreshControl).toBeUndefined();
   });
 });
 

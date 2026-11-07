@@ -5,6 +5,13 @@ export default {
   title: 'Buttons',
   stories: {
     Primary: () => <PrimaryButton label="Continuar" withArrow onPress={() => {}} />,
+    PrimaryExternal: () => (
+      <PrimaryButton
+        label="Ir al portal de Banco Demo"
+        iconAfter="externalLink"
+        onPress={() => {}}
+      />
+    ),
     PrimaryLoading: () => <PrimaryButton label="Ingresar" loading />,
     PrimaryDisabled: () => <PrimaryButton label="Ingresar" disabled />,
     Accent: () => <AccentButton label="Empezar" withArrow onPress={() => {}} />,
