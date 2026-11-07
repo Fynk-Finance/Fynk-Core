@@ -66,6 +66,7 @@ func TestPAR_ValidationAndSuccess(t *testing.T) {
 	// 3. Valid PS256 assertion and S256 PKCE should succeed
 	goodJWT := makeFakeJWT("PS256", "fynk", "fynk", time.Now().Add(time.Hour))
 	form.Set("client_assertion", goodJWT)
+	form.Set("entity", "banco-demo")
 
 	resp, err = http.PostForm(ts.URL+"/oauth/par", form)
 	if err != nil {
@@ -114,6 +115,7 @@ func TestOAuthFlow_Complete(t *testing.T) {
 		"client_id":             {"fynk"},
 		"redirect_uri":          {"fynk://bank/callback"},
 		"scope":                 {"accounts transactions"},
+		"entity":                {"banco-demo"},
 		"code_challenge":        {challenge},
 		"code_challenge_method": {"S256"},
 		"state":                 {"random-state-123"},
@@ -204,7 +206,7 @@ func TestOAuthFlow_Complete(t *testing.T) {
 
 	// Step 6: Revoke token
 	revForm := url.Values{
-		"token": {tokenRes.ConsentID},
+		"token": {tokenRes.AccessToken},
 	}
 	revResp, err := http.PostForm(ts.URL+"/oauth/revoke", revForm)
 	if err != nil {
