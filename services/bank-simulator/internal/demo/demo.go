@@ -25,6 +25,12 @@ type Handler struct {
 	store *store.BankStore
 }
 
+// ValidCustomerRef says whether ref can be a customer id: an opaque id, or the
+// seeded demo user, which is the one email-shaped id the simulator knows.
+func ValidCustomerRef(ref string) bool {
+	return ref == domain.DemoCustomerID || customerRefPattern.MatchString(ref)
+}
+
 func NewHandler(s *store.BankStore) *Handler {
 	return &Handler{store: s}
 }
@@ -81,8 +87,7 @@ func (h *Handler) ProvisionCustomer(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, r, http.StatusBadRequest, "invalid_request", "Bad Request", "The body must be JSON with a customerRef.")
 		return
 	}
-	// The seeded demo user is the one email-shaped id the simulator knows.
-	if body.CustomerRef != domain.DemoCustomerID && !customerRefPattern.MatchString(body.CustomerRef) {
+	if !ValidCustomerRef(body.CustomerRef) {
 		writeProblem(w, r, http.StatusBadRequest, "invalid_customer_ref", "Bad Request", "customerRef is not a valid opaque id.")
 		return
 	}
