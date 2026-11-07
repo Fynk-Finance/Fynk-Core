@@ -7,7 +7,7 @@ import {
   type ParamListBase,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Pressable, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -41,7 +41,12 @@ function Home({ accountId }: { accountId: string }) {
 
 async function renderDetail(
   accountId: string,
-  opts: { accounts?: Account[]; theme?: ThemePreference; movements?: jest.Mock } = {},
+  opts: {
+    accounts?: Account[];
+    theme?: ThemePreference;
+    movements?: jest.Mock;
+    disconnect?: jest.Mock;
+  } = {},
 ) {
   const Detail = createAccountDetailScreen({
     useAccounts: () => ({
@@ -54,6 +59,7 @@ async function renderDetail(
     }),
     clock,
     renderTransactions: opts.movements,
+    disconnect: opts.disconnect,
   });
   await render(
     <GestureHandlerRootView>
@@ -161,5 +167,59 @@ describe('labels and swipe', () => {
     expect(swipeTarget(0, 4, 60)).toBe(0);
     expect(swipeTarget(3, 4, -60)).toBe(3);
     expect(swipeTarget(2, 4, 20)).toBe(2);
+  });
+});
+
+// HU-008 (SCRUM-22): "Eliminar cuenta" of a connected account revokes its link through M5.
+describe('Detalle de cuenta, Eliminar cuenta', () => {
+  const remove = () => screen.getByRole('button', { name: 'Eliminar cuenta' });
+
+  it('disconnects the link of the account and closes when it is revoked', async () => {
+    const disconnect = jest.fn(async () => 'revoked' as const);
+    await renderDetail(savings.id, { disconnect });
+    await act(async () => fireEvent.press(remove()));
+    expect(disconnect).toHaveBeenCalledWith(savings.linkId);
+    expect(screen.getByText('open')).toBeTruthy();
+    expect(screen.queryByTestId('accounts.detail.card')).toBeNull();
+  });
+
+  it('stays open when the person cancels the check', async () => {
+    const disconnect = jest.fn(async () => 'cancelled' as const);
+    await renderDetail(savings.id, { disconnect });
+    await act(async () => fireEvent.press(remove()));
+    expect(disconnect).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('accounts.detail.card')).toBeTruthy();
+    expect(screen.queryByText(/No encontramos la conexión/)).toBeNull();
+    expect(remove()).toBeEnabled();
+  });
+
+  it('says so when the link is not on the phone', async () => {
+    const disconnect = jest.fn(async () => 'not_found' as const);
+    await renderDetail(savings.id, { disconnect });
+    await act(async () => fireEvent.press(remove()));
+    expect(screen.getByText(/No encontramos la conexión de esta cuenta/)).toBeTruthy();
+    expect(screen.getByTestId('accounts.detail.card')).toBeTruthy();
+  });
+
+  it('is busy while M4 checks, so a second press does nothing', async () => {
+    let finish: (r: 'cancelled') => void = () => undefined;
+    const disconnect = jest.fn(() => new Promise<'cancelled'>((resolve) => (finish = resolve)));
+    await renderDetail(savings.id, { disconnect });
+    await act(async () => fireEvent.press(remove()));
+    expect(remove()).toBeBusy();
+    await act(async () => fireEvent.press(remove()));
+    expect(disconnect).toHaveBeenCalledTimes(1);
+    await act(async () => finish('cancelled'));
+    expect(remove()).not.toBeBusy();
+  });
+
+  it('is not offered for cash, which has no bank link', async () => {
+    await renderDetail(cash.id, { disconnect: jest.fn() });
+    expect(screen.queryByRole('button', { name: 'Eliminar cuenta' })).toBeNull();
+  });
+
+  it('is not offered until M5 gives disconnect', async () => {
+    await renderDetail(savings.id);
+    expect(screen.queryByRole('button', { name: 'Eliminar cuenta' })).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 // Detalle de cuenta (design CuentaDetalle, inventory row 12): a modal over the Dashboard with
 // one card per account. Page dots or a horizontal swipe change account; the chevron or a swipe
 // down closes it. Cards also show their credit data (HU-019). Movimientos comes from M7.
+// "Eliminar cuenta" of a connected account ends its bank link through M5 (HU-008).
 import {
   useNavigation,
   useRoute,
@@ -76,6 +77,11 @@ export interface AccountDetailDeps {
   clock: Clock;
   /** M7's TransactionList filtered by the account, with pull to refresh. */
   renderTransactions?: (accountId: Id) => ReactNode;
+  /**
+   * "Eliminar cuenta" of a connected account: M5's disconnectLink(linkId). It asks for M4's
+   * identity check and revokes the consent; the account then leaves the lists.
+   */
+  disconnect?: (linkId: Id) => Promise<'revoked' | 'cancelled' | 'not_found'>;
 }
 
 export function createAccountDetailScreen(deps: AccountDetailDeps) {
@@ -146,6 +152,14 @@ export function createAccountDetailScreen(deps: AccountDetailDeps) {
         {!current ? <EmptyState title={t.gone} icon="bank" /> : null}
         {current?.kind === 'credit_card' ? <CreditData account={current} /> : null}
         {current && deps.renderTransactions ? deps.renderTransactions(current.id) : null}
+        {current?.linkId && deps.disconnect ? (
+          <RemoveAccount
+            key={current.id}
+            linkId={current.linkId}
+            disconnect={deps.disconnect}
+            onRevoked={() => navigation.goBack()}
+          />
+        ) : null}
       </Screen>
     );
   };
@@ -212,6 +226,62 @@ function AccountCard({ account, now }: { account: Account; now: Date }) {
           </AppText>
         ) : null}
       </View>
+    </View>
+  );
+}
+
+/** "Eliminar cuenta" (CuentaDetalle): the red trash square and its label, one press target. */
+function RemoveAccount({
+  linkId,
+  disconnect,
+  onRevoked,
+}: {
+  linkId: Id;
+  disconnect: NonNullable<AccountDetailDeps['disconnect']>;
+  onRevoked: () => void;
+}) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
+  const [busy, setBusy] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const onPress = async () => {
+    setBusy(true);
+    setNotFound(false);
+    try {
+      const result = await disconnect(linkId);
+      if (result === 'revoked') onRevoked();
+      else if (result === 'not_found') setNotFound(true);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <View style={styles.remove}>
+      <Pressable
+        onPress={() => void onPress()}
+        disabled={busy}
+        accessibilityRole="button"
+        accessibilityLabel={t.remove}
+        accessibilityState={{ disabled: busy, busy }}
+        style={styles.removeRow}
+        testID="accounts.detail.remove"
+      >
+        {({ pressed }) => (
+          <>
+            <View style={[styles.trash, pressed || busy ? styles.trashPressed : null]}>
+              <Icon name="trash" size={24} strokeWidth={2.1} color={colors.danger} />
+            </View>
+            <AppText variant="bodyStrong" color="danger" style={styles.removeLabel}>
+              {t.remove}
+            </AppText>
+          </>
+        )}
+      </Pressable>
+      {notFound ? (
+        <AppText variant="small" color="danger" accessibilityLiveRegion="polite">
+          {t.removeNotFound}
+        </AppText>
+      ) : null}
     </View>
   );
 }
@@ -288,4 +358,20 @@ const createStyles = ({ colors, shadow }: Theme) =>
     spread: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     number: { fontFamily: fonts.amount.semibold, letterSpacing: 0.72 },
     due: { marginTop: spacing.md },
+    // CuentaDetalle: 56 px red-bordered square, 16 px gap, 4 px above.
+    remove: { gap: spacing.md, marginTop: 4 },
+    removeRow: { flexDirection: 'row', alignItems: 'center', gap: 16, alignSelf: 'flex-start' },
+    trash: {
+      width: size.buttonPrimary,
+      height: size.buttonPrimary,
+      borderRadius: radius.button,
+      borderWidth: 1.5,
+      borderColor: colors.danger,
+      backgroundColor: colors.dangerSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    trashPressed: { backgroundColor: colors.dangerBorder },
+    // 15/20 bold (bodyStrong is semibold).
+    removeLabel: { fontFamily: fonts.body.bold },
   });
