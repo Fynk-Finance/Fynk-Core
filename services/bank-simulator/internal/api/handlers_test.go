@@ -154,7 +154,7 @@ func TestRevokeConsent(t *testing.T) {
 
 	// Subsequent accounts call should fail with 403 consent_revoked
 	req2, _ := http.NewRequest("GET", ts.URL+"/open-finance/v1/accounts", nil)
-	req2.Header.Set("Authorization", "Bearer consent-demo-001")
+	req2.Header.Set("Authorization", "Bearer dev-token")
 	resp2, err := http.DefaultClient.Do(req2)
 	if err != nil {
 		t.Fatalf("error: %v", err)
