@@ -6,7 +6,7 @@ module: team
 jira: [SCRUM-76, SCRUM-77, SCRUM-78, SCRUM-79, SCRUM-80, SCRUM-81, SCRUM-82, SCRUM-83, SCRUM-84, SCRUM-85, SCRUM-86, SCRUM-87, SCRUM-88, SCRUM-89, SCRUM-90, SCRUM-91, SCRUM-92, SCRUM-93, SCRUM-94, SCRUM-95]
 branch: docs/qa-app-review-findings
 tool: Claude Code
-pr: none
+pr: "#332"
 status: done
 ---
 
@@ -25,7 +25,7 @@ Sofia tested the app and listed 12 visual issues, 3 gesture improvements and 5 f
 ## Result
 
 * 19 tasks assigned to Sofia, 1 (F4, savings goals in Billetera, SCRUM-94) to Karol, because it is new functionality of her modules M8 and M9.
-* Pull request: not opened yet.
+* Pull request: #332.
 
 ## Decisions and problems
 
