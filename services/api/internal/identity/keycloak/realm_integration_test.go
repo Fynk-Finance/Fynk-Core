@@ -99,6 +99,8 @@ func startStack(ctx context.Context) (func(), error) {
 			"FYNK_ADMIN_CLIENT_SECRET":    "integration-only-secret",
 			"BANCO_DEMO_ADMIN_PASSWORD":   "Banco-admin-test-1",
 			"BANCO_DEMO_USER_PASSWORD":    "Banco-user-test-1",
+			"BANCO_DEMO_BROKER_SECRET":    "integration-broker-secret",
+			"BANK_PORTAL_CLIENT_SECRET":   "integration-portal-secret",
 		}),
 		testcontainers.WithExposedPorts("8080/tcp"),
 		testcontainers.WithWaitStrategy(wait.ForHTTP("/realms/fynk/.well-known/openid-configuration").
