@@ -63,3 +63,24 @@ it('throws the problem code of a failed call', async () => {
   const error = await api.list().catch((e: unknown) => e);
   expect(isApiError(error) && error.code).toBe('unauthorized');
 });
+
+it('reads the simulated entities of the person from GET /bank/simulated-entities', async () => {
+  const { api, fetch } = setup(json(200, { providerIds: ['banco-demo', 'cooperativa-demo'] }));
+  expect(await api.simulatedEntities()).toEqual(['banco-demo', 'cooperativa-demo']);
+  const sent = fetch.mock.calls[0]![0];
+  expect(sent.method).toBe('GET');
+  expect(sent.url).toBe('http://api.test/v1/bank/simulated-entities');
+});
+
+it('throws the problem code when the simulator is not available', async () => {
+  const { api } = setup(
+    json(503, {
+      type: '/problems/provider_unavailable',
+      title: 'Service Unavailable',
+      status: 503,
+      code: 'provider_unavailable',
+    }),
+  );
+  const error = await api.simulatedEntities().catch((e: unknown) => e);
+  expect(isApiError(error) && error.code).toBe('provider_unavailable');
+});

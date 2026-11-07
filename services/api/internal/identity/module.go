@@ -22,7 +22,7 @@ func New(d module.Deps) module.Module {
 		Stub: module.Stub{ModuleName: "identity"},
 		deps: d,
 		// The pool is only used when a request arrives, so a nil DB is fine at construction.
-		devices: devices.NewService(postgres.New(d.DB), d.Clock, d.Audit, nil),
+		devices: devices.NewService(postgres.New(d.DB), d.Clock, d.Audit, nil).WithLog(d.Log),
 		admin:   admin,
 		revoker: admin,
 	}

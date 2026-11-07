@@ -65,14 +65,16 @@ func newService(d module.Deps) *service.Service {
 }
 
 // bankProviders builds the adapters whose settings are there, with the keys and the egress they
-// share, and installs the revoker M4 uses: Banco Demo and Billetera Demo (one simulator behind
-// the egress route banco-demo) and Bancolombia's sandbox (routes bancolombia-auth and
+// share, and installs the revoker M4 uses: the four simulated entities (one simulator behind
+// the egress route banco-demo, with the demo provisioner) and Bancolombia's sandbox (routes bancolombia-auth and
 // bancolombia-api). Without the egress or the keys, or with no bank configured, it fails closed.
 func bankProviders(d module.Deps) (service.ProviderMap, keys.Fingerprinter, error) {
 	c := d.Config
 	hasSigner := c.BankSignerKMSKeyID != "" || c.BankSignerKeyFile != ""
 	hasFingerprint := c.BankFingerprintKMSKeyID != "" || c.BankFingerprintKeyFile != ""
 	bancoDemo := c.BancoDemoClientID != "" && c.BancoDemoIssuer != "" && c.BancoDemoAuthorizeURL != ""
+	// The demo provisioner is installed again only when the simulator is configured and built.
+	ports.InstallDemoProvisioner(nil)
 	if c.EgressURL == "" || !hasSigner || !hasFingerprint || (!bancoDemo && c.BancolombiaClientID == "") {
 		return nil, nil, errNotConfigured
 	}
@@ -114,7 +116,8 @@ func addBancoDemo(d module.Deps, k bankKeys, client *http.Client, providers serv
 	if err != nil {
 		return err
 	}
-	for _, id := range []string{"banco-demo", "billetera-demo"} {
+	// One adapter per simulated entity, all sharing the simulator's client, issuer and URL.
+	for _, id := range ports.Simulated() {
 		a, err := bankdemo.New(bankdemo.Config{
 			Provider: id, BaseURL: base, ClientID: c.BancoDemoClientID, Audience: c.BancoDemoIssuer,
 			AuthorizeURL: c.BancoDemoAuthorizeURL, RedirectURI: c.BankRedirectURI,
@@ -124,6 +127,10 @@ func addBancoDemo(d module.Deps, k bankKeys, client *http.Client, providers serv
 			return fmt.Errorf("bank: %s adapter: %w", id, err)
 		}
 		providers[id] = a
+		if id == "banco-demo" {
+			// Provisioning is not tied to an entity: Banco Demo's adapter calls the simulator.
+			ports.InstallDemoProvisioner(a)
+		}
 	}
 	return nil
 }

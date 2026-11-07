@@ -6,6 +6,8 @@
 #   caddy.crt / caddy.key              Caddy egress server certificate (caddy, localhost)
 #   bank-simulator.crt / .key          Banco Demo internal mTLS listener
 #   fynk-client.crt / .key             client certificate Caddy presents to the bank
+#   bank-signer.pem                    RSA 3072 key the API signs bank client assertions with
+#   bank-fingerprint.key               32 random bytes, the HMAC key of the bank token fingerprint
 #
 # Leaf certificates last 90 days, like the rotation rule of M14. Existing files are kept;
 # FORCE=1 recreates everything. These keys are for this machine only and are never used elsewhere.
@@ -34,7 +36,21 @@ leaf caddy --san caddy --san localhost --san 127.0.0.1
 leaf bank-simulator --san bank-simulator
 leaf fynk-client --san fynk-client
 
+# The API's bank keys (M5). In AWS they are KMS keys (M14).
+if [ -n "${FORCE:-}" ] || [ ! -f bank-signer.pem ]; then
+  step crypto keypair bank-signer.pub bank-signer.pem \
+    --kty RSA --size 3072 --no-password --insecure --force
+  rm -f bank-signer.pub
+else
+  echo "keep bank-signer.pem"
+fi
+if [ -n "${FORCE:-}" ] || [ ! -f bank-fingerprint.key ]; then
+  head -c 32 /dev/urandom >bank-fingerprint.key
+else
+  echo "keep bank-fingerprint.key"
+fi
+
 # The containers run as other users (distroless nonroot), so they must be able to read the keys.
-chmod 644 ./*.crt caddy.key bank-simulator.key fynk-client.key
+chmod 644 ./*.crt caddy.key bank-simulator.key fynk-client.key bank-signer.pem bank-fingerprint.key
 chmod 600 ca.key
 echo "certificates ready in certs/"

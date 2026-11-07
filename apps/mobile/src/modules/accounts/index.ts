@@ -8,6 +8,7 @@ import { appEvents } from '@shared/events/appEvents';
 import { registerSlot, type ModuleRoutes } from '@shared/navigation';
 
 import { STATISTICS_ROUTE, useMonthSummary as useAnalyticsMonthSummary } from '@modules/analytics';
+import { disconnectLink, syncNow } from '@modules/bank';
 import { NOTIFICATIONS_ROUTE, useUnreadCount } from '@modules/notifications';
 import { useDisplayName } from '@modules/onboarding';
 import { NEW_TRANSACTION_ROUTE, TransactionList, TransactionPreview } from '@modules/transactions';
@@ -160,6 +161,8 @@ export const routes: ModuleRoutes = {
     // M7 imports this module too: its values are read only when the screen renders.
     renderMovements: () => createElement(TransactionPreview),
     newMovementRoute: () => NEW_TRANSACTION_ROUTE,
+    // Pull to refresh (HU-011). M5 imports this module too: called only on a pull.
+    refresh: () => syncNow(),
   }),
   screens: [
     {
@@ -170,6 +173,8 @@ export const routes: ModuleRoutes = {
         clock,
         renderTransactions: (accountId) =>
           createElement(TransactionList, { filter: { accountIds: [accountId] } }),
+        // "Eliminar cuenta" (HU-008): M5 ends the link; called only on a press.
+        disconnect: (linkId) => disconnectLink(linkId),
       }),
       path: 'cuentas/:accountId',
       transition: 'modal',

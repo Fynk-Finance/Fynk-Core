@@ -99,6 +99,8 @@ func startStack(ctx context.Context) (func(), error) {
 			"FYNK_ADMIN_CLIENT_SECRET":    "integration-only-secret",
 			"BANCO_DEMO_ADMIN_PASSWORD":   "Banco-admin-test-1",
 			"BANCO_DEMO_USER_PASSWORD":    "Banco-user-test-1",
+			"BANCO_DEMO_BROKER_SECRET":    "integration-broker-secret",
+			"BANK_PORTAL_CLIENT_SECRET":   "integration-portal-secret",
 		}),
 		testcontainers.WithExposedPorts("8080/tcp"),
 		testcontainers.WithWaitStrategy(wait.ForHTTP("/realms/fynk/.well-known/openid-configuration").
@@ -449,6 +451,8 @@ func TestIntegrationBancoDemoRealmWorksInTheSharedImage(t *testing.T) {
 	_, page := b.follow(env.keycloak + "/realms/banco-demo/protocol/openid-connect/auth?" + url.Values{
 		"client_id": {"bank-portal"}, "redirect_uri": {"http://localhost:8082/callback"},
 		"response_type": {"code"}, "scope": {"openid"},
+		// bank-portal requires PKCE S256, like the simulator's authorization page sends it.
+		"code_challenge": {"E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"}, "code_challenge_method": {"S256"},
 	}.Encode())
 	// The realm banco-demo sets no login theme: it keeps Keycloak's own, server rendered page, and the
 	// fynk theme (which draws pages in the browser from an embedded kcContext) must not leak into it.

@@ -60,6 +60,12 @@ export const icons = {
   search: p('M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3'), // Movimientos
   filter: p('M4 6h16M7 12h10M10 18h4'), // Movimientos, "Filtros"
   close: p('M18 6 6 18M6 6l12 12'),
+  // After "Ir al portal de <Entidad>": the bank's page opens outside Fynk (ConectarBanco)
+  externalLink: p(
+    'M14 3h7v7',
+    'M10 14 21 3',
+    'M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5',
+  ),
   trash: p(
     'M3 6h18',
     'M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2',
