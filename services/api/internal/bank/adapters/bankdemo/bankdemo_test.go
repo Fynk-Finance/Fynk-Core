@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -27,6 +28,11 @@ type fakeBank struct {
 	retry    string
 	problem  string
 	accounts string
+	// provision: status and body of POST /demo/v1/customers (0 and "" = 200 with provisionBody).
+	provisionStatus int
+	provisionJSON   []byte // last JSON body received
+	provisionScope  string // scope of the last client_credentials token
+	provisionURL    string // last request URL, to prove the sub is not in it
 }
 
 func (f *fakeBank) handler() http.Handler {
@@ -58,6 +64,9 @@ func (f *fakeBank) handler() http.Handler {
 		case "refresh_token":
 			_, _ = w.Write([]byte(`{"access_token":"at-2","refresh_token":"rt-2","expires_in":300,"token_type":"Bearer","consent_id":"consent-abc"}`))
 		case "client_credentials":
+			f.mu.Lock()
+			f.provisionScope = v.Get("scope")
+			f.mu.Unlock()
 			_, _ = w.Write([]byte(`{"access_token":"cc-1","expires_in":300,"token_type":"Bearer"}`))
 		}
 	})
@@ -97,6 +106,24 @@ func (f *fakeBank) handler() http.Handler {
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
+	mux.HandleFunc("POST /demo/v1/customers", func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		f.mu.Lock()
+		f.auth[r.URL.Path] = r.Header.Get("Authorization")
+		f.provisionJSON = body
+		f.provisionURL = r.URL.String()
+		status := f.provisionStatus
+		f.mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if status != 0 {
+			w.WriteHeader(status)
+			_, _ = w.Write([]byte(`{"error":"secret-detail-from-bank"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"entities":[
+			{"providerId":"banco-demo","displayName":"Banco Demo","kind":"bank","accountCount":3},
+			{"providerId":"cooperativa-demo","displayName":"Cooperativa Demo","kind":"bank","accountCount":1}]}`))
+	})
 	mux.HandleFunc("GET /open-finance/v1/products/cdt", func(w http.ResponseWriter, r *http.Request) {
 		f.mu.Lock()
 		f.auth[r.URL.Path] = r.Header.Get("Authorization")
@@ -121,11 +148,15 @@ func (f *fakeBank) fail(w http.ResponseWriter) bool {
 
 const allAccounts = `{"data":[
  {"id":"acc-ahorros","type":"SAVINGS","name":"Cuenta de Ahorros Demo","maskedNumber":"****4821","currency":"COP","balance":"3200000.00","balanceMinor":320000000,"available":"3200000.00","availableMinor":320000000,"status":"ACTIVE","simulated":true},
- {"id":"acc-billetera","type":"WALLET","name":"Billetera Demo","maskedNumber":"****7730","currency":"COP","balance":"4600000.00","available":"4600000.00","status":"ACTIVE","simulated":true},
  {"id":"acc-tarjeta","type":"CREDIT_CARD","name":"Tarjeta Demo","maskedNumber":"4111 **** **** 1234","currency":"COP","balance":"-500000.00","balanceMinor":-50000000,"available":"4500000.00","availableMinor":450000000,"creditLimit":"5000000.00","creditLimitMinor":500000000,"paymentDueDate":5,"status":"ACTIVE","simulated":true},
  {"id":"acc-cdt","type":"CDT","name":"CDT Demo","maskedNumber":"****0001","currency":"COP","balance":"2000000.00","balanceMinor":200000000,"available":"2000000.00","status":"ACTIVE","simulated":true,
   "cdt":{"rateEa":10.5,"rateEaBps":1050,"termDays":180,"opened":"2026-08-28","maturity":"2027-02-24"}},
  {"id":"acc-otro","type":"MORTGAGE","name":"Hipoteca","maskedNumber":"****9999","currency":"COP","balance":"1.00","available":"1.00","status":"ACTIVE","simulated":true}
+]}`
+
+// walletAccounts is what the simulator returns for a consent of billetera-demo.
+const walletAccounts = `{"data":[
+ {"id":"acc-billetera","type":"WALLET","name":"Billetera Demo","maskedNumber":"****7730","currency":"COP","balance":"4600000.00","available":"4600000.00","status":"ACTIVE","simulated":true}
 ]}`
 
 type signer struct{ audiences []string }
@@ -161,7 +192,12 @@ func newAdapter(t *testing.T, provider string) (*Adapter, *fakeBank, *signer) {
 	return a, fb, sg
 }
 
-func TestNewAcceptsOnlyTheTwoSimulatedProviders(t *testing.T) {
+func TestNewAcceptsEverySimulatedEntity(t *testing.T) {
+	for _, id := range ports.Simulated() {
+		if _, err := New(Config{Provider: id}); err != nil {
+			t.Errorf("%s: %v", id, err)
+		}
+	}
 	if _, err := New(Config{Provider: "bancolombia"}); err == nil {
 		t.Fatal("bancolombia is not served by Banco Demo")
 	}
@@ -177,7 +213,7 @@ func TestBancoDemoMapsItsAccountsToTheSharedShape(t *testing.T) {
 	if fb.auth["/open-finance/v1/accounts"] != "Bearer at-1" {
 		t.Fatalf("authorization %q", fb.auth["/open-finance/v1/accounts"])
 	}
-	if len(got) != 3 {
+	if len(got) != 3 { // the mortgage is a product Fynk does not show yet
 		t.Fatalf("got %d accounts, want savings, card and cdt: %+v", len(got), got)
 	}
 	savings, card, cdt := got[0], got[1], got[2]
@@ -195,8 +231,9 @@ func TestBancoDemoMapsItsAccountsToTheSharedShape(t *testing.T) {
 	}
 }
 
-func TestBilleteraDemoKeepsOnlyTheWallet(t *testing.T) {
-	a, _, _ := newAdapter(t, "billetera-demo")
+func TestBilleteraDemoShowsTheWalletTheSimulatorReturnsForItsConsent(t *testing.T) {
+	a, fb, _ := newAdapter(t, "billetera-demo")
+	fb.accounts = walletAccounts
 	got, err := a.Accounts(context.Background(), "at-1")
 	if err != nil || len(got) != 1 {
 		t.Fatalf("got %+v, %v", got, err)
@@ -284,6 +321,18 @@ func TestBankErrorsBecomeStableCodesWithoutTheBanksText(t *testing.T) {
 	}
 }
 
+// HU-058: the other entities label their accounts with their own name and keep every account
+// the simulator returns for the consent, with no split by account type.
+func TestEachEntityLabelsItsAccountsWithItsOwnName(t *testing.T) {
+	a, fb, _ := newAdapter(t, "banco-digital-demo")
+	fb.accounts = `{"data":[
+ {"id":"d-1","type":"SAVINGS","name":"Ahorros","maskedNumber":"****1111","currency":"COP","balance":"100000.00","available":"100000.00","status":"ACTIVE","simulated":true}]}`
+	got, err := a.Accounts(context.Background(), "at-1")
+	if err != nil || len(got) != 1 || got[0].DisplayName != "Banco Digital Demo · Ahorros" {
+		t.Fatalf("got %+v, %v", got, err)
+	}
+}
+
 // HU-030: PAR with PKCE and private_key_jwt, never the user's credentials.
 func TestPushAuthorizationSendsPARWithPKCEAndAClientAssertion(t *testing.T) {
 	a, fb, sg := newAdapter(t, "banco-demo")
@@ -307,6 +356,9 @@ func TestPushAuthorizationSendsPARWithPKCEAndAClientAssertion(t *testing.T) {
 		if f.Get(k) != v {
 			t.Errorf("PAR %s = %q, want %q", k, f.Get(k), v)
 		}
+	}
+	if f.Get("entity") != "banco-demo" {
+		t.Errorf("PAR entity = %q", f.Get("entity"))
 	}
 	if len(sg.audiences) != 1 || sg.audiences[0] != "https://auth.fynk.local/realms/banco-demo" {
 		t.Errorf("assertion audiences %v", sg.audiences)
@@ -350,6 +402,61 @@ func TestRevokeConsentUsesClientCredentials(t *testing.T) {
 	// Already unknown at the bank: nothing is left to revoke, so M4's retry job can stop.
 	if err := a.RevokeConsent(context.Background(), "gone"); err != nil {
 		t.Fatalf("gone: %v", err)
+	}
+}
+
+// HU-058: the PAR of each adapter names its own entity.
+func TestEachAdapterSendsItsProviderIDAsTheEntity(t *testing.T) {
+	for _, id := range ports.Simulated() {
+		a, fb, _ := newAdapter(t, id)
+		if _, err := a.PushAuthorization(context.Background(), ports.PARRequest{
+			RedirectURI: "fynk://bank/callback", CodeChallenge: "c", State: "s",
+			Scopes: []ports.Scope{ports.ScopeBalances},
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if got := fb.forms["/oauth/par"].Get("entity"); got != id {
+			t.Errorf("%s sent entity %q", id, got)
+		}
+	}
+}
+
+// HU-058: provisioning uses a client credentials token with scope demo:provision, sends only the
+// sub in the JSON body, and returns the provider ids.
+func TestProvisionSendsTheSubInTheBodyWithTheProvisionScope(t *testing.T) {
+	a, fb, _ := newAdapter(t, "banco-demo")
+	ids, err := a.Provision(context.Background(), "user-sub-123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ids) != 2 || ids[0] != "banco-demo" || ids[1] != "cooperativa-demo" {
+		t.Fatalf("ids %v", ids)
+	}
+	if fb.provisionScope != "demo:provision" || fb.forms["/oauth/token"].Get("grant_type") != "client_credentials" {
+		t.Errorf("token form %v scope %q", fb.forms["/oauth/token"], fb.provisionScope)
+	}
+	if fb.auth["/demo/v1/customers"] != "Bearer cc-1" {
+		t.Errorf("authorization %q", fb.auth["/demo/v1/customers"])
+	}
+	if string(fb.provisionJSON) != `{"customerRef":"user-sub-123"}` {
+		t.Errorf("body %s", fb.provisionJSON)
+	}
+	if strings.Contains(fb.provisionURL, "user-sub-123") {
+		t.Errorf("the sub travelled in the URL: %s", fb.provisionURL)
+	}
+}
+
+func TestProvisionErrorsAreStableAndNeverCarryTheSubOrTheBanksText(t *testing.T) {
+	for _, status := range []int{http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound, http.StatusInternalServerError} {
+		a, fb, _ := newAdapter(t, "banco-demo")
+		fb.provisionStatus = status
+		_, err := a.Provision(context.Background(), "user-sub-123")
+		if !errors.Is(err, ports.ErrProviderUnavailable) {
+			t.Errorf("%d: err = %v, want provider_unavailable", status, err)
+		}
+		if err != nil && (strings.Contains(err.Error(), "user-sub-123") || strings.Contains(err.Error(), "secret-detail-from-bank")) {
+			t.Errorf("%d: leaked into the error: %v", status, err)
+		}
 	}
 }
 

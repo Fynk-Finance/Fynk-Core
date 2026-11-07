@@ -26,7 +26,7 @@ type Info struct {
 	ID          string
 	DisplayName string
 	Kind        Kind
-	IsSimulated bool // Banco Demo and Billetera Demo: the app shows "Simulado"
+	IsSimulated bool // the four fictional entities of the simulator: the app shows "Simulado"
 	Scopes      []Scope
 	LogoKey     string
 }
@@ -38,6 +38,19 @@ var catalog = []Info{
 		Scopes: []Scope{ScopeBalances, ScopeTransactions, ScopeAccountDetails}},
 	{ID: "billetera-demo", DisplayName: "Billetera Demo", Kind: KindWallet, IsSimulated: true, LogoKey: "billetera-demo",
 		Scopes: []Scope{ScopeBalances, ScopeTransactions, ScopeAccountDetails}},
+	{ID: "banco-digital-demo", DisplayName: "Banco Digital Demo", Kind: KindBank, IsSimulated: true, LogoKey: "banco-digital-demo",
+		Scopes: []Scope{ScopeBalances, ScopeTransactions, ScopeAccountDetails}},
+	{ID: "cooperativa-demo", DisplayName: "Cooperativa Demo", Kind: KindBank, IsSimulated: true, LogoKey: "cooperativa-demo",
+		Scopes: []Scope{ScopeBalances, ScopeTransactions, ScopeAccountDetails}},
+}
+
+// Simulated lists the ids of the simulated entities, in display order.
+func Simulated() []string {
+	var ids []string
+	for _, p := range catalog {
+		ids = append(ids, p.ID)
+	}
+	return ids
 }
 
 var (
