@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: fix/local-stack-bank-link
 tool: Claude Code
-pr: none
+pr: "#327"
 status: partial
 ---
 
@@ -28,7 +28,7 @@ Sofia pasted the follow-ups from the end-to-end test of M4 and M5 on the local s
 
 * `sh -n scripts/dev/certs.sh` passes. `docker compose config` shows the six settings and the two mounts on `api`. Prettier passes on the YAML and the docs.
 * Not run yet: `make certs` and `make dev` end to end, because Docker Desktop was not running in this session.
-* Pull request: not opened yet.
+* Pull request: #327.
 
 ## Decisions and problems
 
