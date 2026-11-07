@@ -372,6 +372,106 @@ paths:
             text/html:
               schema:
                 type: string
+        '503':
+          description: The realm login is not configured (no issuer or client secret).
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /oauth/authorize/callback:
+    get:
+      tags: [oauth]
+      summary: Return from the banco-demo login
+      description: >-
+        Public listener only. Keycloak redirects here after the login with code and state. The simulator
+        exchanges the code, checks the PS256 ID token, opens a session cookie and returns to /oauth/authorize.
+        This is not called by Fynk.
+      operationId: authorizeCallback
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '303':
+          description: Back to /oauth/authorize.
+          headers:
+            Location:
+              schema:
+                type: string
+        '400':
+          description: Unknown or expired login, or no code.
+          content:
+            text/html:
+              schema:
+                type: string
+        '502':
+          description: The code exchange or the ID token check failed.
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /oauth/authorize/decision:
+    post:
+      tags: [oauth]
+      summary: Authorize or cancel
+      description: >-
+        Public listener only. Form posted by the consent page. "authorize" activates the consent for the
+        logged in customer and redirects to the redirect_uri with code and state. Anything else redirects
+        with error=access_denied and drops the pushed request. Needs the session cookie and its CSRF token.
+      operationId: authorizeDecision
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [request_uri, client_id, csrf, decision]
+              properties:
+                request_uri:
+                  type: string
+                client_id:
+                  type: string
+                csrf:
+                  type: string
+                decision:
+                  type: string
+                  enum: [authorize, cancel]
+      responses:
+        '303':
+          description: Redirect to the redirect_uri with code and state, or with error=access_denied.
+          headers:
+            Location:
+              schema:
+                type: string
+        '200':
+          description: The customer has no accounts at that entity. The page says so and nothing is created.
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          description: Unknown or expired request_uri.
+          content:
+            text/html:
+              schema:
+                type: string
+        '403':
+          description: No session or a wrong CSRF token.
+          content:
+            text/html:
+              schema:
+                type: string
 
   /demo/v1/customers:
     post:

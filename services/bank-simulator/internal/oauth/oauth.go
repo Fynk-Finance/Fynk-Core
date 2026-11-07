@@ -247,6 +247,25 @@ func (s *Service) HandlePAR(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// LookupPAR returns a copy of the pushed request when it exists and has not expired.
+func (s *Service) LookupPAR(requestURI string) (PARData, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	par, ok := s.parData[requestURI]
+	if !ok || time.Now().After(par.ExpiresAt) {
+		return PARData{}, false
+	}
+	return *par, true
+}
+
+// DropPAR forgets a pushed request, after the person decided. The consent
+// stays pending and nobody can activate it any more.
+func (s *Service) DropPAR(requestURI string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.parData, requestURI)
+}
+
 // CompleteAuthorization simulates user consent in browser and generates authorization code
 func (s *Service) CompleteAuthorization(requestURI, customerID string) (string, string, error) {
 	s.mu.Lock()
