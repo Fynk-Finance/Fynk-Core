@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
 	audit "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
+	bankports "github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/clock"
 )
@@ -49,14 +52,46 @@ type Service struct {
 	clock clock.Clock
 	audit audit.Recorder
 	newID func() string
+	log   *slog.Logger
 }
+
+// demoProvisionTimeout is how long sign-up waits for the bank simulator (demo only, ADR 0008).
+const demoProvisionTimeout = 2 * time.Second
 
 // NewService returns a service. newID may be nil: random UUID v4.
 func NewService(repo Repo, clk clock.Clock, rec audit.Recorder, newID func() string) *Service {
 	if newID == nil {
 		newID = uuid.NewString
 	}
-	return &Service{repo: repo, clock: clk, audit: rec, newID: newID}
+	return &Service{repo: repo, clock: clk, audit: rec, newID: newID, log: slog.Default()}
+}
+
+// WithLog sets the logger (the redacting logger of M0) and returns the service.
+func (s *Service) WithLog(l *slog.Logger) *Service {
+	if l != nil {
+		s.log = l
+	}
+	return s
+}
+
+// provisionDemoAccounts asks the bank simulator to create the demo accounts of the user, who
+// has just registered the first device (HU-058, ADR 0008, demo only). The only data sent is
+// the Keycloak sub. Registration never fails because of it: the app asks again through
+// GET /bank/simulated-entities. A disabled simulator is skipped silently, and a failure is
+// logged with a code only, never the sub.
+func (s *Service) provisionDemoAccounts(ctx context.Context, sub string) {
+	ctx, cancel := context.WithTimeout(ctx, demoProvisionTimeout)
+	defer cancel()
+	_, err := bankports.InstalledDemoProvisioner().Provision(ctx, sub)
+	switch {
+	case err == nil, errors.Is(err, bankports.ErrDemoProvisioningDisabled):
+	case errors.Is(err, context.DeadlineExceeded):
+		s.log.WarnContext(ctx, "demo accounts not created at sign-up", "reason", "timeout")
+	case errors.Is(err, bankports.ErrProviderUnavailable):
+		s.log.WarnContext(ctx, "demo accounts not created at sign-up", "reason", bankports.ErrProviderUnavailable.Code)
+	default:
+		s.log.WarnContext(ctx, "demo accounts not created at sign-up", "reason", "error")
+	}
 }
 
 // Register adds the user's device. created is false when an earlier call already did.
@@ -87,6 +122,10 @@ func (s *Service) Register(ctx context.Context, user auth.User, in RegisterInput
 		})
 		if err != nil {
 			return Device{}, false, fmt.Errorf("audit device.registered: %w", err)
+		}
+		// Only the user's first device: later ones are pending and the accounts already exist.
+		if dev.Status == StatusActive {
+			s.provisionDemoAccounts(ctx, user.ID)
 		}
 	}
 	return dev, created, nil
