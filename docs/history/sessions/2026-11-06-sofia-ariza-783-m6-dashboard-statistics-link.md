@@ -6,7 +6,7 @@ module: M6
 jira: [SCRUM-28]
 branch: feature/dashboard-statistics-link
 tool: Claude Code
-pr: none
+pr: "#306"
 status: done
 ---
 
@@ -25,7 +25,7 @@ Sofia asked to finish the missing link between the Dashboard and Estadísticas: 
 ## Result
 
 * Tests: 2,625 of 2,625 in the app, 122 snapshots unchanged. Typecheck, ESLint and Prettier clean.
-* Pull request: not opened yet, stacked on `feature/header-statistics-button`.
+* Pull request: #306, in stack #309, on top of #304.
 
 ## Decisions and problems
 
