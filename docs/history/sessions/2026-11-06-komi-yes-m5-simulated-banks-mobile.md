@@ -37,3 +37,7 @@ Daniel said "continue with the rest of the steps": step 6b, the app shows the si
 ## Next step
 
 Call the demo provisioner when the first device registers (M1).
+
+## Review (same session)
+
+* Opus added `staleTime: 0` to the providers query. The list now depends on who is signed in, and the app keeps queries for 30 s and does not clear the cache on logout, so a second person on the same phone could see the first one's entities for a moment. Clearing the whole query cache on logout is a wider fix for M1 and M0.

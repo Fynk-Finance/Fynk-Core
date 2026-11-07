@@ -20,6 +20,8 @@ export function useProviders(port: ProvidersPort) {
       ]);
       return visibleProviders(all, mine);
     },
+    // The list depends on who is signed in, and the query cache is not cleared on logout.
+    staleTime: 0,
     retry: 1,
   });
 }
