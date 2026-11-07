@@ -52,6 +52,8 @@ export const accountsStrings = {
     updatedHours: (n: number) => `Actualizado hace ${n} h`,
     updatedOn: (day: string) => `Actualizado el ${day}`,
     gone: 'Esta cuenta ya no está conectada.',
+    remove: 'Eliminar cuenta',
+    removeNotFound: 'No encontramos la conexión de esta cuenta. Actualiza e intenta de nuevo.',
   },
   misCuentas: {
     // Billetera and Mi cuenta
