@@ -3,6 +3,8 @@
 // dropdown and "Guardar"), so it is built from shared components: new screen, needs design
 // review. Gasto or Ingreso, Monto, Cuenta (Efectivo and disconnected accounts included), Fecha,
 // Descripción, Categoría. The note says which balance the movement changes (5 Nov 2026).
+// The Dashboard + opens it on Ingreso or Gasto. Without a cash account, "Efectivo" is still offered
+// and M6 creates it on save, so a person who skipped cash can add money (QA review 2026-11-07, F5).
 import {
   useNavigation,
   useRoute,
@@ -51,7 +53,12 @@ const DAY_CHOICES: DayChoice[] = ['today', 'yesterday', 'other'];
 export interface ManualTransactionParams {
   /** Set to edit a manual movement. */
   id?: Id;
+  /** Gasto or Ingreso picked in the Dashboard + menu. Default: Gasto. */
+  kind?: ManualDraft['kind'];
 }
+
+/** The "Efectivo" choice while there is no cash account yet; M6 creates it on save. */
+const NEW_CASH = 'transactions.manual.newCash';
 
 export interface ManualTransactionDeps {
   hooks: Pick<TransactionHooks, 'useTransaction'>;
@@ -61,6 +68,8 @@ export interface ManualTransactionDeps {
   update: (id: Id, input: ManualInput) => Promise<Transaction>;
   /** The cash there is when M6 refused a Gasto bigger than it, otherwise null. */
   cashShortOf?: (error: unknown) => MoneyMinor | null;
+  /** M6: the cash account's id, creating it at $0 when there is none. */
+  ensureCash?: () => Promise<Id>;
   clock: Clock;
 }
 
@@ -68,6 +77,7 @@ export function createManualTransactionSheet(deps: ManualTransactionDeps) {
   return function ManualTransactionSheet() {
     const route = useRoute<RouteProp<{ manual: ManualTransactionParams }, 'manual'>>();
     const id = route.params?.id;
+    const kind = route.params?.kind ?? 'expense';
     const editing = deps.hooks.useTransaction(id ?? '').data;
     const data = deps.useAccounts().data;
     const disconnected = data?.disconnectedAccounts ?? [];
@@ -80,6 +90,7 @@ export function createManualTransactionSheet(deps: ManualTransactionDeps) {
         accounts={accounts}
         disconnectedIds={new Set(disconnected.map((a) => a.id))}
         editing={editing && editing.source === 'manual' ? editing : null}
+        kind={kind}
       />
     );
   };
@@ -90,21 +101,27 @@ function Form({
   accounts,
   disconnectedIds,
   editing,
+  kind,
 }: {
   deps: ManualTransactionDeps;
   accounts: Account[];
   disconnectedIds: ReadonlySet<Id>;
   editing: Transaction | null;
+  kind: ManualDraft['kind'];
 }) {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const cash = accounts.find((a) => a.kind === 'cash');
+  const offerNewCash = !cash && !!deps.ensureCash;
   const [draft, setDraft] = useState<ManualDraft>(() =>
     editing
       ? manualDraftFrom(editing, deps.clock.now())
-      : emptyManualDraft(cash?.id ?? accounts[0]?.id ?? null),
+      : {
+          ...emptyManualDraft(cash?.id ?? (offerNewCash ? NEW_CASH : (accounts[0]?.id ?? null))),
+          kind,
+        },
   );
   const [errors, setErrors] = useState<ManualDraftError[]>([]);
   const [saving, setSaving] = useState(false);
@@ -121,9 +138,13 @@ function Form({
     disconnectedIds.has(account.id)
       ? `${accountLabel(account)} · ${t.disconnected}`
       : accountLabel(account);
-  const selected = accounts.find((a) => a.id === draft.accountId);
+  // Once M6 created the cash account (a refused Gasto keeps the sheet open), it is the choice.
+  const chosen = draft.accountId === NEW_CASH && cash ? cash.id : draft.accountId;
+  const selected = accounts.find((a) => a.id === chosen);
   const note = !selected
-    ? null
+    ? chosen === NEW_CASH
+      ? t.notes.cash
+      : null
     : selected.kind === 'cash'
       ? t.notes.cash
       : disconnectedIds.has(selected.id)
@@ -139,8 +160,12 @@ function Form({
     }
     setSaving(true);
     try {
-      if (editing) await deps.update(editing.id, result.input);
-      else await deps.add(result.input);
+      const input =
+        result.input.accountId === NEW_CASH && deps.ensureCash
+          ? { ...result.input, accountId: await deps.ensureCash() }
+          : result.input;
+      if (editing) await deps.update(editing.id, input);
+      else await deps.add(input);
       navigation.goBack();
     } catch (e) {
       const short = deps.cashShortOf?.(e) ?? null;
@@ -168,7 +193,7 @@ function Form({
     </View>
   );
 
-  if (accounts.length === 0) {
+  if (accounts.length === 0 && !offerNewCash) {
     return (
       <View style={[styles.root, styles.content]} testID="transactions.manual">
         {header}
@@ -206,11 +231,18 @@ function Form({
         }
       />
       <Group title={t.account} error={errorOf('account')}>
+        {offerNewCash ? (
+          <Chip
+            label={t.cash}
+            selected={draft.accountId === NEW_CASH}
+            onPress={() => set({ accountId: NEW_CASH })}
+          />
+        ) : null}
         {accounts.map((account) => (
           <Chip
             key={account.id}
             label={labelOf(account)}
-            selected={draft.accountId === account.id}
+            selected={chosen === account.id}
             onPress={() => set({ accountId: account.id })}
           />
         ))}

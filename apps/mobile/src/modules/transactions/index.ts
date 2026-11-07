@@ -13,7 +13,12 @@ import type {
 import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
-import { applyManualMovement, InsufficientCashError, useAccounts } from '@modules/accounts';
+import {
+  applyManualMovement,
+  ensureCashAccount,
+  InsufficientCashError,
+  useAccounts,
+} from '@modules/accounts';
 import { getTreatsThreshold } from '@modules/analytics';
 import { syncNow } from '@modules/bank';
 import {
@@ -245,6 +250,8 @@ export const routes: ModuleRoutes = {
         add: (input) => manual.addManualTransaction(input),
         update: (id, input) => manual.updateManualTransaction(id, input),
         cashShortOf: (e) => (e instanceof InsufficientCashError ? e.cashMinor : null),
+        // M6 imports this module too: called only on save.
+        ensureCash: () => ensureCashAccount(),
         clock,
       }),
       transition: 'sheet',
