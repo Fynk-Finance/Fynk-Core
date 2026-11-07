@@ -37,29 +37,57 @@ func TestHistoryDeterministic(t *testing.T) {
 
 func TestHistoryBalancesAndLimits(t *testing.T) {
 	for i := 0; i < manyCustomers; i++ {
-		id := testCustomerID(i)
-		d := GenerateCustomerData(id, testRef)
-		txs := byAccount(d)
-		for _, a := range d.Accounts {
-			var running, total int64
-			for _, tx := range txs[a.ID] {
-				total += tx.AmountMinor
+		checkBalancesAndLimits(t, testCustomerID(i), testRef)
+	}
+}
+
+// TestHistoryAtOtherDates checks the same rules on reference dates around the card
+// payment day, month ends, a leap day and the turn of the year.
+func TestHistoryAtOtherDates(t *testing.T) {
+	refs := []time.Time{
+		time.Date(2026, 11, 1, 0, 30, 0, 0, time.UTC),
+		time.Date(2026, 11, 4, 23, 0, 0, 0, time.UTC),
+		time.Date(2026, 11, 5, 9, 0, 0, 0, time.UTC),
+		time.Date(2026, 12, 31, 18, 0, 0, 0, time.UTC),
+		time.Date(2027, 1, 5, 10, 30, 0, 0, time.UTC),
+		time.Date(2028, 2, 29, 12, 0, 0, 0, time.UTC),
+	}
+	for _, ref := range refs {
+		for i := 0; i < 150; i++ {
+			checkBalancesAndLimits(t, testCustomerID(i), ref)
+		}
+	}
+}
+
+// checkBalancesAndLimits fails when an account's movements do not add up to its
+// balance, a deposit account goes below zero, a card goes above zero or past its
+// limit, or a movement is dated after the reference time.
+func checkBalancesAndLimits(t *testing.T, id string, ref time.Time) {
+	t.Helper()
+	d := GenerateCustomerData(id, ref)
+	txs := byAccount(d)
+	for _, a := range d.Accounts {
+		var running, total int64
+		for _, tx := range txs[a.ID] {
+			total += tx.AmountMinor
+			if tx.BookingDateTime.After(ref) {
+				t.Fatalf("%s at %s: %s has a movement in the future: %s", id, ref, a.ID, tx.BookingDateTime)
 			}
-			if total != a.BalanceMinor {
-				t.Fatalf("%s: %s sums %d, balance %d", id, a.ID, total, a.BalanceMinor)
-			}
-			// Opening balance is the first transaction, so start at zero.
-			for _, tx := range txs[a.ID] {
-				running += tx.AmountMinor
-				switch a.Type {
-				case AccountTypeSavings, AccountTypeWallet:
-					if running < 0 {
-						t.Fatalf("%s: %s negative at %s: %d", id, a.ID, tx.BookingDateTime, running)
-					}
-				case AccountTypeCreditCard:
-					if running > 0 || -running > *a.CreditLimitMinor {
-						t.Fatalf("%s: card %s balance %d with limit %d", id, a.ID, running, *a.CreditLimitMinor)
-					}
+		}
+		if total != a.BalanceMinor {
+			t.Fatalf("%s at %s: %s sums %d, balance %d", id, ref, a.ID, total, a.BalanceMinor)
+		}
+		// Opening balance is the first transaction, so start at zero.
+		for _, tx := range txs[a.ID] {
+			running += tx.AmountMinor
+			switch a.Type {
+			case AccountTypeSavings, AccountTypeWallet:
+				if running < 0 {
+					t.Fatalf("%s at %s: %s negative at %s: %d", id, ref, a.ID, tx.BookingDateTime, running)
+				}
+			case AccountTypeCreditCard:
+				if running > 0 || -running > *a.CreditLimitMinor {
+					t.Fatalf("%s at %s: card %s balance %d with limit %d", id, ref, a.ID, running, *a.CreditLimitMinor)
 				}
 			}
 		}
