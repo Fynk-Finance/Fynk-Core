@@ -61,6 +61,7 @@ type Account struct {
 	Status           AccountStatus `json:"status"`
 	CDT              *CdtDetails   `json:"cdt,omitempty"`
 	Simulated        bool          `json:"simulated"`
+	ProviderID       string        `json:"providerId"`
 }
 
 type Transaction struct {
@@ -74,6 +75,7 @@ type Transaction struct {
 	MerchantName    *string           `json:"merchantName,omitempty"`
 	Category        *string           `json:"category,omitempty"`
 	Simulated       bool              `json:"simulated"`
+	ProviderID      string            `json:"providerId"`
 }
 
 type Consent struct {
