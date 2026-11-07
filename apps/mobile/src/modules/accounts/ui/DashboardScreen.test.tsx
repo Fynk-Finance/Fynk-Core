@@ -42,6 +42,7 @@ async function renderDashboard(
     theme?: ThemePreference;
     name?: string | null;
     withMovements?: boolean;
+    withGoals?: boolean;
     summary?: MonthSummary | null;
     refresh?: () => Promise<unknown>;
   } = {},
@@ -64,6 +65,7 @@ async function renderDashboard(
     notificationsRoute: 'notifications.Inbox',
     statisticsRoute: 'analytics.Spending',
     ...(opts.refresh ? { refresh: opts.refresh } : {}),
+    ...(opts.withGoals ? { renderGoals: () => <Text>goals of M8</Text> } : {}),
     ...(opts.withMovements
       ? {
           renderMovements: () => <Text>movements of M7</Text>,
@@ -246,6 +248,16 @@ describe('Detalle de cuentas', () => {
     await renderDashboard({ overview: overviewOf([]) });
     await openDetails();
     expect(screen.getByText('Aún no tienes cuentas conectadas.')).toBeTruthy();
+  });
+});
+
+// QA review 2026-11-07, V2 (SCRUM-77): "Planes de ahorro" between the header and Movimientos.
+describe('Planes de ahorro (M8)', () => {
+  it('shows the goals of M8 above the movements', async () => {
+    await renderDashboard({ withGoals: true, withMovements: true });
+    const text = JSON.stringify(screen.toJSON());
+    expect(screen.getByText('goals of M8')).toBeTruthy();
+    expect(text.indexOf('goals of M8')).toBeLessThan(text.indexOf('movements of M7'));
   });
 });
 
