@@ -8,6 +8,12 @@ import type { BankProvider } from '../domain/provider';
 export interface ProvidersPort {
   /** `GET /providers`: the same list for everyone, in display order. */
   list(): Promise<BankProvider[]>;
+  /**
+   * `GET /bank/simulated-entities` (demo only): ids of the simulated entities where the person
+   * has accounts. It also asks the backend to create them if they are missing. Rejects when the
+   * simulator is not available.
+   */
+  simulatedEntities(): Promise<string[]>;
 }
 
 export type RemoteAccount = components['schemas']['BankAccount'];

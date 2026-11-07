@@ -1,4 +1,4 @@
-import { selectedProvider, type BankProvider } from './provider';
+import { selectedProvider, visibleProviders, type BankProvider } from './provider';
 
 const bancoDemo: BankProvider = {
   id: 'banco-demo',
@@ -31,5 +31,26 @@ describe('selectedProvider', () => {
 
   it('returns nothing for an empty list', () => {
     expect(selectedProvider([], null)).toBeUndefined();
+  });
+});
+
+describe('visibleProviders', () => {
+  const digital: BankProvider = {
+    ...bancoDemo,
+    id: 'banco-digital-demo',
+    logoKey: 'banco-digital-demo',
+  };
+  const coop: BankProvider = { ...bancoDemo, id: 'cooperativa-demo', logoKey: 'cooperativa-demo' };
+  // Bancolombia's sandbox is flagged simulated by the API, but it is a real provider.
+  const bancolombia: BankProvider = { ...bancoDemo, id: 'bancolombia', logoKey: 'bancolombia' };
+  const all = [bancoDemo, billeteraDemo, digital, coop, bancolombia];
+
+  it('keeps the simulated entities the person has accounts in, and every real provider', () => {
+    const ids = visibleProviders(all, ['banco-demo', 'cooperativa-demo']).map((p) => p.id);
+    expect(ids).toEqual(['banco-demo', 'cooperativa-demo', 'bancolombia']);
+  });
+
+  it('shows every entity when the list of the person is unknown', () => {
+    expect(visibleProviders(all, null)).toEqual(all);
   });
 });
