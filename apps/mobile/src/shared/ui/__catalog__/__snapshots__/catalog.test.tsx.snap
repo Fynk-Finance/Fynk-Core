@@ -8740,6 +8740,1024 @@ exports[`design system catalog HeaderBlue / BilleteraTitle matches its snapshot 
 </View>
 `;
 
+exports[`design system catalog HeaderBlue / Dashboard matches its dark snapshot 1`] = `
+<View
+  style={
+    {
+      "elevation": 4,
+      "shadowColor": "#000000",
+      "shadowOffset": {
+        "height": 10,
+        "width": 0,
+      },
+      "shadowOpacity": 0.35,
+      "shadowRadius": 6,
+      "zIndex": 1,
+    }
+  }
+>
+  <View
+    style={
+      [
+        {
+          "backgroundColor": "#2FA8D8",
+          "borderBottomLeftRadius": 24,
+          "borderBottomRightRadius": 24,
+          "gap": 12,
+          "overflow": "hidden",
+          "paddingBottom": 20,
+          "paddingHorizontal": 20,
+        },
+        {
+          "backgroundColor": "#428FAF",
+          "paddingTop": 20,
+        },
+      ]
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "flexDirection": "row",
+          "justifyContent": "space-between",
+        }
+      }
+    >
+      <View
+        accessibilityLabel="Mi cuenta: Laura Gómez"
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": false,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "alignItems": "center",
+              "borderRadius": 999,
+              "flexDirection": "row",
+              "flexShrink": 1,
+              "gap": 10,
+              "paddingLeft": 5,
+              "paddingRight": 16,
+              "paddingVertical": 5,
+            },
+            false,
+          ]
+        }
+      >
+        <View
+          accessibilityElementsHidden={true}
+          importantForAccessibility="no-hide-descendants"
+          style={
+            [
+              {
+                "alignItems": "center",
+                "borderRadius": 999,
+                "justifyContent": "center",
+              },
+              {
+                "backgroundColor": "#50C1EB",
+                "height": 38,
+                "width": 38,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "SpaceGrotesk_700Bold",
+                },
+                {
+                  "color": "#FFFFFF",
+                  "fontSize": 15,
+                },
+              ]
+            }
+          >
+            LG
+          </Text>
+        </View>
+        <View
+          style={
+            {
+              "flexShrink": 1,
+              "gap": 1,
+            }
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "PlusJakartaSans_400Regular",
+                  "fontSize": 12,
+                  "lineHeight": 16,
+                },
+                {
+                  "color": "#FFFFFF",
+                },
+                null,
+                {
+                  "lineHeight": 14,
+                  "opacity": 0.85,
+                },
+              ]
+            }
+          >
+            Hola,
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={
+              [
+                {
+                  "fontFamily": "PlusJakartaSans_600SemiBold",
+                  "fontSize": 15,
+                  "lineHeight": 20,
+                },
+                {
+                  "color": "#FFFFFF",
+                },
+                null,
+                {
+                  "lineHeight": 18,
+                },
+              ]
+            }
+          >
+            Laura Gómez
+          </Text>
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 2,
+          }
+        }
+      >
+        <View
+          accessibilityLabel="Estadísticas"
+          accessibilityRole="button"
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": undefined,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            [
+              {
+                "alignItems": "center",
+                "borderRadius": 16,
+                "height": 48,
+                "justifyContent": "center",
+                "width": 48,
+              },
+              false,
+            ]
+          }
+          testID="header-statistics"
+        >
+          <RNSVGSvgView
+            accessibilityElementsHidden={true}
+            accessible={false}
+            align="xMidYMid"
+            bbHeight={32}
+            bbWidth={32}
+            fill="none"
+            focusable={false}
+            height={32}
+            importantForAccessibility="no-hide-descendants"
+            meetOrSlice={0}
+            minX={0}
+            minY={0}
+            stroke="#FFFFFF"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            style={
+              [
+                {
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                },
+                {
+                  "flex": 0,
+                  "height": 32,
+                  "width": 32,
+                },
+              ]
+            }
+            vbHeight={24}
+            vbWidth={24}
+            width={32}
+          >
+            <RNSVGGroup
+              fill={null}
+              propList={
+                [
+                  "fill",
+                  "stroke",
+                  "strokeWidth",
+                  "strokeLinecap",
+                  "strokeLinejoin",
+                ]
+              }
+              stroke={
+                {
+                  "payload": 4294967295,
+                  "type": 0,
+                }
+              }
+              strokeLinecap={1}
+              strokeLinejoin={1}
+              strokeWidth={2}
+            >
+              <RNSVGRect
+                fill={null}
+                height={9.5}
+                propList={
+                  [
+                    "fill",
+                    "stroke",
+                  ]
+                }
+                rx={1.5}
+                stroke={
+                  {
+                    "payload": 4294967295,
+                    "type": 0,
+                  }
+                }
+                width={4.5}
+                x={3.5}
+                y={11}
+              />
+              <RNSVGRect
+                fill={null}
+                height={17}
+                propList={
+                  [
+                    "fill",
+                    "stroke",
+                  ]
+                }
+                rx={1.5}
+                stroke={
+                  {
+                    "payload": 4294967295,
+                    "type": 0,
+                  }
+                }
+                width={4.5}
+                x={9.75}
+                y={3.5}
+              />
+              <RNSVGRect
+                fill={null}
+                height={6.5}
+                propList={
+                  [
+                    "fill",
+                    "stroke",
+                  ]
+                }
+                rx={1.5}
+                stroke={
+                  {
+                    "payload": 4294967295,
+                    "type": 0,
+                  }
+                }
+                width={4.5}
+                x={16}
+                y={14}
+              />
+            </RNSVGGroup>
+          </RNSVGSvgView>
+        </View>
+        <View
+          accessibilityLabel="Notificaciones, tienes avisos sin leer"
+          accessibilityRole="button"
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": false,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            [
+              {
+                "alignItems": "center",
+                "borderRadius": 16,
+                "height": 48,
+                "justifyContent": "center",
+                "width": 48,
+              },
+              false,
+            ]
+          }
+          testID="header-bell"
+        >
+          <RNSVGSvgView
+            accessibilityElementsHidden={true}
+            accessible={false}
+            align="xMidYMid"
+            bbHeight={22}
+            bbWidth={22}
+            fill="none"
+            focusable={false}
+            height={22}
+            importantForAccessibility="no-hide-descendants"
+            meetOrSlice={0}
+            minX={0}
+            minY={0}
+            stroke="#FFFFFF"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            style={
+              [
+                {
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                },
+                {
+                  "flex": 0,
+                  "height": 22,
+                  "width": 22,
+                },
+              ]
+            }
+            vbHeight={24}
+            vbWidth={24}
+            width={22}
+          >
+            <RNSVGGroup
+              fill={null}
+              propList={
+                [
+                  "fill",
+                  "stroke",
+                  "strokeWidth",
+                  "strokeLinecap",
+                  "strokeLinejoin",
+                ]
+              }
+              stroke={
+                {
+                  "payload": 4294967295,
+                  "type": 0,
+                }
+              }
+              strokeLinecap={1}
+              strokeLinejoin={1}
+              strokeWidth={2}
+            >
+              <RNSVGPath
+                d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"
+                fill={null}
+                propList={
+                  [
+                    "fill",
+                    "stroke",
+                  ]
+                }
+                stroke={
+                  {
+                    "payload": 4294967295,
+                    "type": 0,
+                  }
+                }
+              />
+              <RNSVGPath
+                d="M10.3 21a1.94 1.94 0 0 0 3.4 0"
+                fill={null}
+                propList={
+                  [
+                    "fill",
+                    "stroke",
+                  ]
+                }
+                stroke={
+                  {
+                    "payload": 4294967295,
+                    "type": 0,
+                  }
+                }
+              />
+            </RNSVGGroup>
+          </RNSVGSvgView>
+          <View
+            style={
+              {
+                "backgroundColor": "#A8E03A",
+                "borderColor": "#2FA8D8",
+                "borderRadius": 999,
+                "borderWidth": 2,
+                "height": 9,
+                "position": "absolute",
+                "right": 12,
+                "top": 11,
+                "width": 9,
+              }
+            }
+            testID="header-unread-dot"
+          />
+        </View>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`design system catalog HeaderBlue / Dashboard matches its snapshot 1`] = `
+<View
+  style={
+    {
+      "elevation": 4,
+      "shadowColor": "#0F2233",
+      "shadowOffset": {
+        "height": 10,
+        "width": 0,
+      },
+      "shadowOpacity": 0.35,
+      "shadowRadius": 6,
+      "zIndex": 1,
+    }
+  }
+>
+  <View
+    style={
+      [
+        {
+          "backgroundColor": "#2FA8D8",
+          "borderBottomLeftRadius": 24,
+          "borderBottomRightRadius": 24,
+          "gap": 12,
+          "overflow": "hidden",
+          "paddingBottom": 20,
+          "paddingHorizontal": 20,
+        },
+        {
+          "backgroundColor": "#2FA8D8",
+          "paddingTop": 20,
+        },
+      ]
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "flexDirection": "row",
+          "justifyContent": "space-between",
+        }
+      }
+    >
+      <View
+        accessibilityLabel="Mi cuenta: Laura Gómez"
+        accessibilityRole="button"
+        accessibilityState={
+          {
+            "busy": undefined,
+            "checked": undefined,
+            "disabled": false,
+            "expanded": undefined,
+            "selected": undefined,
+          }
+        }
+        accessibilityValue={
+          {
+            "max": undefined,
+            "min": undefined,
+            "now": undefined,
+            "text": undefined,
+          }
+        }
+        accessible={true}
+        collapsable={false}
+        focusable={true}
+        onBlur={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onResponderGrant={[Function]}
+        onResponderMove={[Function]}
+        onResponderRelease={[Function]}
+        onResponderTerminate={[Function]}
+        onResponderTerminationRequest={[Function]}
+        onStartShouldSetResponder={[Function]}
+        style={
+          [
+            {
+              "alignItems": "center",
+              "borderRadius": 999,
+              "flexDirection": "row",
+              "flexShrink": 1,
+              "gap": 10,
+              "paddingLeft": 5,
+              "paddingRight": 16,
+              "paddingVertical": 5,
+            },
+            false,
+          ]
+        }
+      >
+        <View
+          accessibilityElementsHidden={true}
+          importantForAccessibility="no-hide-descendants"
+          style={
+            [
+              {
+                "alignItems": "center",
+                "borderRadius": 999,
+                "justifyContent": "center",
+              },
+              {
+                "backgroundColor": "#50C1EB",
+                "height": 38,
+                "width": 38,
+              },
+            ]
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "SpaceGrotesk_700Bold",
+                },
+                {
+                  "color": "#FFFFFF",
+                  "fontSize": 15,
+                },
+              ]
+            }
+          >
+            LG
+          </Text>
+        </View>
+        <View
+          style={
+            {
+              "flexShrink": 1,
+              "gap": 1,
+            }
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "PlusJakartaSans_400Regular",
+                  "fontSize": 12,
+                  "lineHeight": 16,
+                },
+                {
+                  "color": "#FFFFFF",
+                },
+                null,
+                {
+                  "lineHeight": 14,
+                  "opacity": 0.85,
+                },
+              ]
+            }
+          >
+            Hola,
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={
+              [
+                {
+                  "fontFamily": "PlusJakartaSans_600SemiBold",
+                  "fontSize": 15,
+                  "lineHeight": 20,
+                },
+                {
+                  "color": "#FFFFFF",
+                },
+                null,
+                {
+                  "lineHeight": 18,
+                },
+              ]
+            }
+          >
+            Laura Gómez
+          </Text>
+        </View>
+      </View>
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 2,
+          }
+        }
+      >
+        <View
+          accessibilityLabel="Estadísticas"
+          accessibilityRole="button"
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": undefined,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            [
+              {
+                "alignItems": "center",
+                "borderRadius": 16,
+                "height": 48,
+                "justifyContent": "center",
+                "width": 48,
+              },
+              false,
+            ]
+          }
+          testID="header-statistics"
+        >
+          <RNSVGSvgView
+            accessibilityElementsHidden={true}
+            accessible={false}
+            align="xMidYMid"
+            bbHeight={32}
+            bbWidth={32}
+            fill="none"
+            focusable={false}
+            height={32}
+            importantForAccessibility="no-hide-descendants"
+            meetOrSlice={0}
+            minX={0}
+            minY={0}
+            stroke="#FFFFFF"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            style={
+              [
+                {
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                },
+                {
+                  "flex": 0,
+                  "height": 32,
+                  "width": 32,
+                },
+              ]
+            }
+            vbHeight={24}
+            vbWidth={24}
+            width={32}
+          >
+            <RNSVGGroup
+              fill={null}
+              propList={
+                [
+                  "fill",
+                  "stroke",
+                  "strokeWidth",
+                  "strokeLinecap",
+                  "strokeLinejoin",
+                ]
+              }
+              stroke={
+                {
+                  "payload": 4294967295,
+                  "type": 0,
+                }
+              }
+              strokeLinecap={1}
+              strokeLinejoin={1}
+              strokeWidth={2}
+            >
+              <RNSVGRect
+                fill={null}
+                height={9.5}
+                propList={
+                  [
+                    "fill",
+                    "stroke",
+                  ]
+                }
+                rx={1.5}
+                stroke={
+                  {
+                    "payload": 4294967295,
+                    "type": 0,
+                  }
+                }
+                width={4.5}
+                x={3.5}
+                y={11}
+              />
+              <RNSVGRect
+                fill={null}
+                height={17}
+                propList={
+                  [
+                    "fill",
+                    "stroke",
+                  ]
+                }
+                rx={1.5}
+                stroke={
+                  {
+                    "payload": 4294967295,
+                    "type": 0,
+                  }
+                }
+                width={4.5}
+                x={9.75}
+                y={3.5}
+              />
+              <RNSVGRect
+                fill={null}
+                height={6.5}
+                propList={
+                  [
+                    "fill",
+                    "stroke",
+                  ]
+                }
+                rx={1.5}
+                stroke={
+                  {
+                    "payload": 4294967295,
+                    "type": 0,
+                  }
+                }
+                width={4.5}
+                x={16}
+                y={14}
+              />
+            </RNSVGGroup>
+          </RNSVGSvgView>
+        </View>
+        <View
+          accessibilityLabel="Notificaciones, tienes avisos sin leer"
+          accessibilityRole="button"
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": false,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            [
+              {
+                "alignItems": "center",
+                "borderRadius": 16,
+                "height": 48,
+                "justifyContent": "center",
+                "width": 48,
+              },
+              false,
+            ]
+          }
+          testID="header-bell"
+        >
+          <RNSVGSvgView
+            accessibilityElementsHidden={true}
+            accessible={false}
+            align="xMidYMid"
+            bbHeight={22}
+            bbWidth={22}
+            fill="none"
+            focusable={false}
+            height={22}
+            importantForAccessibility="no-hide-descendants"
+            meetOrSlice={0}
+            minX={0}
+            minY={0}
+            stroke="#FFFFFF"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            style={
+              [
+                {
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                },
+                {
+                  "flex": 0,
+                  "height": 22,
+                  "width": 22,
+                },
+              ]
+            }
+            vbHeight={24}
+            vbWidth={24}
+            width={22}
+          >
+            <RNSVGGroup
+              fill={null}
+              propList={
+                [
+                  "fill",
+                  "stroke",
+                  "strokeWidth",
+                  "strokeLinecap",
+                  "strokeLinejoin",
+                ]
+              }
+              stroke={
+                {
+                  "payload": 4294967295,
+                  "type": 0,
+                }
+              }
+              strokeLinecap={1}
+              strokeLinejoin={1}
+              strokeWidth={2}
+            >
+              <RNSVGPath
+                d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"
+                fill={null}
+                propList={
+                  [
+                    "fill",
+                    "stroke",
+                  ]
+                }
+                stroke={
+                  {
+                    "payload": 4294967295,
+                    "type": 0,
+                  }
+                }
+              />
+              <RNSVGPath
+                d="M10.3 21a1.94 1.94 0 0 0 3.4 0"
+                fill={null}
+                propList={
+                  [
+                    "fill",
+                    "stroke",
+                  ]
+                }
+                stroke={
+                  {
+                    "payload": 4294967295,
+                    "type": 0,
+                  }
+                }
+              />
+            </RNSVGGroup>
+          </RNSVGSvgView>
+          <View
+            style={
+              {
+                "backgroundColor": "#A8E03A",
+                "borderColor": "#2FA8D8",
+                "borderRadius": 999,
+                "borderWidth": 2,
+                "height": 9,
+                "position": "absolute",
+                "right": 12,
+                "top": 11,
+                "width": 9,
+              }
+            }
+            testID="header-unread-dot"
+          />
+        </View>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
 exports[`design system catalog HeaderBlue / Greeting matches its dark snapshot 1`] = `
 <View
   style={

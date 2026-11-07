@@ -20,5 +20,15 @@ export default {
       />
     ),
     NoUnreadDecorated: () => <HeaderBlue name="Laura" decorated avatarTone="light" />,
+    Dashboard: () => (
+      <HeaderBlue
+        name="Laura Gómez"
+        hasUnread
+        dashboard
+        onPressAccount={noop}
+        onPressStatistics={noop}
+        onPressNotifications={noop}
+      />
+    ),
   },
 } satisfies StoryGroup;

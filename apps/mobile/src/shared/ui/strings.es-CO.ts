@@ -3,6 +3,7 @@ export const uiStrings = {
   greeting: 'Hola,',
   notifications: 'Notificaciones',
   notificationsUnread: 'Notificaciones, tienes avisos sin leer',
+  statistics: 'Estadísticas',
   myAccount: (name: string) => `Mi cuenta: ${name}`,
   back: 'Volver',
   skip: 'Omitir',
