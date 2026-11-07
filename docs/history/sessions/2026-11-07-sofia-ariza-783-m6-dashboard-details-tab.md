@@ -6,7 +6,7 @@ module: M6
 jira: [SCRUM-78]
 branch: fix/dashboard-details-tab
 tool: Claude Code
-pr: none
+pr: "#334"
 status: done
 ---
 
@@ -25,7 +25,7 @@ Sofia asked to fix the Dashboard findings of the 7 Nov app review (#332): "In pr
 ## Result
 
 * Tests: 159 of 159 in the accounts module. Typecheck, ESLint and Prettier clean.
-* Pull request: not opened yet.
+* Pull request: #334.
 
 ## Decisions and problems
 
