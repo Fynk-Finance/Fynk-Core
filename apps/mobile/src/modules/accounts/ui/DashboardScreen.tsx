@@ -30,6 +30,11 @@ export interface DashboardDeps {
   notificationsRoute: string;
   /** Estadísticas (M10), opened from the chart icon of the header. */
   statisticsRoute: string;
+  /**
+   * M5's Conectar banco, opened from the ghost card while no bank account is connected. Read at
+   * press time.
+   */
+  connectRoute?: () => string;
   /** "Planes de ahorro" with the goals not reached yet (M8's GoalsCarousel). */
   renderGoals?: () => ReactNode;
   /** "Movimientos" with the latest movements (M7's TransactionPreview). */
@@ -52,6 +57,11 @@ export function createDashboardScreen(deps: DashboardDeps) {
     const unread = deps.useUnreadCount();
     const name = deps.useDisplayName() ?? t.guest;
     const overview = accounts.data;
+    const connectRoute = deps.connectRoute;
+    const onConnect =
+      connectRoute && overview && overview.connectedCount === 0
+        ? () => navigation.navigate(connectRoute())
+        : undefined;
 
     const header = (
       <View>
@@ -79,6 +89,7 @@ export function createDashboardScreen(deps: DashboardDeps) {
                   onPressRow={(accountId) =>
                     navigation.navigate(ACCOUNT_DETAIL_ROUTE, { accountId })
                   }
+                  onConnect={onConnect}
                 />
               </Animated.View>
             ) : null}

@@ -105,10 +105,29 @@ describe('Mis cuentas in Billetera', () => {
     expect(await screen.findByText('arrived:bank.Connect:')).toBeTruthy();
   });
 
-  it('says so when there are no accounts, and keeps "+ Conectar"', async () => {
+  // QA review 2026-11-07, V5 (SCRUM-80): a ghost of the account card invites to connect one.
+  it('shows a ghost card that opens M5 when there are no accounts, and keeps "+ Conectar"', async () => {
     await renderSection(createMisCuentasBilletera, { accounts: [] });
-    expect(screen.getByText('Aún no tienes cuentas conectadas.')).toBeTruthy();
+    expect(screen.getByTestId('accounts.misCuentas.ghost')).toHaveStyle({
+      width: 162,
+      height: 104,
+    });
+    const connect = screen.getByRole('button', { name: 'Conectar' });
+    expect(connect.props.accessibilityHint).toBe('Aún no tienes cuentas conectadas.');
     expect(screen.getByText('+ Conectar')).toBeTruthy();
+    await fireEvent.press(connect);
+    expect(await screen.findByText('arrived:bank.Connect:')).toBeTruthy();
+  });
+
+  it('keeps the ghost card after cash while no bank account is connected', async () => {
+    await renderSection(createMisCuentasBilletera, { accounts: [cash] });
+    expect(cardOf('acc-cash')).toBeTruthy();
+    expect(screen.getByTestId('accounts.misCuentas.ghost')).toBeTruthy();
+  });
+
+  it('has no ghost card once an account is connected', async () => {
+    await renderSection(createMisCuentasBilletera);
+    expect(screen.queryByTestId('accounts.misCuentas.ghost')).toBeNull();
   });
 
   it('renders nothing without React Query, so other modules keep their tests', async () => {
@@ -149,6 +168,13 @@ describe('Mis cuentas in Mi cuenta', () => {
     await renderSection(createMisCuentasMiCuenta);
     await fireEvent.press(cardOf('acc-card'));
     expect(await screen.findByText('arrived:accounts.AccountDetail:acc-card')).toBeTruthy();
+  });
+
+  it('shows a ghost card the size of its cards when there are no accounts', async () => {
+    await renderSection(createMisCuentasMiCuenta, { accounts: [] });
+    expect(screen.getByTestId('accounts.misCuentas.ghost')).toHaveStyle({ width: 230 });
+    await fireEvent.press(screen.getByRole('button', { name: 'Conectar' }));
+    expect(await screen.findByText('arrived:bank.Connect:')).toBeTruthy();
   });
 
   it('shows a placeholder while the accounts load', async () => {

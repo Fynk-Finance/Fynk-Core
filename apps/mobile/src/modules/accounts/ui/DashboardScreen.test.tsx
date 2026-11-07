@@ -64,6 +64,7 @@ async function renderDashboard(
     accountRoute: 'identity.Account',
     notificationsRoute: 'notifications.Inbox',
     statisticsRoute: 'analytics.Spending',
+    connectRoute: () => 'bank.Connect',
     ...(opts.refresh ? { refresh: opts.refresh } : {}),
     ...(opts.withGoals ? { renderGoals: () => <Text>goals of M8</Text> } : {}),
     ...(opts.withMovements
@@ -84,6 +85,7 @@ async function renderDashboard(
             <Stack.Screen name="analytics.Spending" component={Target} />
             <Stack.Screen name={ACCOUNT_DETAIL_ROUTE} component={Target} />
             <Stack.Screen name="transactions.New" component={Target} />
+            <Stack.Screen name="bank.Connect" component={Target} />
           </Stack.Navigator>
         </NavigationContainer>
       </ThemeProvider>
@@ -244,10 +246,27 @@ describe('Detalle de cuentas', () => {
     expect(JSON.stringify(screen.toJSON())).not.toMatch(/123456/);
   });
 
-  it('says so when there are no accounts', async () => {
+  // QA review 2026-11-07, V5 (SCRUM-80): a ghost of the account card invites to connect one.
+  it('shows a ghost card that opens M5 when there are no accounts', async () => {
     await renderDashboard({ overview: overviewOf([]) });
     await openDetails();
-    expect(screen.getByText('Aún no tienes cuentas conectadas.')).toBeTruthy();
+    const connect = screen.getByRole('button', { name: 'Conectar cuenta' });
+    expect(connect.props.accessibilityHint).toBe('Aún no tienes cuentas conectadas.');
+    await fireEvent.press(connect);
+    expect(await screen.findByText('arrived:bank.Connect:')).toBeTruthy();
+  });
+
+  it('keeps the ghost card below cash while no bank account is connected', async () => {
+    await renderDashboard({ overview: overviewOf([cash]) });
+    await openDetails();
+    expect(screen.getByTestId('accounts.row.acc-cash')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Conectar cuenta' })).toBeTruthy();
+  });
+
+  it('has no ghost card once an account is connected', async () => {
+    await renderDashboard();
+    await openDetails();
+    expect(screen.queryByRole('button', { name: 'Conectar cuenta' })).toBeNull();
   });
 });
 
