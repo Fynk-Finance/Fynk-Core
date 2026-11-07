@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 
-import { EmptyState, ErrorState, Skeleton } from '../components/States';
+import { EmptyState, ErrorState, GhostCard, Skeleton } from '../components/States';
+import { OnColor } from './OnColor';
 import type { StoryGroup } from './types';
 
 export default {
@@ -20,6 +21,19 @@ export default {
         <Skeleton height={20} width="60%" />
         <Skeleton height={56} radius={14} />
       </View>
+    ),
+    GhostCard: () => (
+      <GhostCard
+        actionLabel="Crear meta"
+        message="Aún no tienes metas"
+        onAction={() => {}}
+        style={{ width: 206, height: 112, borderRadius: 18 }}
+      />
+    ),
+    GhostCardOnBlue: () => (
+      <OnColor color="headerDashboard" padding={16}>
+        <GhostCard actionLabel="Conectar cuenta" onAction={() => {}} onPrimary />
+      </OnColor>
     ),
   },
 } satisfies StoryGroup;
