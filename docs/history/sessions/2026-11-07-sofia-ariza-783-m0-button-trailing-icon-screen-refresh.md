@@ -33,6 +33,8 @@ From the follow-ups of the M4 and M5 end-to-end test: "In the 'Connect Bank' des
 * `refresh` lives in `Screen` instead of each screen building its own ScrollView (as Billetera does). That way the Dashboard keeps Screen's padding and tab bar space, and the spinner colors are in one place.
 * The local generated API types (`schema.gen.ts`) were stale, which made `tsc` fail in `investment` and `recurring`. `make generate-ts` fixed it; that file is not committed.
 
+* CI failed at first on `shared/ui/__catalog__/catalog.test.tsx` (18 tests): this session ran only the component and icon tests, not the catalog. The content style became `[styles.content, null]`, which changed every button snapshot, and the new PrimaryExternal story had no snapshot (CI runs Jest with `--ci`, which does not write new snapshots). Fixed in a follow-up commit: buttons without `iconAfter` keep the plain style, so the old snapshots are unchanged, and the two PrimaryExternal snapshots (light and dark) are added. After that, `jest --ci` passes the whole mobile suite (2647 tests, 124 snapshots).
+
 ## Next step
 
 M4 can use `<PrimaryButton label="Ir al portal de …" iconAfter="externalLink" />` on Conectar banco once this merges.
