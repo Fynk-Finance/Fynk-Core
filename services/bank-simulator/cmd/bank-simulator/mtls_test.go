@@ -36,7 +36,7 @@ func TestOpenFinanceAPIOverMTLSListener(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(&logBuf, nil))
 
 	bankStore := store.NewBankStore(time.Date(2026, 10, 27, 12, 0, 0, 0, time.UTC))
-	handler := logClientCert(logger, newBankMux(bankStore))
+	handler := logClientCert(logger, newBankMux(bankStore, defaultProvisionClientID))
 
 	server := httptest.NewUnstartedServer(handler)
 	server.TLS = tlsCfg
