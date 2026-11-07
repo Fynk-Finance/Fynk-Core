@@ -9,12 +9,12 @@ import (
 )
 
 // HU-009: the user chooses the entity, and the simulated ones say so.
-func TestTheSimulatedBankAndWalletAreListedWithTheirScopes(t *testing.T) {
+func TestTheFourSimulatedEntitiesAreListedWithTheirScopes(t *testing.T) {
 	list := Providers()
-	if len(list) != 2 || list[0].ID != "banco-demo" || list[1].ID != "billetera-demo" {
+	if len(list) != 4 || list[0].ID != "banco-demo" || list[1].ID != "billetera-demo" || list[2].ID != "banco-digital-demo" || list[3].ID != "cooperativa-demo" {
 		t.Fatalf("providers %+v", list)
 	}
-	want := map[string]Kind{"banco-demo": KindBank, "billetera-demo": KindWallet}
+	want := map[string]Kind{"banco-demo": KindBank, "billetera-demo": KindWallet, "banco-digital-demo": KindBank, "cooperativa-demo": KindBank}
 	for _, p := range list {
 		if p.Kind != want[p.ID] || !p.IsSimulated || p.LogoKey != p.ID || p.DisplayName == "" {
 			t.Errorf("%s: %+v", p.ID, p)
@@ -93,18 +93,18 @@ func TestAnOfferedBankIsListedAfterTheSimulatedOnes(t *testing.T) {
 	Offer(Info{ID: "bancolombia", DisplayName: "Bancolombia", Kind: KindBank, IsSimulated: true, LogoKey: "bancolombia",
 		Scopes: []Scope{ScopeBalances, ScopeTransactions, ScopeAccountDetails}})
 	list := Providers()
-	if len(list) != 3 || list[2].ID != "bancolombia" {
+	if len(list) != 5 || list[4].ID != "bancolombia" {
 		t.Fatalf("providers %+v", list)
 	}
 	if p, ok := Lookup("bancolombia"); !ok || p.DisplayName != "Bancolombia" || len(p.Scopes) != 3 {
 		t.Fatalf("lookup %+v, %v", p, ok)
 	}
-	list[2].Scopes[0] = "changed"
+	list[4].Scopes[0] = "changed"
 	if p, _ := Lookup("bancolombia"); p.Scopes[0] != ScopeBalances {
 		t.Fatal("a caller changed the offered provider")
 	}
 	Offer()
-	if _, ok := Lookup("bancolombia"); ok || len(Providers()) != 2 {
+	if _, ok := Lookup("bancolombia"); ok || len(Providers()) != 4 {
 		t.Fatal("Offer() must take it out again")
 	}
 }

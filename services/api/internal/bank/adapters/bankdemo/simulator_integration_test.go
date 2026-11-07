@@ -33,6 +33,7 @@ import (
 	"math/big"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -105,7 +106,9 @@ func TestSimulatorServesTheCDTCatalogThroughTheEgress(t *testing.T) {
 	}
 }
 
-// Reference numbers of M16: Ahorros 3.200.000, Billetera 4.600.000, card owed 500.000, CDT 2.000.000.
+// Reference numbers of M16: Ahorros 3.200.000, card owed 500.000, CDT 2.000.000. The demo token's
+// consent covers one entity (the simulator filters accounts by the consent's entity), so
+// Billetera Demo is not read with it.
 func TestSimulatorAccountsMatchTheSeededDemoUser(t *testing.T) {
 	ctx := context.Background()
 	bank, err := simulator(t, "banco-demo").Accounts(ctx, demoToken)
@@ -120,17 +123,13 @@ func TestSimulatorAccountsMatchTheSeededDemoUser(t *testing.T) {
 		byKind[ports.AccountCreditCard].BalanceMinor != 50000000 || byKind[ports.AccountCDT].BalanceMinor != 200000000 {
 		t.Errorf("banco-demo %+v", bank)
 	}
-	wallet, err := simulator(t, "billetera-demo").Accounts(ctx, demoToken)
-	if err != nil || len(wallet) != 1 || wallet[0].BalanceMinor != 460000000 {
-		t.Fatalf("billetera-demo %+v, %v", wallet, err)
-	}
-	for _, a := range append(bank, wallet...) {
+	for _, a := range bank {
 		if !a.IsSimulated || len(a.Last4) != 4 {
 			t.Errorf("%s: simulated %v last4 %q", a.ProviderAccountID, a.IsSimulated, a.Last4)
 		}
 	}
 	// The simulator also sends the customer's email and the masked number: neither leaves.
-	b, _ := json.Marshal(append(bank, wallet...))
+	b, _ := json.Marshal(bank)
 	if strings.Contains(string(b), "@") || strings.Contains(string(b), "****") {
 		t.Fatalf("personal data left the adapter: %s", b)
 	}
@@ -190,6 +189,48 @@ func TestSimulatorAcceptsThePARAndReturnsTheAuthorizeURL(t *testing.T) {
 	})
 	if err != nil || !strings.Contains(res.AuthorizeURL, "request_uri=urn%3Aietf%3Aparams%3Aoauth%3Arequest_uri%3A") || res.ExpiresIn <= 0 {
 		t.Fatalf("PAR %+v, %v", res, err)
+	}
+}
+
+// HU-058: every simulated entity is a PAR entity, and the authorize URL carries only the
+// client and the request.
+func TestSimulatorAcceptsThePARForEverySimulatedEntity(t *testing.T) {
+	for _, id := range ports.Simulated() {
+		res, err := simulator(t, id).PushAuthorization(context.Background(), ports.PARRequest{
+			RedirectURI: "fynk://bank/callback", CodeChallenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+			State: "state-it", Nonce: "nonce-it", ConsentID: "0192f0a0-0000-7000-8000-000000000001",
+			Scopes: []ports.Scope{ports.ScopeBalances},
+		})
+		if err != nil || !strings.Contains(res.AuthorizeURL, "request_uri=") {
+			t.Errorf("%s: PAR %+v, %v", id, res, err)
+		}
+	}
+}
+
+// HU-056 and HU-058: provisioning creates the customer from the sub, includes Banco Demo and
+// one more entity, and answers the same the second time.
+func TestSimulatorProvisionsACustomerFromTheSubIdempotently(t *testing.T) {
+	a := simulator(t, "banco-demo")
+	sub := "it-" + strconv.FormatInt(time.Now().UnixNano(), 36)
+	first, err := a.Provision(context.Background(), sub)
+	if err != nil {
+		t.Fatalf("provision: %v", err)
+	}
+	if len(first) < 2 || first[0] != "banco-demo" {
+		t.Fatalf("entities %v, want banco-demo and at least one more", first)
+	}
+	known := map[string]bool{}
+	for _, id := range ports.Simulated() {
+		known[id] = true
+	}
+	for _, id := range first {
+		if !known[id] {
+			t.Errorf("unknown entity %q", id)
+		}
+	}
+	second, err := a.Provision(context.Background(), sub)
+	if err != nil || strings.Join(second, ",") != strings.Join(first, ",") {
+		t.Fatalf("second call %v, %v; want %v", second, err, first)
 	}
 }
 
