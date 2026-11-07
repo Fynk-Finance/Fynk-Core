@@ -4,7 +4,7 @@
 // Estadísticas (M10), and both themes.
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Alert, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -43,9 +43,10 @@ async function renderDashboard(
     name?: string | null;
     withMovements?: boolean;
     summary?: MonthSummary | null;
+    refresh?: () => Promise<unknown>;
   } = {},
 ) {
-  const refetch = jest.fn();
+  const refetch = jest.fn(async () => undefined);
   const Dashboard = createDashboardScreen({
     useAccounts: () =>
       ({
@@ -62,6 +63,7 @@ async function renderDashboard(
     accountRoute: 'identity.Account',
     notificationsRoute: 'notifications.Inbox',
     statisticsRoute: 'analytics.Spending',
+    ...(opts.refresh ? { refresh: opts.refresh } : {}),
     ...(opts.withMovements
       ? {
           renderMovements: () => <Text>movements of M7</Text>,
@@ -240,6 +242,38 @@ describe('Movimientos and the FAB (M7)', () => {
   it('has no FAB until M7 gives its sheet', async () => {
     await renderDashboard();
     expect(screen.queryByLabelText('Registrar gasto o ingreso')).toBeNull();
+  });
+});
+
+// HU-011 (SCRUM-25): pull to refresh asks M5 for a sync, then reads the accounts again.
+describe('Dashboard pull to refresh', () => {
+  const refreshControl = () =>
+    (
+      screen.getByTestId('accounts.dashboard.scroll').props as {
+        refreshControl?: { props: { onRefresh: () => void } };
+      }
+    ).refreshControl;
+
+  it('syncs and then reads the accounts again', async () => {
+    const calls: string[] = [];
+    const refresh = jest.fn(async () => void calls.push('sync'));
+    const { refetch } = await renderDashboard({ refresh });
+    refetch.mockImplementation(async () => void calls.push('refetch'));
+    await act(async () => refreshControl()!.props.onRefresh());
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(calls).toEqual(['sync', 'refetch']);
+  });
+
+  it('still reads the accounts when the sync fails', async () => {
+    const refresh = jest.fn(() => Promise.reject(new Error('offline')));
+    const { refetch } = await renderDashboard({ refresh });
+    await act(async () => refreshControl()!.props.onRefresh());
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('has no pull to refresh without M5', async () => {
+    await renderDashboard();
+    expect(refreshControl()).toBeUndefined();
   });
 });
 
