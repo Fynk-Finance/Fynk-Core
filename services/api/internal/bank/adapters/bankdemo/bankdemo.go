@@ -1,10 +1,12 @@
 // Package bankdemo is the ports.Provider adapter for the simulated bank of M16
-// (contracts/bank-simulator.yaml). One simulator serves two providers: Banco Demo (savings,
-// credit card and CDT) and Billetera Demo (the wallet), so each adapter keeps only its accounts.
+// (contracts/bank-simulator.yaml). One simulator serves four fictional entities, each a provider
+// id (Banco Demo, Billetera Demo, Banco Digital Demo, Cooperativa Demo). The adapter sends its
+// provider id as the entity of the PAR, so the simulator returns only that entity's accounts.
 // Every call goes through the Caddy egress, which adds Fynk's mTLS client certificate.
 package bankdemo
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -31,7 +33,7 @@ var bogota = time.FixedZone("America/Bogota", -5*60*60)
 
 // Config of one adapter.
 type Config struct {
-	Provider     string // 'banco-demo' or 'billetera-demo'
+	Provider     string // a simulated provider id: banco-demo, billetera-demo, banco-digital-demo, cooperativa-demo
 	BaseURL      string // <EGRESS_URL>/banco-demo
 	ClientID     string // Fynk's client at the bank
 	Audience     string // the bank's issuer, the aud of the client assertion
@@ -45,7 +47,6 @@ type Config struct {
 // Adapter implements ports.Provider.
 type Adapter struct {
 	cfg   Config
-	keeps func(accountType string) bool
 	label func(ports.AccountKind) string
 }
 
@@ -54,15 +55,13 @@ var _ ports.Provider = (*Adapter)(nil)
 // New returns the adapter of cfg.Provider.
 func New(cfg Config) (*Adapter, error) {
 	info, ok := ports.Lookup(cfg.Provider)
-	if !ok || (cfg.Provider != "banco-demo" && cfg.Provider != "billetera-demo") {
+	if !ok || !info.IsSimulated {
 		return nil, fmt.Errorf("bankdemo: %q is not served by the simulator", cfg.Provider)
 	}
 	a := &Adapter{cfg: cfg}
-	if cfg.Provider == "billetera-demo" {
-		a.keeps = func(t string) bool { return t == "WALLET" }
+	if info.Kind == ports.KindWallet {
 		a.label = func(ports.AccountKind) string { return info.DisplayName }
 	} else {
-		a.keeps = func(t string) bool { return t != "WALLET" }
 		a.label = func(k ports.AccountKind) string { return info.DisplayName + " · " + kindLabels[k] }
 	}
 	return a, nil
@@ -91,6 +90,7 @@ func (a *Adapter) PushAuthorization(ctx context.Context, r ports.PARRequest) (po
 		"state":                 {r.State},
 		"nonce":                 {r.Nonce},
 		"fynk_consent_id":       {r.ConsentID},
+		"entity":                {a.cfg.Provider},
 	}
 	var out struct {
 		RequestURI string `json:"request_uri"`
@@ -156,9 +156,6 @@ func (a *Adapter) Accounts(ctx context.Context, accessToken string) ([]ports.Acc
 	today := a.cfg.Clock.Now().In(bogota)
 	accounts := make([]ports.Account, 0, len(out.Data))
 	for _, b := range out.Data {
-		if !a.keeps(b.Type) {
-			continue
-		}
 		acc, ok, err := b.toPort(today)
 		if err != nil {
 			return nil, fmt.Errorf("bankdemo: account: %w", err)
@@ -221,6 +218,53 @@ func (a *Adapter) RevokeConsent(ctx context.Context, providerConsentID string) e
 		return nil
 	}
 	return resourceError("revoke", res)
+}
+
+// Provision creates the demo accounts of the Fynk user sub (contracts/bank-simulator.yaml
+// POST /demo/v1/customers, demo only, ADR 0008) and returns the provider ids of the entities
+// where the user has accounts. It uses a client credentials token with scope demo:provision.
+// The sub travels only in the JSON body, and is never logged or put in an error.
+func (a *Adapter) Provision(ctx context.Context, sub string) ([]string, error) {
+	cc, err := a.token(ctx, url.Values{"grant_type": {"client_credentials"}, "scope": {"demo:provision"}})
+	if err != nil {
+		return nil, err
+	}
+	body, err := json.Marshal(map[string]string{"customerRef": sub})
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.cfg.BaseURL+"/demo/v1/customers", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+cc.AccessToken)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	res, err := a.cfg.HTTP.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("bankdemo: provision: %w", errors.Join(ports.ErrProviderUnavailable, err))
+	}
+	defer drain(res)
+	if res.StatusCode != http.StatusOK {
+		if res.StatusCode == http.StatusTooManyRequests {
+			return nil, resourceError("provision", res)
+		}
+		// 401, 403 and the rest are Fynk's or the simulator's setup, not the user's doing.
+		return nil, fmt.Errorf("bankdemo: provision: status %d: %w", res.StatusCode, ports.ErrProviderUnavailable)
+	}
+	var out struct {
+		Entities []struct {
+			ProviderID string `json:"providerId"`
+		} `json:"entities"`
+	}
+	if err := decode(res, &out); err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(out.Entities))
+	for _, e := range out.Entities {
+		ids = append(ids, e.ProviderID)
+	}
+	return ids, nil
 }
 
 // Products implements ports.Provider: the public CDT catalog, without a user token.
