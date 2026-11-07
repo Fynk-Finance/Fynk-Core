@@ -15,5 +15,9 @@ export function createProvidersApi(client: ApiClient = api): ProvidersPort {
         logoKey: p.logoKey,
       }));
     },
+    async simulatedEntities() {
+      const { providerIds } = await unwrap(client.GET('/bank/simulated-entities'));
+      return [...providerIds];
+    },
   };
 }
