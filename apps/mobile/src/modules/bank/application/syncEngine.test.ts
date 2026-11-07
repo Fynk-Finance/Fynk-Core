@@ -282,3 +282,53 @@ it('does nothing and reports locked while the vault is locked', async () => {
   expect(await locked.syncAll()).toEqual({ status: 'locked', links: [] });
   expect((await engine.syncAll()).status).toBe('done');
 });
+
+// HU-058: several simulated links sync together, the 60 s minimum applies to each one, and a
+// revoked entity does not stop the others.
+it('syncs several simulated links, keeps the 60 s minimum, and one revoked entity leaves the others working', async () => {
+  for (const [id, provider] of [
+    ['link-2', 'billetera-demo'],
+    ['link-3', 'cooperativa-demo'],
+  ] as const) {
+    await store.saveLink(
+      { id, provider, consentId: `c-${id}`, createdAt: '2026-10-29T14:10:00Z' },
+      {
+        accessToken: `at-${id}`,
+        refreshToken: `rt-${id}`,
+        accessExpiresAt: '2026-10-29T16:00:00Z',
+      },
+    );
+  }
+  const { engine, bank, accounts } = setup({
+    accounts: jest.fn(async (linkId: string) => {
+      if (linkId === 'link-3') {
+        throw new ApiError({ status: 409, code: 'consent_revoked', title: 'consent_revoked' });
+      }
+      return [savings];
+    }),
+  });
+
+  const first = await engine.syncAll();
+  expect(first.links.map((l) => [l.linkId, l.kind])).toEqual([
+    ['link-1', 'synced'],
+    ['link-2', 'synced'],
+    ['link-3', 'revoked'],
+  ]);
+  expect(accounts.markLinkRevoked).toHaveBeenCalledTimes(1);
+  expect(accounts.markLinkRevoked).toHaveBeenCalledWith('link-3');
+
+  clock.advance(59_000);
+  const early = await engine.syncAll();
+  expect(early.links.map((l) => [l.linkId, l.kind])).toEqual([
+    ['link-1', 'cooldown'],
+    ['link-2', 'cooldown'],
+  ]);
+  expect(bank.accounts).toHaveBeenCalledTimes(3);
+
+  clock.advance(1_000);
+  const later = await engine.syncAll();
+  expect(later.links.map((l) => [l.linkId, l.kind])).toEqual([
+    ['link-1', 'synced'],
+    ['link-2', 'synced'],
+  ]);
+});
