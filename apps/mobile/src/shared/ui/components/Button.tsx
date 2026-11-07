@@ -77,7 +77,7 @@ function BaseButton({
         <ActivityIndicator color={look.textColor} />
       ) : (
         // The design puts 8 px between the label and a trailing icon (ConectarBanco).
-        <View style={[styles.content, iconAfter ? styles.contentTight : null]}>
+        <View style={iconAfter ? [styles.content, styles.contentTight] : styles.content}>
           {icon ? <Icon name={icon} size={18} color={look.textColor} strokeWidth={2.2} /> : null}
           <Text
             style={{ color: look.textColor, fontFamily: look.fontFamily, fontSize: look.fontSize }}
