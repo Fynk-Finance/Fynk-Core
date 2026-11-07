@@ -62,15 +62,17 @@ func DefaultCdtProducts() []CdtProduct {
 const DemoCustomerID = "cliente.demo@bancodemo.local"
 
 // GenerateCustomerData creates the accounts and 12 months of movements of a customer.
-// Every customer still gets the demo user's data; the next change gives the
-// others random entities and balances.
+// The demo user keeps its fixed data. Any other id gets random entities and balances.
 func GenerateCustomerData(customerID string, refTime time.Time) *CustomerData {
 	if refTime.IsZero() {
 		refTime = time.Date(2026, 10, 27, 12, 0, 0, 0, time.UTC)
 	}
-	data := generateDemoCustomer(customerID, refTime)
-	tagDemoProviders(data)
-	return data
+	if customerID == DemoCustomerID {
+		data := generateDemoCustomer(customerID, refTime)
+		tagDemoProviders(data)
+		return data
+	}
+	return generateRandomCustomer(customerID, refTime)
 }
 
 // tagDemoProviders sets the provider id on the demo data after it is built,
