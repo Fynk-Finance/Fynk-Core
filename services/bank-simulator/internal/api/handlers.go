@@ -58,16 +58,15 @@ func (h *Handler) extractConsentID(r *http.Request) (string, error) {
 		return "", errors.New("empty bearer token")
 	}
 
-	// Development / test convenience tokens
+	// Dev and test convenience tokens map to the seeded demo consent.
 	if token == "dev-token" || token == "test-token" {
 		return "consent-demo-001", nil
 	}
-	if strings.HasPrefix(token, "consent-") {
-		return token, nil
+	rec, ok := h.store.LookupToken(token)
+	if !ok || rec.Kind != store.TokenKindAccess || rec.ConsentID == "" {
+		return "", errors.New("invalid or expired access token")
 	}
-
-	// For Keycloak JWT tokens or arbitrary tokens, default to demo consent if valid
-	return "consent-demo-001", nil
+	return rec.ConsentID, nil
 }
 
 func (h *Handler) checkRateLimit(w http.ResponseWriter, r *http.Request, consentID string) bool {
@@ -95,6 +94,10 @@ func (h *Handler) GetAccounts(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, store.ErrConsentRevoked) {
 			writeProblem(w, r, http.StatusForbidden, "consent_revoked", "Consent Revoked", "The consent for this account access has been revoked.")
+			return
+		}
+		if errors.Is(err, store.ErrConsentNotAuthorized) {
+			writeProblem(w, r, http.StatusForbidden, "consent_not_authorized", "Consent Not Authorized", "The consent has not been authorized yet.")
 			return
 		}
 		if errors.Is(err, store.ErrConsentNotFound) {
@@ -152,6 +155,14 @@ func (h *Handler) GetTransactions(w http.ResponseWriter, r *http.Request) {
 			writeProblem(w, r, http.StatusForbidden, "consent_revoked", "Consent Revoked", "The consent for this account access has been revoked.")
 			return
 		}
+		if errors.Is(err, store.ErrConsentNotAuthorized) {
+			writeProblem(w, r, http.StatusForbidden, "consent_not_authorized", "Consent Not Authorized", "The consent has not been authorized yet.")
+			return
+		}
+		if errors.Is(err, store.ErrAccountNotInConsent) {
+			writeProblem(w, r, http.StatusForbidden, "account_not_in_consent", "Forbidden", "The account is not covered by this consent.")
+			return
+		}
 		if errors.Is(err, store.ErrAccountNotFound) {
 			writeProblem(w, r, http.StatusNotFound, "account_not_found", "Account Not Found", "Account not found for this consent.")
 			return
@@ -176,6 +187,14 @@ func (h *Handler) RevokeConsent(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, r, http.StatusBadRequest, "invalid_consent_id", "Bad Request", "Missing consent id.")
 		return
 	}
+	switch h.revokeAccess(r, consentID) {
+	case http.StatusUnauthorized:
+		writeProblem(w, r, http.StatusUnauthorized, "unauthorized", "Unauthorized", "Missing, invalid or expired token.")
+		return
+	case http.StatusForbidden:
+		writeProblem(w, r, http.StatusForbidden, "forbidden", "Forbidden", "This token cannot revoke the consent.")
+		return
+	}
 
 	err := h.store.RevokeConsent(consentID)
 	if err != nil {
@@ -188,6 +207,32 @@ func (h *Handler) RevokeConsent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// revokeAccess tells if the bearer token may revoke the consent: a client token
+// (Fynk's revoke path), the consent's own access token, or a dev token for the
+// demo consent. It returns 401 for a missing or unknown token and 403 otherwise.
+func (h *Handler) revokeAccess(r *http.Request, consentID string) int {
+	parts := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+		return http.StatusUnauthorized
+	}
+	token := strings.TrimSpace(parts[1])
+	if token == "dev-token" || token == "test-token" {
+		if consentID == "consent-demo-001" {
+			return http.StatusOK
+		}
+		return http.StatusForbidden
+	}
+	rec, ok := h.store.LookupToken(token)
+	switch {
+	case !ok:
+		return http.StatusUnauthorized
+	case rec.Kind == store.TokenKindClient, rec.Kind == store.TokenKindAccess && rec.ConsentID == consentID:
+		return http.StatusOK
+	default:
+		return http.StatusForbidden
+	}
 }
 
 func (h *Handler) GetCdtProducts(w http.ResponseWriter, _ *http.Request) {
