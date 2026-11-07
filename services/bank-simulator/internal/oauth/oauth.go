@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/demo"
 	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/domain"
 	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/store"
 )
@@ -69,14 +70,29 @@ type Service struct {
 	parData   map[string]*PARData
 	authCodes map[string]*AuthCodeData
 	store     *store.BankStore
+
+	// provisionClientID is the only client that may get the demo:provision scope.
+	provisionClientID string
 }
 
-func NewService(s *store.BankStore) *Service {
-	return &Service{
+// Option changes how a Service is built.
+type Option func(*Service)
+
+// WithProvisionClientID sets the client allowed to get the demo:provision scope.
+func WithProvisionClientID(id string) Option {
+	return func(s *Service) { s.provisionClientID = id }
+}
+
+func NewService(s *store.BankStore, opts ...Option) *Service {
+	svc := &Service{
 		parData:   make(map[string]*PARData),
 		authCodes: make(map[string]*AuthCodeData),
 		store:     s,
 	}
+	for _, opt := range opts {
+		opt(svc)
+	}
+	return svc
 }
 
 func randomToken(prefix string) string {
@@ -371,15 +387,33 @@ func (s *Service) HandleToken(w http.ResponseWriter, r *http.Request) {
 		})
 
 	case "client_credentials":
-		// Slice 4b narrows this grant to the scope asked for.
+		if assertionType == "" || assertion == "" {
+			writeOAuthError(w, http.StatusUnauthorized, "invalid_client", "client_assertion is required")
+			return
+		}
+		// No scope asked for keeps the admin token that consent revocation uses.
+		granted := "admin"
+		if asked := strings.Fields(r.FormValue("scope")); len(asked) > 0 {
+			for _, sc := range asked {
+				if sc != demo.ProvisionScope {
+					writeOAuthError(w, http.StatusBadRequest, "invalid_scope", "unknown scope")
+					return
+				}
+				if s.provisionClientID == "" || clientID != s.provisionClientID {
+					writeOAuthError(w, http.StatusBadRequest, "invalid_scope", "scope not allowed for this client")
+					return
+				}
+			}
+			granted = strings.Join(asked, " ")
+		}
 		cc := randomToken("cc")
-		s.store.IssueToken(cc, store.TokenRecord{Kind: store.TokenKindClient, ClientID: clientID, Scope: "admin", ExpiresAt: time.Now().Add(accessTokenTTL)})
+		s.store.IssueToken(cc, store.TokenRecord{Kind: store.TokenKindClient, ClientID: clientID, Scope: granted, ExpiresAt: time.Now().Add(accessTokenTTL)})
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"access_token": cc,
 			"token_type":   "Bearer",
 			"expires_in":   300,
-			"scope":        "admin",
+			"scope":        granted,
 		})
 
 	default:
