@@ -1,5 +1,7 @@
 // Detalle de cuentas (design DashboardDetalles): the Dashboard header expands in place to one
 // row per account. The tab under it opens and closes it by tap, or by dragging it down or up.
+// Until a bank account is connected, a ghost of an account card invites to connect one (QA review
+// 2026-11-07, V5; new state, needs design review).
 import { Pressable, StyleSheet, View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Svg, { Path } from 'react-native-svg';
@@ -8,6 +10,7 @@ import {
   AmountText,
   AppText,
   Badge,
+  GhostCard,
   Icon,
   fontSize,
   radius,
@@ -34,15 +37,18 @@ export function rowDetail(row: Pick<AccountRow, 'kind' | 'last4'>): string {
 export function AccountsPanel({
   rows,
   onPressRow,
+  onConnect,
 }: {
   rows: AccountRow[];
   /** Opens Detalle de cuenta. */
   onPressRow: (id: AccountRow['id']) => void;
+  /** Set while no bank account is connected: the ghost card's "Conectar cuenta" opens M5. */
+  onConnect?: () => void;
 }) {
   const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.panel} testID="accounts.panel">
-      {rows.length === 0 ? (
+      {rows.length === 0 && !onConnect ? (
         <AppText variant="small" color="onPrimary">
           {t.noAccounts}
         </AppText>
@@ -76,6 +82,15 @@ export function AccountsPanel({
           <AmountText amountMinor={row.amountMinor} size={13} color="onPrimary" />
         </Pressable>
       ))}
+      {onConnect ? (
+        <GhostCard
+          actionLabel={t.connectAccount}
+          message={t.noAccounts}
+          onAction={onConnect}
+          onPrimary
+          testID="accounts.panel.ghost"
+        />
+      ) : null}
     </View>
   );
 }

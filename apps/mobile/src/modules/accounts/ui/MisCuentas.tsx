@@ -1,6 +1,8 @@
 // "Mis cuentas" for other modules' screens: Billetera (M9, design Billetera) and Mi cuenta (M1,
 // a new section that needs design review). Each takes no props, so the owner's screen only
-// renders it. A row opens Detalle de cuenta; "+ Conectar" opens M5.
+// renders it. A row opens Detalle de cuenta; "+ Conectar" opens M5. Until a bank account is
+// connected, a ghost card the size of the others opens M5 too (QA review 2026-11-07, V5; new
+// state, needs design review).
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { QueryClientContext, type UseQueryResult } from '@tanstack/react-query';
 import { useContext } from 'react';
@@ -14,6 +16,7 @@ import {
   AppText,
   Badge,
   Card,
+  GhostCard,
   Icon,
   SectionHeader,
   Shine,
@@ -31,7 +34,7 @@ import {
 
 import type { AccountsOverview } from '../application/accountsService';
 import { entityOf } from '../domain/dashboard';
-import { balanceContribution } from '../domain/netWorth';
+import { balanceContribution, isConnected } from '../domain/netWorth';
 import { ACCOUNT_DETAIL_ROUTE, shortDay } from './AccountDetailScreen';
 import { rowDetail } from './AccountsPanel';
 import { accountsStrings } from './strings.es-CO';
@@ -53,22 +56,17 @@ function createSection(deps: MisCuentasDeps, variant: Variant) {
     // Same accounts as Detalle de cuentas: CDTs live in the Inversión tab.
     const accounts = (data?.accounts ?? []).filter((a) => a.kind !== 'cdt');
     const open = (accountId: string) => navigation.navigate(ACCOUNT_DETAIL_ROUTE, { accountId });
+    const connect = () => navigation.navigate(CONNECT_ROUTE);
     const bleed = variant === 'billetera' ? spacing.screen : spacing.screen - 4;
 
     return (
       <View style={styles.section} testID={`accounts.misCuentas.${variant}`}>
         <SectionHeader
           title={t.title}
-          {...(variant === 'billetera'
-            ? { actionLabel: t.connect, onAction: () => navigation.navigate(CONNECT_ROUTE) }
-            : null)}
+          {...(variant === 'billetera' ? { actionLabel: t.connect, onAction: connect } : null)}
         />
         {isPending ? (
           <Skeleton height={104} radius={radius.button} />
-        ) : accounts.length === 0 ? (
-          <AppText variant="small" color="textSecondary">
-            {accountsStrings.dashboard.noAccounts}
-          </AppText>
         ) : (
           <ScrollView
             horizontal
@@ -82,6 +80,15 @@ function createSection(deps: MisCuentasDeps, variant: Variant) {
               ) : (
                 <ProfileCard key={a.id} account={a} onPress={() => open(a.id)} />
               ),
+            )}
+            {accounts.some(isConnected) ? null : (
+              <GhostCard
+                actionLabel={t.connectShort}
+                message={accountsStrings.dashboard.noAccounts}
+                onAction={connect}
+                style={variant === 'billetera' ? styles.ghostWallet : styles.ghostProfile}
+                testID="accounts.misCuentas.ghost"
+              />
             )}
           </ScrollView>
         )}
@@ -218,6 +225,9 @@ const createStyles = ({ colors, shadow }: Theme) =>
       opacity: 0.95,
     },
     profile: { width: 230, gap: spacing.xs },
+    // Ghost cards with the size and radius of the cards they stand in for.
+    ghostWallet: { width: 162, height: 104, borderRadius: radius.button },
+    ghostProfile: { width: 230 },
     badges: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     shrink: { flexShrink: 1 },
     amount: { marginTop: spacing.sm },

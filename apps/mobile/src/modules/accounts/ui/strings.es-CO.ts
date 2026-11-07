@@ -35,6 +35,8 @@ export const accountsStrings = {
     hideDetails: 'Ocultar detalle de cuentas',
     cashDetail: 'Registrado manualmente',
     noAccounts: 'Aún no tienes cuentas conectadas.',
+    // Ghost card while no bank account is connected: new copy, needs design review.
+    connectAccount: 'Conectar cuenta',
     loadError: 'No pudimos cargar tus cuentas.',
   },
   detail: {
@@ -59,6 +61,8 @@ export const accountsStrings = {
     // Billetera and Mi cuenta
     title: 'Mis cuentas',
     connect: '+ Conectar',
+    // Ghost card while no bank account is connected: new copy, needs design review.
+    connectShort: 'Conectar',
     view: (entity: string) => `Ver cuenta ${entity}`,
     active: 'Activa',
     creditLine: (limit: string, day: string | null) =>
