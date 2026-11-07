@@ -494,7 +494,7 @@ func TestOnlyTheOwnerCanRevokeAndOnlyWhileItLasts(t *testing.T) {
 
 // Pending consents nobody finished fail after 24 hours (decided by Juan Carlos, 5 Nov 2026).
 func TestFailStalePendingMarksOldPendingConsentsOnce(t *testing.T) {
-	s, st, _, clk := setup(t)
+	s, st, rec, clk := setup(t)
 	ctx := context.Background()
 	old := create(t, s, "u1")
 	granted := grantedConsent(t, s, "u1")
@@ -509,6 +509,16 @@ func TestFailStalePendingMarksOldPendingConsentsOnce(t *testing.T) {
 	}
 	if n, err := s.FailStalePending(ctx); n != 1 || err != nil {
 		t.Fatalf("FailStalePending = %d, %v", n, err)
+	}
+	var hasFailedEvent bool
+	for _, typ := range rec.types() {
+		if typ == audit.ConsentFailed {
+			hasFailedEvent = true
+			break
+		}
+	}
+	if !hasFailedEvent {
+		t.Errorf("expected audit event %s, got %v", audit.ConsentFailed, rec.types())
 	}
 	if n, _ := s.FailStalePending(ctx); n != 0 {
 		t.Fatal("a second run fails nothing")

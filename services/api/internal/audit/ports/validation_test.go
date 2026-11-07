@@ -149,6 +149,7 @@ func TestAllowListCoversSharedContractEvents(t *testing.T) {
 		"consent.granted",
 		"consent.revoked",
 		"consent.expired",
+		"consent.failed",
 		"bank.link_created",
 		"bank.sync",
 		"bank.sync_failed",

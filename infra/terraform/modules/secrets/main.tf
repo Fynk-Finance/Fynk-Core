@@ -1,10 +1,16 @@
 locals {
   secret_shells = {
-    "keycloak_admin"           = "fynk/${var.environment}/keycloak-admin"
-    "fynk_admin_client_secret" = "fynk/${var.environment}/fynk-admin-client-secret"
-    "mtls_client_cert"         = "fynk/${var.environment}/mtls-client-cert"
-    "mtls_client_key"          = "fynk/${var.environment}/mtls-client-key"
-    "alpaca_api_keys"          = "fynk/${var.environment}/alpaca-api-keys"
+    "keycloak_admin"              = "fynk/${var.environment}/keycloak-admin"
+    "fynk_admin_client_secret"    = "fynk/${var.environment}/fynk-admin-client-secret"
+    "mtls_client_cert"            = "fynk/${var.environment}/mtls-client-cert"
+    "mtls_client_key"             = "fynk/${var.environment}/mtls-client-key"
+    "alpaca_api_keys"             = "fynk/${var.environment}/alpaca-api-keys"
+    "bank_signer_kms_key_id"      = "fynk/${var.environment}/bank-signer-kms-key-id"
+    "bank_fingerprint_kms_key_id" = "fynk/${var.environment}/bank-fingerprint-kms-key-id"
+    "bank_redirect_uri"           = "fynk/${var.environment}/bank-redirect-uri"
+    "banco_demo_client_id"        = "fynk/${var.environment}/banco-demo-client-id"
+    "banco_demo_issuer"           = "fynk/${var.environment}/banco-demo-issuer"
+    "banco_demo_authorize_url"    = "fynk/${var.environment}/banco-demo-authorize-url"
   }
 }
 
