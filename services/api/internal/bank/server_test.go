@@ -92,6 +92,7 @@ func TestEveryRouteNeedsATokenBeforeTheRequestIsParsed(t *testing.T) {
 	srv := newAPI(t)
 	for _, p := range []struct{ method, path string }{
 		{http.MethodGet, "/v1/providers"},
+		{http.MethodGet, "/v1/bank/simulated-entities"},
 		{http.MethodPost, "/v1/bank/authorizations"},
 		{http.MethodPost, "/v1/bank/authorizations/not-a-uuid/exchange"},
 		{http.MethodPost, "/v1/bank/accounts/query"},
