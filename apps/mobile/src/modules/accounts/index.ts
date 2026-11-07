@@ -7,7 +7,7 @@ import type { Account, Clock, Id, IsoDate, MoneyMinor } from '@shared/domain/typ
 import { appEvents } from '@shared/events/appEvents';
 import { registerSlot, type ModuleRoutes } from '@shared/navigation';
 
-import { useMonthSummary as useAnalyticsMonthSummary } from '@modules/analytics';
+import { STATISTICS_ROUTE, useMonthSummary as useAnalyticsMonthSummary } from '@modules/analytics';
 import { NOTIFICATIONS_ROUTE, useUnreadCount } from '@modules/notifications';
 import { useDisplayName } from '@modules/onboarding';
 import { NEW_TRANSACTION_ROUTE, TransactionList, TransactionPreview } from '@modules/transactions';
@@ -156,6 +156,7 @@ export const routes: ModuleRoutes = {
     useDisplayName: () => useDisplayName(),
     accountRoute: 'identity.Account',
     notificationsRoute: NOTIFICATIONS_ROUTE,
+    statisticsRoute: STATISTICS_ROUTE,
     // M7 imports this module too: its values are read only when the screen renders.
     renderMovements: () => createElement(TransactionPreview),
     newMovementRoute: () => NEW_TRANSACTION_ROUTE,
