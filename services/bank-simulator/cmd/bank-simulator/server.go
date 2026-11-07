@@ -9,12 +9,16 @@ import (
 	"time"
 
 	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/api"
+	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/demo"
 	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/oauth"
 	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/portal"
 	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/store"
 )
 
-func newBankMux(s *store.BankStore) http.Handler {
+// defaultProvisionClientID is Fynk's client id at the bank (BANCO_DEMO_CLIENT_ID).
+const defaultProvisionClientID = "fynk"
+
+func newBankMux(s *store.BankStore, provisionClientID string) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -28,15 +32,18 @@ func newBankMux(s *store.BankStore) http.Handler {
 	handler := api.NewHandler(s)
 	handler.RegisterRoutes(mux)
 
-	oauthService := oauth.NewService(s)
+	oauthService := oauth.NewService(s, oauth.WithProvisionClientID(provisionClientID))
 	oauthService.RegisterRoutes(mux)
+
+	// Answers 404 unless the request came through the mTLS listener.
+	demo.NewHandler(s).RegisterRoutes(mux)
 	portalHandler := portal.NewHandler(s)
 	portalHandler.RegisterRoutes(mux)
 	return mux
 }
 
 func healthMux() http.Handler {
-	return newBankMux(store.NewBankStore(time.Time{}))
+	return newBankMux(store.NewBankStore(time.Time{}), defaultProvisionClientID)
 }
 
 // internalTLSConfig requires a client certificate signed by the CA in caPEM.

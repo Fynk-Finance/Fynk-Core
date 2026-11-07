@@ -44,6 +44,10 @@ type config struct {
 	CertFile     string // server certificate of the internal listener
 	KeyFile      string
 	ClientCAFile string // CA that signs the accepted client certificates
+
+	// ProvisionClientID is Fynk's client id at the bank. Only this client may
+	// get the demo:provision scope.
+	ProvisionClientID string
 }
 
 func loadConfig(getenv func(string) string) config {
@@ -59,6 +63,8 @@ func loadConfig(getenv func(string) string) config {
 		CertFile:     getenv("BANK_TLS_CERT"),
 		KeyFile:      getenv("BANK_TLS_KEY"),
 		ClientCAFile: getenv("BANK_CLIENT_CA"),
+
+		ProvisionClientID: or("BANK_PROVISION_CLIENT_ID", defaultProvisionClientID),
 	}
 }
 
@@ -82,7 +88,7 @@ func run(ctx context.Context, cfg config, logger *slog.Logger) error {
 	}
 
 	bankStore := store.NewBankStore(time.Time{})
-	bankMux := newBankMux(bankStore)
+	bankMux := newBankMux(bankStore, cfg.ProvisionClientID)
 
 	public := &http.Server{Addr: cfg.PublicAddr, Handler: bankMux, ReadHeaderTimeout: 5 * time.Second}
 	errs := make(chan error, 2)
