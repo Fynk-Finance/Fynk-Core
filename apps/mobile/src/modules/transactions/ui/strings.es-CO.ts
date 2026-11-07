@@ -144,6 +144,8 @@ export const transactionsStrings = {
     automatic: 'Automática',
     save: 'Guardar',
     noAccounts: 'Primero registra tu efectivo o conecta una cuenta',
+    // The cash choice while there is no cash account yet (M6 creates it on save).
+    cash: 'Efectivo',
     disconnected: 'Desconectada',
     // Which balance the movement changes, for the account picked (team decision, 5 Nov 2026).
     notes: {

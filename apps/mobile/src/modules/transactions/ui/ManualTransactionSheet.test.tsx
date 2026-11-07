@@ -8,6 +8,7 @@ import type { Alert } from 'react-native';
 import type { Account, Transaction } from '@shared/domain/types';
 import { createFixedClock } from '@shared/testing';
 
+import type { ManualInput } from '../domain/manual';
 import { createTestModule, renderScreens } from '../testing/renderScreen';
 import { createAllTransactionsScreen } from './AllTransactionsScreen';
 import { createManualTransactionSheet } from './ManualTransactionSheet';
@@ -32,7 +33,9 @@ async function setup(
     accounts?: Account[];
     disconnectedAccounts?: Account[];
     initial?: string;
-    add?: () => Promise<Transaction>;
+    initialParams?: object;
+    add?: (input: ManualInput) => Promise<Transaction>;
+    ensureCash?: () => Promise<string>;
     cashShortOf?: (error: unknown) => number | null;
   } = {},
 ) {
@@ -60,6 +63,7 @@ async function setup(
         add: opts.add ?? ((input) => m.manual.addManualTransaction(input)),
         update: (id, input) => m.manual.updateManualTransaction(id, input),
         ...(opts.cashShortOf ? { cashShortOf: opts.cashShortOf } : {}),
+        ...(opts.ensureCash ? { ensureCash: opts.ensureCash } : {}),
         clock,
       }),
       [DETAIL_ROUTE]: createTransactionDetailScreen({
@@ -70,6 +74,7 @@ async function setup(
       }),
     },
     initial: opts.initial ?? NEW_TRANSACTION_ROUTE,
+    ...(opts.initialParams ? { initialParams: opts.initialParams } : {}),
   });
   return { ...m, ask };
 }
@@ -121,6 +126,84 @@ describe('Registrar movimiento', () => {
     expect(screen.getByText('Escribe el monto en pesos, mayor que cero.')).toBeTruthy();
     expect(screen.getByText('Escribe una descripción.')).toBeTruthy();
     expect(await m.service.getTransactionsBetween('2026-01-01', '2026-12-31')).toEqual([]);
+  });
+
+  // QA review 2026-11-07, F5 (SCRUM-95): the Dashboard + offers Ingreso or Gasto.
+  it.each([
+    ['income', 'Ingreso'],
+    ['expense', 'Gasto'],
+  ] as const)('opens on %s when the Dashboard asks for it', async (kind, label) => {
+    await setup({ initialParams: { kind } });
+    expect(await screen.findByRole('radio', { name: label })).toBeSelected();
+  });
+
+  // F5: someone who skipped cash in onboarding can still add money.
+  it('offers Efectivo without a cash account, and M6 creates it on save', async () => {
+    const add = jest.fn(async (input: ManualInput) => ({ id: 'tx-1', ...input }) as never);
+    const ensureCash = jest.fn(async () => 'acc-new-cash');
+    await setup({ accounts: [accounts[0]!], ensureCash, add, initialParams: { kind: 'income' } });
+    const cash = await screen.findByRole('button', { name: 'Efectivo' });
+    expect(cash).toBeSelected();
+    expect(screen.getByText('Actualiza tu efectivo. No mueve dinero.')).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText('Monto'), '50.000');
+    await fireEvent.changeText(screen.getByLabelText('Descripción'), 'Regalo');
+    await fireEvent.press(screen.getByText('Guardar'));
+    expect(ensureCash).toHaveBeenCalledTimes(1);
+    expect(add).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: 'acc-new-cash', amountMinor: 5_000_000 }),
+    );
+  });
+
+  it('keeps Efectivo picked once M6 created it and refused a bigger Gasto', async () => {
+    let list: Account[] = [accounts[0]!];
+    const ensureCash = jest.fn(async () => {
+      list = [accounts[0]!, accounts[1]!];
+      return 'acc-cash';
+    });
+    const add = jest.fn(async () => {
+      throw new Error('short');
+    });
+    const m = await createTestModule();
+    const useAccounts = () => ({ data: { accounts: list } });
+    const Sheet = createManualTransactionSheet({
+      hooks: m.hooks,
+      useAccounts,
+      add,
+      update: (id, input) => m.manual.updateManualTransaction(id, input),
+      cashShortOf: () => 0,
+      ensureCash,
+      clock,
+    });
+    await renderScreens({
+      screens: { [NEW_TRANSACTION_ROUTE]: Sheet },
+      initial: NEW_TRANSACTION_ROUTE,
+    });
+    await fireEvent.changeText(await screen.findByLabelText('Monto'), '10.000');
+    await fireEvent.changeText(screen.getByLabelText('Descripción'), 'Taxi');
+    await fireEvent.press(screen.getByText('Guardar'));
+    expect(await screen.findByText('Tu efectivo es $0')).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText('Monto'), '0');
+    const chips = screen.getAllByRole('button', { name: 'Efectivo' });
+    expect(chips).toHaveLength(1);
+    expect(chips[0]).toBeSelected();
+  });
+
+  it('offers Efectivo with no accounts at all, instead of a dead end', async () => {
+    await setup({ accounts: [], ensureCash: async () => 'acc-new-cash' });
+    expect(await screen.findByRole('button', { name: 'Efectivo' })).toBeSelected();
+    expect(screen.queryByText('Primero registra tu efectivo o conecta una cuenta')).toBeNull();
+  });
+
+  it('does not create cash when another account is picked', async () => {
+    const ensureCash = jest.fn(async () => 'acc-new-cash');
+    const m = await setup({ accounts: [accounts[0]!], ensureCash });
+    await fireEvent.press(await screen.findByText('Bancolombia · Cuenta de ahorros'));
+    await fireEvent.changeText(screen.getByLabelText('Monto'), '10.000');
+    await fireEvent.changeText(screen.getByLabelText('Descripción'), 'Taxi');
+    await fireEvent.press(screen.getByText('Guardar'));
+    expect(ensureCash).not.toHaveBeenCalled();
+    const [tx] = await m.service.getTransactionsBetween('2026-09-22', '2026-09-22');
+    expect(tx).toMatchObject({ accountId: 'acc-ahorros' });
   });
 
   it('asks to register cash or connect an account first', async () => {
