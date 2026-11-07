@@ -26,6 +26,7 @@ jest.mock('@modules/transactions', () => ({
   TransactionList: () => null,
   TransactionPreview: () => null,
 }));
+jest.mock('@modules/savings', () => ({ GoalsCarousel: () => null }));
 jest.mock('@modules/analytics', () => ({ useMonthSummary: () => ({ data: undefined }) }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => `id-${++mockIds}` }));
 

@@ -1,7 +1,7 @@
 // Dashboard tab (design Dashboard, inventory rows 5 and 6), owned by M6: the blue header with
 // "Hola, <nombre>", the chart icon that opens Estadísticas (M10) and the bell, the "Balance total" card and Detalle de cuentas, which expands
-// in place. Below, Movimientos (M7's preview), and the FAB "Registrar gasto o ingreso", which
-// opens M7's sheet. Planes de ahorro (M8) goes there too when M8 exports it.
+// in place. Below, Planes de ahorro (M8's carousel), Movimientos (M7's preview), and the FAB
+// "Registrar gasto o ingreso", which opens M7's sheet.
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
@@ -30,6 +30,8 @@ export interface DashboardDeps {
   notificationsRoute: string;
   /** Estadísticas (M10), opened from the chart icon of the header. */
   statisticsRoute: string;
+  /** "Planes de ahorro" with the goals not reached yet (M8's GoalsCarousel). */
+  renderGoals?: () => ReactNode;
   /** "Movimientos" with the latest movements (M7's TransactionPreview). */
   renderMovements?: () => ReactNode;
   /** The route of M7's "Registrar gasto o ingreso" sheet. Read at press time. */
@@ -108,6 +110,7 @@ export function createDashboardScreen(deps: DashboardDeps) {
           {accounts.isError ? (
             <ErrorState message={t.loadError} onRetry={() => void accounts.refetch()} />
           ) : null}
+          {deps.renderGoals?.()}
           {deps.renderMovements?.()}
         </Screen>
         {newMovementRoute ? (

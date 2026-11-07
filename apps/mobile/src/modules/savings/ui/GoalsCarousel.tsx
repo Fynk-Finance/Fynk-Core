@@ -2,13 +2,15 @@
 // "Ver todos" (opens Metas), then a horizontal carousel with snap (`.hscroll`,
 // `scroll-snap-align:start`) of 206 × 112 cards: lime 32 px tile with the category icon, name,
 // 6 px progress bar, saved amount and percent, and a faint lime square in the top right corner.
-// Only goals not reached yet. With none, one card invites to create a goal. M6 places it.
+// Only goals not reached yet. With none, a still ghost card with "Crear meta" (QA review
+// 2026-11-07, V2; new state, needs design review). M6 places it.
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
   AmountText,
   AppText,
+  GhostCard,
   Icon,
   ProgressBar,
   SectionHeader,
@@ -47,7 +49,15 @@ export function createGoalsCarousel({ service }: { service: GoalService }) {
         <SectionHeader title={t.title} actionLabel={t.seeAll} onAction={openMetas} />
         {state.status === 'loading' ? (
           <Skeleton height={112} radius={18} />
-        ) : state.status === 'error' ? null : (
+        ) : state.status === 'error' ? null : goals.length === 0 ? (
+          <GhostCard
+            actionLabel={t.create}
+            message={t.none}
+            onAction={() => navigation.navigate(GOAL_FORM_ROUTE)}
+            style={styles.ghost}
+            testID="savings.carousel.new"
+          />
+        ) : (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -56,11 +66,9 @@ export function createGoalsCarousel({ service }: { service: GoalService }) {
             contentContainerStyle={styles.track}
             style={styles.scroller}
           >
-            {goals.length === 0 ? (
-              <NewGoalCard onPress={() => navigation.navigate(GOAL_FORM_ROUTE)} />
-            ) : (
-              goals.map((goal) => <GoalCardCompact key={goal.id} goal={goal} onPress={openMetas} />)
-            )}
+            {goals.map((goal) => (
+              <GoalCardCompact key={goal.id} goal={goal} onPress={openMetas} />
+            ))}
           </ScrollView>
         )}
       </View>
@@ -104,27 +112,6 @@ export function GoalCardCompact({ goal, onPress }: { goal: GoalSummary; onPress:
   );
 }
 
-function NewGoalCard({ onPress }: { onPress: () => void }) {
-  const { colors } = useTheme();
-  const styles = useThemedStyles(createStyles);
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      style={({ pressed }) => [styles.card, styles.empty, pressed ? styles.pressed : null]}
-      testID="savings.carousel.new"
-    >
-      <View style={styles.tile}>
-        <Icon name="plus" size={16} color={colors.onPrimary} strokeWidth={2.4} />
-      </View>
-      <AppText variant="smallStrong">{t.emptyTitle}</AppText>
-      <AppText variant="caption" color="textSecondary">
-        {t.emptyMessage}
-      </AppText>
-    </Pressable>
-  );
-}
-
 const createStyles = ({ colors, shadow }: Theme) =>
   StyleSheet.create({
     section: { gap: spacing.md },
@@ -144,7 +131,8 @@ const createStyles = ({ colors, shadow }: Theme) =>
       overflow: 'hidden',
       ...shadow.card,
     },
-    empty: { gap: 4 },
+    // Full width, with the card's height and radius; 16 px below like the carousel's track.
+    ghost: { width: '100%', height: 112, borderRadius: 18, marginBottom: 16 },
     pressed: { opacity: 0.85 },
     corner: {
       position: 'absolute',

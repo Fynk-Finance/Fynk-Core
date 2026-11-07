@@ -11,6 +11,7 @@ import { STATISTICS_ROUTE, useMonthSummary as useAnalyticsMonthSummary } from '@
 import { disconnectLink, syncNow } from '@modules/bank';
 import { NOTIFICATIONS_ROUTE, useUnreadCount } from '@modules/notifications';
 import { useDisplayName } from '@modules/onboarding';
+import { GoalsCarousel } from '@modules/savings';
 import { NEW_TRANSACTION_ROUTE, TransactionList, TransactionPreview } from '@modules/transactions';
 import {
   getVaultDb,
@@ -158,7 +159,9 @@ export const routes: ModuleRoutes = {
     accountRoute: 'identity.Account',
     notificationsRoute: NOTIFICATIONS_ROUTE,
     statisticsRoute: STATISTICS_ROUTE,
-    // M7 imports this module too: its values are read only when the screen renders.
+    // M8 and M7 import this module too (M8 through M7): their values are read only when the
+    // screen renders.
+    renderGoals: () => createElement(GoalsCarousel),
     renderMovements: () => createElement(TransactionPreview),
     newMovementRoute: () => NEW_TRANSACTION_ROUTE,
     // Pull to refresh (HU-011). M5 imports this module too: called only on a pull.

@@ -106,10 +106,25 @@ describe('GoalsCarousel', () => {
     expect(await screen.findByText(`arrived:${METAS_ROUTE}`)).toBeTruthy();
   });
 
-  it('without goals, invites to create the first one', async () => {
+  // QA review 2026-11-07, V2 (SCRUM-77): the empty card is a still ghost of a goal card.
+  it('without goals, shows a ghost card whose button creates the first one', async () => {
     await renderCarousel();
-    await fireEvent.press(await screen.findByTestId('savings.carousel.new'));
+    expect(await screen.findByTestId('savings.carousel.new')).toHaveStyle({
+      width: '100%',
+      height: 112,
+      borderRadius: 18,
+    });
+    const create = screen.getByRole('button', { name: 'Crear meta' });
+    expect(create.props.accessibilityHint).toBe('Aún no tienes metas');
+    await fireEvent.press(create);
     expect(await screen.findByText(`arrived:${GOAL_FORM_ROUTE}`)).toBeTruthy();
+  });
+
+  it('shows the ghost card when every goal is reached', async () => {
+    await addGoal('Viaje a Cartagena', 1_000_000, 1_000_000);
+    await renderCarousel();
+    expect(await screen.findByTestId('savings.carousel.new')).toBeTruthy();
+    expect(screen.queryByTestId('savings.carousel.g1')).toBeNull();
   });
 
   it('renders in the dark theme', async () => {

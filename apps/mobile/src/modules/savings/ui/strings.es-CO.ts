@@ -36,9 +36,9 @@ export const savingsStrings = {
     title: 'Planes de ahorro',
     seeAll: 'Ver todos',
     cardLabel: (name: string, percent: number) => `${name}, ${percent} % ahorrado. Ver en Metas`,
-    // No goals yet: new copy, needs design review.
-    emptyTitle: 'Crea tu primera meta',
-    emptyMessage: 'Te decimos cuánto apartar al mes.',
+    // No goals yet (ghost card): new copy, needs design review.
+    create: 'Crear meta',
+    none: 'Aún no tienes metas',
   },
   metas: {
     title: 'Metas de ahorro',
