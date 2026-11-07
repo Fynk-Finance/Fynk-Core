@@ -79,7 +79,7 @@ export function createPrivacyScreen({
         <View style={styles.content}>
           {/* Section 1: Uso de tus datos */}
           <View style={styles.section}>
-            <AppText variant="tiny" color="textSecondary" style={styles.sectionTitle}>
+            <AppText variant="caption" color="textSecondary" style={styles.sectionTitle}>
               {t.usage.title}
             </AppText>
             <Card style={styles.card}>
@@ -141,7 +141,7 @@ export function createPrivacyScreen({
 
           {/* Section 3: Tu información */}
           <View style={styles.section}>
-            <AppText variant="tiny" color="textSecondary" style={styles.sectionTitle}>
+            <AppText variant="caption" color="textSecondary" style={styles.sectionTitle}>
               {t.info.title}
             </AppText>
             <Card style={styles.cardInfo}>
