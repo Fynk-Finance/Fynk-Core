@@ -239,6 +239,13 @@ describe('Movimientos and the FAB (M7)', () => {
     expect(await screen.findByText('arrived:transactions.New:')).toBeTruthy();
   });
 
+  // QA review 2026-11-07, V1 (SCRUM-76): the tab bar sits below the page, so the FAB is placed
+  // from the page's bottom edge, at most 12 px above the bar.
+  it('sits 12 px above the tab bar, at the right edge', async () => {
+    await renderDashboard({ withMovements: true });
+    expect(screen.getByTestId('accounts.dashboard.fab')).toHaveStyle({ right: 16, bottom: 12 });
+  });
+
   it('has no FAB until M7 gives its sheet', async () => {
     await renderDashboard();
     expect(screen.queryByLabelText('Registrar gasto o ingreso')).toBeNull();

@@ -125,6 +125,8 @@ export function createDashboardScreen(deps: DashboardDeps) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  // right 16, bottom 92: above the tab bar (Dashboard `.fab`).
-  fab: { position: 'absolute', right: 16, bottom: 92 },
+  // Right 16 like the design (`.fab`). The design's bottom 92 counts its 72 px tab bar, which
+  // overlaps the page there; here the bar sits below the page, so 12 px keeps the FAB just above
+  // it (QA review 2026-11-07, V1).
+  fab: { position: 'absolute', right: 16, bottom: 12 },
 });
