@@ -13,6 +13,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/demo"
+	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/domain"
 	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/store"
 )
 
@@ -25,7 +27,32 @@ type PARData struct {
 	CodeChallenge       string
 	CodeChallengeMethod string
 	State               string
+	ProviderID          string
+	Nonce               string // optional, never logged
+	FynkConsentID       string // optional, never logged
 	ExpiresAt           time.Time
+}
+
+const (
+	accessTokenTTL  = 5 * time.Minute
+	refreshTokenTTL = 30 * 24 * time.Hour
+)
+
+var validProviders = map[string]bool{
+	domain.ProviderBancoDemo:        true,
+	domain.ProviderBilleteraDemo:    true,
+	domain.ProviderBancoDigitalDemo: true,
+	domain.ProviderCooperativaDemo:  true,
+}
+
+func writeOAuthError(w http.ResponseWriter, status int, code, desc string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	body := map[string]string{"error": code}
+	if desc != "" {
+		body["error_description"] = desc
+	}
+	_ = json.NewEncoder(w).Encode(body)
 }
 
 type AuthCodeData struct {
@@ -43,20 +70,46 @@ type Service struct {
 	parData   map[string]*PARData
 	authCodes map[string]*AuthCodeData
 	store     *store.BankStore
+
+	// provisionClientID is the only client that may get the demo:provision scope.
+	provisionClientID string
 }
 
-func NewService(s *store.BankStore) *Service {
-	return &Service{
+// Option changes how a Service is built.
+type Option func(*Service)
+
+// WithProvisionClientID sets the client allowed to get the demo:provision scope.
+func WithProvisionClientID(id string) Option {
+	return func(s *Service) { s.provisionClientID = id }
+}
+
+func NewService(s *store.BankStore, opts ...Option) *Service {
+	svc := &Service{
 		parData:   make(map[string]*PARData),
 		authCodes: make(map[string]*AuthCodeData),
 		store:     s,
 	}
+	for _, opt := range opts {
+		opt(svc)
+	}
+	return svc
 }
 
 func randomToken(prefix string) string {
 	b := make([]byte, 16)
 	_, _ = rand.Read(b)
 	return fmt.Sprintf("%s-%s", prefix, hex.EncodeToString(b))
+}
+
+// issueConsentTokens creates an opaque access and refresh token for a consent
+// and registers both. The consent id is never part of a token.
+func (s *Service) issueConsentTokens(consentID, clientID string) (access, refresh string) {
+	access = randomToken("at")
+	refresh = randomToken("rt")
+	scope := "accounts transactions"
+	s.store.IssueToken(access, store.TokenRecord{Kind: store.TokenKindAccess, ConsentID: consentID, ClientID: clientID, Scope: scope, ExpiresAt: time.Now().Add(accessTokenTTL)})
+	s.store.IssueToken(refresh, store.TokenRecord{Kind: store.TokenKindRefresh, ConsentID: consentID, ClientID: clientID, Scope: scope, ExpiresAt: time.Now().Add(refreshTokenTTL)})
+	return access, refresh
 }
 
 // verifyPKCE validates code_verifier against code_challenge using S256
@@ -155,6 +208,12 @@ func (s *Service) HandlePAR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	entity := r.FormValue("entity")
+	if !validProviders[entity] {
+		writeOAuthError(w, http.StatusBadRequest, "invalid_request", "entity must be one of the simulated provider ids")
+		return
+	}
+
 	requestURI := fmt.Sprintf("urn:ietf:params:oauth:request_uri:%s", randomToken("par"))
 	consentID := randomToken("consent")
 
@@ -168,12 +227,15 @@ func (s *Service) HandlePAR(w http.ResponseWriter, r *http.Request) {
 		CodeChallenge:       challenge,
 		CodeChallengeMethod: method,
 		State:               r.FormValue("state"),
+		ProviderID:          entity,
+		Nonce:               r.FormValue("nonce"),
+		FynkConsentID:       r.FormValue("fynk_consent_id"),
 		ExpiresAt:           time.Now().Add(5 * time.Minute),
 	}
 	s.parData[requestURI] = par
 
-	// Also register consent in store with demo customer
-	s.store.CreateConsent(consentID, "cliente.demo@bancodemo.local", clientID, strings.Split(par.Scope, " "), "Open Finance Data Sharing", 365)
+	// The consent stays pending, with no customer, until the person authorizes.
+	s.store.CreatePendingConsent(consentID, clientID, entity, strings.Fields(par.Scope), "Open Finance Data Sharing", 365)
 	s.mu.Unlock()
 
 	w.Header().Set("Content-Type", "application/json")
@@ -185,6 +247,25 @@ func (s *Service) HandlePAR(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// LookupPAR returns a copy of the pushed request when it exists and has not expired.
+func (s *Service) LookupPAR(requestURI string) (PARData, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	par, ok := s.parData[requestURI]
+	if !ok || time.Now().After(par.ExpiresAt) {
+		return PARData{}, false
+	}
+	return *par, true
+}
+
+// DropPAR forgets a pushed request, after the person decided. The consent
+// stays pending and nobody can activate it any more.
+func (s *Service) DropPAR(requestURI string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.parData, requestURI)
+}
+
 // CompleteAuthorization simulates user consent in browser and generates authorization code
 func (s *Service) CompleteAuthorization(requestURI, customerID string) (string, string, error) {
 	s.mu.Lock()
@@ -193,6 +274,11 @@ func (s *Service) CompleteAuthorization(requestURI, customerID string) (string, 
 	par, ok := s.parData[requestURI]
 	if !ok || time.Now().After(par.ExpiresAt) {
 		return "", "", errors.New("invalid or expired request_uri")
+	}
+
+	// Fails with store.ErrNoProductsAtEntity and leaves the consent pending.
+	if err := s.store.ActivateConsent(par.ConsentID, customerID); err != nil {
+		return "", "", err
 	}
 
 	code := randomToken("code")
@@ -272,8 +358,7 @@ func (s *Service) HandleToken(w http.ResponseWriter, r *http.Request) {
 
 		delete(s.authCodes, code)
 
-		accessToken := fmt.Sprintf("at-%s-%s", authData.ConsentID, randomToken("tok"))
-		refreshToken := fmt.Sprintf("rt-%s-%s", authData.ConsentID, randomToken("tok"))
+		accessToken, refreshToken := s.issueConsentTokens(authData.ConsentID, authData.ClientID)
 
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -296,14 +381,19 @@ func (s *Service) HandleToken(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		parts := strings.Split(rt, "-")
-		consentID := "consent-demo-001"
-		if len(parts) >= 2 {
-			consentID = parts[1]
+		rec, ok := s.store.LookupToken(rt)
+		if !ok || rec.Kind != store.TokenKindRefresh {
+			writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "refresh token is invalid or expired")
+			return
 		}
+		consent, err := s.store.GetConsent(rec.ConsentID)
+		if err != nil || consent.Status != domain.ConsentStatusActive {
+			writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "the consent is not active")
+			return
+		}
+		consentID := rec.ConsentID
 
-		accessToken := fmt.Sprintf("at-%s-%s", consentID, randomToken("tok"))
-		newRefreshToken := fmt.Sprintf("rt-%s-%s", consentID, randomToken("tok"))
+		accessToken, newRefreshToken := s.issueConsentTokens(consentID, rec.ClientID)
 
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -316,12 +406,33 @@ func (s *Service) HandleToken(w http.ResponseWriter, r *http.Request) {
 		})
 
 	case "client_credentials":
+		if assertionType == "" || assertion == "" {
+			writeOAuthError(w, http.StatusUnauthorized, "invalid_client", "client_assertion is required")
+			return
+		}
+		// No scope asked for keeps the admin token that consent revocation uses.
+		granted := "admin"
+		if asked := strings.Fields(r.FormValue("scope")); len(asked) > 0 {
+			for _, sc := range asked {
+				if sc != demo.ProvisionScope {
+					writeOAuthError(w, http.StatusBadRequest, "invalid_scope", "unknown scope")
+					return
+				}
+				if s.provisionClientID == "" || clientID != s.provisionClientID {
+					writeOAuthError(w, http.StatusBadRequest, "invalid_scope", "scope not allowed for this client")
+					return
+				}
+			}
+			granted = strings.Join(asked, " ")
+		}
+		cc := randomToken("cc")
+		s.store.IssueToken(cc, store.TokenRecord{Kind: store.TokenKindClient, ClientID: clientID, Scope: granted, ExpiresAt: time.Now().Add(accessTokenTTL)})
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"access_token": randomToken("cc-token"),
+			"access_token": cc,
 			"token_type":   "Bearer",
 			"expires_in":   300,
-			"scope":        "admin",
+			"scope":        granted,
 		})
 
 	default:
@@ -346,16 +457,9 @@ func (s *Service) HandleRevoke(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := r.FormValue("token")
-	if token != "" {
-		// Extract consent ID if present in token string
-		parts := strings.Split(token, "-")
-		if len(parts) >= 3 && parts[0] == "at" {
-			_ = s.store.RevokeConsent(parts[1])
-		} else if strings.HasPrefix(token, "consent-") {
-			_ = s.store.RevokeConsent(token)
-		} else {
-			_ = s.store.RevokeConsent("consent-demo-001")
-		}
+	// RFC 7009: an unknown token is not an error and revokes nothing.
+	if rec, ok := s.store.LookupToken(token); ok && rec.ConsentID != "" {
+		_ = s.store.RevokeConsent(rec.ConsentID)
 	}
 
 	w.WriteHeader(http.StatusOK)

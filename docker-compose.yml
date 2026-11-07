@@ -73,6 +73,10 @@ services:
       BANCO_DEMO_USER_PASSWORD: ${BANCO_DEMO_USER_PASSWORD:?missing in .env}
       # Secret of the fynk-admin client the API uses (M1). SMTP defaults to Mailpit in the realm.
       FYNK_ADMIN_CLIENT_SECRET: ${FYNK_ADMIN_CLIENT_SECRET:?missing in .env, copy it from .env.example}
+      # Banco Demo login (M16b): the client Fynk uses at the banco-demo realm to broker "Ingresar con
+      # Fynk", and the secret of the simulator's own client bank-portal.
+      BANCO_DEMO_BROKER_SECRET: ${BANCO_DEMO_BROKER_SECRET:?missing in .env, copy it from .env.example}
+      BANK_PORTAL_CLIENT_SECRET: ${BANK_PORTAL_CLIENT_SECRET:?missing in .env, copy it from .env.example}
     ports:
       - '8081:8080'
     volumes:
@@ -147,6 +151,13 @@ services:
       BANK_TLS_CERT: /certs/bank-simulator.crt
       BANK_TLS_KEY: /certs/bank-simulator.key
       BANK_CLIENT_CA: /certs/ca.crt
+      # Login of the authorization page (/oauth/authorize) through the banco-demo realm. The browser
+      # uses the issuer on localhost:8081; the simulator calls Keycloak on keycloak:8080.
+      BANK_PUBLIC_URL: http://localhost:8082
+      BANK_OIDC_ISSUER: http://localhost:8081/realms/banco-demo
+      BANK_OIDC_BACKCHANNEL_URL: http://keycloak:8080/realms/banco-demo
+      BANK_OIDC_CLIENT_ID: bank-portal
+      BANK_OIDC_CLIENT_SECRET: ${BANK_PORTAL_CLIENT_SECRET:?missing in .env, copy it from .env.example}
     ports:
       - '8082:8443'
     volumes:

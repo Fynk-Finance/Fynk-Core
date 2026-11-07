@@ -55,6 +55,7 @@ jest.mock('./adapters/bankApi', () => ({ createBankApi: () => mockBankApi }));
 jest.mock('./adapters/providersApi', () => ({
   createProvidersApi: () => ({
     list: async () => [{ id: 'banco-demo', displayName: 'Banco Demo' }],
+    simulatedEntities: async () => ['banco-demo'],
   }),
 }));
 jest.mock('@modules/consents', () => ({

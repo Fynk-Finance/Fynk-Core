@@ -59,7 +59,7 @@ func code(t *testing.T, b []byte) string {
 }
 
 // HU-009: the app gets the entities to choose from, with the "Simulado" flag and the scopes.
-func TestProvidersListsTheSimulatedBankAndWallet(t *testing.T) {
+func TestProvidersListsTheFourSimulatedEntities(t *testing.T) {
 	srv := newAPI(t)
 	res := call(t, http.MethodGet, srv.URL+"/v1/providers", auth.DevToken, "")
 	if res.status != http.StatusOK {
@@ -75,7 +75,7 @@ func TestProvidersListsTheSimulatedBankAndWallet(t *testing.T) {
 			LogoKey         string   `json:"logoKey"`
 		} `json:"items"`
 	}
-	if err := json.Unmarshal(res.body, &got); err != nil || len(got.Items) != 2 {
+	if err := json.Unmarshal(res.body, &got); err != nil || len(got.Items) != 4 {
 		t.Fatalf("body %s", res.body)
 	}
 	bd, bi := got.Items[0], got.Items[1]
@@ -92,6 +92,7 @@ func TestEveryRouteNeedsATokenBeforeTheRequestIsParsed(t *testing.T) {
 	srv := newAPI(t)
 	for _, p := range []struct{ method, path string }{
 		{http.MethodGet, "/v1/providers"},
+		{http.MethodGet, "/v1/bank/simulated-entities"},
 		{http.MethodPost, "/v1/bank/authorizations"},
 		{http.MethodPost, "/v1/bank/authorizations/not-a-uuid/exchange"},
 		{http.MethodPost, "/v1/bank/accounts/query"},
