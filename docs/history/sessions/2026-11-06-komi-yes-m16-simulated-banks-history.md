@@ -38,6 +38,12 @@ Step 3 of the approved plan, slice B: replace the opening-only transactions of n
 * The CDT account gets a credit on its opening date, so its transactions add up to its balance.
 * Cooperativa APORTE is 3 % of its final balance per month, so its opening balance stays positive.
 
+## Review (same session)
+
+* The first fixer added each extra purchase right after the lowest point. That left the balance just as low, so it looped and piled up to 48 purchases on one account in one day. It now adds them after the movement that ends the last negative stretch, spread up to the reference time, in one pass. Over 1.000 customers it runs 58 times, with at most 5 groceries or shopping purchases on one account in one day.
+* New `TestHistoryAtOtherDates`: the same balance and limit rules at six more reference dates (around day 5, month ends, a leap day and the new year), with no movement in the future.
+* Banco Demo Ahorros starts the window $2M to $7M above its final balance. That is expected: the 13-month window ends on the 27th, before payday, so it holds 12 salaries and almost 13 months of spending.
+
 ## Next step
 
 Use `EntitySummaries` in `POST /demo/v1/customers`.
