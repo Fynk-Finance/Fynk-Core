@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -74,9 +75,10 @@ func normalizeMerchantKey(raw string) string {
 	return res
 }
 
-func TestExportDemoUserFixture(t *testing.T) {
+func buildDemoFixtureJSON(t *testing.T) []byte {
+	t.Helper()
 	refTime := time.Date(2026, 10, 27, 12, 0, 0, 0, time.UTC)
-	customerID := "cliente.demo@bancodemo.local"
+	customerID := DemoCustomerID
 
 	data := GenerateCustomerData(customerID, refTime)
 
@@ -155,8 +157,29 @@ func TestExportDemoUserFixture(t *testing.T) {
 		t.Fatalf("failed to marshal fixture: %v", err)
 	}
 
+	return append(rawJSON, '\n')
+}
+
+// TestExportDemoUserFixture fails when fixtures/demo-user.json differs from the
+// generator output. Run with UPDATE_DEMO_FIXTURE=1 to rewrite the file.
+func TestExportDemoUserFixture(t *testing.T) {
+	rawJSON := buildDemoFixtureJSON(t)
 	outPath := filepath.Join("..", "..", "..", "..", "fixtures", "demo-user.json")
-	if err := os.WriteFile(outPath, rawJSON, 0644); err != nil {
-		t.Fatalf("failed to write demo-user.json: %v", err)
+
+	if os.Getenv("UPDATE_DEMO_FIXTURE") == "1" {
+		if err := os.WriteFile(outPath, rawJSON, 0644); err != nil {
+			t.Fatalf("failed to write demo-user.json: %v", err)
+		}
+		return
+	}
+
+	committed, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("failed to read demo-user.json: %v", err)
+	}
+	// Git may check the file out with CRLF line endings on Windows.
+	committed = bytes.ReplaceAll(committed, []byte("\r\n"), []byte("\n"))
+	if !bytes.Equal(committed, rawJSON) {
+		t.Fatal("fixtures/demo-user.json differs from the generator output; run with UPDATE_DEMO_FIXTURE=1 only if the change is intended")
 	}
 }
