@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-77, SCRUM-80]
 branch: feature/ghost-card
 tool: Claude Code
-pr: none
+pr: "#335"
 status: done
 ---
 
@@ -25,7 +25,7 @@ Sofia asked to fix the Dashboard findings of the 7 Nov app review (#332): "In pr
 ## Result
 
 * Tests: 302 of 302 in `shared/ui`, 128 snapshots (4 new). Typecheck, ESLint and Prettier clean.
-* Pull request: not opened yet. V2 and V5 are stacked on it.
+* Pull request: #335. V2 and V5 are stacked on it.
 
 ## Decisions and problems
 
