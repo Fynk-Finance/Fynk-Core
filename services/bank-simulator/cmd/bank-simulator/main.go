@@ -21,6 +21,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/authorize"
 	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/store"
 )
 
@@ -48,6 +49,21 @@ type config struct {
 	// ProvisionClientID is Fynk's client id at the bank. Only this client may
 	// get the demo:provision scope.
 	ProvisionClientID string
+
+	// Login of the authorization page, through the banco-demo realm. With no
+	// issuer or no secret the page answers 503.
+	PublicURL        string // BANK_PUBLIC_URL, where the browser reaches this listener
+	OIDCIssuer       string // BANK_OIDC_ISSUER, public realm URL
+	OIDCBackchannel  string // BANK_OIDC_BACKCHANNEL_URL, realm URL for token and keys
+	OIDCClientID     string // BANK_OIDC_CLIENT_ID
+	OIDCClientSecret string // BANK_OIDC_CLIENT_SECRET, never logged
+}
+
+func (c config) authorize(logger *slog.Logger) authorize.Config {
+	return authorize.Config{
+		PublicURL: c.PublicURL, Issuer: c.OIDCIssuer, BackchannelURL: c.OIDCBackchannel,
+		ClientID: c.OIDCClientID, ClientSecret: c.OIDCClientSecret, Logger: logger,
+	}
 }
 
 func loadConfig(getenv func(string) string) config {
@@ -65,6 +81,12 @@ func loadConfig(getenv func(string) string) config {
 		ClientCAFile: getenv("BANK_CLIENT_CA"),
 
 		ProvisionClientID: or("BANK_PROVISION_CLIENT_ID", defaultProvisionClientID),
+
+		PublicURL:        or("BANK_PUBLIC_URL", "http://localhost:8082"),
+		OIDCIssuer:       getenv("BANK_OIDC_ISSUER"),
+		OIDCBackchannel:  getenv("BANK_OIDC_BACKCHANNEL_URL"),
+		OIDCClientID:     or("BANK_OIDC_CLIENT_ID", "bank-portal"),
+		OIDCClientSecret: getenv("BANK_OIDC_CLIENT_SECRET"),
 	}
 }
 
@@ -88,7 +110,7 @@ func run(ctx context.Context, cfg config, logger *slog.Logger) error {
 	}
 
 	bankStore := store.NewBankStore(time.Time{})
-	bankMux := newBankMux(bankStore, cfg.ProvisionClientID)
+	bankMux := newBankMux(bankStore, cfg.ProvisionClientID, cfg.authorize(logger))
 
 	public := &http.Server{Addr: cfg.PublicAddr, Handler: bankMux, ReadHeaderTimeout: 5 * time.Second}
 	errs := make(chan error, 2)
