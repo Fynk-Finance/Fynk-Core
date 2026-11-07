@@ -41,3 +41,7 @@ Daniel said "continue with the rest of the steps". This session is step 5 of the
 ## Next step
 
 Start Docker, reset the local Keycloak volume, and check the login page, a brokered login and the ID token. Then M14 adds the secrets and staging URLs.
+
+## Correction (7 Nov 2026)
+
+* CI ran the realm integration tests on a real Keycloak (testcontainers), so both realm files were imported for real. `TestIntegrationBancoDemoRealmWorksInTheSharedImage` failed with "Missing parameter: code_challenge_method": it opened the `bank-portal` login without PKCE, and this branch makes `bank-portal` require PKCE S256. The test now sends an S256 challenge. The requirement stays, because the simulator's authorization page always sends PKCE.
