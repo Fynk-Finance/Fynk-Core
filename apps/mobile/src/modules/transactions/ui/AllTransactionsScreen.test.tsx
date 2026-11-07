@@ -18,12 +18,17 @@ const accounts = [
   { id: 'acc-cash', kind: 'cash', displayName: 'Efectivo' },
 ] as Account[];
 
-async function setup(opts: { preference?: 'light' | 'dark'; refresh?: jest.Mock } = {}) {
+async function setup(
+  opts: { preference?: 'light' | 'dark'; refresh?: jest.Mock; disconnected?: boolean } = {},
+) {
   const m = await createTestModule();
   const refresh = opts.refresh ?? jest.fn(async () => undefined);
   const Screen = createAllTransactionsScreen({
     hooks: m.hooks,
-    useAccounts: () => ({ data: { accounts } }),
+    // disconnected: the bank link was revoked, so M6 lists its accounts apart (HU-008).
+    useAccounts: () => ({
+      data: opts.disconnected ? { accounts: [], disconnectedAccounts: accounts } : { accounts },
+    }),
     refresh,
     clock,
   });
@@ -73,6 +78,22 @@ describe('Movimientos', () => {
     expect(screen.getByTestId('transactions.summary')).toHaveTextContent(
       'Mostrando 3 de 3 · +$5.200.000 · −$320.100',
     );
+  });
+
+  it('keeps the entity of a movement whose bank link was revoked', async () => {
+    const m = await setup({ disconnected: true });
+    await m.seed([
+      bankTx({
+        id: 'salary',
+        bookedAt: '2026-09-22T13:00:00Z',
+        amountMinor: 520_000_000,
+        description: 'Salario',
+        merchantRaw: null,
+        categoryId: 'salary',
+      }),
+    ]);
+    await m.render();
+    expect(await screen.findByText('Salario · Bancolombia')).toBeTruthy();
   });
 
   it('shows the newest 20 first and loads 20 more until there are none', async () => {

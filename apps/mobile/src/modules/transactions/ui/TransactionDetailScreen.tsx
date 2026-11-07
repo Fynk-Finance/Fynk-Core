@@ -15,7 +15,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { categoryLabel } from '@shared/domain/categories';
-import type { Account, Id } from '@shared/domain/types';
+import type { Id } from '@shared/domain/types';
 import {
   AmountText,
   AppText,
@@ -34,7 +34,14 @@ import {
 
 import type { TransactionHooks } from '../application/useTransactions';
 import { iconOf } from './categoryIcons';
-import { accountLabel, dateTimeLabel, historyLine, titleOf } from './labels';
+import {
+  accountLabel,
+  dateTimeLabel,
+  historyLine,
+  knownAccounts,
+  titleOf,
+  type AccountsData,
+} from './labels';
 import { CATEGORY_ROUTE, NEW_TRANSACTION_ROUTE } from './routes';
 import { transactionsStrings } from './strings.es-CO';
 
@@ -47,7 +54,7 @@ export interface TransactionDetailParams {
 
 export interface TransactionDetailDeps {
   hooks: Pick<TransactionHooks, 'useTransaction' | 'useCategoryHistory'>;
-  useAccounts: () => { data?: { accounts: Account[] } };
+  useAccounts: () => { data?: AccountsData };
   /** Deletes a manual movement. */
   deleteManual: (id: Id) => Promise<void>;
   /** Alert.alert, replaced in tests. */
@@ -69,7 +76,7 @@ export function createTransactionDetailScreen({
     const id = route.params.id;
     const query = hooks.useTransaction(id);
     const history = hooks.useCategoryHistory(id).data ?? [];
-    const accounts = useAccounts().data?.accounts ?? [];
+    const accounts = knownAccounts(useAccounts().data);
     const tx = query.data;
     const account = tx ? accounts.find((a) => a.id === tx.accountId) : undefined;
 
