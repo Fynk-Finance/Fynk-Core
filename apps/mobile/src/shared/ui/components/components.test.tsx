@@ -9,6 +9,7 @@ import { GhostButton, PrimaryButton } from './Button';
 import { Badge } from './Badge';
 import { Chip } from './Chip';
 import { donutArcs } from './Donut';
+import { GhostCard } from './States';
 import { HeaderBlue } from './HeaderBlue';
 import { ProgressBar } from './ProgressBar';
 import { Screen } from './Screen';
@@ -301,5 +302,50 @@ describe('Badge', () => {
   it('draws no icon unless asked', async () => {
     await render(<Badge label="Simulado" />);
     expect(findByType(screen.toJSON(), 'RNSVGSvgView')).toBeUndefined();
+  });
+});
+
+// QA review 2026-11-07 (SCRUM-77, SCRUM-80): the empty card of a section with nothing yet.
+describe('GhostCard', () => {
+  it('shows only its button to screen readers, and the button runs the action', async () => {
+    const onAction = jest.fn();
+    await render(
+      <GhostCard actionLabel="Crear meta" onAction={onAction} message="Aún no tienes metas" />,
+    );
+    const button = screen.getByRole('button', { name: 'Crear meta' });
+    expect(button.props.accessibilityHint).toBe('Aún no tienes metas');
+    await fireEvent.press(button);
+    expect(onAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps still: no pulse, so it never reads as loading', async () => {
+    await render(<GhostCard actionLabel="Conectar cuenta" onAction={() => {}} testID="g" />);
+    expect(JSON.stringify(screen.toJSON())).not.toMatch(/"opacity":0\.5/);
+    expect(screen.getByTestId('g')).toHaveStyle({ borderStyle: 'dashed' });
+  });
+
+  it('takes the size of the card it stands in for', async () => {
+    await render(
+      <GhostCard
+        actionLabel="Crear meta"
+        onAction={() => {}}
+        style={{ width: 206, height: 112, borderRadius: 18 }}
+        testID="g"
+      />,
+    );
+    expect(screen.getByTestId('g')).toHaveStyle({ width: 206, height: 112, borderRadius: 18 });
+  });
+
+  it('draws on blue with translucent white shapes and a white button', async () => {
+    await render(
+      <GhostCard actionLabel="Conectar cuenta" onAction={() => {}} onPrimary testID="g" />,
+    );
+    expect(screen.getByTestId('g')).toHaveStyle({
+      backgroundColor: 'transparent',
+      borderColor: colors.onPrimaryTrack,
+    });
+    expect(screen.getByRole('button', { name: 'Conectar cuenta' })).toHaveStyle({
+      backgroundColor: colors.onPrimary,
+    });
   });
 });
