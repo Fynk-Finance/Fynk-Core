@@ -491,6 +491,41 @@ func TestAdminClientIsAConfidentialServiceAccount(t *testing.T) {
 	t.Fatal("the fynk-admin service account user is missing")
 }
 
+// HU-057: "Ingresar con Fynk". The banco-demo realm brokers to this client, which sends only the
+// Fynk sub: the default scope is `basic` (sub), with no profile and no email scope, and the one extra
+// claim repeats the sub under a name the identity provider mapper can import.
+func TestBancoDemoBrokerClientSendsOnlyTheSub(t *testing.T) {
+	r, _ := loadRealm(t)
+	c := clientByID(t, r, "banco-demo-broker")
+	if !c.Enabled || c.PublicClient || !c.StandardFlowEnabled {
+		t.Fatal("banco-demo-broker must be an enabled confidential client with the standard flow")
+	}
+	if c.ImplicitFlowEnabled || c.DirectAccessGrantsEnabled || c.ServiceAccountsEnabled || c.ConsentRequired {
+		t.Fatal("banco-demo-broker must have only the standard flow")
+	}
+	if c.Attributes["pkce.code.challenge.method"] != "S256" {
+		t.Fatalf("pkce.code.challenge.method = %q", c.Attributes["pkce.code.challenge.method"])
+	}
+	if c.Secret != "${BANCO_DEMO_BROKER_SECRET}" {
+		t.Fatalf("secret must come from the environment, got %q", c.Secret)
+	}
+	if !slices.Equal(c.RedirectURIs, []string{"http://localhost:8081/realms/banco-demo/broker/fynk/endpoint"}) {
+		t.Fatalf("redirectUris = %v", c.RedirectURIs)
+	}
+	if !slices.Equal(c.DefaultClientScopes, []string{"basic"}) || len(c.OptionalClientScopes) != 0 {
+		t.Fatalf("scopes = %v / %v, want only basic", c.DefaultClientScopes, c.OptionalClientScopes)
+	}
+	if len(c.ProtocolMappers) != 1 {
+		t.Fatalf("protocol mappers = %d, want only the fynk_sub claim", len(c.ProtocolMappers))
+	}
+	pm := c.ProtocolMappers[0]
+	if pm.ProtocolMapper != "oidc-usermodel-property-mapper" || pm.Config["user.attribute"] != "id" ||
+		pm.Config["claim.name"] != "fynk_sub" || pm.Config["id.token.claim"] != "true" ||
+		pm.Config["access.token.claim"] != "false" || pm.Config["userinfo.token.claim"] != "false" {
+		t.Fatalf("fynk_sub mapper = %+v", pm)
+	}
+}
+
 // HU-050 and HU-002: login, error and recovery events are kept 90 days for the audit (M13).
 func TestAuthenticationEventsAreStoredFor90Days(t *testing.T) {
 	r, _ := loadRealm(t)
