@@ -1,8 +1,11 @@
 // "Balance total" card of the Dashboard (design Dashboard and DashboardDetalles): the total,
 // "COP · N cuentas conectadas" and the Ingresos and Gastos boxes. "Balance total" opens
-// "Cómo se calcula" (M6 rules; not in the design, needs design review).
+// "Cómo se calcula" (M6 rules; not in the design, needs design review). While the Dashboard
+// scrolls it shrinks to a compact card, "Balance total" and the amount on one line (QA review
+// 2026-11-07, G3; new state, needs design review).
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import Animated, { interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import Svg, { Rect } from 'react-native-svg';
 
 import type { MoneyMinor } from '@shared/domain/types';
@@ -23,10 +26,13 @@ import {
 } from '@shared/ui';
 
 import type { MonthSummary } from '../domain/dashboard';
+import { CARD_OPEN, type CollapseState } from './dashboardCollapse';
 import { accountsStrings } from './strings.es-CO';
 
 const t = accountsStrings.dashboard;
-const HEIGHT = 206;
+const HEIGHT = CARD_OPEN;
+const PADDING_TOP = 24;
+const PADDING_BOTTOM = 16;
 
 export interface DashboardBalanceCardProps {
   /** Null while the accounts load. */
@@ -34,21 +40,35 @@ export interface DashboardBalanceCardProps {
   connectedCount: number;
   /** Ingresos and Gastos, or null while they load. */
   summary: MonthSummary | null;
+  /** The Dashboard's scroll state; without it the card keeps its full height. */
+  collapse?: SharedValue<CollapseState>;
 }
 
 export function DashboardBalanceCard({
   totalMinor,
   connectedCount,
   summary,
+  collapse,
 }: DashboardBalanceCardProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const [width, setWidth] = useState(350);
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
   const explain = () => Alert.alert(t.howTitle, t.howMessage, [{ text: t.ok }]);
+  const cardStyle = useAnimatedStyle(() => ({ height: collapse?.value.card ?? HEIGHT }));
+  const fullStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(collapse?.value.compact ?? 0, [0, 0.6], [1, 0], 'clamp'),
+  }));
+  const compactStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(collapse?.value.compact ?? 0, [0.5, 1], [0, 1], 'clamp'),
+  }));
 
   return (
-    <View style={styles.card} onLayout={onLayout} testID="accounts.balanceCard">
+    <Animated.View
+      style={[styles.card, cardStyle]}
+      onLayout={onLayout}
+      testID="accounts.balanceCard"
+    >
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <Svg width={width} height={HEIGHT}>
           <Rect
@@ -71,48 +91,64 @@ export function DashboardBalanceCard({
         </Svg>
         <Shine distance={width + 170} height={300} />
       </View>
-      <View style={styles.top}>
-        <Pressable
-          onPress={explain}
-          accessibilityRole="button"
-          accessibilityLabel={`${t.balanceTotal}. ${t.howTitle}`}
-          style={styles.label}
-          hitSlop={8}
+      <Animated.View style={[styles.full, fullStyle]} testID="accounts.balanceCard.full">
+        <View style={styles.top}>
+          <Pressable
+            onPress={explain}
+            accessibilityRole="button"
+            accessibilityLabel={`${t.balanceTotal}. ${t.howTitle}`}
+            style={styles.label}
+            hitSlop={8}
+          >
+            <AppText variant="small" color="onPrimary" style={styles.labelText}>
+              {t.balanceTotal}
+            </AppText>
+            <Icon name="help" size={14} color={colors.onPrimary} />
+          </Pressable>
+          {totalMinor === null ? (
+            <Skeleton width={200} height={40} />
+          ) : (
+            <AmountText
+              amountMinor={totalMinor}
+              size={34}
+              color="onPrimary"
+              testID="accounts.total"
+            />
+          )}
+          <AppText variant="caption" color="onPrimary" style={styles.connected}>
+            {t.connected(connectedCount)}
+          </AppText>
+        </View>
+        <View style={styles.pills}>
+          <Pill
+            label={t.income}
+            amountMinor={summary?.incomeMinor ?? null}
+            icon="arrowUpRight"
+            tone="link"
+          />
+          <Pill
+            label={t.spending}
+            amountMinor={summary?.spendingMinor ?? null}
+            icon="arrowDownLeft"
+            tone="primaryDark"
+          />
+        </View>
+      </Animated.View>
+      {totalMinor === null ? null : (
+        <Animated.View
+          style={[styles.compact, compactStyle]}
+          pointerEvents="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          testID="accounts.balanceCard.compact"
         >
           <AppText variant="small" color="onPrimary" style={styles.labelText}>
             {t.balanceTotal}
           </AppText>
-          <Icon name="help" size={14} color={colors.onPrimary} />
-        </Pressable>
-        {totalMinor === null ? (
-          <Skeleton width={200} height={40} />
-        ) : (
-          <AmountText
-            amountMinor={totalMinor}
-            size={34}
-            color="onPrimary"
-            testID="accounts.total"
-          />
-        )}
-        <AppText variant="caption" color="onPrimary" style={styles.connected}>
-          {t.connected(connectedCount)}
-        </AppText>
-      </View>
-      <View style={styles.pills}>
-        <Pill
-          label={t.income}
-          amountMinor={summary?.incomeMinor ?? null}
-          icon="arrowUpRight"
-          tone="link"
-        />
-        <Pill
-          label={t.spending}
-          amountMinor={summary?.spendingMinor ?? null}
-          icon="arrowDownLeft"
-          tone="primaryDark"
-        />
-      </View>
-    </View>
+          <AmountText amountMinor={totalMinor} size={20} color="onPrimary" />
+        </Animated.View>
+      )}
+    </Animated.View>
   );
 }
 
@@ -149,12 +185,20 @@ const createStyles = ({ colors, shadow }: Theme) =>
       height: HEIGHT,
       borderRadius: radius.sheetSm,
       backgroundColor: colors.balanceCard,
-      paddingTop: 24,
+      paddingTop: PADDING_TOP,
       paddingHorizontal: 24,
-      paddingBottom: 16,
-      justifyContent: 'space-between',
+      paddingBottom: PADDING_BOTTOM,
       overflow: 'hidden',
       ...shadow.balanceCard,
+    },
+    // The full content keeps its open layout while the card shrinks around it.
+    full: { height: HEIGHT - PADDING_TOP - PADDING_BOTTOM, justifyContent: 'space-between' },
+    compact: {
+      ...StyleSheet.absoluteFill,
+      paddingHorizontal: 24,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
     },
     top: { gap: spacing.md },
     label: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, alignSelf: 'flex-start' },

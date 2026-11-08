@@ -1,24 +1,54 @@
 // Dashboard tab (design Dashboard, inventory rows 5 and 6), owned by M6: the blue header with
-// "Hola, <nombre>", the chart icon that opens Estadísticas (M10) and the bell, the "Balance total" card and Detalle de cuentas, which expands
-// in place. Below, Planes de ahorro (M8's carousel), Movimientos (M7's preview), and the FAB
-// "Registrar gasto o ingreso", whose menu opens M7's sheet on Ingreso or Gasto.
+// "Hola, <nombre>", the chart icon that opens Estadísticas (M10) and the bell, the "Balance total"
+// card and Detalle de cuentas, which expands in place. The header stays over the page and shrinks
+// to a fifth of the screen while the page scrolls (QA review 2026-11-07, G3). Below, Planes de
+// ahorro (M8's carousel), Movimientos (M7's preview), and the FAB "Registrar gasto o ingreso",
+// whose menu opens M7's sheet on Ingreso or Gasto.
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { useCallback, useState, type ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
+import {
+  RefreshControl,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native';
+import Animated, {
+  runOnJS,
+  useAnimatedRef,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ErrorState, Fab, HeaderBlue, Screen, motion, spacing } from '@shared/ui';
+import {
+  ErrorState,
+  Fab,
+  HeaderBlue,
+  motion,
+  spacing,
+  useTheme,
+  useThemedStyles,
+  type Theme,
+} from '@shared/ui';
 
 import type { AccountsOverview } from '../application/accountsService';
 import { accountRows, type MonthSummary } from '../domain/dashboard';
 import { ACCOUNT_DETAIL_ROUTE } from './AccountDetailScreen';
 import { AccountsPanel, DetailsTab } from './AccountsPanel';
 import { DashboardBalanceCard } from './DashboardBalanceCard';
+import { CARD_OPEN, collapse, compactCardHeight, HEADER_CHROME } from './dashboardCollapse';
 import { FAB_BOTTOM, FabMenu } from './FabMenu';
 import { accountsStrings } from './strings.es-CO';
 
 const t = accountsStrings.dashboard;
+
+/** What the Detalle de cuentas tab adds below the header: 24 px high, 1 px up. */
+const TAB_OVERHANG = 23;
 
 export interface DashboardDeps {
   useAccounts: () => Pick<UseQueryResult<AccountsOverview>, 'data' | 'isError' | 'refetch'>;
@@ -52,8 +82,14 @@ export interface DashboardDeps {
 export function createDashboardScreen(deps: DashboardDeps) {
   return function DashboardScreen() {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();
+    const styles = useThemedStyles(createStyles);
+    const { colors } = useTheme();
+    const insets = useSafeAreaInsets();
+    const { height: windowHeight } = useWindowDimensions();
     const [expanded, setExpanded] = useState(false);
+    const [panelMounted, setPanelMounted] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const closeMenu = useCallback(() => setMenuOpen(false), []);
     const accounts = deps.useAccounts();
     const summary = deps.useMonthSummary();
@@ -66,67 +102,135 @@ export function createDashboardScreen(deps: DashboardDeps) {
         ? () => navigation.navigate(connectRoute())
         : undefined;
 
-    const header = (
-      <View>
-        <HeaderBlue
-          dashboard
-          name={name}
-          hasUnread={unread > 0}
-          onPressAccount={() => navigation.navigate(deps.accountRoute)}
-          onPressStatistics={() => navigation.navigate(deps.statisticsRoute)}
-          onPressNotifications={() => navigation.navigate(deps.notificationsRoute)}
-        >
-          <Animated.View layout={LinearTransition.duration(motion.slow)}>
-            <DashboardBalanceCard
-              totalMinor={overview?.balanceTotalMinor ?? null}
-              connectedCount={overview?.connectedCount ?? 0}
-              summary={summary}
-            />
-            {expanded ? (
-              <Animated.View
-                entering={FadeIn.duration(motion.slow)}
-                exiting={FadeOut.duration(motion.fast)}
-              >
-                <AccountsPanel
-                  rows={accountRows(overview?.accounts ?? [])}
-                  onPressRow={(accountId) =>
-                    navigation.navigate(ACCOUNT_DETAIL_ROUTE, { accountId })
-                  }
-                  onConnect={onConnect}
-                />
-              </Animated.View>
-            ) : null}
-          </Animated.View>
-        </HeaderBlue>
-        <DetailsTab expanded={expanded} onToggle={() => setExpanded((open) => !open)} />
-      </View>
+    // G3: the header sits over the page and shrinks while it scrolls (dashboardCollapse.ts).
+    const cardClosed = compactCardHeight(windowHeight);
+    const scrollRef = useAnimatedRef<Animated.ScrollView>();
+    const scrollY = useSharedValue(0);
+    const open = useSharedValue(0);
+    const panelHeight = useSharedValue(0);
+    // The header without the card and the panel. This is the first guess; it is measured below.
+    const chrome = useSharedValue(insets.top + HEADER_CHROME);
+    const state = useDerivedValue(() =>
+      collapse({
+        scrollY: scrollY.value,
+        cardClosed,
+        panelHeight: panelHeight.value,
+        panelOpen: open.value,
+      }),
     );
+    const onScroll = useAnimatedScrollHandler((e) => {
+      scrollY.value = e.contentOffset.y;
+    });
+    // The page starts under the header at rest, so it stays attached while the header shrinks.
+    const spacerStyle = useAnimatedStyle(() => ({
+      height: chrome.value + CARD_OPEN + panelHeight.value * open.value + TAB_OVERHANG,
+    }));
+    const panelStyle = useAnimatedStyle(() => ({
+      height: state.value.panel,
+      opacity: open.value,
+    }));
+    const onHeaderLayout = (e: LayoutChangeEvent) => {
+      if (scrollY.value > 0 || (open.value !== 0 && open.value !== 1)) return;
+      chrome.value = e.nativeEvent.layout.height - state.value.card - state.value.panel;
+    };
+    const onPanelLayout = (e: LayoutChangeEvent) => {
+      panelHeight.value = e.nativeEvent.layout.height;
+    };
+
+    const toggleDetails = () => {
+      if (expanded) {
+        setExpanded(false);
+        open.value = withTiming(0, { duration: motion.slow }, (done) => {
+          if (done) runOnJS(setPanelMounted)(false);
+        });
+        return;
+      }
+      // Opening from a shrunk header goes back to the top first.
+      if (scrollY.value > 0) scrollRef.current?.scrollTo({ y: 0, animated: true });
+      setPanelMounted(true);
+      setExpanded(true);
+      open.value = withTiming(1, { duration: motion.slow });
+    };
 
     const newMovementRoute = deps.newMovementRoute;
     const sync = deps.refresh;
-    const refresh = sync
+    const onRefresh = sync
       ? async () => {
-          await sync().catch(() => undefined);
-          await accounts.refetch();
+          setRefreshing(true);
+          try {
+            await sync().catch(() => undefined);
+            await accounts.refetch();
+          } finally {
+            setRefreshing(false);
+          }
         }
       : undefined;
+
     return (
-      <View style={styles.root}>
-        <Screen
-          header={header}
-          scroll
-          withTabBar
-          padded
-          gap={spacing.block}
-          refresh={refresh}
-          testID="accounts.dashboard"
+      <View style={styles.root} testID="accounts.dashboard">
+        <Animated.ScrollView
+          ref={scrollRef}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.content}
+          testID="accounts.dashboard.scroll"
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => void onRefresh()}
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+                progressBackgroundColor={colors.background}
+                progressViewOffset={insets.top + HEADER_CHROME + CARD_OPEN}
+              />
+            ) : undefined
+          }
         >
+          <Animated.View style={spacerStyle} testID="accounts.dashboard.spacer" />
           {accounts.isError ? (
             <ErrorState message={t.loadError} onRetry={() => void accounts.refetch()} />
           ) : null}
           {deps.renderGoals?.()}
           {deps.renderMovements?.()}
-        </Screen>
+        </Animated.ScrollView>
+        <View style={styles.header} pointerEvents="box-none" testID="accounts.dashboard.header">
+          <View onLayout={onHeaderLayout}>
+            <HeaderBlue
+              dashboard
+              name={name}
+              hasUnread={unread > 0}
+              onPressAccount={() => navigation.navigate(deps.accountRoute)}
+              onPressStatistics={() => navigation.navigate(deps.statisticsRoute)}
+              onPressNotifications={() => navigation.navigate(deps.notificationsRoute)}
+            >
+              <View>
+                <DashboardBalanceCard
+                  totalMinor={overview?.balanceTotalMinor ?? null}
+                  connectedCount={overview?.connectedCount ?? 0}
+                  summary={summary}
+                  collapse={state}
+                />
+                {panelMounted ? (
+                  <Animated.View style={[styles.panel, panelStyle]}>
+                    <View onLayout={onPanelLayout}>
+                      <AccountsPanel
+                        rows={accountRows(overview?.accounts ?? [])}
+                        onPressRow={(accountId) =>
+                          navigation.navigate(ACCOUNT_DETAIL_ROUTE, { accountId })
+                        }
+                        onConnect={onConnect}
+                      />
+                    </View>
+                  </Animated.View>
+                ) : null}
+              </View>
+            </HeaderBlue>
+          </View>
+          <DetailsTab expanded={expanded} onToggle={toggleDetails} />
+        </View>
         {newMovementRoute && menuOpen ? (
           <FabMenu
             onClose={closeMenu}
@@ -140,7 +244,7 @@ export function createDashboardScreen(deps: DashboardDeps) {
           <Fab
             accessibilityLabel={t.newMovement}
             expanded={menuOpen}
-            onPress={() => setMenuOpen((open) => !open)}
+            onPress={() => setMenuOpen((isOpen) => !isOpen)}
             style={styles.fab}
             testID="accounts.dashboard.fab"
           />
@@ -150,10 +254,20 @@ export function createDashboardScreen(deps: DashboardDeps) {
   };
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  // Right 16 like the design (`.fab`). The design's bottom 92 counts its 72 px tab bar, which
-  // overlaps the page there; here the bar sits below the page, so 12 px keeps the FAB just above
-  // it (QA review 2026-11-07, V1).
-  fab: { position: 'absolute', right: 16, bottom: FAB_BOTTOM },
-});
+const createStyles = ({ colors }: Theme) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.background },
+    // Like Screen with a tab bar: 20 px sides, 22 px between blocks, room for the tab bar below.
+    content: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.screen,
+      paddingBottom: spacing.tabBarClearance,
+      gap: spacing.block,
+    },
+    header: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1 },
+    panel: { overflow: 'hidden' },
+    // Right 16 like the design (`.fab`). The design's bottom 92 counts its 72 px tab bar, which
+    // overlaps the page there; here the bar sits below the page, so 12 px keeps the FAB just above
+    // it (QA review 2026-11-07, V1).
+    fab: { position: 'absolute', right: 16, bottom: FAB_BOTTOM },
+  });
