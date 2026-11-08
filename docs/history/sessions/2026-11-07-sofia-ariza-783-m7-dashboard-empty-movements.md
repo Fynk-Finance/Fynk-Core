@@ -6,7 +6,7 @@ module: M7
 jira: [SCRUM-85]
 branch: feature/dashboard-empty-movements
 tool: Claude Code
-pr: none
+pr: "#341"
 status: done
 ---
 
@@ -26,7 +26,7 @@ Sofia asked to go on with the Dashboard findings of the 7 Nov app review: "Conti
 ## Result
 
 * Tests: 2,705 of 2,705 in the app, 128 snapshots. Typecheck, ESLint and Prettier clean.
-* Pull request: not opened yet. Stacked on #340 (stack #338).
+* Pull request: #341, stacked on #340 (stack #338).
 
 ## Decisions and problems
 
