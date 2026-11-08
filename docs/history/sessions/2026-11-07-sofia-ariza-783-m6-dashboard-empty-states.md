@@ -26,7 +26,7 @@ Sofia asked to fix the Dashboard findings of the 7 Nov app review (#332): "In pr
 ## Result
 
 * Tests: 2,673 of 2,673 in the app, 128 snapshots. Typecheck, ESLint and Prettier clean.
-* Pull request: #336, in stack #337 on top of #335. Stacked on the GhostCard pull request.
+* Pull request: #336, on top of #335. First in stack #337 (#335 → #336); later the whole Dashboard work went into one stack, #338 (#333 → #334 → #335 → #336 → …).
 
 ## Decisions and problems
 
