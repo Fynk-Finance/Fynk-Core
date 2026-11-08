@@ -1,6 +1,6 @@
 // The Dashboard preview and the list of Detalle de cuenta (HU-015 SCRUM-29): latest movements,
 // "Ver todo", rows of one account only, the count, open and close.
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen, within } from '@testing-library/react-native';
 
 import type { Account } from '@shared/domain/types';
 
@@ -66,6 +66,40 @@ describe('TransactionPreview', () => {
     const Preview = createTransactionPreview({ hooks: m.hooks, useAccounts: () => ({}) });
     await renderScreens({ screens: { Home: Preview }, initial: 'Home' });
     expect(await screen.findByText('Aún no tienes movimientos.')).toBeTruthy();
+  });
+
+  // QA review 2026-11-07, V10 (SCRUM-85): a grayscale illustration above the message, centered in
+  // the free space of the page.
+  it.each(['light', 'dark'] as const)(
+    'centers a still illustration above the message in the free space, in %s',
+    async (preference) => {
+      const m = await createTestModule();
+      const Preview = createTransactionPreview({ hooks: m.hooks, useAccounts: () => ({}) });
+      await renderScreens({ screens: { Home: Preview }, initial: 'Home', preference });
+      const empty = await screen.findByTestId('transactions.preview.empty');
+      expect(screen.getByTestId('transactions.preview')).toHaveStyle({ flexGrow: 1 });
+      expect(empty).toHaveStyle({ flexGrow: 1, justifyContent: 'center', alignItems: 'center' });
+      const art = screen.getByTestId('transactions.preview.emptyArt', {
+        includeHiddenElements: true,
+      });
+      // Above the message, and silent for screen readers: the message says it all.
+      const tree = JSON.stringify(screen.toJSON());
+      expect(tree.indexOf('transactions.preview.emptyArt')).toBeLessThan(
+        tree.indexOf('Aún no tienes movimientos.'),
+      );
+      expect(within(empty).getByText('Aún no tienes movimientos.')).toBeTruthy();
+      expect(screen.queryByTestId('transactions.preview.emptyArt')).toBeNull();
+      expect(art).toBeTruthy();
+    },
+  );
+
+  it('keeps its natural height when there are movements', async () => {
+    const m = await createTestModule();
+    await m.seed([bankTx({ id: 'one', bookedAt: '2026-10-26T15:00:00Z' })]);
+    const Preview = createTransactionPreview({ hooks: m.hooks, useAccounts: () => ({}) });
+    await renderScreens({ screens: { Home: Preview }, initial: 'Home' });
+    await screen.findByTestId('transactions.row.one');
+    expect(screen.getByTestId('transactions.preview')).not.toHaveStyle({ flexGrow: 1 });
   });
 });
 
