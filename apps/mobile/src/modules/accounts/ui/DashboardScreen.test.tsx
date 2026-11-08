@@ -16,7 +16,7 @@ import type { MonthSummary } from '../domain/dashboard';
 import { connectedAccountsSummary, isActive, sortAccounts } from '../domain/netWorth';
 import { account, card, cash, cdt, savings, wallet } from '../testing/fixtures';
 import { ACCOUNT_DETAIL_ROUTE } from './AccountDetailScreen';
-import { dragIntent } from './AccountsPanel';
+import { TAB_HEIGHT } from './AccountsPanel';
 import { DashboardBalanceCard } from './DashboardBalanceCard';
 import { CARD_OPEN, collapse, HEADER_CHROME, type CollapseState } from './dashboardCollapse';
 import { createDashboardScreen } from './DashboardScreen';
@@ -211,6 +211,27 @@ describe('Detalle de cuentas', () => {
     expect(shape().props.fill).toEqual(fill);
   });
 
+  // QA review 2026-11-07, G1 (SCRUM-88): the tab was too small to hit.
+  it('has a tab bigger than the design, with a wide touch area', async () => {
+    await renderDashboard();
+    const tab = screen.getByTestId('accounts.detailsTab');
+    expect(tab).toHaveStyle({ width: 176, height: TAB_HEIGHT });
+    expect(TAB_HEIGHT).toBeGreaterThan(24);
+    expect(tab.props.hitSlop).toEqual({ top: 8, bottom: 16, left: 16, right: 16 });
+  });
+
+  it('keeps the closed panel away from screen readers and touches', async () => {
+    await renderDashboard();
+    const hidden = screen.getByTestId('accounts.panel', { includeHiddenElements: true });
+    expect(hidden).toBeTruthy();
+    expect(screen.queryByTestId('accounts.panel')).toBeNull();
+    expect(
+      screen.getByTestId('accounts.dashboard.panelFrame', { includeHiddenElements: true }),
+    ).toHaveProp('pointerEvents', 'none');
+    await openDetails();
+    expect(screen.getByTestId('accounts.dashboard.panelFrame')).toHaveProp('pointerEvents', 'auto');
+  });
+
   it('lists each account with entity, type, masked number and balance', async () => {
     await renderDashboard();
     await openDetails();
@@ -287,9 +308,9 @@ describe('Dashboard scroll', () => {
       position: 'absolute',
       top: 0,
     });
-    // Header chrome, the 206 px card and the tab's 23 px below it.
+    // Header chrome, the 206 px card and what the tab adds below it.
     expect(screen.getByTestId('accounts.dashboard.spacer')).toHaveStyle({
-      height: HEADER_CHROME + CARD_OPEN + 23,
+      height: HEADER_CHROME + CARD_OPEN + TAB_HEIGHT - 1,
     });
   });
 
@@ -445,18 +466,5 @@ describe('Dashboard pull to refresh', () => {
   it('has no pull to refresh without M5', async () => {
     await renderDashboard();
     expect(refreshControl()).toBeUndefined();
-  });
-});
-
-describe('dragIntent (drag on the tab)', () => {
-  it('opens on a drag down and closes on a drag up', () => {
-    expect(dragIntent(40, false)).toBe('open');
-    expect(dragIntent(-40, true)).toBe('close');
-  });
-
-  it('ignores short drags and drags the wrong way', () => {
-    expect(dragIntent(10, false)).toBeNull();
-    expect(dragIntent(-40, false)).toBeNull();
-    expect(dragIntent(40, true)).toBeNull();
   });
 });
