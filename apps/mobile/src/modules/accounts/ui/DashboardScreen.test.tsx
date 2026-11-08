@@ -4,8 +4,9 @@
 // Estadísticas (M10), and both themes.
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { Alert, BackHandler, Text } from 'react-native';
+import type { SharedValue } from 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ThemeProvider, type ThemePreference } from '@shared/ui';
@@ -16,6 +17,8 @@ import { connectedAccountsSummary, isActive, sortAccounts } from '../domain/netW
 import { account, card, cash, cdt, savings, wallet } from '../testing/fixtures';
 import { ACCOUNT_DETAIL_ROUTE } from './AccountDetailScreen';
 import { dragIntent } from './AccountsPanel';
+import { DashboardBalanceCard } from './DashboardBalanceCard';
+import { CARD_OPEN, collapse, HEADER_CHROME, type CollapseState } from './dashboardCollapse';
 import { createDashboardScreen } from './DashboardScreen';
 
 const noStore = { load: async () => 'system' as const, save: async () => undefined };
@@ -186,7 +189,8 @@ describe('Detalle de cuentas', () => {
     await openDetails();
     expect(screen.getByTestId('accounts.panel')).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('Ocultar detalle de cuentas'));
-    expect(screen.queryByTestId('accounts.panel')).toBeNull();
+    // It folds first (G3), then leaves.
+    await waitFor(() => expect(screen.queryByTestId('accounts.panel')).toBeNull());
   });
 
   // QA review 2026-11-07, V3 (SCRUM-78): the tab hangs below the header, open or closed, in the
@@ -272,6 +276,55 @@ describe('Detalle de cuentas', () => {
     await renderDashboard();
     await openDetails();
     expect(screen.queryByRole('button', { name: 'Conectar cuenta' })).toBeNull();
+  });
+});
+
+// QA review 2026-11-07, G3 (SCRUM-90): the header stays over the page and shrinks while it scrolls.
+describe('Dashboard scroll', () => {
+  it('keeps the header over the page and starts the page right under it', async () => {
+    await renderDashboard({ withMovements: true });
+    expect(screen.getByTestId('accounts.dashboard.header')).toHaveStyle({
+      position: 'absolute',
+      top: 0,
+    });
+    // Header chrome, the 206 px card and the tab's 23 px below it.
+    expect(screen.getByTestId('accounts.dashboard.spacer')).toHaveStyle({
+      height: HEADER_CHROME + CARD_OPEN + 23,
+    });
+  });
+
+  // Jest cannot send scroll events to Reanimated's handler, so the card gets the state that a
+  // scroll gives (the scroll itself is covered in dashboardCollapse.test.ts).
+  it.each([
+    [0, CARD_OPEN, 1, 0],
+    [40, CARD_OPEN - 40, null, null],
+    [1000, 69, 0, 1],
+  ])('after a %p px scroll the card is %p px high', async (scrollY, height, full, compact) => {
+    const state = collapse({ scrollY, cardClosed: 69, panelHeight: 0, panelOpen: 0 });
+    await render(
+      <ThemeProvider initialPreference="light" store={noStore}>
+        <DashboardBalanceCard
+          totalMinor={790_000_000}
+          connectedCount={3}
+          summary={null}
+          collapse={{ value: state } as SharedValue<CollapseState>}
+        />
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId('accounts.balanceCard')).toHaveStyle({ height });
+    const compactLine = screen.getByTestId('accounts.balanceCard.compact', {
+      includeHiddenElements: true,
+    });
+    expect(compactLine).toHaveTextContent(/Balance total.*\$7\.900\.000/);
+    if (compact !== null) expect(compactLine).toHaveStyle({ opacity: compact });
+    if (full !== null)
+      expect(screen.getByTestId('accounts.balanceCard.full')).toHaveStyle({ opacity: full });
+  });
+
+  it('keeps the movements in the one page scroll, with no scroll of their own', async () => {
+    await renderDashboard({ withMovements: true });
+    const scroll = screen.getByTestId('accounts.dashboard.scroll');
+    expect(within(scroll).getByText('movements of M7')).toBeTruthy();
   });
 });
 
