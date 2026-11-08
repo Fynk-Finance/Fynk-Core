@@ -46,6 +46,9 @@ export const accountsStrings = {
     // Ghost card while no bank account is connected: new copy, needs design review.
     connectAccount: 'Conectar cuenta',
     loadError: 'No pudimos cargar tus cuentas.',
+    // Pull to sync (QA review 2026-11-07, F3), also an accessibility action.
+    sync: 'Actualizar',
+    syncing: 'Actualizando',
   },
   detail: {
     // CuentaDetalle

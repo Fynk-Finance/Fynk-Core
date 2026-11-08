@@ -438,20 +438,23 @@ describe('Movimientos and the FAB (M7)', () => {
 });
 
 // HU-011 (SCRUM-25): pull to refresh asks M5 for a sync, then reads the accounts again.
-describe('Dashboard pull to refresh', () => {
-  const refreshControl = () =>
-    (
-      screen.getByTestId('accounts.dashboard.scroll').props as {
-        refreshControl?: { props: { onRefresh: () => void } };
-      }
-    ).refreshControl;
+// QA review 2026-11-07, F3 (SCRUM-93): the Dashboard's own pull (pullToSync.ts) replaces the
+// native spinner. Jest cannot run the pull itself, so the sync is reached through the page's
+// "Actualizar" accessibility action, the button every gesture has.
+describe('Dashboard pull to sync', () => {
+  const scroll = () => screen.getByTestId('accounts.dashboard.scroll');
+  const pull = () =>
+    act(async () => {
+      fireEvent(scroll(), 'accessibilityAction', { nativeEvent: { actionName: 'refresh' } });
+    });
 
   it('syncs and then reads the accounts again', async () => {
     const calls: string[] = [];
     const refresh = jest.fn(async () => void calls.push('sync'));
     const { refetch } = await renderDashboard({ refresh });
     refetch.mockImplementation(async () => void calls.push('refetch'));
-    await act(async () => refreshControl()!.props.onRefresh());
+    expect(scroll().props.accessibilityActions).toEqual([{ name: 'refresh', label: 'Actualizar' }]);
+    await pull();
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(calls).toEqual(['sync', 'refetch']);
   });
@@ -459,12 +462,36 @@ describe('Dashboard pull to refresh', () => {
   it('still reads the accounts when the sync fails', async () => {
     const refresh = jest.fn(() => Promise.reject(new Error('offline')));
     const { refetch } = await renderDashboard({ refresh });
-    await act(async () => refreshControl()!.props.onRefresh());
+    await pull();
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
-  it('has no pull to refresh without M5', async () => {
+  it('does not start a second sync while one runs', async () => {
+    let finish: () => void = () => undefined;
+    const refresh = jest.fn(() => new Promise<void>((resolve) => (finish = resolve)));
+    await renderDashboard({ refresh });
+    await pull();
+    await pull();
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByTestId('accounts.dashboard.pull', { includeHiddenElements: true }),
+    ).toHaveProp('accessibilityLabel', 'Actualizando');
+    await act(async () => finish());
+  });
+
+  it('keeps the indicator hidden until the page is pulled, and has no native spinner', async () => {
+    await renderDashboard({ refresh: async () => undefined });
+    expect(scroll().props.refreshControl).toBeUndefined();
+    expect(
+      screen.getByTestId('accounts.dashboard.pull', { includeHiddenElements: true }),
+    ).toHaveStyle({ opacity: 0 });
+  });
+
+  it('has no pull to sync without M5', async () => {
     await renderDashboard();
-    expect(refreshControl()).toBeUndefined();
+    expect(scroll().props.accessibilityActions).toBeUndefined();
+    expect(
+      screen.queryByTestId('accounts.dashboard.pull', { includeHiddenElements: true }),
+    ).toBeNull();
   });
 });
