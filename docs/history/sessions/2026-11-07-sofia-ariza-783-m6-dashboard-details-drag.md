@@ -6,7 +6,7 @@ module: M6
 jira: [SCRUM-88]
 branch: feature/dashboard-details-drag
 tool: Claude Code
-pr: none
+pr: "#342"
 status: done
 ---
 
@@ -27,7 +27,7 @@ Sofia asked to go on with the Dashboard findings of the 7 Nov app review: "Conti
 ## Result
 
 * Tests: 2,710 of 2,710 in the app, 128 snapshots. Typecheck, ESLint and Prettier clean.
-* Pull request: not opened yet. Stacked on #341 (stack #338).
+* Pull request: #342, stacked on #341 (stack #338).
 
 ## Decisions and problems
 
