@@ -27,7 +27,7 @@ Sofia asked to go on with the Dashboard findings of the 7 Nov app review: "Conti
 ## Result
 
 * Tests: 2,710 of 2,710 in the app, 128 snapshots. Typecheck, ESLint and Prettier clean.
-* Pull request: #342, stacked on #341 (stack #338).
+* Pull request: #342, stacked on #341 (first in stack #338; after #333 to #339 were merged, moved with #340 to #343 to stack #344).
 
 ## Decisions and problems
 
