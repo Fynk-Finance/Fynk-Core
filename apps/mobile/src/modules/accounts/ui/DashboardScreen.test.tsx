@@ -5,7 +5,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
-import { Alert, BackHandler, Text } from 'react-native';
+import { Alert, BackHandler, StyleSheet, Text } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -319,6 +319,13 @@ describe('Dashboard scroll', () => {
     if (compact !== null) expect(compactLine).toHaveStyle({ opacity: compact });
     if (full !== null)
       expect(screen.getByTestId('accounts.balanceCard.full')).toHaveStyle({ opacity: full });
+  });
+
+  // V10 (SCRUM-85): M7's empty Movimientos grows into the free space to center its illustration.
+  it('lets the page content fill the screen', async () => {
+    await renderDashboard({ withMovements: true });
+    const scroll = screen.getByTestId('accounts.dashboard.scroll');
+    expect(StyleSheet.flatten(scroll.props.contentContainerStyle)).toMatchObject({ flexGrow: 1 });
   });
 
   it('keeps the movements in the one page scroll, with no scroll of their own', async () => {
