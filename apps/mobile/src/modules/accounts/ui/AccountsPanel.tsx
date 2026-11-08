@@ -1,9 +1,10 @@
 // Detalle de cuentas (design DashboardDetalles): the Dashboard header expands in place to one
-// row per account. The tab under it opens and closes it by tap, or by dragging it down or up.
+// row per account. The tab under it opens and closes it by tap; dragging the header opens and
+// closes it gradually (DashboardScreen, G1).
 // Until a bank account is connected, a ghost of an account card invites to connect one (QA review
 // 2026-11-07, V5; new state, needs design review).
 import { Pressable, StyleSheet, View } from 'react-native';
-import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
 import {
@@ -95,44 +96,48 @@ export function AccountsPanel({
   );
 }
 
-/** What a drag on the tab does: down opens, up closes, a short drag does nothing. */
-export function dragIntent(translationY: number, expanded: boolean): 'open' | 'close' | null {
-  if (!expanded && translationY > 24) return 'open';
-  if (expanded && translationY < -24) return 'close';
-  return null;
-}
-
 const TAB_PATH = 'M0 0C15 0 22 3.5 28 8.8 31.5 11.8 34.5 13 37 13s5.5-1.2 9-4.2C52 3.5 59 0 74 0Z';
 
-export function DetailsTab({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
+/**
+ * The tab is bigger than the design's 148 × 24, which was too small to hit (QA review
+ * 2026-11-07, G1). Its shape is the design's, stretched.
+ */
+const TAB_WIDTH = 176;
+export const TAB_HEIGHT = 30;
+const CHEVRON = 20;
+
+export function DetailsTab({
+  expanded,
+  onToggle,
+  openness,
+}: {
+  expanded: boolean;
+  onToggle: () => void;
+  /** 0 closed, 1 open: the chevron turns with it while the header is dragged. */
+  openness?: SharedValue<number>;
+}) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const pan = usePanGesture({
-    runOnJS: true,
-    activeOffsetY: [-10, 10],
-    onDeactivate: (e) => {
-      if (dragIntent(e.translationY, expanded)) onToggle();
-    },
-  });
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${(openness ? openness.value : expanded ? 1 : 0) * 180}deg` }],
+  }));
   return (
-    <GestureDetector gesture={pan}>
-      <Pressable
-        onPress={onToggle}
-        accessibilityRole="button"
-        accessibilityLabel={expanded ? t.hideDetails : t.showDetails}
-        accessibilityState={{ expanded }}
-        style={styles.tab}
-        hitSlop={8}
-        testID="accounts.detailsTab"
-      >
-        <Svg width={148} height={26} viewBox="0 0 74 13" preserveAspectRatio="none">
-          <Path d={TAB_PATH} fill={colors.headerDashboard} testID="accounts.detailsTab.shape" />
-        </Svg>
-        <View style={[styles.chevron, expanded && styles.flipped]}>
-          <Icon name="chevronDown" size={16} strokeWidth={3.2} color={colors.onPrimary} />
-        </View>
-      </Pressable>
-    </GestureDetector>
+    <Pressable
+      onPress={onToggle}
+      accessibilityRole="button"
+      accessibilityLabel={expanded ? t.hideDetails : t.showDetails}
+      accessibilityState={{ expanded }}
+      style={styles.tab}
+      hitSlop={{ top: 8, bottom: 16, left: 16, right: 16 }}
+      testID="accounts.detailsTab"
+    >
+      <Svg width={TAB_WIDTH} height={TAB_HEIGHT + 2} viewBox="0 0 74 13" preserveAspectRatio="none">
+        <Path d={TAB_PATH} fill={colors.headerDashboard} testID="accounts.detailsTab.shape" />
+      </Svg>
+      <Animated.View style={[styles.chevron, chevronStyle]}>
+        <Icon name="chevronDown" size={CHEVRON} strokeWidth={3.2} color={colors.onPrimary} />
+      </Animated.View>
+    </Pressable>
   );
 }
 
@@ -152,8 +157,14 @@ const createStyles = ({ colors }: Theme) =>
     detail: { fontSize: fontSize[11], lineHeight: 14, opacity: 0.85 },
     // Hangs below the header, open or closed, in the header's blue: 1 px up hides the seam
     // (design Dashboard and DashboardDetalles PNGs; QA review 2026-11-07, V3).
-    tab: { alignSelf: 'center', width: 148, height: 24, marginTop: -1, zIndex: 2, elevation: 2 },
-    chevron: { position: 'absolute', left: 66, top: 4 },
-    flipped: { transform: [{ rotate: '180deg' }] },
+    tab: {
+      alignSelf: 'center',
+      width: TAB_WIDTH,
+      height: TAB_HEIGHT,
+      marginTop: -1,
+      zIndex: 2,
+      elevation: 2,
+    },
+    chevron: { position: 'absolute', left: (TAB_WIDTH - CHEVRON) / 2, top: 5 },
     pressed: { opacity: 0.8 },
   });

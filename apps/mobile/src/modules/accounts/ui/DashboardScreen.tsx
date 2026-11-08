@@ -1,7 +1,8 @@
 // Dashboard tab (design Dashboard, inventory rows 5 and 6), owned by M6: the blue header with
 // "Hola, <nombre>", the chart icon that opens Estadísticas (M10) and the bell, the "Balance total"
 // card and Detalle de cuentas, which expands in place. The header stays over the page and shrinks
-// to a fifth of the screen while the page scrolls (QA review 2026-11-07, G3). Below, Planes de
+// to a fifth of the screen while the page scrolls (QA review 2026-11-07, G3). Dragging the header
+// down or up opens or closes Detalle de cuentas gradually, following the finger (G1). Below, Planes de
 // ahorro (M8's carousel), Movimientos (M7's preview), and the FAB "Registrar gasto o ingreso",
 // whose menu opens M7's sheet on Ingreso or Gasto.
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
@@ -14,7 +15,9 @@ import {
   View,
   type LayoutChangeEvent,
 } from 'react-native';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
+  Easing,
   runOnJS,
   useAnimatedRef,
   useAnimatedScrollHandler,
@@ -29,7 +32,6 @@ import {
   ErrorState,
   Fab,
   HeaderBlue,
-  motion,
   spacing,
   useTheme,
   useThemedStyles,
@@ -39,16 +41,20 @@ import {
 import type { AccountsOverview } from '../application/accountsService';
 import { accountRows, type MonthSummary } from '../domain/dashboard';
 import { ACCOUNT_DETAIL_ROUTE } from './AccountDetailScreen';
-import { AccountsPanel, DetailsTab } from './AccountsPanel';
+import { AccountsPanel, DetailsTab, TAB_HEIGHT } from './AccountsPanel';
 import { DashboardBalanceCard } from './DashboardBalanceCard';
 import { CARD_OPEN, collapse, compactCardHeight, HEADER_CHROME } from './dashboardCollapse';
+import { dragOpenness, settleOpenness } from './detailsDrag';
 import { FAB_BOTTOM, FabMenu } from './FabMenu';
 import { accountsStrings } from './strings.es-CO';
 
 const t = accountsStrings.dashboard;
 
-/** What the Detalle de cuentas tab adds below the header: 24 px high, 1 px up. */
-const TAB_OVERHANG = 23;
+/** What the Detalle de cuentas tab adds below the header: its height, 1 px up. */
+const TAB_OVERHANG = TAB_HEIGHT - 1;
+
+/** Detalle de cuentas opens and settles like the design's reveals: .38s cubic-bezier(.22,1,.36,1). */
+const SETTLE = { duration: 380, easing: Easing.bezier(0.22, 1, 0.36, 1) };
 
 export interface DashboardDeps {
   useAccounts: () => Pick<UseQueryResult<AccountsOverview>, 'data' | 'isError' | 'refetch'>;
@@ -87,7 +93,6 @@ export function createDashboardScreen(deps: DashboardDeps) {
     const insets = useSafeAreaInsets();
     const { height: windowHeight } = useWindowDimensions();
     const [expanded, setExpanded] = useState(false);
-    const [panelMounted, setPanelMounted] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const closeMenu = useCallback(() => setMenuOpen(false), []);
@@ -140,17 +145,41 @@ export function createDashboardScreen(deps: DashboardDeps) {
     const toggleDetails = () => {
       if (expanded) {
         setExpanded(false);
-        open.value = withTiming(0, { duration: motion.slow }, (done) => {
-          if (done) runOnJS(setPanelMounted)(false);
-        });
+        open.value = withTiming(0, SETTLE);
         return;
       }
       // Opening from a shrunk header goes back to the top first.
       if (scrollY.value > 0) scrollRef.current?.scrollTo({ y: 0, animated: true });
-      setPanelMounted(true);
       setExpanded(true);
-      open.value = withTiming(1, { duration: motion.slow });
+      open.value = withTiming(1, SETTLE);
     };
+
+    // G1: a vertical drag on the header moves the panel with the finger, at the top of the page.
+    // Horizontal swipes stay with the tab pager.
+    const dragStart = useSharedValue(0);
+    const dragging = useSharedValue(false);
+    const drag = usePanGesture({
+      activeOffsetY: [-10, 10],
+      failOffsetX: [-15, 15],
+      onActivate: () => {
+        'worklet';
+        dragging.value = scrollY.value <= 0;
+        dragStart.value = open.value;
+      },
+      onUpdate: (e) => {
+        'worklet';
+        if (!dragging.value) return;
+        open.value = dragOpenness(dragStart.value, e.translationY, panelHeight.value);
+      },
+      onDeactivate: (e) => {
+        'worklet';
+        if (!dragging.value) return;
+        dragging.value = false;
+        const target = settleOpenness(open.value, e.velocityY);
+        open.value = withTiming(target, SETTLE);
+        runOnJS(setExpanded)(target === 1);
+      },
+    });
 
     const newMovementRoute = deps.newMovementRoute;
     const sync = deps.refresh;
@@ -196,25 +225,32 @@ export function createDashboardScreen(deps: DashboardDeps) {
           {deps.renderGoals?.()}
           {deps.renderMovements?.()}
         </Animated.ScrollView>
-        <View style={styles.header} pointerEvents="box-none" testID="accounts.dashboard.header">
-          <View onLayout={onHeaderLayout}>
-            <HeaderBlue
-              dashboard
-              name={name}
-              hasUnread={unread > 0}
-              onPressAccount={() => navigation.navigate(deps.accountRoute)}
-              onPressStatistics={() => navigation.navigate(deps.statisticsRoute)}
-              onPressNotifications={() => navigation.navigate(deps.notificationsRoute)}
-            >
-              <View>
-                <DashboardBalanceCard
-                  totalMinor={overview?.balanceTotalMinor ?? null}
-                  connectedCount={overview?.connectedCount ?? 0}
-                  summary={summary}
-                  collapse={state}
-                />
-                {panelMounted ? (
-                  <Animated.View style={[styles.panel, panelStyle]}>
+        <GestureDetector gesture={drag}>
+          <View style={styles.header} pointerEvents="box-none" testID="accounts.dashboard.header">
+            <View onLayout={onHeaderLayout}>
+              <HeaderBlue
+                dashboard
+                name={name}
+                hasUnread={unread > 0}
+                onPressAccount={() => navigation.navigate(deps.accountRoute)}
+                onPressStatistics={() => navigation.navigate(deps.statisticsRoute)}
+                onPressNotifications={() => navigation.navigate(deps.notificationsRoute)}
+              >
+                <View>
+                  <DashboardBalanceCard
+                    totalMinor={overview?.balanceTotalMinor ?? null}
+                    connectedCount={overview?.connectedCount ?? 0}
+                    summary={summary}
+                    collapse={state}
+                  />
+                  {/* Always there, so a drag can open it; closed, nobody can read or touch it. */}
+                  <Animated.View
+                    style={[styles.panel, panelStyle]}
+                    pointerEvents={expanded ? 'auto' : 'none'}
+                    accessibilityElementsHidden={!expanded}
+                    importantForAccessibility={expanded ? 'auto' : 'no-hide-descendants'}
+                    testID="accounts.dashboard.panelFrame"
+                  >
                     <View onLayout={onPanelLayout}>
                       <AccountsPanel
                         rows={accountRows(overview?.accounts ?? [])}
@@ -225,12 +261,12 @@ export function createDashboardScreen(deps: DashboardDeps) {
                       />
                     </View>
                   </Animated.View>
-                ) : null}
-              </View>
-            </HeaderBlue>
+                </View>
+              </HeaderBlue>
+            </View>
+            <DetailsTab expanded={expanded} onToggle={toggleDetails} openness={open} />
           </View>
-          <DetailsTab expanded={expanded} onToggle={toggleDetails} />
-        </View>
+        </GestureDetector>
         {newMovementRoute && menuOpen ? (
           <FabMenu
             onClose={closeMenu}
