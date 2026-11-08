@@ -46,7 +46,7 @@ Several screens can be used with buttons and with gestures. **Every gesture has 
 | Detalle de cuenta | Swipe the account card sideways to change account ("1 de 4", `.hero` with `cursor:grab`), swipe down to close | The page dots; the chevron "Volver a Billetera" |
 | Estadísticas | The summary card shrinks as the page scrolls (`--p` from 0 to 1 drives `.st-card` and `.st-sum`) | none needed |
 | Estadísticas, Inversión | Drag along the line chart to read a day | The period control ("3 días", "Semana", "Mes", "Año") |
-| Movimientos, Dashboard, Billetera | Pull to refresh starts a sync (rule 4 of CLAUDE.md, 60 s cooldown) | none: the app also syncs on open |
+| Movimientos, Dashboard, Billetera | Pull to refresh starts a sync (rule 4 of CLAUDE.md, 60 s cooldown). On the Dashboard the pull is Fynk's own (QA review 2026-11-07, F3): the header and the page move down, an indicator grows in size and opacity above them, and letting go at the maximum syncs; it is also the page's "Actualizar" accessibility action | none: the app also syncs on open |
 | Metas, Centro de ayuda, Detalle de cuenta | Tap to expand a goal, a question or the movements list (`mt-open .28s ease-out`) | it is a button |
 | Notificaciones, Billetera, Recomendaciones, Inversión | Horizontal chips or cards with snap | Each chip is a button |
 
