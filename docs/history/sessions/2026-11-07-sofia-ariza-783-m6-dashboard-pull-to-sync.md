@@ -6,7 +6,7 @@ module: M6
 jira: [SCRUM-93]
 branch: feature/dashboard-pull-to-sync
 tool: Claude Code
-pr: none
+pr: "#343"
 status: done
 ---
 
@@ -27,7 +27,7 @@ Sofia asked to go on with the Dashboard findings of the 7 Nov app review: "Conti
 ## Result
 
 * Tests: 2,715 of 2,715 in the app, 128 snapshots. Typecheck, ESLint and Prettier clean.
-* Pull request: not opened yet. Stacked on #342 (stack #338), the last one of the Dashboard findings.
+* Pull request: #343, stacked on #342 (stack #338), the last one of the Dashboard findings.
 
 ## Decisions and problems
 
