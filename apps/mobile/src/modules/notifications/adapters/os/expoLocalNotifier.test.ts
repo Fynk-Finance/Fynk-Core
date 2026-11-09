@@ -1,7 +1,6 @@
 // The expo-notifications adapter: lock screen privacy, the date trigger, permissions and the
 // listeners. expo-notifications is native, so it is replaced by a Jest mock.
-import { Platform } from 'react-native';
-import { dialog } from '@shared/ui';
+import { Alert, Platform } from 'react-native';
 
 import * as Notifications from 'expo-notifications';
 
@@ -125,7 +124,7 @@ describe('createExpoLocalNotifier', () => {
 
 describe('explainPermission', () => {
   it('explains in Spanish and resolves with the button the person taps', async () => {
-    const alert = jest.spyOn(dialog, 'show').mockImplementation((_t, _m, buttons) => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
       buttons?.find((b) => b.text === 'Continuar')?.onPress?.();
     });
     await expect(explainPermission()).resolves.toBe(true);
