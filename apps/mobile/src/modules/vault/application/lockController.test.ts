@@ -247,6 +247,12 @@ function setup(
   };
 }
 
+/** Lets pending promises run until the condition holds. */
+async function waitUntil(condition: () => boolean) {
+  for (let i = 0; i < 50 && !condition(); i += 1) await Promise.resolve();
+  expect(condition()).toBe(true);
+}
+
 /** A pending GET /backup/recovery-key that the test answers by hand. */
 function deferredKey() {
   let resolve!: (key: StoredRecoveryKey | null) => void;
@@ -1200,6 +1206,23 @@ describe('vault owner', () => {
   const OLD_KEY = DEK;
   const NEW_KEY = Uint8Array.from({ length: 32 }, () => 7);
   const other = { owner: 'user-a', userId: 'user-b' } as const;
+
+  it('stays locked when a lock arrives while the owner tag is being written', async () => {
+    const t = setup({ loginAgoMs: MIN });
+    let finishWrite!: () => void;
+    (t.dekStore.writeOwner as jest.Mock).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishWrite = resolve;
+        }),
+    );
+    const opening = t.controller.unlock();
+    await waitUntil(() => finishWrite !== undefined);
+    await t.controller.lock();
+    finishWrite();
+    await opening;
+    expect(t.controller.getState().status).toBe('locked');
+  });
 
   it("never opens A's key for B on a fresh login, and sets B up from zero", async () => {
     const t = setup({ ...other, recoveryKey: 'missing' });
