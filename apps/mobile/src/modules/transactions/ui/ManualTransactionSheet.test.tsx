@@ -108,7 +108,9 @@ describe('Registrar movimiento', () => {
     await fireEvent.press(screen.getByText('Bancolombia · Cuenta de ahorros'));
     await fireEvent.press(screen.getByText('Ayer'));
     await fireEvent.changeText(screen.getByLabelText('Descripción'), 'Venta bicicleta');
-    await fireEvent.press(screen.getByText('Otros ingresos'));
+    // The categories are a dropdown (QA review 2026-11-07, V11): open it, then pick.
+    await fireEvent.press(screen.getByRole('button', { name: 'Categoría: Automática' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Otros ingresos' }));
     await fireEvent.press(screen.getByText('Guardar'));
 
     const [tx] = await m.service.getTransactionsBetween('2026-09-21', '2026-09-21');
@@ -118,6 +120,17 @@ describe('Registrar movimiento', () => {
       categoryId: 'income_other',
       categorySource: 'user',
     });
+  });
+
+  // QA review 2026-11-07, V11: one field instead of 21 chips.
+  it('keeps the categories folded in a dropdown until it is opened', async () => {
+    await setup();
+    const field = await screen.findByRole('button', { name: 'Categoría: Automática' });
+    expect(screen.queryByRole('radio', { name: 'Mercado' })).toBeNull();
+    await fireEvent.press(field);
+    expect(screen.getByRole('radio', { name: 'Automática' })).toBeChecked();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Mercado' }));
+    expect(screen.getByRole('button', { name: 'Categoría: Mercado' })).not.toBeExpanded();
   });
 
   it('says what is missing and saves nothing', async () => {

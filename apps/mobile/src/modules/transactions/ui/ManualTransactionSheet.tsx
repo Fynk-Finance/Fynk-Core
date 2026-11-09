@@ -16,17 +16,18 @@ import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CATEGORY_IDS, categoryLabel } from '@shared/domain/categories';
 import { formatCop } from '@shared/domain/money';
 import type { Account, Clock, Id, MoneyMinor, Transaction } from '@shared/domain/types';
 import {
   AppText,
   Chip,
+  Dropdown,
   EmptyState,
   Icon,
   PrimaryButton,
   SegmentedControl,
   TextField,
+  categoryOptions,
   radius,
   size,
   useTheme,
@@ -48,6 +49,7 @@ import { accountLabel } from './labels';
 import { transactionsStrings } from './strings.es-CO';
 
 const t = transactionsStrings.manual;
+const CATEGORY_OPTIONS = categoryOptions();
 const DAY_CHOICES: DayChoice[] = ['today', 'yesterday', 'other'];
 
 export interface ManualTransactionParams {
@@ -279,21 +281,16 @@ function Form({
         maxLength={80}
         error={errorOf('description')}
       />
-      <Group title={t.category}>
-        <Chip
-          label={t.automatic}
-          selected={draft.categoryId === null}
-          onPress={() => set({ categoryId: null })}
-        />
-        {CATEGORY_IDS.map((categoryId) => (
-          <Chip
-            key={categoryId}
-            label={categoryLabel(categoryId)}
-            selected={draft.categoryId === categoryId}
-            onPress={() => set({ categoryId })}
-          />
-        ))}
-      </Group>
+      {/* QA review 2026-11-07, V11: a dropdown with icons instead of 21 chips. */}
+      <Dropdown
+        label={t.category}
+        options={CATEGORY_OPTIONS}
+        value={draft.categoryId}
+        onChange={(categoryId) => set({ categoryId })}
+        noneLabel={t.automatic}
+        onClear={() => set({ categoryId: null })}
+        testID="transactions.manual.category"
+      />
       {note ? (
         <AppText variant="caption" color="textSecondary">
           {note}

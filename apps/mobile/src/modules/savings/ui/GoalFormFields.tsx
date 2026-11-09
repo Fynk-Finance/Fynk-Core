@@ -9,7 +9,7 @@ import type { IsoDate, MoneyMinor } from '@shared/domain/types';
 import {
   AmountText,
   AppText,
-  Chip,
+  Dropdown,
   Icon,
   TextField,
   radius,
@@ -22,9 +22,15 @@ import {
 
 import { GOAL_CATEGORIES, type GoalError, type GoalField } from '../domain/goal';
 import { addMonths, suggestionPreview, type GoalForm } from './goalFormState';
+import { GOAL_ICONS } from './goalIcons';
 import { monthLabel, savingsStrings } from './strings.es-CO';
 
 const t = savingsStrings.form;
+const CATEGORY_OPTIONS = GOAL_CATEGORIES.map((value) => ({
+  value,
+  label: savingsStrings.categories[value],
+  icon: GOAL_ICONS[value],
+}));
 
 export interface GoalFormFieldsProps {
   form: GoalForm;
@@ -72,20 +78,14 @@ export function GoalFormFields({
         testID={`${testID}.name`}
       />
 
-      <View style={styles.field}>
-        <AppText variant="label">{t.category}</AppText>
-        <View style={styles.chips} accessibilityRole="radiogroup">
-          {GOAL_CATEGORIES.map((c) => (
-            <Chip
-              key={c}
-              label={savingsStrings.categories[c]}
-              selected={form.category === c}
-              onPress={() => set({ category: c })}
-              testID={`${testID}.category.${c}`}
-            />
-          ))}
-        </View>
-      </View>
+      {/* QA review 2026-11-07, V11: a dropdown with icons instead of chips. */}
+      <Dropdown
+        label={t.category}
+        options={CATEGORY_OPTIONS}
+        value={form.category}
+        onChange={(category) => set({ category })}
+        testID={`${testID}.category`}
+      />
 
       <TextField
         label={t.target}
@@ -160,7 +160,6 @@ export function GoalFormFields({
 const createStyles = ({ colors }: Theme) =>
   StyleSheet.create({
     field: { gap: spacing.md },
-    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
     // Same box as the text fields (TextField), with the month between two chevrons.
     month: {
       flexDirection: 'row',

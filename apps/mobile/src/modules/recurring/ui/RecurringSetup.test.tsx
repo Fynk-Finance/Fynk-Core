@@ -85,6 +85,8 @@ describe('Gastos recurrentes (onboarding step 5)', () => {
   it('opens a new item when there are none, saves it and updates the total', async () => {
     await renderSetup();
     await fireEvent.changeText(await screen.findByTestId('recurring.setup.new.name'), 'Arriendo');
+    // The categories are a dropdown (QA review 2026-11-07, V11): open it, then pick.
+    await fireEvent.press(screen.getByTestId('recurring.setup.new.category'));
     await fireEvent.press(screen.getByTestId('recurring.setup.new.category.rent'));
     await fireEvent.changeText(screen.getByTestId('recurring.setup.new.amount'), '1.200.000');
     await fireEvent.changeText(screen.getByTestId('recurring.setup.new.day'), '5');

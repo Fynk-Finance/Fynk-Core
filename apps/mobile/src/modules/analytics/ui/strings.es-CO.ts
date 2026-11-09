@@ -121,6 +121,7 @@ export const analyticsStrings = {
     titleNew: 'Nuevo tope',
     titleEdit: 'Editar tope',
     category: 'Categoría',
+    categoryPlaceholder: 'Elige una categoría',
     period: 'Periodo',
     amount: 'Monto del tope',
     amountHelper: 'Lo que quieres gastar como máximo en el periodo.',
