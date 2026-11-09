@@ -132,6 +132,7 @@ Each person reviews the pull requests of their modules (see `.github/CODEOWNERS`
 | Audit events | Cloud, append only, hash chained |
 | Nonces, refresh rate limits, caches | Redis |
 | Vault owner (the Keycloak `sub` the vault key belongs to) | Phone Keychain, beside the vault key, not backed up |
+| Biometrics offer mark (yes/no, the one-time question was shown) | Phone Keychain, beside the vault key, not backed up |
 | Theme preference (Sistema, Claro, Oscuro) | Phone, plain app storage outside the vault, not backed up |
 | Banco Demo customers and their simulated data | Its own schema `bankdemo`. A Fynk user's customer id there is their Keycloak `sub`, never the email, name or cédula |
 
