@@ -90,11 +90,13 @@ async function renderBilletera(
   preference: ThemePreference = 'light',
   unread = 0,
   params?: { filter?: 'low_use' },
+  displayName?: string | null,
 ) {
   const Billetera = createBilleteraScreen({
     service,
     clock,
     useUnreadCount: () => unread,
+    useDisplayName: () => displayName ?? null,
     accountRoute: 'identity.Account',
     notificationsRoute: 'notifications.Inbox',
     recommendationsRoute: 'Recomendaciones',
@@ -131,6 +133,17 @@ async function markLowUse() {
 }
 
 describe('Billetera', () => {
+  it('greets the person by the name typed in onboarding', async () => {
+    await renderBilletera('light', 0, undefined, 'Laura Gómez');
+    expect(await screen.findByText(/Laura Gómez/)).toBeOnTheScreen();
+    expect(screen.queryByText(/Invitado/)).toBeNull();
+  });
+
+  it('says Invitado while there is no name', async () => {
+    await renderBilletera('light', 0, undefined, null);
+    expect(await screen.findByText(/Invitado/)).toBeOnTheScreen();
+  });
+
   it('pull to refresh calls M5 syncNow and reloads the items (HU-011)', async () => {
     let calls = 0;
     // A sync that brings a new fixed expense, written to the vault without notifying Billetera.

@@ -63,6 +63,8 @@ export interface BilleteraDeps {
   clock: Clock;
   /** Unread notifications for the bell (M12). */
   useUnreadCount: () => number;
+  /** The name typed in onboarding (M3), or null while it loads or when there is none. */
+  useDisplayName?: () => string | null;
   accountRoute: string;
   notificationsRoute: string;
   /** The savings banner opens Recomendaciones (inventory row 9). */
@@ -103,6 +105,7 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
     const detected = usePendingProposals(deps.pendingProposals, state);
     const priceUp = usePriceUpItems(deps.priceUpItems, state);
     const unread = deps.useUnreadCount();
+    const name = deps.useDisplayName?.() ?? t.guest;
     const today = bogotaToday(deps.clock.now());
     const add = () => navigation.navigate(RECURRING_FORM_ROUTE);
     const edit = (item: StoredRecurringItem) =>
@@ -110,7 +113,7 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
 
     const header = (
       <HeaderBlue
-        name={t.guest}
+        name={name}
         hasUnread={unread > 0}
         onPressAccount={() => navigation.navigate(deps.accountRoute)}
         onPressNotifications={() => navigation.navigate(deps.notificationsRoute)}
