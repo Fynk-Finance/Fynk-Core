@@ -208,3 +208,12 @@ describe('restore on a new phone', () => {
     expect(screen.getByTestId('vault.restore.error')).toHaveTextContent(r.errors.wrongCode);
   });
 });
+
+it('signs out from the lock screen link so another account can sign in', async () => {
+  const { controller } = fakeController();
+  const signOut = jest.fn(async () => undefined);
+  const Flow = createVaultFlow(controller, { copyText: jest.fn(async () => true), signOut });
+  await render(<Flow />);
+  await fireEvent.press(screen.getByRole('link', { name: t.useOtherAccount }));
+  expect(signOut).toHaveBeenCalledTimes(1);
+});

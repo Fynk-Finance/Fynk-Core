@@ -9,7 +9,7 @@ function setup(
     available?: boolean;
     copyB?: boolean;
     bio?: BiometricRead;
-    reauth?: 'ok' | 'cancelled' | 'failed';
+    reauth?: 'ok' | 'cancelled' | 'failed' | 'otherAccount';
     copyA?: Uint8Array | null;
   } = {},
 ) {
@@ -71,6 +71,12 @@ describe('with the password', () => {
   it('returns null when the person cancels the login', async () => {
     const { confirm, dekStore } = setup({ copyB: false, reauth: 'cancelled' });
     expect(await confirm()).toBeNull();
+    expect(dekStore.read).not.toHaveBeenCalled();
+  });
+
+  it('throws and never reads the key when the login was another account', async () => {
+    const { confirm, dekStore } = setup({ copyB: false, reauth: 'otherAccount' });
+    await expect(confirm()).rejects.toThrow('the password check failed');
     expect(dekStore.read).not.toHaveBeenCalled();
   });
 

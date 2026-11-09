@@ -21,8 +21,12 @@ export interface SessionState {
 /** `changed`: the new password is set. `cancelled`: nothing changed. `failed`: try again. */
 export type ChangePasswordResult = 'changed' | 'cancelled' | 'failed';
 
-/** `ok`: a fresh login of the same account. `cancelled`: nothing changed. `failed`: try again. */
-export type ReauthenticateResult = 'ok' | 'cancelled' | 'failed';
+/**
+ * `ok`: a fresh login of the same account. `cancelled`: nothing changed. `failed`: try again.
+ * `otherAccount`: the login was valid but for a different account than this phone's session;
+ * nothing was kept.
+ */
+export type ReauthenticateResult = 'ok' | 'cancelled' | 'failed' | 'otherAccount';
 
 export interface SessionService {
   getState(): SessionState;
@@ -117,13 +121,17 @@ export function createSessionService({ oidc, store, clock }: SessionDeps): Sessi
     old: TokenSet,
     next: TokenSet,
     gen: number,
-  ): Promise<'kept' | 'cancelled' | 'failed'> => {
+  ): Promise<'kept' | 'cancelled' | 'failed' | 'otherAccount'> => {
     // Keycloak asks for the login first, and someone could sign in there with another account.
     // The vault on this phone belongs to this account, so tokens of another one are never kept.
     const before = subjectOf(old.idToken);
-    if (before === null || subjectOf(next.idToken) !== before) {
+    if (before === null) {
       await oidc.endSession(next).catch(() => undefined);
       return 'failed';
+    }
+    if (subjectOf(next.idToken) !== before) {
+      await oidc.endSession(next).catch(() => undefined);
+      return 'otherAccount';
     }
     try {
       await store.save(next);
@@ -158,6 +166,8 @@ export function createSessionService({ oidc, store, clock }: SessionDeps): Sessi
       return 'cancelled';
     }
     const adopted = await adopt(old, answer.tokens, gen);
+    // Changing the password of another account is a failure, not a lock screen case.
+    if (adopted === 'otherAccount') return 'failed';
     if (adopted !== 'kept') return adopted;
     if (answer.actionStatus === 'success') return 'changed';
     return answer.actionStatus === 'cancelled' ? 'cancelled' : 'failed';

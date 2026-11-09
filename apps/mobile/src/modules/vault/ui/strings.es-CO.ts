@@ -11,7 +11,11 @@ export const vaultStrings = {
     passwordHint: 'Abre el inicio de sesión de Fynk en el navegador',
     unlocking: 'Abriendo tu bóveda',
     passwordFailed: 'No pudimos verificar tu contraseña. Intenta de nuevo.',
+    useOtherAccount: 'Usar otra cuenta',
+    useOtherAccountHint: 'Cierra la sesión en este teléfono y vuelve al inicio',
     notices: {
+      otherAccount:
+        'Ingresaste con una cuenta distinta a la de este teléfono. Para cambiarla, toca «Usar otra cuenta».',
       biometricsOff:
         'Cambiaron las huellas o el rostro del teléfono. Desactivamos la biometría de Fynk: ingresa con tu contraseña.',
       biometricFailed:
