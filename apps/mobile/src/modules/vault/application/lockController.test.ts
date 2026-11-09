@@ -47,6 +47,12 @@ function setup(
     approvalStart?: ApprovalStart;
     /** What the server answers to the reset. Default `ok`. */
     resetResult?: ResetResult;
+    /** The account the stored key belongs to. Default null: a phone set up before the tag. */
+    owner?: string | null;
+    /** The signed in account. Default `user-a`. */
+    userId?: string | null;
+    readOwnerError?: Error;
+    writeOwnerError?: Error;
   } = {},
 ) {
   const clock = createFixedClock(START);
@@ -57,6 +63,7 @@ function setup(
 
   let stored: Uint8Array | null = options.dek === undefined ? DEK : options.dek;
   let copyB: Uint8Array | null = options.copyB ?? null;
+  let owner: string | null = options.owner ?? null;
   let opened = false;
   let openError = options.openError;
   const dekStore: DekStore = {
@@ -65,9 +72,19 @@ function setup(
       stored = dek;
     }),
     remove: jest.fn(async () => undefined),
+    // Like the real one: the owner tag goes with the keys.
     removeAll: jest.fn(async () => {
       stored = null;
       copyB = null;
+      owner = null;
+    }),
+    readOwner: jest.fn(async () => {
+      if (options.readOwnerError) throw options.readOwnerError;
+      return owner;
+    }),
+    writeOwner: jest.fn(async (id: string) => {
+      if (options.writeOwnerError) throw options.writeOwnerError;
+      owner = id;
     }),
     biometricsAvailable: jest.fn(async () => options.biometrics ?? true),
     hasBiometric: jest.fn(async () => copyB !== null),
@@ -95,6 +112,7 @@ function setup(
     }),
     wipe: jest.fn(async () => {
       opened = false;
+      await dekStore.removeAll();
     }),
   } satisfies Pick<Vault, 'open' | 'close' | 'wipe'>;
 
@@ -110,6 +128,7 @@ function setup(
       if (device === 'offline') throw new Error('network');
       return device;
     }),
+    userId: () => (options.userId === undefined ? 'user-a' : options.userId),
     onSessionChange: (listener) => {
       sessionListeners.add(listener);
       return () => sessionListeners.delete(listener);
@@ -175,6 +194,7 @@ function setup(
   });
 
   let nowMs = 1_000_000;
+  const resetBackupState = jest.fn();
   const newDek = jest.fn(() => Uint8Array.from({ length: 32 }, () => 7));
   const controller: LockController = createLockController({
     vault,
@@ -190,9 +210,12 @@ function setup(
     restoreWithCode: { restore, resumePending },
     restoreWithApproval: { start: approvalStart, check: approvalCheck },
     resetBackup: { reset },
+    resetBackupState,
   });
   return {
     controller,
+    resetBackupState,
+    owner: () => owner,
     recoveryGet,
     restore,
     resumePending,
@@ -1170,5 +1193,122 @@ describe('restore that was cut short', () => {
     const t = setup({ backup: false });
     await t.controller.unlock();
     expect(t.resumePending).not.toHaveBeenCalled();
+  });
+});
+
+describe('vault owner', () => {
+  const OLD_KEY = DEK;
+  const NEW_KEY = Uint8Array.from({ length: 32 }, () => 7);
+  const other = { owner: 'user-a', userId: 'user-b' } as const;
+
+  it("never opens A's key for B on a fresh login, and sets B up from zero", async () => {
+    const t = setup({ ...other, recoveryKey: 'missing' });
+    await t.controller.unlock();
+    expect(t.vault.open).not.toHaveBeenCalledWith(OLD_KEY);
+    expect(t.vault.wipe).toHaveBeenCalled();
+    // Before the wipe, so no upload starts during it, and after, for anything queued meanwhile.
+    expect(t.resetBackupState).toHaveBeenCalledTimes(2);
+    expect(t.dekStore.write).toHaveBeenCalledWith(NEW_KEY);
+    expect(t.owner()).toBe('user-b');
+    expect(t.controller.getState().status).toBe('recoveryCode');
+  });
+
+  it('wipes, then asks for the recovery code when the new account already has a backup', async () => {
+    const t = setup({ ...other, recoveryKey: 'exists' });
+    await t.controller.unlock();
+    expect(t.vault.wipe).toHaveBeenCalledTimes(1);
+    expect(t.vault.open).not.toHaveBeenCalled();
+    expect(t.controller.getState()).toEqual({ status: 'pendingDevice', deviceStatus: 'active' });
+  });
+
+  it('wipes instead of showing the lock screen when the login is not fresh', async () => {
+    const t = setup({ ...other, loginAgoMs: 60 * MIN, copyB: OLD_KEY, recoveryKey: 'missing' });
+    await t.controller.unlock();
+    expect(t.vault.wipe).toHaveBeenCalled();
+    expect(t.vault.open).not.toHaveBeenCalledWith(OLD_KEY);
+    expect(t.copyB()).toBeNull();
+    expect(t.controller.getState().status).toBe('recoveryCode');
+  });
+
+  it("never prompts for A's biometric copy while B is signed in", async () => {
+    const t = setup({ ...other, copyB: OLD_KEY, recoveryKey: 'missing' });
+    await t.controller.unlockWithBiometrics();
+    expect(t.dekStore.readBiometric).not.toHaveBeenCalled();
+    expect(t.vault.open).not.toHaveBeenCalledWith(OLD_KEY);
+    expect(t.vault.wipe).toHaveBeenCalled();
+
+    const auto = setup({ ...other, loginAgoMs: 60 * MIN, copyB: OLD_KEY });
+    await auto.controller.autoPromptBiometric();
+    expect(auto.dekStore.readBiometric).not.toHaveBeenCalled();
+    expect(auto.vault.open).not.toHaveBeenCalledWith(OLD_KEY);
+  });
+
+  it("never opens A's key through the password path", async () => {
+    const t = setup({ ...other, recoveryKey: 'missing' });
+    await t.controller.unlockWithPassword();
+    expect(t.vault.open).not.toHaveBeenCalledWith(OLD_KEY);
+    expect(t.vault.wipe).toHaveBeenCalled();
+    expect(t.owner()).toBe('user-b');
+  });
+
+  it('keeps the vault for the same account', async () => {
+    const t = setup({ owner: 'user-a', userId: 'user-a' });
+    await t.controller.unlock();
+    expect(t.vault.open).toHaveBeenCalledWith(OLD_KEY);
+    expect(t.vault.wipe).not.toHaveBeenCalled();
+    expect(t.resetBackupState).not.toHaveBeenCalled();
+  });
+
+  it('lets the current account adopt an untagged phone', async () => {
+    const t = setup({ owner: null, userId: 'user-b' });
+    await t.controller.unlock();
+    expect(t.vault.open).toHaveBeenCalledWith(OLD_KEY);
+    expect(t.vault.wipe).not.toHaveBeenCalled();
+    expect(t.owner()).toBe('user-b');
+  });
+
+  it('tags the owner after a restore with the code', async () => {
+    const t = setup({ dek: null, recoveryKey: 'exists' });
+    await t.controller.unlock();
+    expect(t.owner()).toBeNull();
+    await t.controller.restoreWithCode('CODE');
+    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+    expect(t.owner()).toBe('user-a');
+  });
+
+  it('tags the owner after an approval that restores', async () => {
+    const t = setup({
+      dek: null,
+      device: { id: 'd1', status: 'pending' },
+      approvalCheck: 'restored',
+    });
+    await t.controller.unlock();
+    await t.controller.checkApproval('req-1');
+    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+    expect(t.owner()).toBe('user-a');
+  });
+
+  it('fails closed when the owner cannot be read', async () => {
+    const t = setup({ owner: 'user-a', readOwnerError: new Error('keychain') });
+    await t.controller.unlock();
+    expect(t.controller.getState()).toEqual({ status: 'error', error: 'keychain' });
+    expect(t.vault.open).not.toHaveBeenCalled();
+  });
+
+  it('still unlocks when tagging the owner fails', async () => {
+    const t = setup({ owner: null, writeOwnerError: new Error('keychain') });
+    await t.controller.unlock();
+    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+  });
+
+  it('neither opens nor erases the vault when the session ended meanwhile', async () => {
+    const t = setup({ owner: 'user-a', userId: null, recoveryKey: 'missing' });
+    await t.controller.unlock();
+    expect(t.vault.open).not.toHaveBeenCalled();
+    expect(t.vault.wipe).not.toHaveBeenCalled();
+    expect(t.resetBackupState).not.toHaveBeenCalled();
+    expect(t.dekStore.write).not.toHaveBeenCalled();
+    expect(t.owner()).toBe('user-a');
+    expect(t.controller.getState()).toEqual({ status: 'error', error: 'keychain' });
   });
 });
