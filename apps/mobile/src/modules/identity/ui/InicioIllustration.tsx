@@ -521,4 +521,6 @@ export function InicioIllustration() {
   );
 }
 
-const styles = StyleSheet.create({ fill: { flex: 1 } });
+// Inicio's art box centers its children: without alignSelf this box measures 0 wide and the
+// picture is not drawn.
+const styles = StyleSheet.create({ fill: { flex: 1, alignSelf: 'stretch' } });
