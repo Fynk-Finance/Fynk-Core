@@ -35,6 +35,19 @@ describe('Switch', () => {
   });
 });
 
+/** WCAG contrast ratio of two #RRGGBB colors. */
+function contrast(a: string, b: string): number {
+  const luminance = (hex: string) => {
+    const [r, g, bl] = [1, 3, 5].map((i) => {
+      const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r! + 0.7152 * g! + 0.0722 * bl!;
+  };
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi! + 0.05) / (lo! + 0.05);
+}
+
 describe('SegmentedControl', () => {
   const options = [
     { value: 'week', label: 'Semana' },
@@ -78,13 +91,23 @@ describe('SegmentedControl', () => {
   };
 
   // QA review 2026-11-07, V12: on the page the white text of the header version was invisible.
-  it('reads on the page background in light mode: dark text, the choice in blue like a chip', async () => {
+  it('reads on the page background in light mode: dark text, the choice blue on the page color', async () => {
     await render(<SegmentedControl {...props} />);
     expect(screen.getByText('Mes')).toHaveStyle({ color: lightColors.textPrimary });
-    expect(screen.getByText('Semana')).toHaveStyle({ color: lightColors.onPrimary });
+    expect(screen.getByText('Semana')).toHaveStyle({ color: lightColors.primaryText });
     expect(screen.getByRole('radio', { name: 'Semana' })).toHaveStyle({
-      backgroundColor: lightColors.primaryDark,
+      backgroundColor: lightColors.background,
+      borderColor: lightColors.borderBlueStrong,
     });
+  });
+
+  // SCRUM-87: AA contrast (4.5:1 for 13 px text) in both themes.
+  it.each([
+    ['light', lightColors],
+    ['dark', darkColors],
+  ])('meets AA contrast on the page in the %s theme', (_, c) => {
+    expect(contrast(c.primaryText, c.background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(c.textPrimary, c.surfaceBlueSoft)).toBeGreaterThanOrEqual(4.5);
   });
 
   it('uses the dark palette on the page in dark mode', async () => {
@@ -94,8 +117,9 @@ describe('SegmentedControl', () => {
       </ThemeProvider>,
     );
     expect(screen.getByText('Mes')).toHaveStyle({ color: darkColors.textPrimary });
+    expect(screen.getByText('Semana')).toHaveStyle({ color: darkColors.primaryText });
     expect(screen.getByRole('radio', { name: 'Semana' })).toHaveStyle({
-      backgroundColor: darkColors.primaryDark,
+      backgroundColor: darkColors.background,
     });
   });
 
