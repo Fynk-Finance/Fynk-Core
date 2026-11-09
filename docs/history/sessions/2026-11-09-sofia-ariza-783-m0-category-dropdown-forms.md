@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-86]
 branch: feature/category-dropdown-forms
 tool: Claude Code
-pr: none
+pr: "#360"
 status: done
 ---
 
@@ -28,7 +28,7 @@ Part of "Lets fix all the visual problems at once", every pull request in one st
 ## Result
 
 * Tests: 2756 of 2756. Typecheck and ESLint clean.
-* Pull request: not opened yet (opened with the whole stack). Approvals: Karol (M8, M9), Julián (M10).
+* Pull request: #360, in stack #361 (#352 → #360). Approvals: Karol (M8, M9), Julián (M10).
 
 ## Decisions and problems
 
