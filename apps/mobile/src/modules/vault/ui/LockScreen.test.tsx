@@ -101,6 +101,22 @@ it('uses different background colors in light and dark', async () => {
   expect(probe('background')).not.toBe(light);
 });
 
+describe('layout of Login.html', () => {
+  it.each(['light', 'dark'] as const)(
+    'fills the space below the header in the %s theme',
+    async (preference) => {
+      await renderScreen({ status: 'locked' }, preference);
+      expect(screen.getByTestId('vault.lock.lime')).toHaveStyle({ flex: 1 });
+      expect(screen.getByTestId('vault.lock.sheet')).toHaveStyle({
+        flex: 1,
+        paddingTop: 36,
+        paddingHorizontal: 24,
+      });
+      expect(screen.getByTestId('vault.lock.otherAccount')).toHaveStyle({ marginTop: 'auto' });
+    },
+  );
+});
+
 describe('biometric button', () => {
   it('is not there without copy B', async () => {
     await renderScreen({ status: 'locked' });

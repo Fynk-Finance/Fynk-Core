@@ -31,13 +31,17 @@ export interface LockScreenProps {
 
 type SheetContentProps = Omit<LockScreenProps, 'onUseOtherAccount'>;
 
-// Login.html: header padding 48 / 24 and 24 between blocks; sheet padding 32 / 24.
+// Values from the design's Login (VerdeLogin): header padding 48 / 24 and 26 between the logo
+// and the titles; sheet padding 36 top / 24 sides / 32 bottom.
 const PAD_TOP = 48;
 const PAD_SIDE = 24;
-const GAP = 24;
-const SHEET_PAD = 32;
-// The lime layer shows 14 px above the white sheet (645 against 631 in Login.html).
+const GAP = 26;
+const SHEET_PAD_TOP = 36;
+const SHEET_PAD_BOTTOM = 32;
+// The lime layer shows 14 px above the white sheet (645 against 631 in Login).
 const LIME_EDGE = 14;
+// The lime layer starts 13 px below the header (y = 199 against a 186 px header in Login).
+const HEADER_GAP = 13;
 
 export function LockScreen({
   state,
@@ -73,12 +77,16 @@ export function LockScreen({
       </View>
 
       <View style={styles.bottom}>
-        <View style={[styles.lime, { backgroundColor: colors.accent }]}>
+        <View style={[styles.lime, { backgroundColor: colors.accent }]} testID="vault.lock.lime">
           <View
             style={[
               styles.sheet,
-              { backgroundColor: colors.background, paddingBottom: insets.bottom + SHEET_PAD },
+              {
+                backgroundColor: colors.background,
+                paddingBottom: insets.bottom + SHEET_PAD_BOTTOM,
+              },
             ]}
+            testID="vault.lock.sheet"
           >
             <SheetContent
               state={state}
@@ -190,20 +198,22 @@ const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
   header: { paddingHorizontal: PAD_SIDE, gap: GAP },
   titles: { gap: 8 },
-  bottom: { flex: 1, justifyContent: 'flex-end' },
+  bottom: { flex: 1, marginTop: HEADER_GAP },
   lime: {
+    flex: 1,
     paddingTop: LIME_EDGE,
     borderTopLeftRadius: radius.sheetSm,
     borderTopRightRadius: radius.sheetSm,
   },
   sheet: {
-    paddingTop: SHEET_PAD,
+    flex: 1,
+    paddingTop: SHEET_PAD_TOP,
     paddingHorizontal: PAD_SIDE,
     borderTopLeftRadius: radius.sheet,
     borderTopRightRadius: radius.sheet,
   },
   actions: { gap: 16 },
-  otherAccount: { alignSelf: 'center', paddingTop: 16 },
+  otherAccount: { alignSelf: 'center', marginTop: 'auto', paddingTop: 16 },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rule: { flex: 1, height: 1 },
   center: { alignItems: 'center', gap: 10, paddingVertical: 24 },
