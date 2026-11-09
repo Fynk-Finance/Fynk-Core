@@ -13,7 +13,7 @@ import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { ThemeProvider, useAppFonts, useTheme, type Theme } from '@shared/ui';
+import { DialogHost, ThemeProvider, useAppFonts, useTheme, type Theme } from '@shared/ui';
 
 import { buildLinking } from './linking';
 import { navigationBarStyle } from './navigationBar';
@@ -82,6 +82,8 @@ export function AppRoot() {
         <ThemeProvider>
           <QueryClientProvider client={queryClient}>
             <ThemedNavigation />
+            {/* The Fynk dialogs of dialog.show(), above every screen (QA review 2026-11-07, V8). */}
+            <DialogHost />
           </QueryClientProvider>
         </ThemeProvider>
       </SafeAreaProvider>

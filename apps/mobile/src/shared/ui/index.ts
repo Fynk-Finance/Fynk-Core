@@ -12,6 +12,7 @@ export * from './components/Badge';
 export * from './components/Button';
 export * from './components/Card';
 export * from './components/Chip';
+export * from './components/Dialog';
 export * from './components/Donut';
 export * from './components/Fab';
 export * from './components/HeaderBlue';

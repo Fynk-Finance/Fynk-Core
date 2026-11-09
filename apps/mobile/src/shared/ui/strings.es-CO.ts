@@ -17,6 +17,9 @@ export const uiStrings = {
   errorTitle: 'Algo salió mal',
   errorMessage: 'No pudimos cargar esta información. Intenta de nuevo.',
   simulated: 'Simulado',
+  // The Fynk dialog: its only button when none is given, and closing it from outside.
+  dialogOk: 'Entendido',
+  dialogDismiss: 'Cerrar',
   tabs: {
     dashboard: 'Dashboard',
     wallet: 'Billetera',
