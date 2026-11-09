@@ -38,11 +38,14 @@ export interface DekStore {
   write(dek: Uint8Array): Promise<void>;
   /** Removes copy A only. */
   remove(): Promise<void>;
-  /** Removes copy A, copy B and the owner tag. */
+  /** Removes copy A, copy B, the owner tag and the biometrics offer mark. */
   removeAll(): Promise<void>;
   /** The account (Keycloak `sub`) the key belongs to. Null when the key is not tagged. */
   readOwner(): Promise<string | null>;
   writeOwner(userId: string): Promise<void>;
+  /** True once the one-time "use biometrics?" question was spent on this phone. Never prompts. */
+  biometricOfferShown(): Promise<boolean>;
+  markBiometricOfferShown(): Promise<void>;
   /** True when the phone has usable biometrics (fingerprint or face enrolled). Never prompts. */
   biometricsAvailable(): Promise<boolean>;
   /** True when copy B exists. Never prompts. This is the "biometrics enabled" setting. */

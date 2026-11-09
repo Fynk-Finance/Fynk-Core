@@ -2,6 +2,7 @@ import * as Keychain from 'react-native-keychain';
 
 import {
   DEK_BIOMETRIC_KEYCHAIN_SERVICE,
+  DEK_BIOMETRIC_OFFER_KEYCHAIN_SERVICE,
   DEK_KEYCHAIN_SERVICE,
   DEK_OWNER_KEYCHAIN_SERVICE,
   createDekStore,
@@ -98,6 +99,40 @@ it('removeAll deletes copy B even when deleting copy A fails', async () => {
 it('fails loudly when the keychain refuses the write', async () => {
   mocked.setGenericPassword.mockResolvedValueOnce(false);
   await expect(createDekStore().write(dek)).rejects.toThrow('keychain write failed');
+});
+
+describe('biometrics offer mark', () => {
+  it('starts unset and is stored under its own service, on this device only', async () => {
+    const store = createDekStore();
+    await store.removeAll();
+    expect(await store.biometricOfferShown()).toBe(false);
+    await store.markBiometricOfferShown();
+    expect(await store.biometricOfferShown()).toBe(true);
+    expect(mocked.setGenericPassword).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        service: DEK_BIOMETRIC_OFFER_KEYCHAIN_SERVICE,
+        accessible: 'AccessibleWhenUnlockedThisDeviceOnly',
+        cloudSync: false,
+      }),
+    );
+  });
+
+  it('goes with the keys in removeAll, even when an earlier removal fails', async () => {
+    const store = createDekStore();
+    await store.markBiometricOfferShown();
+    mocked.resetGenericPassword.mockRejectedValueOnce(new Error('keystore busy'));
+    await expect(store.removeAll()).rejects.toThrow('keystore busy');
+    expect(await store.biometricOfferShown()).toBe(false);
+  });
+
+  it('fails loudly when the keychain refuses the mark', async () => {
+    mocked.setGenericPassword.mockResolvedValueOnce(false);
+    await expect(createDekStore().markBiometricOfferShown()).rejects.toThrow(
+      'keychain write failed',
+    );
+  });
 });
 
 describe('owner tag', () => {

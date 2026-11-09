@@ -4,6 +4,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 
 import type { LockController } from '../application/lockController';
+import { BiometricOfferScreen } from './BiometricOfferScreen';
 import { LockScreen } from './LockScreen';
 import { RecoveryCodeScreen } from './RecoveryCodeScreen';
 import { RestoreScreen } from './RestoreScreen';
@@ -31,6 +32,14 @@ export function createVaultFlow(controller: LockController, { copyText, signOut 
           groups={state.recovery.groups}
           onConfirm={(lastGroup) => controller.confirmRecoveryCode(lastGroup)}
           copyText={copyText}
+        />
+      );
+    }
+    if (state.status === 'biometricOffer') {
+      return (
+        <BiometricOfferScreen
+          onEnable={() => controller.enableBiometrics()}
+          onDone={() => controller.finishBiometricOffer()}
         />
       );
     }

@@ -39,6 +39,8 @@ async function renderSetting(
     removeAll: jest.fn(async () => undefined),
     readOwner: jest.fn(async () => null),
     writeOwner: jest.fn(async () => undefined),
+    biometricOfferShown: jest.fn(async () => false),
+    markBiometricOfferShown: jest.fn(async () => undefined),
     biometricsAvailable: jest.fn(async () => options.biometrics ?? true),
     hasBiometric: jest.fn(async () => copyB !== null),
     writeBiometric: jest.fn(async (dek) => {

@@ -53,6 +53,9 @@ function setup(
     userId?: string | null;
     readOwnerError?: Error;
     writeOwnerError?: Error;
+    /** The one-time biometrics offer was already shown on this phone. */
+    offerShown?: boolean;
+    markOfferError?: Error;
   } = {},
 ) {
   const clock = createFixedClock(START);
@@ -64,6 +67,7 @@ function setup(
   let stored: Uint8Array | null = options.dek === undefined ? DEK : options.dek;
   let copyB: Uint8Array | null = options.copyB ?? null;
   let owner: string | null = options.owner ?? null;
+  let offerShown = options.offerShown ?? false;
   let opened = false;
   let openError = options.openError;
   const dekStore: DekStore = {
@@ -77,6 +81,12 @@ function setup(
       stored = null;
       copyB = null;
       owner = null;
+      offerShown = false;
+    }),
+    biometricOfferShown: jest.fn(async () => offerShown),
+    markBiometricOfferShown: jest.fn(async () => {
+      if (options.markOfferError) throw options.markOfferError;
+      offerShown = true;
     }),
     readOwner: jest.fn(async () => {
       if (options.readOwnerError) throw options.readOwnerError;
@@ -393,7 +403,7 @@ describe('phone that already has a key', () => {
 
 describe('unlockWithPassword', () => {
   it('opens with copy A after Keycloak confirms', async () => {
-    const t = setup({ loginAgoMs: 60 * MIN, reauth: 'ok' });
+    const t = setup({ loginAgoMs: 60 * MIN, reauth: 'ok', offerShown: true });
     await t.controller.unlock();
     expect(t.controller.getState().status).toBe('locked');
     await t.controller.unlockWithPassword();
@@ -599,7 +609,12 @@ describe('biometric unlock (copy B)', () => {
   });
 
   it('copy B disappears after an enrollment change: deleted, notice, password needed', async () => {
-    const t = setup({ copyB: DEK, loginAgoMs: STALE, read: { status: 'invalidated' } });
+    const t = setup({
+      copyB: DEK,
+      loginAgoMs: STALE,
+      read: { status: 'invalidated' },
+      offerShown: true,
+    });
     await t.controller.unlock();
     await t.controller.unlockWithBiometrics();
     expect(t.copyB()).toBeNull();
@@ -726,7 +741,7 @@ describe('recovery code after an open', () => {
   });
 
   it('does the same after the password and after biometrics', async () => {
-    const pw = setup({ loginAgoMs: 60 * MIN, recoveryKey: 'missing' });
+    const pw = setup({ loginAgoMs: 60 * MIN, recoveryKey: 'missing', offerShown: true });
     await pw.controller.unlock();
     await pw.controller.unlockWithPassword();
     expect(pw.controller.getState().status).toBe('recoveryCode');
@@ -1220,6 +1235,128 @@ describe('restore that was cut short', () => {
     const t = setup({ backup: false });
     await t.controller.unlock();
     expect(t.resumePending).not.toHaveBeenCalled();
+  });
+});
+
+describe('one-time biometrics offer', () => {
+  const stale = { loginAgoMs: 60 * MIN } as const;
+
+  async function unlockedWithPassword(t: ReturnType<typeof setup>) {
+    await t.controller.unlock();
+    await t.controller.unlockWithPassword();
+  }
+
+  it('shows after the first password unlock, with the vault already open', async () => {
+    const t = setup(stale);
+    await unlockedWithPassword(t);
+    expect(t.controller.getState()).toEqual({ status: 'biometricOffer' });
+    expect(t.vault.open).toHaveBeenCalledTimes(1);
+    expect(t.dekStore.markBiometricOfferShown).toHaveBeenCalledTimes(1);
+  });
+
+  it('never shows twice on the same phone', async () => {
+    const t = setup(stale);
+    await unlockedWithPassword(t);
+    t.controller.finishBiometricOffer();
+    expect(t.controller.getState().status).toBe('unlocked');
+    await t.controller.lock();
+    await t.controller.unlockWithPassword();
+    expect(t.controller.getState().status).toBe('unlocked');
+  });
+
+  it('waits for a phone with biometrics, and does not spend the offer', async () => {
+    const t = setup({ ...stale, biometrics: false });
+    await unlockedWithPassword(t);
+    expect(t.controller.getState().status).toBe('unlocked');
+    expect(t.dekStore.markBiometricOfferShown).not.toHaveBeenCalled();
+  });
+
+  it('is not shown when biometrics are already on, and the offer is spent', async () => {
+    const t = setup({ ...stale, copyB: DEK });
+    await unlockedWithPassword(t);
+    expect(t.controller.getState().status).toBe('unlocked');
+    expect(t.dekStore.markBiometricOfferShown).toHaveBeenCalledTimes(1);
+  });
+
+  it('is not shown when it was shown before', async () => {
+    const t = setup({ ...stale, offerShown: true });
+    await unlockedWithPassword(t);
+    expect(t.controller.getState().status).toBe('unlocked');
+  });
+
+  it('is not shown after a fresh login or a biometric unlock', async () => {
+    const fresh = setup({ loginAgoMs: MIN });
+    await fresh.controller.unlock();
+    expect(fresh.controller.getState().status).toBe('unlocked');
+
+    const bio = setup({ ...stale, copyB: DEK });
+    await bio.controller.unlock();
+    await bio.controller.unlockWithBiometrics();
+    expect(bio.controller.getState().status).toBe('unlocked');
+    expect(bio.dekStore.markBiometricOfferShown).not.toHaveBeenCalled();
+  });
+
+  it('lets the person in when the mark cannot be saved, so it never repeats', async () => {
+    const t = setup({ ...stale, markOfferError: new Error('keychain') });
+    await unlockedWithPassword(t);
+    expect(t.controller.getState().status).toBe('unlocked');
+  });
+
+  it('does not look for a missing recovery code behind the offer', async () => {
+    const t = setup({ ...stale, recoveryKey: 'missing' });
+    await unlockedWithPassword(t);
+    expect(t.controller.getState().status).toBe('biometricOffer');
+    expect(t.prepare).not.toHaveBeenCalled();
+  });
+
+  it('turns biometrics on from the offer', async () => {
+    const t = setup({ ...stale });
+    await unlockedWithPassword(t);
+    expect(await t.controller.enableBiometrics()).toBe('enabled');
+    expect(t.copyB()).toEqual(DEK);
+  });
+
+  it('finishing does nothing outside the offer', async () => {
+    const t = setup(stale);
+    await t.controller.unlock();
+    t.controller.finishBiometricOffer();
+    expect(t.controller.getState().status).toBe('locked');
+  });
+
+  it('counts as open: another unlock does not run behind it', async () => {
+    const t = setup(stale);
+    await unlockedWithPassword(t);
+    await t.controller.unlockWithPassword();
+    await t.controller.unlock();
+    expect(t.identity.reauthenticate).toHaveBeenCalledTimes(1);
+    expect(t.controller.getState().status).toBe('biometricOffer');
+  });
+
+  it('locks after more than 5 minutes away, like the open app', async () => {
+    const t = setup(stale);
+    await unlockedWithPassword(t);
+    t.controller.appBackgrounded();
+    t.advance(6 * MIN);
+    await t.controller.appForegrounded();
+    expect(t.controller.getState().status).toBe('locked');
+  });
+
+  it('stays locked when a lock arrives while the offer is being checked', async () => {
+    const t = setup(stale);
+    let answer!: (shown: boolean) => void;
+    (t.dekStore.biometricOfferShown as jest.Mock).mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          answer = resolve;
+        }),
+    );
+    await t.controller.unlock();
+    const opening = t.controller.unlockWithPassword();
+    await waitUntil(() => answer !== undefined);
+    await t.controller.lock();
+    answer(false);
+    await opening;
+    expect(t.controller.getState().status).toBe('locked');
   });
 });
 

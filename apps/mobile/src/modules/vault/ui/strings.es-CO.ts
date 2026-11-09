@@ -134,6 +134,14 @@ export const vaultStrings = {
     switchLabel: 'Face ID o huella',
     switchHint: 'Abre Fynk sin escribir tu contraseña',
     failed: 'No pudimos cambiar esta opción. Intenta de nuevo.',
+    // Not in the design: new screen, needs design review.
+    offer: {
+      title: '¿Usar tu huella o Face ID?',
+      subtitle:
+        'Abre Fynk sin escribir tu contraseña. Puedes cambiarlo cuando quieras en Mi cuenta › Seguridad.',
+      enable: 'Activar',
+      later: 'Ahora no',
+    },
   },
   // Not in the design: new screen, needs design review. Card style of OnbListo.html, input of
   // OnbCorreo.html.

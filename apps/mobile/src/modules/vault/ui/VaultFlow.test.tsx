@@ -30,6 +30,8 @@ function fakeController(initial: LockState = { status: 'locked' }) {
     })),
     checkApproval: jest.fn(async () => 'waiting' as const),
     resetBackup: jest.fn(async () => 'notAllowed' as const),
+    enableBiometrics: jest.fn(async () => 'enabled' as const),
+    finishBiometricOffer: jest.fn(),
   } as unknown as LockController;
   const set = (next: LockState) =>
     act(async () => {
@@ -48,6 +50,18 @@ it('asks Keycloak for the password when the button is pressed', async () => {
   await render(<Flow />);
   await fireEvent.press(screen.getByRole('button', { name: t.password }));
   expect(controller.unlockWithPassword).toHaveBeenCalledTimes(1);
+});
+
+it('shows the biometrics offer and leaves it when biometrics are on', async () => {
+  const { controller } = fakeController({ status: 'biometricOffer' });
+  const Flow = createVaultFlow(controller, {
+    copyText: jest.fn(async () => undefined),
+    signOut: jest.fn(),
+  });
+  await render(<Flow />);
+  await fireEvent.press(screen.getByRole('button', { name: vaultStrings.biometric.offer.enable }));
+  expect(controller.enableBiometrics).toHaveBeenCalledTimes(1);
+  expect(controller.finishBiometricOffer).toHaveBeenCalledTimes(1);
 });
 
 it('follows the controller state', async () => {
