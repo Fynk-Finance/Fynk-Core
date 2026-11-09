@@ -5374,6 +5374,940 @@ exports[`design system catalog Chip / Filters matches its snapshot 1`] = `
 </View>
 `;
 
+exports[`design system catalog Dialog / Confirm matches its dark snapshot 1`] = `
+<View
+  accessibilityViewIsModal={true}
+  style={
+    {
+      "backgroundColor": "#13212D",
+      "borderRadius": 20,
+      "elevation": 2,
+      "gap": 22,
+      "maxWidth": 360,
+      "padding": 24,
+      "shadowColor": "#000000",
+      "shadowOffset": {
+        "height": 6,
+        "width": 0,
+      },
+      "shadowOpacity": 0.2,
+      "shadowRadius": 8,
+      "width": "100%",
+    }
+  }
+  testID="dialog.card"
+>
+  <View
+    style={
+      {
+        "gap": 8,
+      }
+    }
+  >
+    <Text
+      accessibilityRole="header"
+      style={
+        [
+          {
+            "fontFamily": "SpaceGrotesk_700Bold",
+            "fontSize": 16,
+            "lineHeight": 21,
+          },
+          {
+            "color": "#E8F1F6",
+          },
+          null,
+          undefined,
+        ]
+      }
+    >
+      ¿Cerrar sesión?
+    </Text>
+    <Text
+      style={
+        [
+          {
+            "fontFamily": "PlusJakartaSans_400Regular",
+            "fontSize": 15,
+            "lineHeight": 22,
+          },
+          {
+            "color": "#97ABB8",
+          },
+          null,
+          undefined,
+        ]
+      }
+    >
+      Tus datos siguen guardados en este teléfono.
+    </Text>
+  </View>
+  <View
+    style={
+      {
+        "gap": 10,
+      }
+    }
+  >
+    <View
+      accessibilityLabel="Cerrar sesión"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": false,
+          "checked": undefined,
+          "disabled": false,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "alignSelf": "stretch",
+            "borderRadius": 16,
+            "justifyContent": "center",
+            "paddingHorizontal": 16,
+          },
+          {
+            "backgroundColor": "#2E1A1C",
+            "height": 52,
+          },
+          {
+            "borderColor": "#5A2A2A",
+            "borderWidth": 1.5,
+          },
+          undefined,
+          null,
+          undefined,
+        ]
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 10,
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "color": "#FF7D6E",
+              "fontFamily": "PlusJakartaSans_700Bold",
+              "fontSize": 15,
+            }
+          }
+        >
+          Cerrar sesión
+        </Text>
+      </View>
+    </View>
+    <View
+      accessibilityLabel="Cancelar"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": false,
+          "checked": undefined,
+          "disabled": false,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "alignSelf": "stretch",
+            "borderRadius": 16,
+            "justifyContent": "center",
+            "paddingHorizontal": 16,
+          },
+          {
+            "backgroundColor": "#13212D",
+            "height": 52,
+          },
+          {
+            "borderColor": "#22313D",
+            "borderWidth": 1.5,
+          },
+          undefined,
+          null,
+          undefined,
+        ]
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 10,
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "color": "#E8F1F6",
+              "fontFamily": "PlusJakartaSans_700Bold",
+              "fontSize": 15,
+            }
+          }
+        >
+          Cancelar
+        </Text>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`design system catalog Dialog / Confirm matches its snapshot 1`] = `
+<View
+  accessibilityViewIsModal={true}
+  style={
+    {
+      "backgroundColor": "#FFFFFF",
+      "borderRadius": 20,
+      "elevation": 2,
+      "gap": 22,
+      "maxWidth": 360,
+      "padding": 24,
+      "shadowColor": "#0F2233",
+      "shadowOffset": {
+        "height": 6,
+        "width": 0,
+      },
+      "shadowOpacity": 0.2,
+      "shadowRadius": 8,
+      "width": "100%",
+    }
+  }
+  testID="dialog.card"
+>
+  <View
+    style={
+      {
+        "gap": 8,
+      }
+    }
+  >
+    <Text
+      accessibilityRole="header"
+      style={
+        [
+          {
+            "fontFamily": "SpaceGrotesk_700Bold",
+            "fontSize": 16,
+            "lineHeight": 21,
+          },
+          {
+            "color": "#0F2233",
+          },
+          null,
+          undefined,
+        ]
+      }
+    >
+      ¿Cerrar sesión?
+    </Text>
+    <Text
+      style={
+        [
+          {
+            "fontFamily": "PlusJakartaSans_400Regular",
+            "fontSize": 15,
+            "lineHeight": 22,
+          },
+          {
+            "color": "#5E7482",
+          },
+          null,
+          undefined,
+        ]
+      }
+    >
+      Tus datos siguen guardados en este teléfono.
+    </Text>
+  </View>
+  <View
+    style={
+      {
+        "gap": 10,
+      }
+    }
+  >
+    <View
+      accessibilityLabel="Cerrar sesión"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": false,
+          "checked": undefined,
+          "disabled": false,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "alignSelf": "stretch",
+            "borderRadius": 16,
+            "justifyContent": "center",
+            "paddingHorizontal": 16,
+          },
+          {
+            "backgroundColor": "#FFF5F5",
+            "height": 52,
+          },
+          {
+            "borderColor": "#F3C7C7",
+            "borderWidth": 1.5,
+          },
+          undefined,
+          null,
+          undefined,
+        ]
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 10,
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "color": "#C0392B",
+              "fontFamily": "PlusJakartaSans_700Bold",
+              "fontSize": 15,
+            }
+          }
+        >
+          Cerrar sesión
+        </Text>
+      </View>
+    </View>
+    <View
+      accessibilityLabel="Cancelar"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": false,
+          "checked": undefined,
+          "disabled": false,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "alignSelf": "stretch",
+            "borderRadius": 16,
+            "justifyContent": "center",
+            "paddingHorizontal": 16,
+          },
+          {
+            "backgroundColor": "#FFFFFF",
+            "height": 52,
+          },
+          {
+            "borderColor": "#E4ECF0",
+            "borderWidth": 1.5,
+          },
+          undefined,
+          null,
+          undefined,
+        ]
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 10,
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "color": "#0F2233",
+              "fontFamily": "PlusJakartaSans_700Bold",
+              "fontSize": 15,
+            }
+          }
+        >
+          Cancelar
+        </Text>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`design system catalog Dialog / Info matches its dark snapshot 1`] = `
+<View
+  accessibilityViewIsModal={true}
+  style={
+    {
+      "backgroundColor": "#13212D",
+      "borderRadius": 20,
+      "elevation": 2,
+      "gap": 22,
+      "maxWidth": 360,
+      "padding": 24,
+      "shadowColor": "#000000",
+      "shadowOffset": {
+        "height": 6,
+        "width": 0,
+      },
+      "shadowOpacity": 0.2,
+      "shadowRadius": 8,
+      "width": "100%",
+    }
+  }
+  testID="dialog.card"
+>
+  <View
+    style={
+      {
+        "gap": 8,
+      }
+    }
+  >
+    <Text
+      accessibilityRole="header"
+      style={
+        [
+          {
+            "fontFamily": "SpaceGrotesk_700Bold",
+            "fontSize": 16,
+            "lineHeight": 21,
+          },
+          {
+            "color": "#E8F1F6",
+          },
+          null,
+          undefined,
+        ]
+      }
+    >
+      ¿Cómo se calcula?
+    </Text>
+    <Text
+      style={
+        [
+          {
+            "fontFamily": "PlusJakartaSans_400Regular",
+            "fontSize": 15,
+            "lineHeight": 22,
+          },
+          {
+            "color": "#97ABB8",
+          },
+          null,
+          undefined,
+        ]
+      }
+    >
+      Sumamos los saldos de tus cuentas conectadas y tu efectivo.
+    </Text>
+  </View>
+  <View
+    style={
+      {
+        "gap": 10,
+      }
+    }
+  >
+    <View
+      accessibilityLabel="Entendido"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": false,
+          "checked": undefined,
+          "disabled": false,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "alignSelf": "stretch",
+            "borderRadius": 16,
+            "justifyContent": "center",
+            "paddingHorizontal": 16,
+          },
+          {
+            "backgroundColor": "#2FA8D8",
+            "height": 56,
+          },
+          null,
+          undefined,
+          null,
+          undefined,
+        ]
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 10,
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "color": "#FFFFFF",
+              "fontFamily": "PlusJakartaSans_700Bold",
+              "fontSize": 16,
+            }
+          }
+        >
+          Entendido
+        </Text>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`design system catalog Dialog / Info matches its snapshot 1`] = `
+<View
+  accessibilityViewIsModal={true}
+  style={
+    {
+      "backgroundColor": "#FFFFFF",
+      "borderRadius": 20,
+      "elevation": 2,
+      "gap": 22,
+      "maxWidth": 360,
+      "padding": 24,
+      "shadowColor": "#0F2233",
+      "shadowOffset": {
+        "height": 6,
+        "width": 0,
+      },
+      "shadowOpacity": 0.2,
+      "shadowRadius": 8,
+      "width": "100%",
+    }
+  }
+  testID="dialog.card"
+>
+  <View
+    style={
+      {
+        "gap": 8,
+      }
+    }
+  >
+    <Text
+      accessibilityRole="header"
+      style={
+        [
+          {
+            "fontFamily": "SpaceGrotesk_700Bold",
+            "fontSize": 16,
+            "lineHeight": 21,
+          },
+          {
+            "color": "#0F2233",
+          },
+          null,
+          undefined,
+        ]
+      }
+    >
+      ¿Cómo se calcula?
+    </Text>
+    <Text
+      style={
+        [
+          {
+            "fontFamily": "PlusJakartaSans_400Regular",
+            "fontSize": 15,
+            "lineHeight": 22,
+          },
+          {
+            "color": "#5E7482",
+          },
+          null,
+          undefined,
+        ]
+      }
+    >
+      Sumamos los saldos de tus cuentas conectadas y tu efectivo.
+    </Text>
+  </View>
+  <View
+    style={
+      {
+        "gap": 10,
+      }
+    }
+  >
+    <View
+      accessibilityLabel="Entendido"
+      accessibilityRole="button"
+      accessibilityState={
+        {
+          "busy": false,
+          "checked": undefined,
+          "disabled": false,
+          "expanded": undefined,
+          "selected": undefined,
+        }
+      }
+      accessibilityValue={
+        {
+          "max": undefined,
+          "min": undefined,
+          "now": undefined,
+          "text": undefined,
+        }
+      }
+      accessible={true}
+      collapsable={false}
+      focusable={true}
+      onBlur={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onResponderGrant={[Function]}
+      onResponderMove={[Function]}
+      onResponderRelease={[Function]}
+      onResponderTerminate={[Function]}
+      onResponderTerminationRequest={[Function]}
+      onStartShouldSetResponder={[Function]}
+      style={
+        [
+          {
+            "alignItems": "center",
+            "alignSelf": "stretch",
+            "borderRadius": 16,
+            "justifyContent": "center",
+            "paddingHorizontal": 16,
+          },
+          {
+            "backgroundColor": "#2FA8D8",
+            "height": 56,
+          },
+          null,
+          undefined,
+          null,
+          undefined,
+        ]
+      }
+    >
+      <View
+        style={
+          {
+            "alignItems": "center",
+            "flexDirection": "row",
+            "gap": 10,
+          }
+        }
+      >
+        <Text
+          numberOfLines={1}
+          style={
+            {
+              "color": "#FFFFFF",
+              "fontFamily": "PlusJakartaSans_700Bold",
+              "fontSize": 16,
+            }
+          }
+        >
+          Entendido
+        </Text>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`design system catalog Dialog / Live matches its dark snapshot 1`] = `
+<View
+  accessibilityLabel="Abrir diálogo"
+  accessibilityRole="button"
+  accessibilityState={
+    {
+      "busy": false,
+      "checked": undefined,
+      "disabled": false,
+      "expanded": undefined,
+      "selected": undefined,
+    }
+  }
+  accessibilityValue={
+    {
+      "max": undefined,
+      "min": undefined,
+      "now": undefined,
+      "text": undefined,
+    }
+  }
+  accessible={true}
+  collapsable={false}
+  focusable={true}
+  onBlur={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onResponderGrant={[Function]}
+  onResponderMove={[Function]}
+  onResponderRelease={[Function]}
+  onResponderTerminate={[Function]}
+  onResponderTerminationRequest={[Function]}
+  onStartShouldSetResponder={[Function]}
+  style={
+    [
+      {
+        "alignItems": "center",
+        "alignSelf": "stretch",
+        "borderRadius": 16,
+        "justifyContent": "center",
+        "paddingHorizontal": 16,
+      },
+      {
+        "backgroundColor": "#2FA8D8",
+        "height": 56,
+      },
+      null,
+      undefined,
+      null,
+      undefined,
+    ]
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "flexDirection": "row",
+        "gap": 10,
+      }
+    }
+  >
+    <Text
+      numberOfLines={1}
+      style={
+        {
+          "color": "#FFFFFF",
+          "fontFamily": "PlusJakartaSans_700Bold",
+          "fontSize": 16,
+        }
+      }
+    >
+      Abrir diálogo
+    </Text>
+  </View>
+</View>
+`;
+
+exports[`design system catalog Dialog / Live matches its snapshot 1`] = `
+<View
+  accessibilityLabel="Abrir diálogo"
+  accessibilityRole="button"
+  accessibilityState={
+    {
+      "busy": false,
+      "checked": undefined,
+      "disabled": false,
+      "expanded": undefined,
+      "selected": undefined,
+    }
+  }
+  accessibilityValue={
+    {
+      "max": undefined,
+      "min": undefined,
+      "now": undefined,
+      "text": undefined,
+    }
+  }
+  accessible={true}
+  collapsable={false}
+  focusable={true}
+  onBlur={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onResponderGrant={[Function]}
+  onResponderMove={[Function]}
+  onResponderRelease={[Function]}
+  onResponderTerminate={[Function]}
+  onResponderTerminationRequest={[Function]}
+  onStartShouldSetResponder={[Function]}
+  style={
+    [
+      {
+        "alignItems": "center",
+        "alignSelf": "stretch",
+        "borderRadius": 16,
+        "justifyContent": "center",
+        "paddingHorizontal": 16,
+      },
+      {
+        "backgroundColor": "#2FA8D8",
+        "height": 56,
+      },
+      null,
+      undefined,
+      null,
+      undefined,
+    ]
+  }
+>
+  <View
+    style={
+      {
+        "alignItems": "center",
+        "flexDirection": "row",
+        "gap": 10,
+      }
+    }
+  >
+    <Text
+      numberOfLines={1}
+      style={
+        {
+          "color": "#FFFFFF",
+          "fontFamily": "PlusJakartaSans_700Bold",
+          "fontSize": 16,
+        }
+      }
+    >
+      Abrir diálogo
+    </Text>
+  </View>
+</View>
+`;
+
 exports[`design system catalog Donut / Empty matches its dark snapshot 1`] = `
 <View
   accessibilityLabel="Sin datos"
