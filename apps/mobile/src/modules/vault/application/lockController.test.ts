@@ -418,6 +418,27 @@ describe('unlockWithPassword', () => {
     expect(t.controller.getState()).toEqual({ status: 'locked', error: 'unknown' });
   });
 
+  it('stays locked with a notice, not an error, when the login was another account', async () => {
+    const t = setup({ loginAgoMs: 60 * MIN, reauth: 'otherAccount' });
+    await t.controller.unlock();
+    await t.controller.unlockWithPassword();
+    expect(t.vault.open).not.toHaveBeenCalled();
+    expect(t.controller.getState()).toEqual({ status: 'locked', notice: 'otherAccount' });
+  });
+
+  it('keeps the biometric flag when the login was another account', async () => {
+    const t = setup({ loginAgoMs: 60 * MIN, reauth: 'otherAccount', copyB: DEK });
+    await t.controller.unlock();
+    expect(t.controller.getState().biometric).toBe(true);
+    await t.controller.unlockWithPassword();
+    expect(t.controller.getState()).toMatchObject({
+      status: 'locked',
+      notice: 'otherAccount',
+      biometric: true,
+    });
+    expect(t.controller.getState().error).toBeUndefined();
+  });
+
   it('sets up the phone when there is no key yet', async () => {
     const t = setup({ dek: null, device: 'offline', reauth: 'ok', recoveryKey: 'missing' });
     await t.controller.unlock();

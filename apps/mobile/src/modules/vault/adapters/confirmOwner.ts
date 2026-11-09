@@ -6,7 +6,7 @@ import type { BiometricPrompt, DekStore } from '../application/ports';
 export interface ConfirmOwnerDeps {
   dekStore: DekStore;
   /** A fresh Keycloak login of the same account. Identity is called lazily (import cycle). */
-  reauthenticate: () => Promise<'ok' | 'cancelled' | 'failed'>;
+  reauthenticate: () => Promise<'ok' | 'cancelled' | 'failed' | 'otherAccount'>;
   biometricPrompt: BiometricPrompt;
 }
 
@@ -25,7 +25,9 @@ export function createConfirmOwner({
     }
     const login = await reauthenticate();
     if (login === 'cancelled') return null;
-    if (login === 'failed') throw new Error('the password check failed');
+    // Another account's login is no proof of owning this phone's account.
+    if (login === 'failed' || login === 'otherAccount')
+      throw new Error('the password check failed');
     const dek = await dekStore.read();
     if (!dek) throw new Error('this phone has no key to share');
     return dek;

@@ -25,6 +25,7 @@ async function renderScreen(state: LockState, preference: ThemePreference = 'lig
   const onPassword = jest.fn();
   const onBiometric = jest.fn();
   const onRetry = jest.fn();
+  const onUseOtherAccount = jest.fn();
   await render(
     <ThemeProvider initialPreference={preference} store={noStore}>
       <Probe />
@@ -33,10 +34,11 @@ async function renderScreen(state: LockState, preference: ThemePreference = 'lig
         onPassword={onPassword}
         onBiometric={onBiometric}
         onRetry={onRetry}
+        onUseOtherAccount={onUseOtherAccount}
       />
     </ThemeProvider>,
   );
-  return { onPassword, onBiometric, onRetry };
+  return { onPassword, onBiometric, onRetry, onUseOtherAccount };
 }
 
 const probe = (id: string) => String(screen.getByTestId(`probe.${id}`).props.children);
@@ -128,4 +130,39 @@ describe('biometric button', () => {
     expect(screen.getByTestId('vault.lock')).toHaveStyle({ backgroundColor: probe('primary') });
     expect(screen.getByRole('button', { name: t.biometric })).toBeOnTheScreen();
   });
+});
+
+describe('use another account link', () => {
+  it('shows when locked, with the hint, and presses', async () => {
+    const { onUseOtherAccount } = await renderScreen({ status: 'locked' });
+    const link = screen.getByRole('link', { name: t.useOtherAccount });
+    expect(link.props.accessibilityHint).toBe(t.useOtherAccountHint);
+    await fireEvent.press(link);
+    expect(onUseOtherAccount).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['offline', 'keychain', 'notEncrypted', 'unknown'] as const)(
+    'shows in the %s error state so a person is never stuck',
+    async (error) => {
+      const { onUseOtherAccount } = await renderScreen({ status: 'error', error });
+      await fireEvent.press(screen.getByTestId('vault.lock.otherAccount'));
+      expect(onUseOtherAccount).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('is hidden while unlocking', async () => {
+    await renderScreen({ status: 'unlocking' });
+    expect(screen.queryByTestId('vault.lock.otherAccount')).toBeNull();
+  });
+
+  it.each(['light', 'dark'] as const)('renders in the %s theme', async (preference) => {
+    await renderScreen({ status: 'locked' }, preference);
+    expect(screen.getByRole('link', { name: t.useOtherAccount })).toBeOnTheScreen();
+  });
+});
+
+it('explains an account change without saying the password failed', async () => {
+  await renderScreen({ status: 'locked', notice: 'otherAccount' });
+  expect(screen.getByText(t.notices.otherAccount)).toBeOnTheScreen();
+  expect(screen.queryByText(t.passwordFailed)).toBeNull();
 });

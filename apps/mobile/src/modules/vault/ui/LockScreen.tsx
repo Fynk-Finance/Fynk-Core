@@ -1,7 +1,7 @@
 // Lock screen (new screen, needs design review). The header is the one of Login.html: the blue
 // background with its rounded squares, the Fynk logo and the title. The lime layer and white
 // sheet below hold the unlock buttons: the password and, when enabled, "Huella o Face ID".
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Rect } from 'react-native-svg';
 
@@ -25,7 +25,11 @@ export interface LockScreenProps {
   onPassword: () => void;
   onBiometric: () => void;
   onRetry: () => void;
+  /** Signs out, so another account can sign in. A person is never stuck on this screen. */
+  onUseOtherAccount: () => void;
 }
+
+type SheetContentProps = Omit<LockScreenProps, 'onUseOtherAccount'>;
 
 // Login.html: header padding 48 / 24 and 24 between blocks; sheet padding 32 / 24.
 const PAD_TOP = 48;
@@ -35,7 +39,13 @@ const SHEET_PAD = 32;
 // The lime layer shows 14 px above the white sheet (645 against 631 in Login.html).
 const LIME_EDGE = 14;
 
-export function LockScreen({ state, onPassword, onBiometric, onRetry }: LockScreenProps) {
+export function LockScreen({
+  state,
+  onPassword,
+  onBiometric,
+  onRetry,
+  onUseOtherAccount,
+}: LockScreenProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
 
@@ -76,6 +86,21 @@ export function LockScreen({ state, onPassword, onBiometric, onRetry }: LockScre
               onBiometric={onBiometric}
               onRetry={onRetry}
             />
+            {state.status === 'unlocking' ? null : (
+              <Pressable
+                onPress={onUseOtherAccount}
+                accessibilityRole="link"
+                accessibilityLabel={t.useOtherAccount}
+                accessibilityHint={t.useOtherAccountHint}
+                hitSlop={8}
+                style={styles.otherAccount}
+                testID="vault.lock.otherAccount"
+              >
+                <AppText variant="bodyStrong" color="primaryDark">
+                  {t.useOtherAccount}
+                </AppText>
+              </Pressable>
+            )}
           </View>
         </View>
       </View>
@@ -83,7 +108,7 @@ export function LockScreen({ state, onPassword, onBiometric, onRetry }: LockScre
   );
 }
 
-function SheetContent({ state, onPassword, onBiometric, onRetry }: LockScreenProps) {
+function SheetContent({ state, onPassword, onBiometric, onRetry }: SheetContentProps) {
   const { colors } = useTheme();
 
   if (state.status === 'unlocking') {
@@ -178,6 +203,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.sheet,
   },
   actions: { gap: 16 },
+  otherAccount: { alignSelf: 'center', paddingTop: 16 },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rule: { flex: 1, height: 1 },
   center: { alignItems: 'center', gap: 10, paddingVertical: 24 },

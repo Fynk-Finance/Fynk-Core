@@ -23,8 +23,11 @@ import type { Vault } from './vault';
 
 export type LockError = 'notEncrypted' | 'keychain' | 'offline' | 'unknown';
 
-/** Messages for the lock screen. `biometricsOff`: the phone's biometrics changed, copy B was deleted. */
-export type LockNotice = 'biometricsOff' | 'biometricFailed';
+/**
+ * Messages for the lock screen. `biometricsOff`: the phone's biometrics changed, copy B was
+ * deleted. `otherAccount`: the password login was for an account other than this phone's.
+ */
+export type LockNotice = 'biometricsOff' | 'biometricFailed' | 'otherAccount';
 
 export interface LockState {
   status:
@@ -53,7 +56,7 @@ export type NewRecoveryCode =
 /** What the controller needs from identity (M1). The wiring passes lazy calls. */
 export interface LockIdentity {
   lastLoginAt(): Date | null;
-  reauthenticate(): Promise<'ok' | 'cancelled' | 'failed'>;
+  reauthenticate(): Promise<'ok' | 'cancelled' | 'failed' | 'otherAccount'>;
   currentDevice(): Promise<{ id: string; status: 'active' | 'pending' } | null>;
   /** The signed in account (Keycloak `sub`), or null when nobody is. */
   userId(): string | null;
@@ -386,6 +389,10 @@ export function createLockController(deps: LockControllerDeps): LockController {
       if (isOpenOrOpening()) return;
       const result = await identity.reauthenticate();
       if (result === 'cancelled') return;
+      if (result === 'otherAccount') {
+        set({ status: 'locked', notice: 'otherAccount', biometric: state.biometric });
+        return;
+      }
       if (result === 'failed') {
         set({ status: 'locked', error: 'unknown', biometric: state.biometric });
         return;

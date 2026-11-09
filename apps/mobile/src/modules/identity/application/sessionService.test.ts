@@ -376,12 +376,23 @@ describe('reauthenticate', () => {
     const { service, oidc, store } = await signedIn();
     const other = fresh(2, 'user-b');
     oidc.reauthenticate.mockResolvedValueOnce(other);
-    expect(await service.reauthenticate()).toBe('failed');
+    expect(await service.reauthenticate()).toBe('otherAccount');
     expect(oidc.endSession).toHaveBeenCalledWith(other);
     expect(oidc.endSession).not.toHaveBeenCalledWith(tokenSet(1));
     expect(store.saved()).toEqual(tokenSet(1));
     expect(await service.getAccessToken()).toBe('access-1');
     expect(service.lastLoginAt()).toEqual(new Date(authTime(1) * 1000));
+  });
+
+  it('fails, not otherAccount, when the old id token has no sub', async () => {
+    const blindOld = { ...tokenSet(1), idToken: jwt({ auth_time: authTime(1) }) };
+    const { service, oidc, store } = setup(blindOld);
+    await service.restore();
+    const next = fresh(2, 'user-b');
+    oidc.reauthenticate.mockResolvedValueOnce(next);
+    expect(await service.reauthenticate()).toBe('failed');
+    expect(oidc.endSession).toHaveBeenCalledWith(next);
+    expect(store.saved()).toEqual(blindOld);
   });
 
   it('fails when the new login is not fresh, so an old Keycloak session cannot unlock', async () => {

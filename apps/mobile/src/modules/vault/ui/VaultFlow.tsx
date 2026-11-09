@@ -54,6 +54,7 @@ export function createVaultFlow(controller: LockController, { copyText, signOut 
         onPassword={() => void controller.unlockWithPassword()}
         onBiometric={() => void controller.unlockWithBiometrics()}
         onRetry={() => void controller.unlock()}
+        onUseOtherAccount={() => void signOut()}
       />
     );
   };
