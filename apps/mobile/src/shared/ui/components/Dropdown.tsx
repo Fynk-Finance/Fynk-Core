@@ -4,13 +4,14 @@
 // list right below it, inside the form (no second sheet over the movement sheet); each row has
 // its icon and a check on the choice, and picking one folds it back. New component, needs
 // design review.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
   useAnimatedStyle,
   useReducedMotion,
+  useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
 
@@ -63,13 +64,14 @@ export function Dropdown<T extends string>({
   const [open, setOpen] = useState(false);
   const chosen = options.find((o) => o.value === value) ?? null;
   const shown = chosen?.label ?? noneLabel ?? placeholder ?? '';
-  const chevron = useAnimatedStyle(() => ({
-    transform: [
-      {
-        rotate: withTiming(open ? '180deg' : '0deg', { duration: reduceMotion ? 0 : motion.base }),
-      },
-    ],
-  }));
+  // Like the Fab: a value that turns, and jumps straight to the end under Reduce Motion, so the
+  // style never holds an animation in progress.
+  const turn = useSharedValue(open ? 1 : 0);
+  useEffect(() => {
+    const to = open ? 1 : 0;
+    turn.value = reduceMotion ? to : withTiming(to, { duration: motion.base });
+  }, [open, reduceMotion, turn]);
+  const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.value * 180}deg` }] }));
 
   const pick = (run: () => void) => {
     setOpen(false);
