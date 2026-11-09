@@ -267,6 +267,8 @@ export function createLockController(deps: LockControllerDeps): LockController {
     const mine = generation;
     if (!(await openVault(dek))) return;
     await tagOwner();
+    // Locked while the tag was written: lock() already closed the vault.
+    if (mine !== generation) return;
     // The person is in at once; the server check never delays or blocks an offline open.
     set({ status: 'unlocked' });
     // A restore that was cut short (offline) continues in the background.
