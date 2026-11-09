@@ -5,11 +5,12 @@ import { Linking } from 'react-native';
 
 import type { Account } from '@shared/domain';
 import { createFixedClock } from '@shared/testing';
+import { uiStrings } from '@shared/ui';
 
 import { setInvestmentDeps } from '../application/hooks';
 import type { MarketPort } from '../application/ports';
 import type { CdtProduct } from '../domain/investment';
-import { renderScreens } from '../testing/renderScreen';
+import { renderScreens, RouteProbe } from '../testing/renderScreen';
 import { createInvestmentScreen } from './InvestmentScreen';
 import { investmentStrings as s } from './strings.es-CO';
 
@@ -85,8 +86,20 @@ const cdtAccount = (balanceMinor: number): Account => ({
   cdt: { rateEaBps: 1050, termDays: 180, openedOn: '2026-08-27', maturesOn: '2027-02-27' },
 });
 
-const Investment = createInvestmentScreen(() => 'Laura Gómez');
-const screens = { Inversion: Investment };
+const header = {
+  useDisplayName: () => 'Laura Gómez',
+  useUnreadCount: () => 1,
+  accountRoute: 'identity.Account',
+  notificationsRoute: 'notifications.Inbox',
+  statisticsRoute: 'analytics.Spending',
+};
+const Investment = createInvestmentScreen(header);
+const screens = {
+  Inversion: Investment,
+  [header.accountRoute]: RouteProbe,
+  [header.notificationsRoute]: RouteProbe,
+  [header.statisticsRoute]: RouteProbe,
+};
 
 function install(accounts: Account[]) {
   setInvestmentDeps({
@@ -201,4 +214,24 @@ it('shows the reference rate and the stock reference prices', async () => {
 it('always shows the disclaimer, even before the module is configured, in dark', async () => {
   await renderScreens({ screens, initial: 'Inversion', preference: 'dark' });
   expect(await screen.findByTestId('investment.disclaimer')).toHaveTextContent(s.disclaimer);
+});
+
+// QA review 2026-11-07, V9: the header of every tab has Estadísticas, the bell and the avatar.
+describe('header', () => {
+  it('shows the unread dot of the bell', async () => {
+    install([]);
+    await renderScreens({ screens, initial: 'Inversion' });
+    expect(await screen.findByTestId('header-unread-dot')).toBeOnTheScreen();
+  });
+
+  it.each([
+    ['the chart button opens Estadísticas', uiStrings.statistics, header.statisticsRoute],
+    ['the bell opens Notificaciones', uiStrings.notificationsUnread, header.notificationsRoute],
+    ['the avatar opens Mi cuenta', uiStrings.myAccount('Laura Gómez'), header.accountRoute],
+  ])('%s', async (_, label, route) => {
+    install([]);
+    await renderScreens({ screens, initial: 'Inversion' });
+    await fireEvent.press(await screen.findByRole('button', { name: label }));
+    expect(await screen.findByTestId('probe.route')).toHaveTextContent(`${route} {}`);
+  });
 });

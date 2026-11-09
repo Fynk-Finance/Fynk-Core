@@ -3,6 +3,8 @@ import type { Clock } from '@shared/domain';
 import type { ModuleRoutes } from '@shared/navigation';
 
 import { getBalanceHistory, getCdtAccounts } from '@modules/accounts';
+import { STATISTICS_ROUTE } from '@modules/analytics';
+import { NOTIFICATIONS_ROUTE, useUnreadCount } from '@modules/notifications';
 import { useDisplayName as useOnboardingName } from '@modules/onboarding';
 
 import { createMarketApi } from './adapters/api/marketApi';
@@ -23,7 +25,14 @@ let displayName: () => string = useHeaderName;
 
 export const routes: ModuleRoutes = {
   module: 'investment',
-  tab: createInvestmentScreen(() => displayName()),
+  tab: createInvestmentScreen({
+    useDisplayName: () => displayName(),
+    // The bell is M12's and the chart opens M10's Estadísticas, as on the other tabs.
+    useUnreadCount: () => useUnreadCount(),
+    accountRoute: 'identity.Account',
+    notificationsRoute: NOTIFICATIONS_ROUTE,
+    statisticsRoute: STATISTICS_ROUTE,
+  }),
 };
 
 export interface InvestmentConfig {

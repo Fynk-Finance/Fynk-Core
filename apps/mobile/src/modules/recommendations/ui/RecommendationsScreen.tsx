@@ -42,7 +42,10 @@ import {
 } from '../domain/steps';
 import { recommendationsStrings as s, stepCopy } from './strings.es-CO';
 
-/** Where "Programar" and "Revisar" go. M8 and M9 own those screens. */
+/**
+ * Where "Programar" and "Revisar" go (M8 and M9 own those screens), and the header: the name,
+ * the unread count of the bell (M12) and the screens of the avatar, chart and bell.
+ */
 export interface RecommendationsNavigation {
   openPaydayReminder: (
     nav: NavigationProp<ParamListBase>,
@@ -51,6 +54,10 @@ export interface RecommendationsNavigation {
   ) => void;
   openLowUseSubscriptions: (nav: NavigationProp<ParamListBase>) => void;
   useDisplayName: () => string;
+  useUnreadCount: () => number;
+  accountRoute: string;
+  notificationsRoute: string;
+  statisticsRoute: string;
 }
 
 export const defaultNavigation: RecommendationsNavigation = {
@@ -60,6 +67,10 @@ export const defaultNavigation: RecommendationsNavigation = {
   // Billetera (M9) with the low use filter.
   openLowUseSubscriptions: (nav) => nav.navigate('Billetera', { filter: 'low_use' }),
   useDisplayName: () => s.guestName,
+  useUnreadCount: () => 0,
+  accountRoute: 'identity.Account',
+  notificationsRoute: 'notifications.Inbox',
+  statisticsRoute: 'analytics.Spending',
 };
 
 // Donut and legend colors in the order of the design: #50c1eb, #a8e03a, #1f93c2.
@@ -80,6 +91,7 @@ export function createRecommendationsScreen(
     const { colors } = useTheme();
     const openCapForm = useOpenCapForm();
     const name = navigationTargets.useDisplayName();
+    const unread = navigationTargets.useUnreadCount();
     const { query, refresh, unavailable } = useRecommendations();
     const [filter, setFilter] = useState<StepFilter>('all');
     const view = query.data;
@@ -100,7 +112,14 @@ export function createRecommendationsScreen(
         gap={0}
         testID="recommendations.screen"
         header={
-          <HeaderBlue name={name} title={s.title}>
+          <HeaderBlue
+            name={name}
+            hasUnread={unread > 0}
+            onPressAccount={() => navigation.navigate(navigationTargets.accountRoute)}
+            onPressNotifications={() => navigation.navigate(navigationTargets.notificationsRoute)}
+            onPressStatistics={() => navigation.navigate(navigationTargets.statisticsRoute)}
+            title={s.title}
+          >
             {top ? (
               <Pressable
                 onPress={() => run(top.action)}

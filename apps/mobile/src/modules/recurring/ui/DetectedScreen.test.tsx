@@ -135,6 +135,7 @@ describe('Billetera banner', () => {
       useUnreadCount: () => 0,
       accountRoute: 'identity.Account',
       notificationsRoute: 'notifications.Inbox',
+      statisticsRoute: 'analytics.Spending',
       recommendationsRoute: 'Recomendaciones',
       pendingProposals: async () => (await detection.pending()).length,
       detectedRoute: DETECTED_ROUTE,

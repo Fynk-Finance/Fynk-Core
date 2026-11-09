@@ -3,6 +3,7 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { ApiError } from '@shared/api';
+import { uiStrings } from '@shared/ui';
 import { createFixedClock, createInMemoryVault } from '@shared/testing';
 import { snapshotDataRange } from '@modules/analytics';
 
@@ -36,6 +37,7 @@ const texts: ModelTexts = {
 const Recommendations = createRecommendationsScreen({
   ...defaultNavigation,
   useDisplayName: () => 'Laura Gómez',
+  useUnreadCount: () => 2,
 });
 
 const screens = {
@@ -43,6 +45,9 @@ const screens = {
   'analytics.CapForm': RouteProbe,
   'savings.Goals': RouteProbe,
   Billetera: RouteProbe,
+  [defaultNavigation.accountRoute]: RouteProbe,
+  [defaultNavigation.notificationsRoute]: RouteProbe,
+  [defaultNavigation.statisticsRoute]: RouteProbe,
 };
 
 async function install(create: RecommendationsApiPort['create'] = async () => texts) {
@@ -142,4 +147,36 @@ it('shows the disclaimer even before the module is configured', async () => {
   await renderScreens({ screens, initial: 'Recomendaciones' });
   expect(await screen.findByText(s.empty)).toBeOnTheScreen();
   expect(screen.getByTestId('recommendations.disclaimer')).toHaveTextContent(s.disclaimer);
+});
+
+// QA review 2026-11-07, V9: the header of every tab has Estadísticas, the bell and the avatar.
+describe('header', () => {
+  it('shows the unread dot of the bell', async () => {
+    await install();
+    await renderScreens({ screens, initial: 'Recomendaciones' });
+    expect(await screen.findByTestId('header-unread-dot')).toBeOnTheScreen();
+  });
+
+  it.each([
+    [
+      'the chart button opens Estadísticas',
+      uiStrings.statistics,
+      defaultNavigation.statisticsRoute,
+    ],
+    [
+      'the bell opens Notificaciones',
+      uiStrings.notificationsUnread,
+      defaultNavigation.notificationsRoute,
+    ],
+    [
+      'the avatar opens Mi cuenta',
+      uiStrings.myAccount('Laura Gómez'),
+      defaultNavigation.accountRoute,
+    ],
+  ])('%s', async (_, label, route) => {
+    await install();
+    await renderScreens({ screens, initial: 'Recomendaciones' });
+    await fireEvent.press(await screen.findByRole('button', { name: label }));
+    expect(await screen.findByTestId('probe.route')).toHaveTextContent(`${route} {}`);
+  });
 });

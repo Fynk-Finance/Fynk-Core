@@ -67,6 +67,8 @@ export interface BilleteraDeps {
   useDisplayName?: () => string | null;
   accountRoute: string;
   notificationsRoute: string;
+  /** The chart button of the header opens Estadísticas (M10), as on every tab. */
+  statisticsRoute: string;
   /** The savings banner opens Recomendaciones (inventory row 9). */
   recommendationsRoute: string;
   /** M6 `getAccounts`: the account or card of each subscription. */
@@ -117,6 +119,7 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
         hasUnread={unread > 0}
         onPressAccount={() => navigation.navigate(deps.accountRoute)}
         onPressNotifications={() => navigation.navigate(deps.notificationsRoute)}
+        onPressStatistics={() => navigation.navigate(deps.statisticsRoute)}
         title={t.title}
         subtitle={t.subtitle}
         trailing={

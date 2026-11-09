@@ -8,7 +8,7 @@ import { Text } from 'react-native';
 
 import type { Account } from '@shared/domain/types';
 import { createFixedClock, createInMemoryVault, type InMemoryVault } from '@shared/testing';
-import { ThemeProvider, type ThemePreference } from '@shared/ui';
+import { ThemeProvider, uiStrings, type ThemePreference } from '@shared/ui';
 
 import { recurringMigrations } from '../adapters/vault/migrations';
 import { createVaultRecurringStore } from '../adapters/vault/vaultRecurringStore';
@@ -99,6 +99,7 @@ async function renderBilletera(
     useDisplayName: () => displayName ?? null,
     accountRoute: 'identity.Account',
     notificationsRoute: 'notifications.Inbox',
+    statisticsRoute: 'analytics.Spending',
     recommendationsRoute: 'Recomendaciones',
     accounts: accountsDep,
     refresh: refreshDep,
@@ -112,6 +113,7 @@ async function renderBilletera(
           <Stack.Screen name="notifications.Inbox" component={Target} />
           <Stack.Screen name="identity.Account" component={Target} />
           <Stack.Screen name="Recomendaciones" component={Target} />
+          <Stack.Screen name="analytics.Spending" component={Target} />
           <Stack.Screen name={SUBSCRIPTION_DETAIL_ROUTE} component={Target} />
         </Stack.Navigator>
       </NavigationContainer>
@@ -327,6 +329,13 @@ describe('Billetera', () => {
     await renderBilletera();
     await fireEvent.press(await screen.findByText('Agregar gasto'));
     expect(await screen.findByText(`arrived:${RECURRING_FORM_ROUTE}:`)).toBeTruthy();
+  });
+
+  // QA review 2026-11-07, V9: the chart button is on every tab, like the bell.
+  it('the chart button opens Estadísticas', async () => {
+    await renderBilletera();
+    await fireEvent.press(await screen.findByRole('button', { name: uiStrings.statistics }));
+    expect(await screen.findByText('arrived:analytics.Spending:')).toBeOnTheScreen();
   });
 
   it('the bell shows unread notifications and opens them', async () => {

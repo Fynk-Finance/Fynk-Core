@@ -1,6 +1,7 @@
 // Inversión (tab, Inversion.html adapted): the user's own CDTs with their total over time, tiles,
 // "Tus inversiones", Explorar, the calculator, the Banco de la República reference and the
 // disclaimer, always visible (HU-049). It informs, it never advises.
+import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
@@ -37,15 +38,26 @@ import { investmentStrings as s } from './strings.es-CO';
 
 const PERIODS: ChartPeriod[] = ['1M', '3M', '1A', 'Todo'];
 
-export function createInvestmentScreen(useDisplayName: () => string = () => s.guestName) {
+/** The header: the name, the unread count of the bell (M12) and where the avatar, chart and bell go. */
+export interface InvestmentHeader {
+  useDisplayName: () => string;
+  useUnreadCount: () => number;
+  accountRoute: string;
+  notificationsRoute: string;
+  statisticsRoute: string;
+}
+
+export function createInvestmentScreen(header: InvestmentHeader) {
   return function InvestmentScreen() {
+    const navigation = useNavigation<NavigationProp<ParamListBase>>();
     const styles = useThemedStyles(createStyles);
     const { colors } = useTheme();
     const { width } = useWindowDimensions();
     const deps = useInvestmentDeps();
     const own = useOwnCdts();
     const [period, setPeriod] = useState<ChartPeriod>('1A');
-    const name = useDisplayName();
+    const name = header.useDisplayName();
+    const unread = header.useUnreadCount();
 
     const today = deps ? deps.clock.now().toISOString().slice(0, 10) : '1970-01-01';
     const holdings = holdingsFrom(own.data?.accounts ?? []);
@@ -64,7 +76,13 @@ export function createInvestmentScreen(useDisplayName: () => string = () => s.gu
         gap={spacing.block}
         testID="investment.screen"
         header={
-          <HeaderBlue name={name}>
+          <HeaderBlue
+            name={name}
+            hasUnread={unread > 0}
+            onPressAccount={() => navigation.navigate(header.accountRoute)}
+            onPressNotifications={() => navigation.navigate(header.notificationsRoute)}
+            onPressStatistics={() => navigation.navigate(header.statisticsRoute)}
+          >
             <View style={styles.hero}>
               <AppText variant="subtitle" color="onPrimary" style={styles.heroLabel}>
                 {s.headerLabel}
