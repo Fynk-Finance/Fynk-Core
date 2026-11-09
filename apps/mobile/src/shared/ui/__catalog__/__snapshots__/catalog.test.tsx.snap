@@ -10603,11 +10603,11 @@ exports[`design system catalog HeaderBlue / Dashboard matches its dark snapshot 
             accessibilityElementsHidden={true}
             accessible={false}
             align="xMidYMid"
-            bbHeight={32}
-            bbWidth={32}
+            bbHeight={22}
+            bbWidth={22}
             fill="none"
             focusable={false}
-            height={32}
+            height={22}
             importantForAccessibility="no-hide-descendants"
             meetOrSlice={0}
             minX={0}
@@ -10624,14 +10624,14 @@ exports[`design system catalog HeaderBlue / Dashboard matches its dark snapshot 
                 },
                 {
                   "flex": 0,
-                  "height": 32,
-                  "width": 32,
+                  "height": 22,
+                  "width": 22,
                 },
               ]
             }
             vbHeight={24}
             vbWidth={24}
-            width={32}
+            width={22}
           >
             <RNSVGGroup
               fill={null}
@@ -11112,11 +11112,11 @@ exports[`design system catalog HeaderBlue / Dashboard matches its snapshot 1`] =
             accessibilityElementsHidden={true}
             accessible={false}
             align="xMidYMid"
-            bbHeight={32}
-            bbWidth={32}
+            bbHeight={22}
+            bbWidth={22}
             fill="none"
             focusable={false}
-            height={32}
+            height={22}
             importantForAccessibility="no-hide-descendants"
             meetOrSlice={0}
             minX={0}
@@ -11133,14 +11133,14 @@ exports[`design system catalog HeaderBlue / Dashboard matches its snapshot 1`] =
                 },
                 {
                   "flex": 0,
-                  "height": 32,
-                  "width": 32,
+                  "height": 22,
+                  "width": 22,
                 },
               ]
             }
             vbHeight={24}
             vbWidth={24}
-            width={32}
+            width={22}
           >
             <RNSVGGroup
               fill={null}

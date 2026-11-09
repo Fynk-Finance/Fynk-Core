@@ -194,6 +194,18 @@ describe('HeaderBlue', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('header-bell')).toBeTruthy();
   });
+
+  // QA review 2026-11-07, V4: the chart icon looked heavier than the bell next to it.
+  it('draws the Estadísticas icon at the size and stroke of the bell', async () => {
+    await render(<HeaderBlue name="Laura" onPressStatistics={() => {}} />);
+    const svgOf = (testID: string) => {
+      const svg = screen.getByTestId(testID).children[0];
+      if (typeof svg === 'string' || !svg) throw new Error(`${testID} has no icon`);
+      return svg.props as { width: number; strokeWidth: number };
+    };
+    expect(svgOf('header-statistics').width).toBe(svgOf('header-bell').width);
+    expect(svgOf('header-statistics').strokeWidth).toBe(svgOf('header-bell').strokeWidth);
+  });
 });
 
 describe('ProgressBar', () => {

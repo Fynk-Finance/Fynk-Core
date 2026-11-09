@@ -110,7 +110,7 @@ export function HeaderBlue({
                 style={({ pressed }) => [styles.bell, pressed && styles.pressed]}
                 testID="header-statistics"
               >
-                <Icon name="chartBars" size={32} color={colors.onPrimary} />
+                <Icon name="chartBars" size={22} color={colors.onPrimary} />
               </Pressable>
               {bell}
             </View>
