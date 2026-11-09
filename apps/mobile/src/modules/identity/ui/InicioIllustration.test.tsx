@@ -63,6 +63,14 @@ describe('InicioIllustration', () => {
     await renderMeasured();
     expect(screen.getByRole('image')).toBeOnTheScreen();
   });
+
+  it('takes the full width of a parent that centers its children', async () => {
+    reduceMotion.mockReturnValue(false);
+    await renderMeasured();
+    expect(screen.getByTestId('identity.inicio.illustration')).toHaveStyle({
+      alignSelf: 'stretch',
+    });
+  });
 });
 
 describe('InicioIllustration colors', () => {
