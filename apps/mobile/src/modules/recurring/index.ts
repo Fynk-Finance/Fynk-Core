@@ -14,6 +14,7 @@ import {
   onNotificationSettingsChanged,
   useUnreadCount,
 } from '@modules/notifications';
+import { useDisplayName } from '@modules/onboarding';
 import { getTransactionsBetween, TRANSACTION_DETAIL_ROUTE } from '@modules/transactions';
 import {
   getVaultDb,
@@ -170,6 +171,8 @@ export const routes: ModuleRoutes = {
     service,
     clock,
     useUnreadCount,
+    // Read only when the screen renders: onboarding imports this module too.
+    useDisplayName: () => useDisplayName(),
     accountRoute: 'identity.Account',
     notificationsRoute: NOTIFICATIONS_ROUTE,
     recommendationsRoute: 'Recomendaciones',
