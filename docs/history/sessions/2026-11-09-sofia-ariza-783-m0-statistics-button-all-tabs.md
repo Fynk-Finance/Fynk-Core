@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-84]
 branch: feature/statistics-button-all-tabs
 tool: Claude Code
-pr: none
+pr: "#355"
 status: done
 ---
 
@@ -28,7 +28,7 @@ Part of "Lets fix all the visual problems at once", every pull request in one st
 ## Result
 
 * Tests: 2730 of 2730. Typecheck and ESLint clean.
-* Pull request: not opened yet (opened with the whole stack). Karol (M9) and Julián (M11, M15) approve.
+* Pull request: #355, in stack #361 (#352 → #360). Karol (M9) and Julián (M11, M15) approve.
 
 ## Decisions and problems
 
