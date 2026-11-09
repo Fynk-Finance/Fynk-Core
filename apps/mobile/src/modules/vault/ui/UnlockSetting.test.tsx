@@ -37,6 +37,8 @@ async function renderSetting(
     write: jest.fn(async () => undefined),
     remove: jest.fn(async () => undefined),
     removeAll: jest.fn(async () => undefined),
+    readOwner: jest.fn(async () => null),
+    writeOwner: jest.fn(async () => undefined),
     biometricsAvailable: jest.fn(async () => options.biometrics ?? true),
     hasBiometric: jest.fn(async () => copyB !== null),
     writeBiometric: jest.fn(async (dek) => {
@@ -55,6 +57,7 @@ async function renderSetting(
     lastLoginAt: () => (loginAgo === null ? null : new Date(clock.now().getTime() - loginAgo)),
     reauthenticate: jest.fn(async () => options.reauth ?? 'ok'),
     currentDevice: jest.fn(async () => ({ id: 'd1', status: 'active' as const })),
+    userId: () => 'user-a',
     onSessionChange: () => () => undefined,
   };
   const controller = createLockController({
@@ -71,6 +74,7 @@ async function renderSetting(
     restoreWithCode: { restore: jest.fn(), resumePending: jest.fn() },
     restoreWithApproval: { start: jest.fn(), check: jest.fn() },
     resetBackup: { reset: jest.fn() },
+    resetBackupState: jest.fn(),
   });
   const UnlockSetting = createUnlockSetting(controller);
   await render(
