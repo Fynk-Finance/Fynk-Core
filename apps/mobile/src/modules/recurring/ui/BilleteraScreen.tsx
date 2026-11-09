@@ -1,6 +1,6 @@
 // Billetera tab (design Billetera, inventory row 9), owned by M9 with "Mis cuentas" from M6.
 // Blue header with "Gastos fijos de este mes", then "Gastos recurrentes" with "+ Agregar" and
-// the 2 column cards of the fixed expenses, the savings banner when a subscription is marked
+// the 2 column cards of the fixed expenses (an empty card without any), the savings banner when a subscription is marked
 // "Casi nunca" (SCRUM-56), and "Otros gastos" with the subscriptions. M6 adds "Mis cuentas"
 // above when it lands.
 import {
@@ -18,8 +18,8 @@ import {
   AmountText,
   AppText,
   Chip,
-  EmptyState,
   ErrorState,
+  GhostCard,
   HeaderBlue,
   Screen,
   SectionHeader,
@@ -110,6 +110,7 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
     const name = deps.useDisplayName?.() ?? t.guest;
     const today = bogotaToday(deps.clock.now());
     const add = () => navigation.navigate(RECURRING_FORM_ROUTE);
+    const fixed = state.status === 'ready' ? state.items.filter((i) => i.kind === 'fixed') : [];
     const edit = (item: StoredRecurringItem) =>
       navigation.navigate(RECURRING_FORM_ROUTE, { id: item.id });
 
@@ -172,23 +173,24 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
             </View>
           ) : state.status === 'error' ? (
             <ErrorState message={t.error} onRetry={() => void reload()} />
-          ) : state.items.length === 0 ? (
-            <EmptyState
-              title={t.emptyTitle}
-              message={t.emptyMessage}
-              icon="calendar"
-              actionLabel={t.emptyAction}
-              onAction={add}
-            />
           ) : (
             <>
-              <View style={styles.grid} testID="recurring.billetera.grid">
-                {state.items
-                  .filter((item) => item.kind === 'fixed')
-                  .map((item) => (
+              {fixed.length > 0 ? (
+                <View style={styles.grid} testID="recurring.billetera.grid">
+                  {fixed.map((item) => (
                     <RecurringCard key={item.id} item={item} today={today} onPress={edit} />
                   ))}
-              </View>
+                </View>
+              ) : (
+                // QA review 2026-11-07, V6: the empty card of the section, as for goals and accounts.
+                <GhostCard
+                  actionLabel={t.emptyAction}
+                  message={t.emptyTitle}
+                  onAction={add}
+                  style={styles.ghost}
+                  testID="recurring.billetera.ghost"
+                />
+              )}
               {state.subscriptions.lowUseCount > 0 ? (
                 <SavingsBanner
                   monthlyMinor={state.subscriptions.lowUseMonthlyMinor}
@@ -258,6 +260,7 @@ const createStyles = () =>
     },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
     skeleton: { flexBasis: '48%', flexGrow: 1 },
+    ghost: { borderRadius: radius.tileLg },
     subscriptions: { gap: spacing.md, marginTop: spacing.md },
     filter: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.md },
   });
