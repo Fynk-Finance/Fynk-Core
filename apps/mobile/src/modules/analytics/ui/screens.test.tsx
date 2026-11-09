@@ -144,7 +144,9 @@ describe('Topes', () => {
     const h = await setupAnalytics([]);
     setAnalyticsService(h.service);
     await renderScreens({ screens, initial: 'analytics.CapForm' });
-    await fireEvent.press(await screen.findByTestId('analytics.capForm.category.treats'));
+    // The categories are a dropdown (QA review 2026-11-07, V11): open it, then pick.
+    await fireEvent.press(await screen.findByTestId('analytics.capForm.category'));
+    await fireEvent.press(screen.getByTestId('analytics.capForm.category.treats'));
     expect(await screen.findByDisplayValue('$20.000')).toBeOnTheScreen();
   });
 

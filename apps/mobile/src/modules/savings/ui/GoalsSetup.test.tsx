@@ -43,6 +43,8 @@ async function renderSetup(preference: ThemePreference = 'light') {
 
 async function fillTrip(prefix = 'savings.setup.new') {
   await fireEvent.changeText(await screen.findByTestId(`${prefix}.name`), 'Viaje a Cartagena');
+  // The categories are a dropdown (QA review 2026-11-07, V11): open it, then pick.
+  await fireEvent.press(screen.getByTestId(`${prefix}.category`));
   await fireEvent.press(screen.getByTestId(`${prefix}.category.travel`));
   await fireEvent.changeText(screen.getByTestId(`${prefix}.target`), '5.000.000');
   // The form starts 6 months ahead (Apr 2027); two more give the design's Jun 2027, "8 meses · $625.000".

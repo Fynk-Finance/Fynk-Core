@@ -65,6 +65,8 @@ describe('GoalFormScreen', () => {
     expect(screen.getByText('Nueva meta')).toBeTruthy();
     expect(screen.getByTestId('savings.form.deadline')).toHaveTextContent('Abr 2027');
     await fireEvent.changeText(screen.getByTestId('savings.form.name'), 'Viaje a Cartagena');
+    // The categories are a dropdown (QA review 2026-11-07, V11): open it, then pick.
+    await fireEvent.press(screen.getByTestId('savings.form.category'));
     await fireEvent.press(screen.getByTestId('savings.form.category.travel'));
     await fireEvent.changeText(screen.getByTestId('savings.form.target'), '5.000.000');
     await toJune2027();

@@ -11,22 +11,17 @@ import {
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import {
-  categoryLabel,
-  formatCop,
-  parseCopInput,
-  type CategoryId,
-  type MoneyMinor,
-} from '@shared/domain';
+import { formatCop, parseCopInput, type CategoryId, type MoneyMinor } from '@shared/domain';
 import {
   AppText,
-  Chip,
+  Dropdown,
   GhostButton,
   Icon,
   PrimaryButton,
   Screen,
   SegmentedControl,
   TextField,
+  categoryOptions,
   spacing,
   useTheme,
   useThemedStyles,
@@ -58,6 +53,8 @@ export const CAPPABLE_CATEGORIES: readonly CategoryId[] = [
   'fees',
   'other',
 ];
+
+const CATEGORY_OPTIONS = categoryOptions(CAPPABLE_CATEGORIES);
 
 export interface CapFormParams {
   capId?: string;
@@ -172,20 +169,15 @@ function CapForm({
         </AppText>
       </View>
 
-      <View style={styles.field}>
-        <AppText variant="label">{s.category}</AppText>
-        <View style={styles.chips}>
-          {CAPPABLE_CATEGORIES.map((id) => (
-            <Chip
-              key={id}
-              label={categoryLabel(id)}
-              selected={categoryId === id}
-              onPress={() => setCategoryId(id)}
-              testID={`analytics.capForm.category.${id}`}
-            />
-          ))}
-        </View>
-      </View>
+      {/* QA review 2026-11-07, V11: a dropdown with icons instead of chips. */}
+      <Dropdown
+        label={s.category}
+        options={CATEGORY_OPTIONS}
+        value={categoryId}
+        onChange={setCategoryId}
+        placeholder={s.categoryPlaceholder}
+        testID="analytics.capForm.category"
+      />
 
       {categoryId === 'treats' ? (
         <TextField
@@ -241,7 +233,6 @@ function createStyles() {
   return StyleSheet.create({
     top: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
     field: { gap: spacing.md },
-    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
     actions: { gap: spacing.lg },
   });
 }

@@ -4,13 +4,14 @@
 // It holds no state: the parent keeps the form and the errors.
 import { StyleSheet, View } from 'react-native';
 
-import { categoryLabel } from '@shared/domain/categories';
 import {
   AppText,
   Chip,
+  Dropdown,
   SegmentedControl,
   Switch,
   TextField,
+  categoryOptions,
   spacing,
   useThemedStyles,
 } from '@shared/ui';
@@ -26,6 +27,7 @@ import {
 import { recurringStrings } from './strings.es-CO';
 
 const t = recurringStrings.form;
+const CATEGORY_OPTIONS = categoryOptions(FORM_CATEGORIES);
 /** Monday first, as people read a week in Colombia. */
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
 const USAGES: readonly Usage[] = ['high', 'some', 'low'];
@@ -84,20 +86,14 @@ export function RecurringFormFields({
         />
       </View>
 
-      <View style={styles.field}>
-        <AppText variant="label">{t.category}</AppText>
-        <View style={styles.chips} accessibilityRole="radiogroup">
-          {FORM_CATEGORIES.map((c) => (
-            <Chip
-              key={c}
-              label={categoryLabel(c)}
-              selected={form.categoryId === c}
-              onPress={() => set({ categoryId: c })}
-              testID={`${testID}.category.${c}`}
-            />
-          ))}
-        </View>
-      </View>
+      {/* QA review 2026-11-07, V11: a dropdown with icons instead of chips. */}
+      <Dropdown
+        label={t.category}
+        options={CATEGORY_OPTIONS}
+        value={form.categoryId}
+        onChange={(categoryId) => set({ categoryId })}
+        testID={`${testID}.category`}
+      />
 
       <TextField
         label={t.amount}

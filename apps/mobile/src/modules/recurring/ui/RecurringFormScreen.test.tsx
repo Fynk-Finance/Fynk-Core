@@ -60,6 +60,8 @@ describe('RecurringFormScreen', () => {
     await renderForm();
     expect(screen.getByText('Nuevo gasto recurrente')).toBeTruthy();
     await fireEvent.changeText(screen.getByTestId('recurring.form.name'), 'Arriendo');
+    // The categories are a dropdown (QA review 2026-11-07, V11): open it, then pick.
+    await fireEvent.press(screen.getByTestId('recurring.form.category'));
     await fireEvent.press(screen.getByTestId('recurring.form.category.rent'));
     await fireEvent.changeText(screen.getByTestId('recurring.form.amount'), '1.400.000');
     await fireEvent.changeText(screen.getByTestId('recurring.form.day'), '1');
