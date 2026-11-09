@@ -1,6 +1,7 @@
 // Lock screen (new screen, needs design review). The header is the one of Login.html: the blue
 // background with its rounded squares, the Fynk logo and the title. The lime layer and white
-// sheet below hold the unlock buttons: the password and, when enabled, "Huella o Face ID".
+// sheet below hold a padlock illustration in the style of Inicio (it takes the free height) and,
+// near the thumb, the unlock buttons: the password and, when enabled, "Huella o Face ID".
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Rect } from 'react-native-svg';
@@ -16,6 +17,7 @@ import {
 } from '@shared/ui';
 
 import type { LockState } from '../application/lockController';
+import { LockIllustration } from './LockIllustration';
 import { vaultStrings } from './strings.es-CO';
 
 const t = vaultStrings.lock;
@@ -42,6 +44,7 @@ const SHEET_PAD_BOTTOM = 32;
 const LIME_EDGE = 14;
 // The lime layer starts 13 px below the header (y = 199 against a 186 px header in Login).
 const HEADER_GAP = 13;
+const ILLUSTRATION_GAP = 24;
 
 export function LockScreen({
   state,
@@ -56,7 +59,14 @@ export function LockScreen({
   return (
     <View style={[styles.root, { backgroundColor: colors.primary }]} testID="vault.lock">
       {/* Squares of Login.html. The fifth is the design's skewed shine, which is not drawn. */}
-      <Svg width={390} height={844} viewBox="0 0 390 844" style={StyleSheet.absoluteFill}>
+      {/* Slice keeps the squares from ending in a hard edge on phones wider than 390 points. */}
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 390 844"
+        preserveAspectRatio="xMidYMin slice"
+        style={StyleSheet.absoluteFill}
+      >
         <Rect x={226} y={-86} width={230} height={230} rx={52} fill={colors.headerShapeA} />
         <Rect x={296} y={-30} width={116} height={116} rx={28} fill={colors.headerShapeB} />
         <Rect x={-70} y={196} width={170} height={170} rx={40} fill={colors.primaryPressed} />
@@ -88,6 +98,9 @@ export function LockScreen({
             ]}
             testID="vault.lock.sheet"
           >
+            <View style={styles.illustration}>
+              <LockIllustration />
+            </View>
             <SheetContent
               state={state}
               onPassword={onPassword}
@@ -213,7 +226,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.sheet,
   },
   actions: { gap: 16 },
-  otherAccount: { alignSelf: 'center', marginTop: 'auto', paddingTop: 16 },
+  // Takes the free height; the gap lives here so the picture itself stays reusable.
+  illustration: { flex: 1, marginBottom: ILLUSTRATION_GAP },
+  otherAccount: { alignSelf: 'center', paddingTop: 16 },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rule: { flex: 1, height: 1 },
   center: { alignItems: 'center', gap: 10, paddingVertical: 24 },

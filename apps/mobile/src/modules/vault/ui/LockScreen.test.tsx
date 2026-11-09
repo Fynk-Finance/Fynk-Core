@@ -112,9 +112,37 @@ describe('layout of Login.html', () => {
         paddingTop: 36,
         paddingHorizontal: 24,
       });
-      expect(screen.getByTestId('vault.lock.otherAccount')).toHaveStyle({ marginTop: 'auto' });
+      expect(screen.getByTestId('vault.lock.otherAccount')).toHaveStyle({
+        alignSelf: 'center',
+        paddingTop: 16,
+      });
     },
   );
+});
+
+describe('illustration', () => {
+  const states: [string, LockState][] = [
+    ['locked', { status: 'locked' }],
+    ['unlocking', { status: 'unlocking' }],
+    ['error', { status: 'error', error: 'unknown' }],
+  ];
+
+  it.each(
+    (['light', 'dark'] as const).flatMap((preference) =>
+      states.map(([name, state]) => [preference, name, state] as const),
+    ),
+  )('shows as an image in the %s theme when %s', async (preference, _name, state) => {
+    await renderScreen(state, preference);
+    expect(screen.getByRole('image', { name: t.illustration })).toBeOnTheScreen();
+  });
+
+  it('takes the free height and stretches to the sheet width', async () => {
+    await renderScreen({ status: 'locked' });
+    expect(screen.getByTestId('vault.lock.illustration')).toHaveStyle({
+      flex: 1,
+      alignSelf: 'stretch',
+    });
+  });
 });
 
 describe('biometric button', () => {
