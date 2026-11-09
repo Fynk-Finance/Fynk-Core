@@ -14,7 +14,7 @@ status: done
 
 ## Instruction
 
-Daniel reported that creating an account and entering the Mailpit code sent them back to the first screen with an error: "no pudimos verificar tu contraseña, intenta de nuevo". He asked why, and when a different account signs in on the same phone he chose "Erase local, start fresh".
+Daniel reported that creating an account and entering the Mailpit code sent them back to the first screen with an error: "no pudimos verificar tu contraseña, intenta de nuevo". Daniel asked why, and chose "Erase local, start fresh" for when a different account signs in on the same phone.
 
 ## What was done
 

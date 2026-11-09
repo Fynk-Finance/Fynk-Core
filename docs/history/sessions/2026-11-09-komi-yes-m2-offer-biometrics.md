@@ -14,7 +14,7 @@ status: partial
 
 ## Instruction
 
-Daniel said the lock screen "should give the option with the face id or huella". The button only shows once biometrics are on, and the only switch was in Mi cuenta › Seguridad. Between keeping that and asking once after the first password unlock, he chose the second.
+Daniel said the lock screen "should give the option with the face id or huella". The button only shows once biometrics are on, and the only switch was in Mi cuenta › Seguridad. between keeping that and asking once after the first password unlock, Daniel chose the second.
 
 ## What was done
 
