@@ -11,6 +11,11 @@ const PERIODS = [
   { value: 'year', label: 'Año' },
 ] as const;
 
+const KINDS = [
+  { value: 'fixed', label: 'Gasto fijo' },
+  { value: 'subscription', label: 'Suscripción' },
+] as const;
+
 export default {
   title: 'SegmentedControl',
   stories: {
@@ -23,8 +28,20 @@ export default {
             value={period}
             onChange={setPeriod}
             accessibilityLabel="Periodo de la gráfica"
+            onPrimary
           />
         </OnColor>
+      );
+    },
+    OnPage: function OnPage() {
+      const [kind, setKind] = useState<(typeof KINDS)[number]['value']>('fixed');
+      return (
+        <SegmentedControl
+          options={[...KINDS]}
+          value={kind}
+          onChange={setKind}
+          accessibilityLabel="Tipo"
+        />
       );
     },
   },

@@ -1,6 +1,12 @@
-// Period control on blue headers (Estadísticas "3 días, Semana, Mes, Año", `.seg`): equal options
-// in a translucent track (padding 4, gap 4, radius 16), each 40 px high with radius 12 and 13 px
-// bold text. The selected option is the page color with blue text; the others are white text.
+// Equal options in a track (padding 4, gap 4, radius 16), each 40 px high with radius 12 and
+// 13 px bold text.
+// * `onPrimary`: the period control of blue headers (Estadísticas "3 días, Semana, Mes, Año",
+//   `.seg`): a translucent track, the selected option in the page color with blue text, the
+//   others in white text.
+// * Default, on the page or a sheet (recurring form "Tipo", filters, cap form): the design has
+//   no such control, so it takes the colors of `Chip`: a soft blue track with a blue border, the
+//   selected option in dark blue with white text, the others in the text color. New component
+//   state, needs design review (QA review 2026-11-07, V12).
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme, useThemedStyles, type Theme } from '../theme';
@@ -17,6 +23,8 @@ export interface SegmentedControlProps<T extends string> {
   onChange: (next: T) => void;
   /** Required: what the options choose, e.g. "Periodo de la gráfica". */
   accessibilityLabel: string;
+  /** On a blue surface (Estadísticas header): translucent track and white text. */
+  onPrimary?: boolean;
   testID?: string;
 }
 
@@ -25,15 +33,19 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   accessibilityLabel,
+  onPrimary = false,
   testID,
 }: SegmentedControlProps<T>) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const tone = onPrimary ? styles.onPrimary : styles.page;
+  const selectedText = onPrimary ? colors.primaryText : colors.onPrimary;
+  const idleText = onPrimary ? colors.onPrimary : colors.textPrimary;
   return (
     <View
       accessibilityRole="radiogroup"
       accessibilityLabel={accessibilityLabel}
-      style={styles.track}
+      style={[styles.track, tone.track]}
       testID={testID}
     >
       {options.map((option) => {
@@ -50,12 +62,12 @@ export function SegmentedControl<T extends string>({
             testID={testID ? `${testID}-${option.value}` : undefined}
             style={({ pressed }) => [
               styles.option,
-              selected ? styles.selected : pressed ? styles.pressed : null,
+              selected ? tone.selected : pressed ? tone.pressed : null,
             ]}
           >
             <Text
               numberOfLines={1}
-              style={[styles.label, { color: selected ? colors.primaryText : colors.onPrimary }]}
+              style={[styles.label, { color: selected ? selectedText : idleText }]}
             >
               {option.label}
             </Text>
@@ -66,15 +78,9 @@ export function SegmentedControl<T extends string>({
   );
 }
 
-const createStyles = ({ colors }: Theme) =>
-  StyleSheet.create({
-    track: {
-      flexDirection: 'row',
-      gap: 4,
-      padding: 4,
-      borderRadius: radius.button,
-      backgroundColor: colors.onPrimaryFaint,
-    },
+const createStyles = ({ colors }: Theme) => {
+  const base = StyleSheet.create({
+    track: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: radius.button },
     option: {
       flex: 1,
       height: size.segment,
@@ -82,7 +88,23 @@ const createStyles = ({ colors }: Theme) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    selected: { backgroundColor: colors.background },
-    pressed: { backgroundColor: colors.onPrimaryPressed },
     label: { fontFamily: fonts.body.bold, fontSize: 13 },
   });
+  return {
+    ...base,
+    onPrimary: StyleSheet.create({
+      track: { backgroundColor: colors.onPrimaryFaint },
+      selected: { backgroundColor: colors.background },
+      pressed: { backgroundColor: colors.onPrimaryPressed },
+    }),
+    page: StyleSheet.create({
+      track: {
+        backgroundColor: colors.surfaceBlueSoft,
+        borderWidth: 1,
+        borderColor: colors.borderBlue,
+      },
+      selected: { backgroundColor: colors.primaryDark },
+      pressed: { backgroundColor: colors.borderBlue },
+    }),
+  };
+};
