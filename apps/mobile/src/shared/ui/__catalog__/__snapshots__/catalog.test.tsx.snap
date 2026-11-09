@@ -19918,7 +19918,9 @@ exports[`design system catalog SegmentedControl / OnPage matches its dark snapsh
           "justifyContent": "center",
         },
         {
-          "backgroundColor": "#62C8F0",
+          "backgroundColor": "#13212D",
+          "borderColor": "#2B5267",
+          "borderWidth": 1,
         },
       ]
     }
@@ -19932,7 +19934,7 @@ exports[`design system catalog SegmentedControl / OnPage matches its dark snapsh
             "fontSize": 13,
           },
           {
-            "color": "#FFFFFF",
+            "color": "#62C8F0",
           },
         ]
       }
@@ -20067,7 +20069,9 @@ exports[`design system catalog SegmentedControl / OnPage matches its snapshot 1`
           "justifyContent": "center",
         },
         {
-          "backgroundColor": "#1F93C2",
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#BFE6F6",
+          "borderWidth": 1,
         },
       ]
     }
@@ -20081,7 +20085,7 @@ exports[`design system catalog SegmentedControl / OnPage matches its snapshot 1`
             "fontSize": 13,
           },
           {
-            "color": "#FFFFFF",
+            "color": "#1F7FA8",
           },
         ]
       }

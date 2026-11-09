@@ -4,9 +4,10 @@
 //   `.seg`): a translucent track, the selected option in the page color with blue text, the
 //   others in white text.
 // * Default, on the page or a sheet (recurring form "Tipo", filters, cap form): the design has
-//   no such control, so it takes the colors of `Chip`: a soft blue track with a blue border, the
-//   selected option in dark blue with white text, the others in the text color. New component
-//   state, needs design review (QA review 2026-11-07, V12).
+//   no such control, so it turns the header one around: a soft blue track with a blue border,
+//   the selected option in the page color with a stronger blue border and blue text, the others
+//   in the text color. Every text meets AA contrast in both themes. New component state, needs
+//   design review (QA review 2026-11-07, V12).
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme, useThemedStyles, type Theme } from '../theme';
@@ -39,7 +40,7 @@ export function SegmentedControl<T extends string>({
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const tone = onPrimary ? styles.onPrimary : styles.page;
-  const selectedText = onPrimary ? colors.primaryText : colors.onPrimary;
+  const selectedText = colors.primaryText;
   const idleText = onPrimary ? colors.onPrimary : colors.textPrimary;
   return (
     <View
@@ -103,7 +104,11 @@ const createStyles = ({ colors }: Theme) => {
         borderWidth: 1,
         borderColor: colors.borderBlue,
       },
-      selected: { backgroundColor: colors.primaryDark },
+      selected: {
+        backgroundColor: colors.background,
+        borderWidth: 1,
+        borderColor: colors.borderBlueStrong,
+      },
       pressed: { backgroundColor: colors.borderBlue },
     }),
   };
