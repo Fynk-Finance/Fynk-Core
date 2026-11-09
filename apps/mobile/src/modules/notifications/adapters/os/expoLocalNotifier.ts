@@ -7,8 +7,7 @@
 // * iOS: the category sets hiddenPreviewsBodyPlaceholder ("Abre Fynk para ver el detalle.").
 import * as Notifications from 'expo-notifications';
 import { AndroidImportance, AndroidNotificationVisibility } from 'expo-notifications';
-import { Platform } from 'react-native';
-import { dialog } from '@shared/ui';
+import { Alert, Platform } from 'react-native';
 
 import type { LocalNotifier, OsPermission } from '../../application/ports';
 import { notificationsStrings } from '../../ui/strings.es-CO';
@@ -21,7 +20,7 @@ const t = notificationsStrings;
 /** The short explanation before the OS prompt. Resolves true on "Continuar". */
 export function explainPermission(): Promise<boolean> {
   return new Promise((resolve) => {
-    dialog.show(
+    Alert.alert(
       t.permission.title,
       t.permission.message,
       [

@@ -18,18 +18,19 @@ Part of "Lets fix all the visual problems at once", every pull request in one st
 
 ## What was done
 
-* 19 calls in 14 files now call `dialog.show()` with the same arguments: M1 (`MiCuentaScreen`, `SecurityScreen`), M2 (`NewRecoveryCodeScreen`), M4 (`useRevokeFlow`), M6 (`DashboardBalanceCard`), M7 (`CategoryPickerSheet`, `TransactionDetailScreen`, whose injected `ask` is now `typeof dialog.show`), M8 (`GoalFormScreen`), M9 (`RecurringFormScreen`, `SubscriptionDetailScreen`), M10 (`CapsScreen`), M12 (`expoLocalNotifier`, the explanation before the OS permission prompt) and M13 (`PrivacyScreen`).
-* Their 10 test files spy on `dialog.show` instead of `Alert.alert`; the tests themselves did not change.
-* No `Alert.alert` is left in the app.
+* 18 calls in 13 files now call `dialog.show()` with the same arguments: M1 (`MiCuentaScreen`, `SecurityScreen`), M2 (`NewRecoveryCodeScreen`), M4 (`useRevokeFlow`), M6 (`DashboardBalanceCard`), M7 (`CategoryPickerSheet`, `TransactionDetailScreen`, whose injected `ask` is now `typeof dialog.show`), M8 (`GoalFormScreen`), M9 (`RecurringFormScreen`, `SubscriptionDetailScreen`), M10 (`CapsScreen`) and M13 (`PrivacyScreen`).
+* Their 9 test files spy on `dialog.show` instead of `Alert.alert`; the tests themselves did not change.
+* The only `Alert.alert` left is M12's explanation before the OS notification permission prompt (`expoLocalNotifier.ts`): SCRUM-83 says the operating system notification flow does not change.
 
 ## Result
 
 * Tests: 2746 of 2746. Typecheck and ESLint clean.
-* Pull request: not opened yet (opened with the whole stack). Approvals: Daniel (M1, M2), Juan Carlos (M4), Karol (M8, M9, M12), Julián (M10), Juan Pablo (M13).
+* Pull request: not opened yet (opened with the whole stack). Approvals: Daniel (M1, M2), Juan Carlos (M4), Karol (M8, M9), Julián (M10), Juan Pablo (M13).
 
 ## Decisions and problems
 
-* The swap was done by a script and checked by typecheck: `dialog.show` keeps the signature of `Alert.alert`, including `{ cancelable, onDismiss }` used by M4 and M12.
+* The swap was done by a script and checked by typecheck: `dialog.show` keeps the signature of `Alert.alert`, including `{ cancelable, onDismiss }` used by M4.
+* A first pass also moved M12's permission explanation; checked against SCRUM-83 ("`notifications/adapters/os/expoLocalNotifier.ts` no se toca") it went back to `Alert.alert`.
 * Tests that spied on `Alert.alert` without a mock now mock `dialog.show` too, so they do not leave dialogs in its queue.
 
 ## Next step
