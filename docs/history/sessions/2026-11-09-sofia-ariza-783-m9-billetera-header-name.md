@@ -6,7 +6,7 @@ module: M9
 jira: [SCRUM-82]
 branch: fix/billetera-header-name
 tool: Claude Code
-pr: none
+pr: "#354"
 status: done
 ---
 
@@ -25,7 +25,7 @@ Part of "Lets fix all the visual problems at once", every pull request in one st
 ## Result
 
 * Tests: 2721 of 2721. Typecheck and ESLint clean.
-* Pull request: not opened yet (opened with the whole stack). Karol approves (M9).
+* Pull request: #354, in stack #361 (#352 → #360). Karol approves (M9).
 
 ## Decisions and problems
 
