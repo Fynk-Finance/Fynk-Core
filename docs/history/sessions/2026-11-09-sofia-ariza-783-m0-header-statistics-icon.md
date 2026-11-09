@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-79]
 branch: fix/header-statistics-icon-size
 tool: Claude Code
-pr: none
+pr: "#353"
 status: done
 ---
 
@@ -26,7 +26,7 @@ Part of "Lets fix all the visual problems at once", every pull request in one st
 ## Result
 
 * Tests: shared UI 307 of 307. Typecheck and ESLint clean.
-* Pull request: not opened yet (opened with the whole stack).
+* Pull request: #353, in stack #361 (#352 → #360).
 
 ## Decisions and problems
 
