@@ -34,7 +34,7 @@ Part of "Lets fix all the visual problems at once", every pull request in one st
 
 ## Decisions and problems
 
-* ESLint rejects a `setState` inside an effect, so the queue lives outside React in a store. That is also what lets `dialog.show()` be called from an adapter (M12's permission explanation) and before the host mounts.
+* ESLint rejects a `setState` inside an effect, so the queue lives outside React in a store. That is also what lets `dialog.show()` be called outside a component and before the host mounts.
 * The buttons stack vertically: labels like "Aplicar a todos" do not fit side by side in a 360 px card.
 
 ## Next step
