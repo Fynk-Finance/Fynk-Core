@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-83]
 branch: feature/fynk-dialog
 tool: Claude Code
-pr: none
+pr: "#357"
 status: done
 ---
 
@@ -30,7 +30,7 @@ Part of "Lets fix all the visual problems at once", every pull request in one st
 ## Result
 
 * Tests: 2746 of 2746. Typecheck and ESLint clean.
-* Pull request: not opened yet (opened with the whole stack).
+* Pull request: #357, in stack #361 (#352 → #360).
 
 ## Decisions and problems
 
