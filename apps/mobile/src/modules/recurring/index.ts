@@ -6,6 +6,7 @@ import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
 import { getAccounts } from '@modules/accounts';
+import { STATISTICS_ROUTE } from '@modules/analytics';
 import { syncNow } from '@modules/bank';
 import {
   getPaymentReminderLeadDays,
@@ -175,6 +176,7 @@ export const routes: ModuleRoutes = {
     useDisplayName: () => useDisplayName(),
     accountRoute: 'identity.Account',
     notificationsRoute: NOTIFICATIONS_ROUTE,
+    statisticsRoute: STATISTICS_ROUTE,
     recommendationsRoute: 'Recomendaciones',
     accounts: getAccounts,
     pendingProposals: async () => (await detection.pending()).length,

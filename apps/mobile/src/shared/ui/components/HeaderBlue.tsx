@@ -1,7 +1,8 @@
 // Blue header with rounded bottom corners (VerdeDashboard, VerdeBilletera, VerdeRecomendaciones):
 // avatar with initials, "Hola," and the name, and the bell with a lime dot when there is
-// something unread. The Dashboard adds the Estadísticas chart button left of the bell. An optional
-// title row and extra content go below.
+// something unread. Every tab adds the Estadísticas chart button left of the bell (the design has
+// it only on the Dashboard; QA review 2026-11-07, V9). An optional title row and extra content go
+// below.
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,7 +20,7 @@ export interface HeaderBlueProps {
   hasUnread?: boolean;
   onPressAccount?: () => void;
   onPressNotifications?: () => void;
-  /** The chart button that opens Estadísticas, shown only when set (Dashboard). */
+  /** The chart button that opens Estadísticas, shown only when set (every tab). */
   onPressStatistics?: () => void;
   title?: string;
   subtitle?: string;

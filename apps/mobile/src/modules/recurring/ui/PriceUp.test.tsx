@@ -91,6 +91,7 @@ async function renderApp(preference: ThemePreference = 'light') {
     useUnreadCount: () => 0,
     accountRoute: 'identity.Account',
     notificationsRoute: 'notifications.Inbox',
+    statisticsRoute: 'analytics.Spending',
     recommendationsRoute: 'Recomendaciones',
     priceUpItems: async () => new Set((await alerts.openByItem()).keys()),
   });
