@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-87]
 branch: fix/segmented-control-light-mode
 tool: Claude Code
-pr: none
+pr: "#352"
 status: done
 ---
 
@@ -26,7 +26,7 @@ Sofia asked to list the findings of the 7 Nov app review that were still open an
 ## Result
 
 * Tests: 2719 of 2719. Typecheck and ESLint clean.
-* Pull request: not opened yet (opened with the whole stack).
+* Pull request: #352, in stack #361 (#352 → #360).
 
 ## Decisions and problems
 
