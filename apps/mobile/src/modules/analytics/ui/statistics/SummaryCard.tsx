@@ -166,6 +166,7 @@ export function SummaryCard({ summary, period, onPeriod, onBack, progress }: Sum
           value={period}
           onChange={onPeriod}
           accessibilityLabel={t.periodGroup}
+          onPrimary
           testID="analytics.statistics.period"
         />
       </View>

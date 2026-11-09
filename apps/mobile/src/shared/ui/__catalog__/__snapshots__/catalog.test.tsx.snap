@@ -19856,6 +19856,304 @@ exports[`design system catalog SectionHeader / WithMeta matches its snapshot 1`]
 </View>
 `;
 
+exports[`design system catalog SegmentedControl / OnPage matches its dark snapshot 1`] = `
+<View
+  accessibilityLabel="Tipo"
+  accessibilityRole="radiogroup"
+  style={
+    [
+      {
+        "borderRadius": 16,
+        "flexDirection": "row",
+        "gap": 4,
+        "padding": 4,
+      },
+      {
+        "backgroundColor": "#182A37",
+        "borderColor": "#223746",
+        "borderWidth": 1,
+      },
+    ]
+  }
+>
+  <View
+    accessibilityLabel="Gasto fijo"
+    accessibilityRole="radio"
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": true,
+        "disabled": undefined,
+        "expanded": undefined,
+        "selected": true,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    style={
+      [
+        {
+          "alignItems": "center",
+          "borderRadius": 12,
+          "flex": 1,
+          "height": 40,
+          "justifyContent": "center",
+        },
+        {
+          "backgroundColor": "#62C8F0",
+        },
+      ]
+    }
+  >
+    <Text
+      numberOfLines={1}
+      style={
+        [
+          {
+            "fontFamily": "PlusJakartaSans_700Bold",
+            "fontSize": 13,
+          },
+          {
+            "color": "#FFFFFF",
+          },
+        ]
+      }
+    >
+      Gasto fijo
+    </Text>
+  </View>
+  <View
+    accessibilityLabel="Suscripción"
+    accessibilityRole="radio"
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": false,
+        "disabled": undefined,
+        "expanded": undefined,
+        "selected": false,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    style={
+      [
+        {
+          "alignItems": "center",
+          "borderRadius": 12,
+          "flex": 1,
+          "height": 40,
+          "justifyContent": "center",
+        },
+        null,
+      ]
+    }
+  >
+    <Text
+      numberOfLines={1}
+      style={
+        [
+          {
+            "fontFamily": "PlusJakartaSans_700Bold",
+            "fontSize": 13,
+          },
+          {
+            "color": "#E8F1F6",
+          },
+        ]
+      }
+    >
+      Suscripción
+    </Text>
+  </View>
+</View>
+`;
+
+exports[`design system catalog SegmentedControl / OnPage matches its snapshot 1`] = `
+<View
+  accessibilityLabel="Tipo"
+  accessibilityRole="radiogroup"
+  style={
+    [
+      {
+        "borderRadius": 16,
+        "flexDirection": "row",
+        "gap": 4,
+        "padding": 4,
+      },
+      {
+        "backgroundColor": "#F4FBFE",
+        "borderColor": "#E4F5FC",
+        "borderWidth": 1,
+      },
+    ]
+  }
+>
+  <View
+    accessibilityLabel="Gasto fijo"
+    accessibilityRole="radio"
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": true,
+        "disabled": undefined,
+        "expanded": undefined,
+        "selected": true,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    style={
+      [
+        {
+          "alignItems": "center",
+          "borderRadius": 12,
+          "flex": 1,
+          "height": 40,
+          "justifyContent": "center",
+        },
+        {
+          "backgroundColor": "#1F93C2",
+        },
+      ]
+    }
+  >
+    <Text
+      numberOfLines={1}
+      style={
+        [
+          {
+            "fontFamily": "PlusJakartaSans_700Bold",
+            "fontSize": 13,
+          },
+          {
+            "color": "#FFFFFF",
+          },
+        ]
+      }
+    >
+      Gasto fijo
+    </Text>
+  </View>
+  <View
+    accessibilityLabel="Suscripción"
+    accessibilityRole="radio"
+    accessibilityState={
+      {
+        "busy": undefined,
+        "checked": false,
+        "disabled": undefined,
+        "expanded": undefined,
+        "selected": false,
+      }
+    }
+    accessibilityValue={
+      {
+        "max": undefined,
+        "min": undefined,
+        "now": undefined,
+        "text": undefined,
+      }
+    }
+    accessible={true}
+    collapsable={false}
+    focusable={true}
+    onBlur={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onResponderGrant={[Function]}
+    onResponderMove={[Function]}
+    onResponderRelease={[Function]}
+    onResponderTerminate={[Function]}
+    onResponderTerminationRequest={[Function]}
+    onStartShouldSetResponder={[Function]}
+    style={
+      [
+        {
+          "alignItems": "center",
+          "borderRadius": 12,
+          "flex": 1,
+          "height": 40,
+          "justifyContent": "center",
+        },
+        null,
+      ]
+    }
+  >
+    <Text
+      numberOfLines={1}
+      style={
+        [
+          {
+            "fontFamily": "PlusJakartaSans_700Bold",
+            "fontSize": 13,
+          },
+          {
+            "color": "#0F2233",
+          },
+        ]
+      }
+    >
+      Suscripción
+    </Text>
+  </View>
+</View>
+`;
+
 exports[`design system catalog SegmentedControl / Period matches its dark snapshot 1`] = `
 <View
   style={
@@ -19869,13 +20167,17 @@ exports[`design system catalog SegmentedControl / Period matches its dark snapsh
     accessibilityLabel="Periodo de la gráfica"
     accessibilityRole="radiogroup"
     style={
-      {
-        "backgroundColor": "rgba(255, 255, 255, 0.18)",
-        "borderRadius": 16,
-        "flexDirection": "row",
-        "gap": 4,
-        "padding": 4,
-      }
+      [
+        {
+          "borderRadius": 16,
+          "flexDirection": "row",
+          "gap": 4,
+          "padding": 4,
+        },
+        {
+          "backgroundColor": "rgba(255, 255, 255, 0.18)",
+        },
+      ]
     }
   >
     <View
@@ -20145,13 +20447,17 @@ exports[`design system catalog SegmentedControl / Period matches its snapshot 1`
     accessibilityLabel="Periodo de la gráfica"
     accessibilityRole="radiogroup"
     style={
-      {
-        "backgroundColor": "rgba(255, 255, 255, 0.18)",
-        "borderRadius": 16,
-        "flexDirection": "row",
-        "gap": 4,
-        "padding": 4,
-      }
+      [
+        {
+          "borderRadius": 16,
+          "flexDirection": "row",
+          "gap": 4,
+          "padding": 4,
+        },
+        {
+          "backgroundColor": "rgba(255, 255, 255, 0.18)",
+        },
+      ]
     }
   >
     <View

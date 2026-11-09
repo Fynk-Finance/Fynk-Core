@@ -70,18 +70,42 @@ describe('SegmentedControl', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('draws the selected text in the design blue of each theme', async () => {
-    const props = {
-      options,
-      value: 'week',
-      onChange: () => {},
-      accessibilityLabel: 'Periodo',
-    };
+  const props = {
+    options,
+    value: 'week',
+    onChange: () => {},
+    accessibilityLabel: 'Periodo',
+  };
+
+  // QA review 2026-11-07, V12: on the page the white text of the header version was invisible.
+  it('reads on the page background in light mode: dark text, the choice in blue like a chip', async () => {
     await render(<SegmentedControl {...props} />);
-    expect(screen.getByText('Semana')).toHaveStyle({ color: lightColors.primaryText });
+    expect(screen.getByText('Mes')).toHaveStyle({ color: lightColors.textPrimary });
+    expect(screen.getByText('Semana')).toHaveStyle({ color: lightColors.onPrimary });
+    expect(screen.getByRole('radio', { name: 'Semana' })).toHaveStyle({
+      backgroundColor: lightColors.primaryDark,
+    });
+  });
+
+  it('uses the dark palette on the page in dark mode', async () => {
     await render(
       <ThemeProvider initialPreference="dark" store={noStore}>
         <SegmentedControl {...props} />
+      </ThemeProvider>,
+    );
+    expect(screen.getByText('Mes')).toHaveStyle({ color: darkColors.textPrimary });
+    expect(screen.getByRole('radio', { name: 'Semana' })).toHaveStyle({
+      backgroundColor: darkColors.primaryDark,
+    });
+  });
+
+  it('on a blue header draws white text and the selected text in the design blue of each theme', async () => {
+    await render(<SegmentedControl {...props} onPrimary />);
+    expect(screen.getByText('Semana')).toHaveStyle({ color: lightColors.primaryText });
+    expect(screen.getByText('Mes')).toHaveStyle({ color: lightColors.onPrimary });
+    await render(
+      <ThemeProvider initialPreference="dark" store={noStore}>
+        <SegmentedControl {...props} onPrimary />
       </ThemeProvider>,
     );
     expect(screen.getByText('Semana')).toHaveStyle({ color: darkColors.primaryText });

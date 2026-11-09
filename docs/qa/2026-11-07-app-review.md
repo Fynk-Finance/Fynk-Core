@@ -26,7 +26,7 @@ Sofia Ariza tested the app end to end on a phone and listed visual bugs, gesture
 | V9 | [SCRUM-84](https://fynk-swnt.atlassian.net/browse/SCRUM-84) | The Estadísticas button, like the bell, must be in all 4 tabs. | M9 `BilleteraScreen.tsx`, M11 `RecommendationsScreen.tsx`, M15 `InvestmentScreen.tsx` | Sofia | Karol (M9), Julián Castiblanco (M10, M11, M15) |
 | V10 | [SCRUM-85](https://fynk-swnt.atlassian.net/browse/SCRUM-85) | With no movements, the Dashboard shows only a message. Add a grayscale vector illustration, centered in the free space, above the message. | M7 `transactions/ui/TransactionPreview.tsx`, maybe `shared/ui/components/States.tsx` | Sofia | none |
 | V11 | [SCRUM-86](https://fynk-swnt.atlassian.net/browse/SCRUM-86) | Categories show as many chips. Make them a dropdown, with an icon for each category. | M7 `ManualTransactionSheet.tsx`, M9 `RecurringFormFields.tsx`, maybe M8 `GoalFormFields.tsx` and M10 `CapFormScreen.tsx` | Sofia | Karol (M8, M9), Julián Castiblanco (M10) if their forms change |
-| V12 | [SCRUM-87](https://fynk-swnt.atlassian.net/browse/SCRUM-87) | In light mode, "Tipo", "Cada cuánto" and similar selectors of the recurring form cannot be seen: the text is white. | M0 `shared/ui/components/SegmentedControl.tsx` (made for the blue header), M9 `RecurringFormFields.tsx` | Sofia | Karol (M9) |
+| V12 | [SCRUM-87](https://fynk-swnt.atlassian.net/browse/SCRUM-87) | In light mode, "Tipo", "Cada cuánto" and similar selectors of the recurring form cannot be seen: the text is white. | M0 `shared/ui/components/SegmentedControl.tsx` (made for the blue header); the fix makes the page look the default, so only M10 `statistics/SummaryCard.tsx` changes to keep the header look | Sofia | Julián Castiblanco (M10) |
 
 ## Gestures
 
