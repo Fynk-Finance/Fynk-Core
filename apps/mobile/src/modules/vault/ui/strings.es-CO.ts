@@ -4,6 +4,7 @@ export const vaultStrings = {
   lock: {
     title: 'Desbloquea Fynk',
     subtitle: 'Tu información está cifrada en este teléfono.',
+    illustration: 'Ilustración de un candado que protege tus tarjetas',
     biometric: 'Huella o Face ID',
     orWith: 'o ingresa con',
     biometricHint: 'Abre tu bóveda con la huella o el rostro de este teléfono',
