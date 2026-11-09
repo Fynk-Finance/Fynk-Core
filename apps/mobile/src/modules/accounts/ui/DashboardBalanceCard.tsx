@@ -4,7 +4,7 @@
 // scrolls it shrinks to a compact card, "Balance total" and the amount on one line (QA review
 // 2026-11-07, G3; new state, needs design review).
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import Svg, { Rect } from 'react-native-svg';
 
@@ -12,6 +12,7 @@ import type { MoneyMinor } from '@shared/domain/types';
 import {
   AmountText,
   AppText,
+  dialog,
   Icon,
   Shine,
   Skeleton,
@@ -54,7 +55,7 @@ export function DashboardBalanceCard({
   const styles = useThemedStyles(createStyles);
   const [width, setWidth] = useState(350);
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
-  const explain = () => Alert.alert(t.howTitle, t.howMessage, [{ text: t.ok }]);
+  const explain = () => dialog.show(t.howTitle, t.howMessage, [{ text: t.ok }]);
   const cardStyle = useAnimatedStyle(() => ({ height: collapse?.value.card ?? HEIGHT }));
   const fullStyle = useAnimatedStyle(() => ({
     opacity: interpolate(collapse?.value.compact ?? 0, [0, 0.6], [1, 0], 'clamp'),

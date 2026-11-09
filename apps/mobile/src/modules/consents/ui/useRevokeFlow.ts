@@ -2,9 +2,9 @@
 // then the identity check M1 or M2 install (none yet), then the revocation, then the M4 prompt's
 // "Fynk ya no recibirá datos de <Entidad>."
 import { useState } from 'react';
-import { Alert } from 'react-native';
 
 import { isApiError } from '@shared/api';
+import { dialog } from '@shared/ui';
 
 import type { Consent } from '../domain/consent';
 import type { Revocation } from '../application/revocation';
@@ -17,7 +17,7 @@ export type RevokeOutcome = { kind: 'revoked' | 'error'; message: string } | nul
 
 const confirm = (entity: string) =>
   new Promise<boolean>((resolve) => {
-    Alert.alert(
+    dialog.show(
       t.confirmTitle(entity),
       t.confirmMessage(entity),
       [

@@ -10,7 +10,7 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CATEGORY_IDS, categoryLabel } from '@shared/domain/categories';
@@ -18,6 +18,7 @@ import type { CategoryId, Id } from '@shared/domain/types';
 import {
   AppText,
   Badge,
+  dialog,
   Icon,
   ListRow,
   radius,
@@ -45,14 +46,14 @@ export interface CategoryPickerDeps {
     categoryId: CategoryId,
     opts: { applyToMerchant: boolean },
   ) => Promise<unknown>;
-  /** Alert.alert, replaced in tests. */
-  ask?: typeof Alert.alert;
+  /** dialog.show, replaced in tests. */
+  ask?: typeof dialog.show;
 }
 
 export function createCategoryPickerSheet({
   hooks,
   changeCategory,
-  ask = Alert.alert,
+  ask = dialog.show,
 }: CategoryPickerDeps) {
   return function CategoryPickerSheet() {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();

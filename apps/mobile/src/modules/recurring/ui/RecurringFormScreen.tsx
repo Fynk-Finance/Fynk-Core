@@ -4,12 +4,13 @@
 // Pushed with the default transition. Route params: { id } to edit, none to add.
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   AppText,
   BackButton,
+  dialog,
   GhostButton,
   PrimaryButton,
   Screen,
@@ -84,7 +85,7 @@ export function createRecurringFormScreen({ service }: { service: RecurringServi
 
     const confirmDelete = () => {
       if (!id) return;
-      Alert.alert(t.confirmDelete.title(form.name.trim()), t.confirmDelete.message, [
+      dialog.show(t.confirmDelete.title(form.name.trim()), t.confirmDelete.message, [
         { text: t.confirmDelete.cancel, style: 'cancel' },
         {
           text: t.confirmDelete.confirm,

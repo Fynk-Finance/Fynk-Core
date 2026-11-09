@@ -1,13 +1,14 @@
 // Topes (new screen, needs design review): every cap with its progress and state, and
 // "Nuevo tope" (HU-043). Built from shared components in the style of OnbMetas.
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { categoryLabel, formatCop } from '@shared/domain';
 import {
   AppText,
   Badge,
   Card,
+  dialog,
   EmptyState,
   ErrorState,
   GhostButton,
@@ -45,7 +46,7 @@ export function CapsScreen() {
   const { remove } = useCapMutations();
 
   const confirmDelete = (id: string, name: string) =>
-    Alert.alert(`${s.delete} · ${name}`, undefined, [
+    dialog.show(`${s.delete} · ${name}`, undefined, [
       { text: analyticsStrings.capForm.cancel, style: 'cancel' },
       { text: s.delete, style: 'destructive', onPress: () => remove.mutate(id) },
     ]);

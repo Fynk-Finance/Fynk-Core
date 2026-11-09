@@ -2,13 +2,14 @@
 // devices. Pushed with the default transition (inventory row 16).
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { RecoveryCodeRow, UnlockSetting } from '@modules/vault';
 import type { Clock } from '@shared/domain/types';
 import {
   AppText,
   Card,
+  dialog,
   ErrorState,
   Icon,
   ListRow,
@@ -71,7 +72,7 @@ export function createSecurityScreen(deps: SecurityDeps) {
       setChanging(true);
       try {
         const result = await deps.changePassword();
-        if (result === 'failed') Alert.alert(t.changeFailed.title, t.changeFailed.message);
+        if (result === 'failed') dialog.show(t.changeFailed.title, t.changeFailed.message);
         // Keycloak made a new session; the date and the sessions have changed.
         await Promise.all([profile.refetch(), list.refresh()]);
       } finally {
@@ -80,11 +81,11 @@ export function createSecurityScreen(deps: SecurityDeps) {
     };
 
     const alertIfFailed = (result: DeviceActionResult) => {
-      if (result === 'failed') Alert.alert(t.actionFailed.title, t.actionFailed.message);
+      if (result === 'failed') dialog.show(t.actionFailed.title, t.actionFailed.message);
     };
 
     const confirmClose = (id: string, name: string) =>
-      Alert.alert(t.confirmClose.title(name), t.confirmClose.message, [
+      dialog.show(t.confirmClose.title(name), t.confirmClose.message, [
         { text: t.confirmClose.cancel, style: 'cancel' },
         {
           text: t.confirmClose.confirm,
@@ -94,7 +95,7 @@ export function createSecurityScreen(deps: SecurityDeps) {
       ]);
 
     const confirmCloseAll = () =>
-      Alert.alert(t.confirmCloseAll.title, t.confirmCloseAll.message, [
+      dialog.show(t.confirmCloseAll.title, t.confirmCloseAll.message, [
         { text: t.confirmCloseAll.cancel, style: 'cancel' },
         {
           text: t.confirmCloseAll.confirm,

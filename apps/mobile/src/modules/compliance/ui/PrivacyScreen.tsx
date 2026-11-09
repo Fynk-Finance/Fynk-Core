@@ -3,7 +3,7 @@
 // from M4), and "Tu información" data export / legal policy actions.
 import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ConnectedAccountsSection } from '@modules/consents';
@@ -11,6 +11,7 @@ import {
   AppText,
   BackButton,
   Card,
+  dialog,
   Icon,
   IconTile,
   ListRow,
@@ -152,7 +153,7 @@ export function createPrivacyScreen({
                 iconTone="soft"
                 iconSize={40}
                 trailing={{ kind: 'chevron' }}
-                onPress={() => Alert.alert(t.info.download.title, t.info.download.subtitle)}
+                onPress={() => dialog.show(t.info.download.title, t.info.download.subtitle)}
                 testID="privacy.info.download"
               />
               <View style={styles.divider} />
@@ -163,7 +164,7 @@ export function createPrivacyScreen({
                 iconTone="soft"
                 iconSize={40}
                 trailing={{ kind: 'chevron' }}
-                onPress={() => Alert.alert(t.info.policy.title, t.info.policy.subtitle)}
+                onPress={() => dialog.show(t.info.policy.title, t.info.policy.subtitle)}
                 testID="privacy.info.policy"
               />
               <View style={styles.divider} />
@@ -174,7 +175,7 @@ export function createPrivacyScreen({
                 iconTone="soft"
                 iconSize={40}
                 trailing={{ kind: 'chevron' }}
-                onPress={() => Alert.alert(t.info.terms.title, t.info.terms.subtitle)}
+                onPress={() => dialog.show(t.info.terms.title, t.info.terms.subtitle)}
                 testID="privacy.info.terms"
               />
             </Card>

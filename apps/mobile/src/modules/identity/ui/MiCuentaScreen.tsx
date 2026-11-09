@@ -1,12 +1,13 @@
 // Mi cuenta (DetalleCuentas): header, "Información Básica" and the "Gestión de cuenta" rows of
 // this module (miCuentaRows.ts). Pushed with the default transition (inventory row 7).
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Slot } from '@shared/navigation';
 import {
   AppText,
   Card,
+  dialog,
   ErrorState,
   IconTile,
   ListRow,
@@ -41,7 +42,7 @@ export function createMiCuentaScreen({ profile: port, signOut }: MiCuentaDeps) {
     const query = useProfile(port, () => void signOut());
 
     const confirmSignOut = () =>
-      Alert.alert(t.signOutConfirm.title, t.signOutConfirm.message, [
+      dialog.show(t.signOutConfirm.title, t.signOutConfirm.message, [
         { text: t.signOutConfirm.cancel, style: 'cancel' },
         { text: t.signOutConfirm.confirm, style: 'destructive', onPress: () => void signOut() },
       ]);

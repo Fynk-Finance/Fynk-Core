@@ -1,10 +1,10 @@
 // Detalle de movimiento (HU-015 fecha, monto y descripción; HU-018 modificación manual e
 // historial): its data, "Cambiar categoría" with "¿Aplicar a todos…?", the history, both themes.
 import { act, fireEvent, screen } from '@testing-library/react-native';
-import type { Alert } from 'react-native';
 
 import type { Account } from '@shared/domain/types';
 import { createFixedClock } from '@shared/testing';
+import type { dialog } from '@shared/ui';
 
 import { bankTx } from '../testing/fixtures';
 import { createTestModule, renderScreens } from '../testing/renderScreen';
@@ -19,7 +19,7 @@ const accounts = [
   { id: 'acc-ahorros', kind: 'savings', displayName: 'Bancolombia · Ahorros' },
 ] as Account[];
 
-type Buttons = Parameters<typeof Alert.alert>[2];
+type Buttons = Parameters<typeof dialog.show>[2];
 
 async function setup(
   answer: 'Solo este' | 'Aplicar a todos' = 'Solo este',

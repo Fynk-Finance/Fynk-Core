@@ -3,9 +3,9 @@
 // uploaded, and the old code keeps working, until the person confirms the new one.
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { AppText, Screen, useTheme } from '@shared/ui';
+import { AppText, dialog, Screen, useTheme } from '@shared/ui';
 
 import type { LockController } from '../application/lockController';
 import { confirmRecoveryCode, type PreparedRecoveryCode } from '../application/recoveryCode';
@@ -34,7 +34,7 @@ export function createNewRecoveryCodeScreen({ controller, copyText }: NewRecover
           return;
         }
         // Cancelling the password step is the person's choice; a failure is told once.
-        if (result.status === 'failed') Alert.alert(t.failedTitle, t.failedMessage);
+        if (result.status === 'failed') dialog.show(t.failedTitle, t.failedMessage);
         navigation.goBack();
       });
       return () => {

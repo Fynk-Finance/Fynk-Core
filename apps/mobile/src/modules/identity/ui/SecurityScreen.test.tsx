@@ -3,9 +3,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 
-import { ThemeProvider, useTheme, uiStrings, type ThemePreference } from '@shared/ui';
+import { dialog, ThemeProvider, useTheme, uiStrings, type ThemePreference } from '@shared/ui';
 import { createFixedClock } from '@shared/testing';
 
 import type { LinkedDeviceItem } from '../domain/deviceList';
@@ -119,7 +119,7 @@ afterEach(async () => {
   jest.restoreAllMocks();
 });
 
-const spyAlert = () => jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+const spyAlert = () => jest.spyOn(dialog, 'show').mockImplementation(() => undefined);
 const alertButtons = (alert: jest.SpyInstance, style: string) =>
   (alert.mock.calls[0]?.[2] ?? []).find((b: { style?: string }) => b.style === style);
 

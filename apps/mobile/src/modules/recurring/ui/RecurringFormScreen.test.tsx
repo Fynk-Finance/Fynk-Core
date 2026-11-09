@@ -2,10 +2,10 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { createFixedClock, createInMemoryVault, type InMemoryVault } from '@shared/testing';
-import { ThemeProvider, type ThemePreference } from '@shared/ui';
+import { dialog, ThemeProvider, type ThemePreference } from '@shared/ui';
 
 import { recurringMigrations } from '../adapters/vault/migrations';
 import { createVaultRecurringStore } from '../adapters/vault/vaultRecurringStore';
@@ -143,7 +143,7 @@ describe('RecurringFormScreen', () => {
       schedule: { periodicity: 'monthly', anchorDay: 1 },
       categoryId: 'rent',
     });
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+    const alert = jest.spyOn(dialog, 'show').mockImplementation((_t, _m, buttons) => {
       buttons?.find((b) => b.text === 'Eliminar')?.onPress?.();
     });
     await renderForm({ id });

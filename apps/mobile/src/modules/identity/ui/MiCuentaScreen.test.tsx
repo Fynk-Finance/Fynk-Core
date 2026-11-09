@@ -3,11 +3,11 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { ApiError } from '@shared/api';
 import { APPEARANCE_ROUTE } from '@shared/navigation';
-import { ThemeProvider, useTheme, uiStrings, type ThemePreference } from '@shared/ui';
+import { dialog, ThemeProvider, useTheme, uiStrings, type ThemePreference } from '@shared/ui';
 
 import { CONSENTS_ROUTE } from '@modules/consents';
 
@@ -132,7 +132,7 @@ it('opens Consentimientos (M4)', async () => {
 });
 
 it('asks before signing out and signs out only on confirm', async () => {
-  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+  const alert = jest.spyOn(dialog, 'show').mockImplementation(() => undefined);
   const { signOut } = await renderScreen(async () => profile);
 
   await fireEvent.press(screen.getByRole('button', { name: /^Cerrar sesión\./ }));
