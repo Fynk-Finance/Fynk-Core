@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-86]
 branch: feature/category-dropdown
 tool: Claude Code
-pr: none
+pr: "#359"
 status: done
 ---
 
@@ -26,7 +26,7 @@ Part of "Lets fix all the visual problems at once", every pull request in one st
 ## Result
 
 * Tests: 2755 of 2755. Typecheck and ESLint clean.
-* Pull request: not opened yet (opened with the whole stack).
+* Pull request: #359, in stack #361 (#352 → #360).
 
 ## Decisions and problems
 
