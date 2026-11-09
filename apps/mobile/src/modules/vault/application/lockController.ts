@@ -31,7 +31,15 @@ export type LockNotice = 'biometricsOff' | 'biometricFailed' | 'otherAccount';
 
 export interface LockState {
   status:
-    'locked' | 'unlocking' | 'unlocked' | 'pendingDevice' | 'restoring' | 'recoveryCode' | 'error';
+    | 'locked'
+    | 'unlocking'
+    | 'unlocked'
+    | 'pendingDevice'
+    | 'restoring'
+    | 'recoveryCode'
+    /** Open, with the one-time "use biometrics?" question on top. */
+    | 'biometricOffer'
+    | 'error';
   error?: LockError;
   /**
    * Pending device only: `pending` can ask the old phone for approval; `active` (the server
@@ -107,6 +115,8 @@ export interface LockController {
   enableBiometrics(): Promise<EnableBiometricsResult>;
   /** Turns biometrics off by deleting copy B. */
   disableBiometrics(): Promise<void>;
+  /** Leaves the one-time biometrics question and goes on to the app. */
+  finishBiometricOffer(): void;
   /**
    * Step 2 of the recovery code screen: the typed last group must match, then the wrapped DEK is
    * uploaded and the vault is unlocked. `mismatch` and `offline` can be retried on the same code.
@@ -266,17 +276,33 @@ export function createLockController(deps: LockControllerDeps): LockController {
     }
   }
 
-  async function openWith(dek: Uint8Array): Promise<void> {
+  // Once per phone, and only where it can work: without biometrics the offer is not spent, so it
+  // comes when the person enrolls one. The mark goes first, so a failure never repeats the question.
+  async function takeBiometricOffer(): Promise<boolean> {
+    try {
+      if (await dekStore.biometricOfferShown()) return false;
+      if (!(await dekStore.biometricsAvailable())) return false;
+      await dekStore.markBiometricOfferShown();
+      return !(await dekStore.hasBiometric());
+    } catch {
+      return false;
+    }
+  }
+
+  async function openWith(dek: Uint8Array, canOffer = false): Promise<void> {
     const mine = generation;
     if (!(await openVault(dek))) return;
     await tagOwner();
     // Locked while the tag was written: lock() already closed the vault.
     if (mine !== generation) return;
+    const offer = canOffer && (await takeBiometricOffer());
+    if (mine !== generation) return;
     // The person is in at once; the server check never delays or blocks an offline open.
-    set({ status: 'unlocked' });
+    set({ status: offer ? 'biometricOffer' : 'unlocked' });
     // A restore that was cut short (offline) continues in the background.
     if (deps.backupEnabled()) void deps.restoreWithCode.resumePending();
-    await offerMissingRecoveryCode(dek, mine);
+    // Behind the offer nothing can show it; the check repeats on the next unlock.
+    if (!offer) await offerMissingRecoveryCode(dek, mine);
   }
 
   async function setUpFirstPhone(): Promise<void> {
@@ -369,7 +395,8 @@ export function createLockController(deps: LockControllerDeps): LockController {
     state.status === 'unlocking' ||
     state.status === 'unlocked' ||
     state.status === 'restoring' ||
-    state.status === 'recoveryCode';
+    state.status === 'recoveryCode' ||
+    state.status === 'biometricOffer';
 
   const controller: LockController = {
     getState: () => state,
@@ -412,7 +439,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
         set(keychainError);
         return;
       }
-      await openWith(dek);
+      await openWith(dek, true);
     },
     async unlockWithBiometrics() {
       if (isOpenOrOpening()) return;
@@ -466,6 +493,9 @@ export function createLockController(deps: LockControllerDeps): LockController {
     },
     async disableBiometrics() {
       await dekStore.removeBiometric();
+    },
+    finishBiometricOffer() {
+      if (state.status === 'biometricOffer') set({ status: 'unlocked' });
     },
     async confirmRecoveryCode(lastGroup) {
       const shown = pendingCode;
@@ -576,7 +606,8 @@ export function createLockController(deps: LockControllerDeps): LockController {
     async appForegrounded() {
       const since = backgroundSince;
       backgroundSince = null;
-      if (since !== null && state.status === 'unlocked' && shouldLock(since, deps.nowMs())) {
+      const open = state.status === 'unlocked' || state.status === 'biometricOffer';
+      if (since !== null && open && shouldLock(since, deps.nowMs())) {
         await controller.lock();
       }
     },
