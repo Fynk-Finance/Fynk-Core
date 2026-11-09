@@ -1,6 +1,12 @@
 import * as Keychain from 'react-native-keychain';
 
-import { DEK_BIOMETRIC_KEYCHAIN_SERVICE, DEK_KEYCHAIN_SERVICE, createDekStore } from './dekStore';
+import {
+  DEK_BIOMETRIC_KEYCHAIN_SERVICE,
+  DEK_BIOMETRIC_OFFER_KEYCHAIN_SERVICE,
+  DEK_KEYCHAIN_SERVICE,
+  DEK_OWNER_KEYCHAIN_SERVICE,
+  createDekStore,
+} from './dekStore';
 
 jest.mock('react-native-keychain', () => {
   const entries = new Map<string, { username: string; password: string }>();
@@ -33,6 +39,7 @@ const dek = Uint8Array.from({ length: 32 }, (_, i) => 255 - i);
 beforeEach(async () => {
   await Keychain.resetGenericPassword({ service: DEK_KEYCHAIN_SERVICE });
   await Keychain.resetGenericPassword({ service: DEK_BIOMETRIC_KEYCHAIN_SERVICE });
+  await Keychain.resetGenericPassword({ service: DEK_OWNER_KEYCHAIN_SERVICE });
   jest.clearAllMocks();
 });
 
@@ -92,6 +99,89 @@ it('removeAll deletes copy B even when deleting copy A fails', async () => {
 it('fails loudly when the keychain refuses the write', async () => {
   mocked.setGenericPassword.mockResolvedValueOnce(false);
   await expect(createDekStore().write(dek)).rejects.toThrow('keychain write failed');
+});
+
+describe('biometrics offer mark', () => {
+  it('starts unset and is stored under its own service, on this device only', async () => {
+    const store = createDekStore();
+    await store.removeAll();
+    expect(await store.biometricOfferShown()).toBe(false);
+    await store.markBiometricOfferShown();
+    expect(await store.biometricOfferShown()).toBe(true);
+    expect(mocked.setGenericPassword).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        service: DEK_BIOMETRIC_OFFER_KEYCHAIN_SERVICE,
+        accessible: 'AccessibleWhenUnlockedThisDeviceOnly',
+        cloudSync: false,
+      }),
+    );
+  });
+
+  it('goes with the keys in removeAll, even when an earlier removal fails', async () => {
+    const store = createDekStore();
+    await store.markBiometricOfferShown();
+    mocked.resetGenericPassword.mockRejectedValueOnce(new Error('keystore busy'));
+    await expect(store.removeAll()).rejects.toThrow('keystore busy');
+    expect(await store.biometricOfferShown()).toBe(false);
+  });
+
+  it('fails loudly when the keychain refuses the mark', async () => {
+    mocked.setGenericPassword.mockResolvedValueOnce(false);
+    await expect(createDekStore().markBiometricOfferShown()).rejects.toThrow(
+      'keychain write failed',
+    );
+  });
+});
+
+describe('owner tag', () => {
+  it('is stored under its own service, on this device only', async () => {
+    const store = createDekStore();
+    await store.writeOwner('user-a');
+    expect(mocked.setGenericPassword).toHaveBeenCalledWith('owner', 'user-a', {
+      service: 'co.fynk.app.vault.owner',
+      accessible: 'AccessibleWhenUnlockedThisDeviceOnly',
+      cloudSync: false,
+    });
+    expect(await store.readOwner()).toBe('user-a');
+  });
+
+  it('is null when absent', async () => {
+    expect(await createDekStore().readOwner()).toBeNull();
+  });
+
+  it('fails loudly when the keychain refuses the write', async () => {
+    mocked.setGenericPassword.mockResolvedValueOnce(false);
+    await expect(createDekStore().writeOwner('user-a')).rejects.toThrow('keychain write failed');
+  });
+
+  it('removeAll removes all three services', async () => {
+    const store = createDekStore();
+    await store.write(dek);
+    await store.writeOwner('user-a');
+    await mocked.setGenericPassword('dek', 'b', { service: DEK_BIOMETRIC_KEYCHAIN_SERVICE });
+    await store.removeAll();
+    for (const service of [
+      DEK_KEYCHAIN_SERVICE,
+      DEK_BIOMETRIC_KEYCHAIN_SERVICE,
+      DEK_OWNER_KEYCHAIN_SERVICE,
+    ]) {
+      expect(await Keychain.getGenericPassword({ service })).toBe(false);
+    }
+  });
+
+  it('removeAll still runs every removal when one throws', async () => {
+    const store = createDekStore();
+    await store.writeOwner('user-a');
+    await mocked.setGenericPassword('dek', 'b', { service: DEK_BIOMETRIC_KEYCHAIN_SERVICE });
+    mocked.resetGenericPassword.mockRejectedValueOnce(new Error('keystore busy'));
+    await expect(store.removeAll()).rejects.toThrow('keystore busy');
+    expect(await store.readOwner()).toBeNull();
+    expect(await Keychain.getGenericPassword({ service: DEK_BIOMETRIC_KEYCHAIN_SERVICE })).toBe(
+      false,
+    );
+  });
 });
 
 describe('copy B', () => {

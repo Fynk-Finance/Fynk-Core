@@ -6,7 +6,13 @@ import type { BiometricPrompt, BiometricRead, DekStore } from '../../application
 
 export const DEK_KEYCHAIN_SERVICE = 'co.fynk.app.vault.key';
 export const DEK_BIOMETRIC_KEYCHAIN_SERVICE = 'co.fynk.app.vault.key.biometric';
+// Which account the key belongs to, so another account on this phone never opens it.
+export const DEK_OWNER_KEYCHAIN_SERVICE = 'co.fynk.app.vault.owner';
+// A yes/no mark, not a secret: the one-time "use biometrics?" question was already spent.
+export const DEK_BIOMETRIC_OFFER_KEYCHAIN_SERVICE = 'co.fynk.app.vault.biometricOffer';
 const ACCOUNT = 'dek';
+const OWNER_ACCOUNT = 'owner';
+const OFFER_ACCOUNT = 'offer';
 
 // The DEK is 32 bytes: one character per byte is safe for btoa and atob.
 const toBase64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
@@ -68,12 +74,41 @@ export function createDekStore(): DekStore {
     async remove() {
       await Keychain.resetGenericPassword({ service: DEK_KEYCHAIN_SERVICE });
     },
+    async readOwner() {
+      const entry = await Keychain.getGenericPassword({ service: DEK_OWNER_KEYCHAIN_SERVICE });
+      return entry ? entry.password : null;
+    },
+    async writeOwner(userId) {
+      const stored = await Keychain.setGenericPassword(OWNER_ACCOUNT, userId, {
+        ...options,
+        service: DEK_OWNER_KEYCHAIN_SERVICE,
+      });
+      if (!stored) throw new Error('keychain write failed');
+    },
+    async biometricOfferShown() {
+      return Keychain.hasGenericPassword({ service: DEK_BIOMETRIC_OFFER_KEYCHAIN_SERVICE });
+    },
+    async markBiometricOfferShown() {
+      const stored = await Keychain.setGenericPassword(OFFER_ACCOUNT, '1', {
+        ...options,
+        service: DEK_BIOMETRIC_OFFER_KEYCHAIN_SERVICE,
+      });
+      if (!stored) throw new Error('keychain write failed');
+    },
     async removeAll() {
-      // Copy B goes even when removing copy A fails.
+      // Each removal runs even when an earlier one fails.
       try {
         await store.remove();
       } finally {
-        await store.removeBiometric();
+        try {
+          await store.removeBiometric();
+        } finally {
+          try {
+            await Keychain.resetGenericPassword({ service: DEK_OWNER_KEYCHAIN_SERVICE });
+          } finally {
+            await Keychain.resetGenericPassword({ service: DEK_BIOMETRIC_OFFER_KEYCHAIN_SERVICE });
+          }
+        }
       }
     },
     async biometricsAvailable() {

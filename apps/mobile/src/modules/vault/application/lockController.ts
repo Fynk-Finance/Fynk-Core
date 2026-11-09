@@ -23,12 +23,23 @@ import type { Vault } from './vault';
 
 export type LockError = 'notEncrypted' | 'keychain' | 'offline' | 'unknown';
 
-/** Messages for the lock screen. `biometricsOff`: the phone's biometrics changed, copy B was deleted. */
-export type LockNotice = 'biometricsOff' | 'biometricFailed';
+/**
+ * Messages for the lock screen. `biometricsOff`: the phone's biometrics changed, copy B was
+ * deleted. `otherAccount`: the password login was for an account other than this phone's.
+ */
+export type LockNotice = 'biometricsOff' | 'biometricFailed' | 'otherAccount';
 
 export interface LockState {
   status:
-    'locked' | 'unlocking' | 'unlocked' | 'pendingDevice' | 'restoring' | 'recoveryCode' | 'error';
+    | 'locked'
+    | 'unlocking'
+    | 'unlocked'
+    | 'pendingDevice'
+    | 'restoring'
+    | 'recoveryCode'
+    /** Open, with the one-time "use biometrics?" question on top. */
+    | 'biometricOffer'
+    | 'error';
   error?: LockError;
   /**
    * Pending device only: `pending` can ask the old phone for approval; `active` (the server
@@ -53,8 +64,10 @@ export type NewRecoveryCode =
 /** What the controller needs from identity (M1). The wiring passes lazy calls. */
 export interface LockIdentity {
   lastLoginAt(): Date | null;
-  reauthenticate(): Promise<'ok' | 'cancelled' | 'failed'>;
+  reauthenticate(): Promise<'ok' | 'cancelled' | 'failed' | 'otherAccount'>;
   currentDevice(): Promise<{ id: string; status: 'active' | 'pending' } | null>;
+  /** The signed in account (Keycloak `sub`), or null when nobody is. */
+  userId(): string | null;
   /** Calls the listener on every session change. Returns the unsubscribe. */
   onSessionChange(listener: (state: { status: string }) => void): () => void;
 }
@@ -80,6 +93,8 @@ export interface LockControllerDeps {
   resetBackup: ResetBackup;
   /** False in the dev session: no registered device and no API, so no backup to protect. */
   backupEnabled: () => boolean;
+  /** Drops the timers, cached key and marks of the previous owner before the vault is wiped. */
+  resetBackupState: () => void;
 }
 
 export interface LockController {
@@ -100,6 +115,8 @@ export interface LockController {
   enableBiometrics(): Promise<EnableBiometricsResult>;
   /** Turns biometrics off by deleting copy B. */
   disableBiometrics(): Promise<void>;
+  /** Leaves the one-time biometrics question and goes on to the app. */
+  finishBiometricOffer(): void;
   /**
    * Step 2 of the recovery code screen: the typed last group must match, then the wrapped DEK is
    * uploaded and the vault is unlocked. `mismatch` and `offline` can be retried on the same code.
@@ -221,14 +238,71 @@ export function createLockController(deps: LockControllerDeps): LockController {
     }
   }
 
-  async function openWith(dek: Uint8Array): Promise<void> {
+  // Whose key is this? A phone without a tag (set up before the tag) is adopted by the current
+  // account. A failed read throws: never open on a failed read. No account throws too: a session
+  // that ended meanwhile says nothing about who signed in, so it must never erase the vault.
+  async function keyOwner(): Promise<'mine' | 'other'> {
+    const owner = await dekStore.readOwner();
+    if (owner === null) return 'mine';
+    const current = identity.userId();
+    if (current === null) throw new Error('no signed in account');
+    return owner === current ? 'mine' : 'other';
+  }
+
+  // Another account signed in: nothing of the previous owner stays on the phone.
+  async function eraseOtherOwner(): Promise<boolean> {
+    try {
+      // First, so no upload starts while the vault is being erased.
+      deps.resetBackupState();
+      await vault.wipe();
+      return true;
+    } catch {
+      set(keychainError);
+      return false;
+    } finally {
+      deps.resetBackupState();
+    }
+  }
+
+  // Best effort: a missing tag only means the next account adopts the key, and it must never
+  // stop the person from getting in.
+  async function tagOwner(): Promise<void> {
+    try {
+      const id = identity.userId();
+      if (id === null || (await dekStore.readOwner()) === id) return;
+      await dekStore.writeOwner(id);
+    } catch {
+      // Ignored on purpose.
+    }
+  }
+
+  // Once per phone, and only where it can work: without biometrics the offer is not spent, so it
+  // comes when the person enrolls one. The mark goes first, so a failure never repeats the question.
+  async function takeBiometricOffer(): Promise<boolean> {
+    try {
+      if (await dekStore.biometricOfferShown()) return false;
+      if (!(await dekStore.biometricsAvailable())) return false;
+      await dekStore.markBiometricOfferShown();
+      return !(await dekStore.hasBiometric());
+    } catch {
+      return false;
+    }
+  }
+
+  async function openWith(dek: Uint8Array, canOffer = false): Promise<void> {
     const mine = generation;
     if (!(await openVault(dek))) return;
+    await tagOwner();
+    // Locked while the tag was written: lock() already closed the vault.
+    if (mine !== generation) return;
+    const offer = canOffer && (await takeBiometricOffer());
+    if (mine !== generation) return;
     // The person is in at once; the server check never delays or blocks an offline open.
-    set({ status: 'unlocked' });
+    set({ status: offer ? 'biometricOffer' : 'unlocked' });
     // A restore that was cut short (offline) continues in the background.
     if (deps.backupEnabled()) void deps.restoreWithCode.resumePending();
-    await offerMissingRecoveryCode(dek, mine);
+    // Behind the offer nothing can show it; the check repeats on the next unlock.
+    if (!offer) await offerMissingRecoveryCode(dek, mine);
   }
 
   async function setUpFirstPhone(): Promise<void> {
@@ -272,6 +346,8 @@ export function createLockController(deps: LockControllerDeps): LockController {
       await vault.wipe();
       fresh = deps.newDek();
       await dekStore.write(fresh);
+      const id = identity.userId();
+      if (id !== null) await dekStore.writeOwner(id);
     } catch {
       set(keychainError);
       return;
@@ -302,6 +378,15 @@ export function createLockController(deps: LockControllerDeps): LockController {
       return;
     }
     if (!dek) return setUpFirstPhone();
+    try {
+      if ((await keyOwner()) === 'other') {
+        if (!(await eraseOtherOwner())) return;
+        return setUpFirstPhone();
+      }
+    } catch {
+      set(keychainError);
+      return;
+    }
     if (isFreshLogin(identity.lastLoginAt(), clock.now())) return openWith(dek);
     set(await locked());
   }
@@ -310,7 +395,8 @@ export function createLockController(deps: LockControllerDeps): LockController {
     state.status === 'unlocking' ||
     state.status === 'unlocked' ||
     state.status === 'restoring' ||
-    state.status === 'recoveryCode';
+    state.status === 'recoveryCode' ||
+    state.status === 'biometricOffer';
 
   const controller: LockController = {
     getState: () => state,
@@ -330,6 +416,10 @@ export function createLockController(deps: LockControllerDeps): LockController {
       if (isOpenOrOpening()) return;
       const result = await identity.reauthenticate();
       if (result === 'cancelled') return;
+      if (result === 'otherAccount') {
+        set({ status: 'locked', notice: 'otherAccount', biometric: state.biometric });
+        return;
+      }
       if (result === 'failed') {
         set({ status: 'locked', error: 'unknown', biometric: state.biometric });
         return;
@@ -343,11 +433,24 @@ export function createLockController(deps: LockControllerDeps): LockController {
       }
       // No key: this phone is not set up yet, so the normal flow decides what to do.
       if (!dek) return controller.unlock();
-      await openWith(dek);
+      try {
+        if ((await keyOwner()) === 'other') return controller.unlock();
+      } catch {
+        set(keychainError);
+        return;
+      }
+      await openWith(dek, true);
     },
     async unlockWithBiometrics() {
       if (isOpenOrOpening()) return;
       set({ status: 'unlocking' });
+      // Another account's key: no system prompt for it. The normal flow wipes it.
+      try {
+        if ((await keyOwner()) === 'other') return controller.unlock();
+      } catch {
+        set(keychainError);
+        return;
+      }
       const result = await dekStore.readBiometric(deps.biometricPrompt);
       if (result.status === 'ok') return openWith(result.dek);
       if (result.status === 'invalidated') {
@@ -391,12 +494,18 @@ export function createLockController(deps: LockControllerDeps): LockController {
     async disableBiometrics() {
       await dekStore.removeBiometric();
     },
+    finishBiometricOffer() {
+      if (state.status === 'biometricOffer') set({ status: 'unlocked' });
+    },
     async confirmRecoveryCode(lastGroup) {
       const shown = pendingCode;
       if (state.status !== 'recoveryCode' || !shown) return 'failed';
       const result = await confirmRecoveryCode(shown, lastGroup);
       // A lock while the upload ran already dropped the code; the upload itself stands.
-      if (result === 'ok' && pendingCode === shown) set({ status: 'unlocked' });
+      if (result === 'ok' && pendingCode === shown) {
+        await tagOwner();
+        if (pendingCode === shown) set({ status: 'unlocked' });
+      }
       return result;
     },
     async restoreWithCode(typed) {
@@ -406,6 +515,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
       set({ status: 'restoring' });
       const result = await deps.restoreWithCode.restore(typed);
       const opened = result === 'restored' || result === 'partial';
+      if (opened) await tagOwner();
       if (mine !== generation) {
         // Locked or reset while restoring: the vault opened behind that, so close it again.
         if (opened) await vault.close();
@@ -439,6 +549,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
         set({ status: 'restoring' });
       });
       const opened = result === 'restored' || result === 'partial';
+      if (opened) await tagOwner();
       if (mine !== generation) {
         // Locked or reset while restoring: the vault opened behind that, so close it again.
         if (opened) await vault.close();
@@ -495,7 +606,8 @@ export function createLockController(deps: LockControllerDeps): LockController {
     async appForegrounded() {
       const since = backgroundSince;
       backgroundSince = null;
-      if (since !== null && state.status === 'unlocked' && shouldLock(since, deps.nowMs())) {
+      const open = state.status === 'unlocked' || state.status === 'biometricOffer';
+      if (since !== null && open && shouldLock(since, deps.nowMs())) {
         await controller.lock();
       }
     },

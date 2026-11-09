@@ -163,12 +163,14 @@ interface CardSpec {
   shineDelay: number;
 }
 
-// Lime card behind (.card-b), blue card in front (.card) of the design.
+// Lime card behind (.card-b), blue card in front (.card) of the design. The design's CSS rotates
+// them with transform-origin: center and transform-box: fill-box, which React Native ignores, so
+// each pivot is the design's rotate() point plus the center of that card's box.
 const CARDS: CardSpec[] = [
   {
     colors: LIME,
     angle: -20,
-    pivot: [50, 80],
+    pivot: [181.75, 190],
     offset: [47, 60],
     floatDelay: -1400,
     shineDelay: 2400,
@@ -176,7 +178,7 @@ const CARDS: CardSpec[] = [
   {
     colors: BLUE,
     angle: -8,
-    pivot: [171, 176],
+    pivot: [316.75, 333],
     offset: [61, 107],
     floatDelay: 0,
     shineDelay: 1000,
@@ -521,4 +523,6 @@ export function InicioIllustration() {
   );
 }
 
-const styles = StyleSheet.create({ fill: { flex: 1 } });
+// Inicio's art box centers its children: without alignSelf this box measures 0 wide and the
+// picture is not drawn.
+const styles = StyleSheet.create({ fill: { flex: 1, alignSelf: 'stretch' } });

@@ -1,7 +1,8 @@
 // Lock screen (new screen, needs design review). The header is the one of Login.html: the blue
 // background with its rounded squares, the Fynk logo and the title. The lime layer and white
-// sheet below hold the unlock buttons: the password and, when enabled, "Huella o Face ID".
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+// sheet below hold a padlock illustration in the style of Inicio (it takes the free height) and,
+// near the thumb, the unlock buttons: the password and, when enabled, "Huella o Face ID".
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Rect } from 'react-native-svg';
 
@@ -16,6 +17,7 @@ import {
 } from '@shared/ui';
 
 import type { LockState } from '../application/lockController';
+import { LockIllustration } from './LockIllustration';
 import { vaultStrings } from './strings.es-CO';
 
 const t = vaultStrings.lock;
@@ -25,24 +27,46 @@ export interface LockScreenProps {
   onPassword: () => void;
   onBiometric: () => void;
   onRetry: () => void;
+  /** Signs out, so another account can sign in. A person is never stuck on this screen. */
+  onUseOtherAccount: () => void;
 }
 
-// Login.html: header padding 48 / 24 and 24 between blocks; sheet padding 32 / 24.
+type SheetContentProps = Omit<LockScreenProps, 'onUseOtherAccount'>;
+
+// Values from the design's Login (VerdeLogin): header padding 48 / 24 and 26 between the logo
+// and the titles; sheet padding 36 top / 24 sides / 32 bottom.
 const PAD_TOP = 48;
 const PAD_SIDE = 24;
-const GAP = 24;
-const SHEET_PAD = 32;
-// The lime layer shows 14 px above the white sheet (645 against 631 in Login.html).
+const GAP = 26;
+const SHEET_PAD_TOP = 36;
+const SHEET_PAD_BOTTOM = 32;
+// The lime layer shows 14 px above the white sheet (645 against 631 in Login).
 const LIME_EDGE = 14;
+// The lime layer starts 13 px below the header (y = 199 against a 186 px header in Login).
+const HEADER_GAP = 13;
+const ILLUSTRATION_GAP = 24;
 
-export function LockScreen({ state, onPassword, onBiometric, onRetry }: LockScreenProps) {
+export function LockScreen({
+  state,
+  onPassword,
+  onBiometric,
+  onRetry,
+  onUseOtherAccount,
+}: LockScreenProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
 
   return (
     <View style={[styles.root, { backgroundColor: colors.primary }]} testID="vault.lock">
       {/* Squares of Login.html. The fifth is the design's skewed shine, which is not drawn. */}
-      <Svg width={390} height={844} viewBox="0 0 390 844" style={StyleSheet.absoluteFill}>
+      {/* Slice keeps the squares from ending in a hard edge on phones wider than 390 points. */}
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 390 844"
+        preserveAspectRatio="xMidYMin slice"
+        style={StyleSheet.absoluteFill}
+      >
         <Rect x={226} y={-86} width={230} height={230} rx={52} fill={colors.headerShapeA} />
         <Rect x={296} y={-30} width={116} height={116} rx={28} fill={colors.headerShapeB} />
         <Rect x={-70} y={196} width={170} height={170} rx={40} fill={colors.primaryPressed} />
@@ -63,19 +87,41 @@ export function LockScreen({ state, onPassword, onBiometric, onRetry }: LockScre
       </View>
 
       <View style={styles.bottom}>
-        <View style={[styles.lime, { backgroundColor: colors.accent }]}>
+        <View style={[styles.lime, { backgroundColor: colors.accent }]} testID="vault.lock.lime">
           <View
             style={[
               styles.sheet,
-              { backgroundColor: colors.background, paddingBottom: insets.bottom + SHEET_PAD },
+              {
+                backgroundColor: colors.background,
+                paddingBottom: insets.bottom + SHEET_PAD_BOTTOM,
+              },
             ]}
+            testID="vault.lock.sheet"
           >
+            <View style={styles.illustration}>
+              <LockIllustration />
+            </View>
             <SheetContent
               state={state}
               onPassword={onPassword}
               onBiometric={onBiometric}
               onRetry={onRetry}
             />
+            {state.status === 'unlocking' ? null : (
+              <Pressable
+                onPress={onUseOtherAccount}
+                accessibilityRole="link"
+                accessibilityLabel={t.useOtherAccount}
+                accessibilityHint={t.useOtherAccountHint}
+                hitSlop={8}
+                style={styles.otherAccount}
+                testID="vault.lock.otherAccount"
+              >
+                <AppText variant="bodyStrong" color="primaryDark">
+                  {t.useOtherAccount}
+                </AppText>
+              </Pressable>
+            )}
           </View>
         </View>
       </View>
@@ -83,7 +129,7 @@ export function LockScreen({ state, onPassword, onBiometric, onRetry }: LockScre
   );
 }
 
-function SheetContent({ state, onPassword, onBiometric, onRetry }: LockScreenProps) {
+function SheetContent({ state, onPassword, onBiometric, onRetry }: SheetContentProps) {
   const { colors } = useTheme();
 
   if (state.status === 'unlocking') {
@@ -165,19 +211,24 @@ const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
   header: { paddingHorizontal: PAD_SIDE, gap: GAP },
   titles: { gap: 8 },
-  bottom: { flex: 1, justifyContent: 'flex-end' },
+  bottom: { flex: 1, marginTop: HEADER_GAP },
   lime: {
+    flex: 1,
     paddingTop: LIME_EDGE,
     borderTopLeftRadius: radius.sheetSm,
     borderTopRightRadius: radius.sheetSm,
   },
   sheet: {
-    paddingTop: SHEET_PAD,
+    flex: 1,
+    paddingTop: SHEET_PAD_TOP,
     paddingHorizontal: PAD_SIDE,
     borderTopLeftRadius: radius.sheet,
     borderTopRightRadius: radius.sheet,
   },
   actions: { gap: 16 },
+  // Takes the free height; the gap lives here so the picture itself stays reusable.
+  illustration: { flex: 1, marginBottom: ILLUSTRATION_GAP },
+  otherAccount: { alignSelf: 'center', paddingTop: 16 },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rule: { flex: 1, height: 1 },
   center: { alignItems: 'center', gap: 10, paddingVertical: 24 },

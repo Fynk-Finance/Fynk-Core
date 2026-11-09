@@ -4,6 +4,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 
 import type { LockController } from '../application/lockController';
+import { BiometricOfferScreen } from './BiometricOfferScreen';
 import { LockScreen } from './LockScreen';
 import { RecoveryCodeScreen } from './RecoveryCodeScreen';
 import { RestoreScreen } from './RestoreScreen';
@@ -34,6 +35,14 @@ export function createVaultFlow(controller: LockController, { copyText, signOut 
         />
       );
     }
+    if (state.status === 'biometricOffer') {
+      return (
+        <BiometricOfferScreen
+          onEnable={() => controller.enableBiometrics()}
+          onDone={() => controller.finishBiometricOffer()}
+        />
+      );
+    }
     if (state.status === 'pendingDevice' || state.status === 'restoring') {
       return (
         <RestoreScreen
@@ -54,6 +63,7 @@ export function createVaultFlow(controller: LockController, { copyText, signOut 
         onPassword={() => void controller.unlockWithPassword()}
         onBiometric={() => void controller.unlockWithBiometrics()}
         onRetry={() => void controller.unlock()}
+        onUseOtherAccount={() => void signOut()}
       />
     );
   };

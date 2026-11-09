@@ -30,6 +30,8 @@ function fakeController(initial: LockState = { status: 'locked' }) {
     })),
     checkApproval: jest.fn(async () => 'waiting' as const),
     resetBackup: jest.fn(async () => 'notAllowed' as const),
+    enableBiometrics: jest.fn(async () => 'enabled' as const),
+    finishBiometricOffer: jest.fn(),
   } as unknown as LockController;
   const set = (next: LockState) =>
     act(async () => {
@@ -48,6 +50,18 @@ it('asks Keycloak for the password when the button is pressed', async () => {
   await render(<Flow />);
   await fireEvent.press(screen.getByRole('button', { name: t.password }));
   expect(controller.unlockWithPassword).toHaveBeenCalledTimes(1);
+});
+
+it('shows the biometrics offer and leaves it when biometrics are on', async () => {
+  const { controller } = fakeController({ status: 'biometricOffer' });
+  const Flow = createVaultFlow(controller, {
+    copyText: jest.fn(async () => undefined),
+    signOut: jest.fn(),
+  });
+  await render(<Flow />);
+  await fireEvent.press(screen.getByRole('button', { name: vaultStrings.biometric.offer.enable }));
+  expect(controller.enableBiometrics).toHaveBeenCalledTimes(1);
+  expect(controller.finishBiometricOffer).toHaveBeenCalledTimes(1);
 });
 
 it('follows the controller state', async () => {
@@ -207,4 +221,13 @@ describe('restore on a new phone', () => {
     await fireEvent.press(screen.getByTestId('vault.restore.submit'));
     expect(screen.getByTestId('vault.restore.error')).toHaveTextContent(r.errors.wrongCode);
   });
+});
+
+it('signs out from the lock screen link so another account can sign in', async () => {
+  const { controller } = fakeController();
+  const signOut = jest.fn(async () => undefined);
+  const Flow = createVaultFlow(controller, { copyText: jest.fn(async () => true), signOut });
+  await render(<Flow />);
+  await fireEvent.press(screen.getByRole('link', { name: t.useOtherAccount }));
+  expect(signOut).toHaveBeenCalledTimes(1);
 });

@@ -12,6 +12,7 @@ import {
   lastLoginAt,
   onSessionChange,
   reauthenticate,
+  userId,
 } from '@modules/identity';
 
 import { createCompleteRestore } from '../application/completeRestore';
@@ -27,7 +28,7 @@ import { createRecoveryKeyApi } from './api/recoveryKeyApi';
 import { argon2Kdf } from './crypto/argon2Kdf';
 import { newDek } from './crypto/newDek';
 import { vaultStrings } from '../ui/strings.es-CO';
-import { restoreAll } from './defaultBackup';
+import { backupSync, restoreAll } from './defaultBackup';
 import { deviceApprovalsApi } from './defaultApproval';
 import { vault } from './defaultVault';
 import { createDekStore } from './keychain/dekStore';
@@ -44,12 +45,14 @@ export const lockController = createLockController({
     lastLoginAt: () => lastLoginAt(),
     reauthenticate: () => reauthenticate(),
     currentDevice: () => currentDevice(),
+    userId: () => userId(),
     onSessionChange: (listener) => onSessionChange(listener),
   },
   clock: { now: () => new Date() },
   nowMs: () => Date.now(),
   biometricPrompt: vaultStrings.biometric.prompt,
   backupEnabled: () => backupEnabled(),
+  resetBackupState: () => backupSync.reset(),
   recoveryKey: recoveryKeyApi,
   // The code and the key made from it never leave this process; only the wrapped DEK is sent.
   recoveryCode: createRecoveryCodeService({

@@ -4,6 +4,7 @@ export const vaultStrings = {
   lock: {
     title: 'Desbloquea Fynk',
     subtitle: 'Tu información está cifrada en este teléfono.',
+    illustration: 'Ilustración de un candado que protege tus tarjetas',
     biometric: 'Huella o Face ID',
     orWith: 'o ingresa con',
     biometricHint: 'Abre tu bóveda con la huella o el rostro de este teléfono',
@@ -11,7 +12,11 @@ export const vaultStrings = {
     passwordHint: 'Abre el inicio de sesión de Fynk en el navegador',
     unlocking: 'Abriendo tu bóveda',
     passwordFailed: 'No pudimos verificar tu contraseña. Intenta de nuevo.',
+    useOtherAccount: 'Usar otra cuenta',
+    useOtherAccountHint: 'Cierra la sesión en este teléfono y vuelve al inicio',
     notices: {
+      otherAccount:
+        'Ingresaste con una cuenta distinta a la de este teléfono. Para cambiarla, toca «Usar otra cuenta».',
       biometricsOff:
         'Cambiaron las huellas o el rostro del teléfono. Desactivamos la biometría de Fynk: ingresa con tu contraseña.',
       biometricFailed:
@@ -129,6 +134,14 @@ export const vaultStrings = {
     switchLabel: 'Face ID o huella',
     switchHint: 'Abre Fynk sin escribir tu contraseña',
     failed: 'No pudimos cambiar esta opción. Intenta de nuevo.',
+    // Not in the design: new screen, needs design review.
+    offer: {
+      title: '¿Usar tu huella o Face ID?',
+      subtitle:
+        'Abre Fynk sin escribir tu contraseña. Puedes cambiarlo cuando quieras en Mi cuenta › Seguridad.',
+      enable: 'Activar',
+      later: 'Ahora no',
+    },
   },
   // Not in the design: new screen, needs design review. Card style of OnbListo.html, input of
   // OnbCorreo.html.
