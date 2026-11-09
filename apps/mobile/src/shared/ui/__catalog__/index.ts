@@ -7,6 +7,7 @@ import Button from './Button.stories';
 import Card from './Card.stories';
 import Chip from './Chip.stories';
 import Dialog from './Dialog.stories';
+import Dropdown from './Dropdown.stories';
 import Donut from './Donut.stories';
 import Fab from './Fab.stories';
 import HeaderBlue from './HeaderBlue.stories';
@@ -36,6 +37,7 @@ export const storyGroups: StoryGroup[] = [
   Chip,
   Switch,
   SegmentedControl,
+  Dropdown,
   Dialog,
   Fab,
   Badge,

@@ -65,6 +65,7 @@ Several screens can be used with buttons and with gestures. **Every gesture has 
 | `fb-scrim`, `fb-sheet`, `fb-toast` | A screen shown as a sheet uses `transition: 'sheet'` (native bottom sheet). The export shows the in-screen sheets and the toast only closed, so their open layout and colors are missing: export them open before building a shared `BottomSheet` or `Toast` |
 | `.sw`, `.seg`, `.fab`, `.dot`, search `.field` | The shared `Switch`, `SegmentedControl`, `Fab`, `PageDots` and `SearchField`. `.seg` is `SegmentedControl onPrimary`; on the page or a sheet the selected option is the page color with blue text on a soft blue track, AA contrast in both themes (QA review 2026-11-07, V12, needs design review) |
 | No dialog in the design; the app used the Android `Alert.alert` | The shared `Dialog`: `dialog.show()` with the arguments of `Alert.alert`, drawn by the `DialogHost` of the app root (QA review 2026-11-07, V8, new component, needs design review) |
+| Category chips (`.chip`) in the forms | The shared `Dropdown` with `categoryOptions()`: a field like the text field that unfolds the list below it, each category with its icon (QA review 2026-11-07, V11, new component, needs design review) |
 | `@media (prefers-reduced-motion:reduce)` | `AccessibilityInfo.isReduceMotionEnabled()` turns animations off |
 | `display: flex` layout, `gap`, `padding` | The same values in React Native styles (flexbox works the same, column is the default direction) |
 | Google Fonts links | The same families loaded with `expo-font` (see tokens) |
