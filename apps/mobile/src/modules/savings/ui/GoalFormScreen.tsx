@@ -5,13 +5,14 @@
 // Route params: { id } to edit, none to create.
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { MoneyMinor } from '@shared/domain/types';
 import {
   AppText,
   BackButton,
+  dialog,
   GhostButton,
   PrimaryButton,
   Screen,
@@ -91,7 +92,7 @@ export function createGoalFormScreen({ service }: { service: GoalService }) {
 
     const confirmDelete = () => {
       if (!id) return;
-      Alert.alert(t.confirmDelete.title(form.name.trim()), t.confirmDelete.message, [
+      dialog.show(t.confirmDelete.title(form.name.trim()), t.confirmDelete.message, [
         { text: t.confirmDelete.cancel, style: 'cancel' },
         {
           text: t.confirmDelete.confirm,

@@ -13,7 +13,7 @@ import {
   type ParamListBase,
 } from '@react-navigation/native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Linking, StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatCop } from '@shared/domain/money';
@@ -24,6 +24,7 @@ import {
   BackButton,
   Badge,
   Chip,
+  dialog,
   GhostButton,
   IconTile,
   ListRow,
@@ -157,7 +158,7 @@ export function createSubscriptionDetailScreen({
     };
 
     const confirmCancel = (sub: StoredRecurringItem) => {
-      Alert.alert(t.confirmCancel.title(sub.name), t.confirmCancel.message, [
+      dialog.show(t.confirmCancel.title(sub.name), t.confirmCancel.message, [
         { text: t.confirmCancel.no, style: 'cancel' },
         {
           text: t.confirmCancel.yes,

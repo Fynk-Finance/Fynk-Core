@@ -5,11 +5,11 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
-import { Alert, BackHandler, StyleSheet, Text } from 'react-native';
+import { BackHandler, StyleSheet, Text } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { ThemeProvider, type ThemePreference } from '@shared/ui';
+import { dialog, ThemeProvider, type ThemePreference } from '@shared/ui';
 
 import type { AccountsOverview } from '../application/accountsService';
 import type { MonthSummary } from '../domain/dashboard';
@@ -135,7 +135,7 @@ describe('Dashboard balance card', () => {
   });
 
   it('explains how the total is calculated', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    const alert = jest.spyOn(dialog, 'show').mockImplementation(() => undefined);
     await renderDashboard();
     await fireEvent.press(screen.getByLabelText('Balance total. Cómo se calcula'));
     expect(alert).toHaveBeenCalledWith(

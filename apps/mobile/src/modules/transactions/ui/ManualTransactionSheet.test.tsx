@@ -3,10 +3,10 @@
 // team decision of 5 Nov 2026: disconnected accounts, "Tu efectivo es $X", and a note that says
 // which balance the movement changes.
 import { fireEvent, screen } from '@testing-library/react-native';
-import type { Alert } from 'react-native';
 
 import type { Account, Transaction } from '@shared/domain/types';
 import { createFixedClock } from '@shared/testing';
+import type { dialog } from '@shared/ui';
 
 import type { ManualInput } from '../domain/manual';
 import { createTestModule, renderScreens } from '../testing/renderScreen';
@@ -26,7 +26,7 @@ const disconnected = [
   { id: 'acc-old', kind: 'savings', displayName: 'Banco Demo · Ahorros', status: 'revoked' },
 ] as Account[];
 
-type Buttons = Parameters<typeof Alert.alert>[2];
+type Buttons = Parameters<typeof dialog.show>[2];
 
 async function setup(
   opts: {

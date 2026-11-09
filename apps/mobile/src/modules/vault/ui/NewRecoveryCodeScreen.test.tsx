@@ -2,9 +2,9 @@
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 
-import { ThemeProvider, type ThemePreference } from '@shared/ui';
+import { dialog, ThemeProvider, type ThemePreference } from '@shared/ui';
 
 import type { NewRecoveryCode } from '../application/lockController';
 import type { PreparedRecoveryCode } from '../application/recoveryCode';
@@ -55,7 +55,7 @@ function ready() {
 
 let alert: jest.SpyInstance;
 beforeEach(() => {
-  alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+  alert = jest.spyOn(dialog, 'show').mockImplementation(() => undefined);
 });
 afterEach(() => jest.restoreAllMocks());
 

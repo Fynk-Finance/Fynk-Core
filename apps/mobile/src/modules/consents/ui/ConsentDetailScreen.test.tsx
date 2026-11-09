@@ -3,11 +3,18 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { ApiError } from '@shared/api';
 import { createFixedClock } from '@shared/testing';
-import { ThemeProvider, uiStrings, useTheme, type ColorScheme, type Palette } from '@shared/ui';
+import {
+  dialog,
+  ThemeProvider,
+  uiStrings,
+  useTheme,
+  type ColorScheme,
+  type Palette,
+} from '@shared/ui';
 
 import type { Consent } from '../domain/consent';
 import type { ConsentsApiPort } from '../application/ports';
@@ -44,7 +51,7 @@ const themeColors = (): Palette =>
 
 /** Answers the confirmation dialog with the button of the given style. */
 function answerConfirm(style: 'destructive' | 'cancel') {
-  return jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
+  return jest.spyOn(dialog, 'show').mockImplementation((_title, _message, buttons) => {
     buttons?.find((b) => b.style === style)?.onPress?.();
   });
 }

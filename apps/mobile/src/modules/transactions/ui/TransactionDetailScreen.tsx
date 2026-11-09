@@ -11,7 +11,7 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import type { ReactNode } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { categoryLabel } from '@shared/domain/categories';
@@ -20,6 +20,7 @@ import {
   AmountText,
   AppText,
   Card,
+  dialog,
   EmptyState,
   ErrorState,
   GhostButton,
@@ -57,15 +58,15 @@ export interface TransactionDetailDeps {
   useAccounts: () => { data?: AccountsData };
   /** Deletes a manual movement. */
   deleteManual: (id: Id) => Promise<void>;
-  /** Alert.alert, replaced in tests. */
-  ask?: typeof Alert.alert;
+  /** dialog.show, replaced in tests. */
+  ask?: typeof dialog.show;
 }
 
 export function createTransactionDetailScreen({
   hooks,
   useAccounts,
   deleteManual,
-  ask = Alert.alert,
+  ask = dialog.show,
 }: TransactionDetailDeps) {
   return function TransactionDetailScreen() {
     const navigation = useNavigation<NavigationProp<ParamListBase>>();

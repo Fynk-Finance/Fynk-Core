@@ -3,10 +3,10 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { createFixedClock, createInMemoryVault, type InMemoryVault } from '@shared/testing';
-import { ThemeProvider, type ThemePreference } from '@shared/ui';
+import { dialog, ThemeProvider, type ThemePreference } from '@shared/ui';
 
 import { savingsMigrations } from '../adapters/vault/migrations';
 import { createVaultGoalStore } from '../adapters/vault/vaultGoalStore';
@@ -123,7 +123,7 @@ describe('GoalFormScreen', () => {
   });
 
   it('deletes after the confirmation', async () => {
-    const alert = jest.spyOn(Alert, 'alert');
+    const alert = jest.spyOn(dialog, 'show').mockImplementation(() => undefined);
     const id = await service.create({
       name: 'Viaje a Cartagena',
       category: 'travel',
