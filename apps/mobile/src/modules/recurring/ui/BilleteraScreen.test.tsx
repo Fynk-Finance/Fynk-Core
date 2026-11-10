@@ -3,7 +3,7 @@
 // SCRUM-56: "Otros gastos" with the subscriptions, "Poco uso" and the savings banner.
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
 import type { Account } from '@shared/domain/types';
@@ -320,15 +320,25 @@ describe('Billetera', () => {
 
   it('shows a new item as soon as it is added', async () => {
     await renderBilletera();
-    expect(await screen.findByText('Aún no tienes gastos recurrentes')).toBeTruthy();
+    expect(await screen.findByTestId('recurring.billetera.ghost')).toBeTruthy();
     await service.create(billetera[0]!);
     await waitFor(() => expect(screen.getByTestId('recurring.card.r1')).toBeTruthy());
   });
 
-  it('the empty state also opens the form', async () => {
+  // QA review 2026-11-07, V6: an empty card in the place of the fixed expenses, as in V2 and V5.
+  it('without fixed expenses shows the empty card, whose button opens the form', async () => {
     await renderBilletera();
-    await fireEvent.press(await screen.findByText('Agregar gasto'));
+    const ghost = await screen.findByTestId('recurring.billetera.ghost');
+    expect(screen.queryByTestId('recurring.billetera.grid')).toBeNull();
+    await fireEvent.press(within(ghost).getByRole('button', { name: 'Agregar gasto' }));
     expect(await screen.findByText(`arrived:${RECURRING_FORM_ROUTE}:`)).toBeTruthy();
+  });
+
+  it('with only subscriptions shows the empty card above "Otros gastos"', async () => {
+    await service.create(billetera.find((item) => item.kind === 'subscription')!);
+    await renderBilletera();
+    expect(await screen.findByTestId('recurring.billetera.ghost')).toBeOnTheScreen();
+    expect(screen.getByTestId('recurring.billetera.subscriptions')).toBeOnTheScreen();
   });
 
   // QA review 2026-11-07, V9: the chart button is on every tab, like the bell.

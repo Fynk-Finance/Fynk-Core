@@ -80,8 +80,6 @@ export const recurringStrings = {
     recurring: 'Gastos recurrentes',
     add: '+ Agregar',
     emptyTitle: 'Aún no tienes gastos recurrentes',
-    emptyMessage:
-      'Agrega tu arriendo, servicios o suscripciones y te avisaremos antes de cada pago.',
     emptyAction: 'Agregar gasto',
     error: 'No pudimos cargar tus gastos recurrentes.',
     cardLabel: (name: string, amount: string, schedule: string, state: string) =>
