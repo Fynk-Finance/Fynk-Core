@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { formatCop } from '@shared/domain/money';
+import { useTabHeader } from '@shared/navigation';
 import type { Account, Clock, IsoDate } from '@shared/domain/types';
 import {
   AmountText,
@@ -20,7 +21,6 @@ import {
   Chip,
   ErrorState,
   GhostCard,
-  HeaderBlue,
   Screen,
   SectionHeader,
   Skeleton,
@@ -114,27 +114,25 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
     const edit = (item: StoredRecurringItem) =>
       navigation.navigate(RECURRING_FORM_ROUTE, { id: item.id });
 
-    const header = (
-      <HeaderBlue
-        name={name}
-        hasUnread={unread > 0}
-        onPressAccount={() => navigation.navigate(deps.accountRoute)}
-        onPressNotifications={() => navigation.navigate(deps.notificationsRoute)}
-        onPressStatistics={() => navigation.navigate(deps.statisticsRoute)}
-        title={t.title}
-        subtitle={t.subtitle}
-        trailing={
-          state.status === 'ready' ? (
-            <AmountText
-              amountMinor={state.monthTotal}
-              size={24}
-              color="onPrimary"
-              testID="recurring.billetera.total"
-            />
-          ) : null
-        }
-      />
-    );
+    // The tabs' shared blue header (QA review 2026-11-07, G2); a plain HeaderBlue outside the tabs.
+    const header = useTabHeader({
+      name,
+      hasUnread: unread > 0,
+      onPressAccount: () => navigation.navigate(deps.accountRoute),
+      onPressNotifications: () => navigation.navigate(deps.notificationsRoute),
+      onPressStatistics: () => navigation.navigate(deps.statisticsRoute),
+      title: t.title,
+      subtitle: t.subtitle,
+      trailing:
+        state.status === 'ready' ? (
+          <AmountText
+            amountMinor={state.monthTotal}
+            size={24}
+            color="onPrimary"
+            testID="recurring.billetera.total"
+          />
+        ) : null,
+    });
 
     return (
       <Screen header={header} padded={false} gap={0} testID="recurring.billetera">
