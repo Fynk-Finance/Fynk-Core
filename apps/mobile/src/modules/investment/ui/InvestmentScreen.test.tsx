@@ -184,7 +184,9 @@ it('calculates the interest of what the person types: $50.471', async () => {
   const amount = await screen.findByTestId('investment.calculator.amount');
   // Never prefilled from the balance.
   expect(amount.props.value).toBe('');
-  await fireEvent.changeText(amount, '1.000.000');
+  // Typed without dots, shown as $ 1.000.000 (SCRUM-97).
+  await fireEvent.changeText(amount, '1000000');
+  expect(screen.getByTestId('investment.calculator.amount')).toHaveDisplayValue('1.000.000');
   await fireEvent.press(screen.getByTestId('investment.product.cdt-demo-180'));
   expect(screen.getByTestId('investment.calculator.result')).toHaveTextContent(
     'Recibirías aproximadamente $50.471 en intereses.',
