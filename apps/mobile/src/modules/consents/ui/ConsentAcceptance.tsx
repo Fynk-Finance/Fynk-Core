@@ -80,6 +80,7 @@ export function createConsentAcceptance(deps: ConsentsDeps) {
         ) : null}
         <PrimaryButton
           label={t.goToPortal(entity)}
+          iconAfter="externalLink"
           accessibilityHint={t.goToPortalHint}
           disabled={!canGoToPortal({ accepted, text, provider, submitting: create.isPending })}
           loading={create.isPending}
