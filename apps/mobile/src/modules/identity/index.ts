@@ -43,7 +43,8 @@ const session = useDevAuth
 
 const devicesApi = createDevicesApi();
 
-// The dev session has no real account, so it registers no device.
+// The dev session has no real account, so it registers no device. Linking a bank and
+// creating its consent then fail with device_required (docs/local-dev.md, section 8).
 const device: DeviceService | null = useDevAuth
   ? null
   : createDeviceService({
