@@ -6,7 +6,7 @@ module: M1
 jira: [SCRUM-91]
 branch: feature/stronger-password-policy
 tool: Claude Code
-pr: none
+pr: #376
 status: done
 ---
 
@@ -43,7 +43,7 @@ any sense".
 
 * Go unit tests of `internal/identity/keycloak` pass. Theme `pnpm typecheck` and Prettier pass.
 * Integration tests against Keycloak 26.8.1 in Docker (policy, registration, recovery, in-app change, login): pass.
-* Pull request: not opened yet.
+* Pull request: #376, waiting for Daniel Palacios (M1).
 
 ## Decisions and problems
 
