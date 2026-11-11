@@ -89,6 +89,8 @@ describe('RecurringFormScreen', () => {
     await renderForm();
     await fireEvent.changeText(screen.getByTestId('recurring.form.name'), 'Clases');
     await fireEvent.changeText(screen.getByTestId('recurring.form.amount'), '50000');
+    // Shown as $ 50.000 while typed (SCRUM-97).
+    expect(screen.getByTestId('recurring.form.amount')).toHaveDisplayValue('50.000');
     await fireEvent.press(screen.getByText('Semanal'));
     await fireEvent.press(screen.getByTestId('recurring.form.weekday.3')); // Wednesday
     await fireEvent.press(screen.getByText('Suscripción'));
@@ -97,6 +99,7 @@ describe('RecurringFormScreen', () => {
     await waitFor(async () => expect(await service.list()).toHaveLength(1));
     expect((await service.list())[0]).toMatchObject({
       kind: 'subscription',
+      amountMinor: 5_000_000,
       schedule: { periodicity: 'weekly', weekdaysMask: WEEKDAY.wed },
     });
   });

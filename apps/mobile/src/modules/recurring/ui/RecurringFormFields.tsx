@@ -8,6 +8,7 @@ import {
   AppText,
   Chip,
   Dropdown,
+  MoneyField,
   SegmentedControl,
   Switch,
   TextField,
@@ -95,12 +96,11 @@ export function RecurringFormFields({
         testID={`${testID}.category`}
       />
 
-      <TextField
+      <MoneyField
         label={t.amount}
         value={form.amount}
         onChangeText={(amount) => set({ amount })}
         placeholder={t.amountPlaceholder}
-        keyboardType="numeric"
         error={errorOf('amount')}
         testID={`${testID}.amount`}
       />
