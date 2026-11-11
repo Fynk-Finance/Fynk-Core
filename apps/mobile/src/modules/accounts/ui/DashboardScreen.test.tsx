@@ -72,7 +72,6 @@ async function renderDashboard(
     accountRoute: 'identity.Account',
     notificationsRoute: 'notifications.Inbox',
     statisticsRoute: 'analytics.Spending',
-    connectRoute: () => 'bank.Connect',
     ...(opts.refresh ? { refresh: opts.refresh } : {}),
     ...(opts.withGoals ? { renderGoals: () => <Text>goals of M8</Text> } : {}),
     ...(opts.withMovements
@@ -276,27 +275,36 @@ describe('Detalle de cuentas', () => {
     expect(JSON.stringify(screen.toJSON())).not.toMatch(/123456/);
   });
 
-  // QA review 2026-11-07, V5 (SCRUM-80): a ghost of the account card invites to connect one.
-  it('shows a ghost card that opens M5 when there are no accounts', async () => {
-    await renderDashboard({ overview: overviewOf([]) });
-    await openDetails();
-    const connect = screen.getByRole('button', { name: 'Conectar cuenta' });
-    expect(connect.props.accessibilityHint).toBe('Aún no tienes cuentas conectadas.');
-    await fireEvent.press(connect);
-    expect(await screen.findByText('arrived:bank.Connect:')).toBeTruthy();
-  });
-
-  it('keeps the ghost card below cash while no bank account is connected', async () => {
+  // The header has no ghost card and no button to connect a bank, with or without accounts.
+  it('shows only the cash row while no bank account is connected', async () => {
     await renderDashboard({ overview: overviewOf([cash]) });
     await openDetails();
-    expect(screen.getByTestId('accounts.row.acc-cash')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Conectar cuenta' })).toBeTruthy();
+    expect(screen.getByTestId('accounts.row.acc-cash')).toHaveTextContent(/Efectivo.*\$600\.000/);
+    expect(screen.queryByTestId('accounts.panel.empty')).toBeNull();
+    expect(screen.queryByText('Conectar cuenta')).toBeNull();
+    expect(
+      screen.queryByTestId('accounts.panel.ghost', { includeHiddenElements: true }),
+    ).toBeNull();
   });
 
-  it('has no ghost card once an account is connected', async () => {
-    await renderDashboard();
+  it('says so when there is no account and no cash, with nothing to connect', async () => {
+    await renderDashboard({ overview: overviewOf([]) });
     await openDetails();
-    expect(screen.queryByRole('button', { name: 'Conectar cuenta' })).toBeNull();
+    expect(screen.getByTestId('accounts.panel.empty')).toHaveTextContent(
+      'Aún no tienes cuentas conectadas ni efectivo registrado.',
+    );
+    expect(screen.queryByText('Conectar cuenta')).toBeNull();
+    expect(
+      screen.queryByTestId('accounts.panel.ghost', { includeHiddenElements: true }),
+    ).toBeNull();
+  });
+
+  // On Android the panel measured 0 inside its closed frame and opened empty.
+  it('measures the panel outside the frame that animates its height', async () => {
+    await renderDashboard({ overview: overviewOf([cash]) });
+    expect(
+      screen.getByTestId('accounts.dashboard.panelContent', { includeHiddenElements: true }),
+    ).toHaveStyle({ position: 'absolute', top: 0, left: 0, right: 0 });
   });
 });
 

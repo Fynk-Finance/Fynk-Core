@@ -71,11 +71,6 @@ export interface DashboardDeps {
   notificationsRoute: string;
   /** Estadísticas (M10), opened from the chart icon of the header. */
   statisticsRoute: string;
-  /**
-   * M5's Conectar banco, opened from the ghost card while no bank account is connected. Read at
-   * press time.
-   */
-  connectRoute?: () => string;
   /** "Planes de ahorro" with the goals not reached yet (M8's GoalsCarousel). */
   renderGoals?: () => ReactNode;
   /** "Movimientos" with the latest movements (M7's TransactionPreview). */
@@ -106,11 +101,6 @@ export function createDashboardScreen(deps: DashboardDeps) {
     const unread = deps.useUnreadCount();
     const name = deps.useDisplayName() ?? t.guest;
     const overview = accounts.data;
-    const connectRoute = deps.connectRoute;
-    const onConnect =
-      connectRoute && overview && overview.connectedCount === 0
-        ? () => navigation.navigate(connectRoute())
-        : undefined;
 
     // G3: the header sits over the page and shrinks while it scrolls (dashboardCollapse.ts).
     const cardClosed = compactCardHeight(windowHeight);
@@ -335,13 +325,16 @@ export function createDashboardScreen(deps: DashboardDeps) {
                       importantForAccessibility={expanded ? 'auto' : 'no-hide-descendants'}
                       testID="accounts.dashboard.panelFrame"
                     >
-                      <View onLayout={onPanelLayout}>
+                      <View
+                        onLayout={onPanelLayout}
+                        style={styles.panelContent}
+                        testID="accounts.dashboard.panelContent"
+                      >
                         <AccountsPanel
                           rows={accountRows(overview?.accounts ?? [])}
                           onPressRow={(accountId) =>
                             navigation.navigate(ACCOUNT_DETAIL_ROUTE, { accountId })
                           }
-                          onConnect={onConnect}
                         />
                       </View>
                     </Animated.View>
@@ -399,6 +392,9 @@ const createStyles = ({ colors }: Theme) =>
       justifyContent: 'center',
     },
     panel: { overflow: 'hidden' },
+    // Out of the flow, so the frame's animated height (0 when closed) never shrinks it: on
+    // Android it measured 0 and Detalle de cuentas opened empty. The frame still clips it.
+    panelContent: { position: 'absolute', top: 0, left: 0, right: 0 },
     // Right 16 like the design (`.fab`). The design's bottom 92 counts its 72 px tab bar, which
     // overlaps the page there; here the bar sits below the page, so 12 px keeps the FAB just above
     // it (QA review 2026-11-07, V1).

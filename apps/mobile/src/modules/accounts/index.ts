@@ -8,7 +8,7 @@ import { appEvents } from '@shared/events/appEvents';
 import { registerSlot, type ModuleRoutes } from '@shared/navigation';
 
 import { STATISTICS_ROUTE, useMonthSummary as useAnalyticsMonthSummary } from '@modules/analytics';
-import { CONNECT_BANK_ROUTE, disconnectLink, syncNow } from '@modules/bank';
+import { disconnectLink, syncNow } from '@modules/bank';
 import { NOTIFICATIONS_ROUTE, useUnreadCount } from '@modules/notifications';
 import { useDisplayName } from '@modules/onboarding';
 import { GoalsCarousel } from '@modules/savings';
@@ -170,9 +170,7 @@ export const routes: ModuleRoutes = {
     renderGoals: () => createElement(GoalsCarousel),
     renderMovements: () => createElement(TransactionPreview),
     newMovementRoute: () => NEW_TRANSACTION_ROUTE,
-    // M5 imports this module too: its route is read on a press, and pull to refresh (HU-011)
-    // calls its sync only on a pull.
-    connectRoute: () => CONNECT_BANK_ROUTE,
+    // M5 imports this module too: pull to refresh (HU-011) calls its sync only on a pull.
     refresh: () => syncNow(),
   }),
   screens: [
