@@ -1,5 +1,5 @@
 // Screens of M10: Estadísticas (with Tendencias and Ingresos recurrentes), Topes and the cap form.
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { setAnalyticsService } from '../application/hooks';
 import { setupAnalytics } from '../testing/harness';
@@ -131,7 +131,8 @@ describe('Topes', () => {
       initial: 'analytics.CapForm',
       initialParams: { categoryId: 'restaurants', suggestedMinor: cop(200_000) },
     });
-    expect(await screen.findByDisplayValue('$200.000')).toBeOnTheScreen();
+    // Shown as $ 200.000: the "$" is the field's prefix (SCRUM-97).
+    expect(await screen.findByDisplayValue('200.000')).toBeOnTheScreen();
     await fireEvent.press(screen.getByTestId('analytics.capForm.save'));
     // Saved: the form closes on Topes, which shows the new cap.
     expect(await screen.findByText('Cerca del tope')).toBeOnTheScreen();
@@ -147,7 +148,25 @@ describe('Topes', () => {
     // The categories are a dropdown (QA review 2026-11-07, V11): open it, then pick.
     await fireEvent.press(await screen.findByTestId('analytics.capForm.category'));
     await fireEvent.press(screen.getByTestId('analytics.capForm.category.treats'));
-    expect(await screen.findByDisplayValue('$20.000')).toBeOnTheScreen();
+    expect(await screen.findByDisplayValue('20.000')).toBeOnTheScreen();
+  });
+
+  // SCRUM-97: the amount reads $ 150.000 while it is typed.
+  it('shows a typed cap in COP format and saves it', async () => {
+    const h = await setupAnalytics([]);
+    setAnalyticsService(h.service);
+    await renderScreens({
+      screens,
+      initial: 'analytics.CapForm',
+      initialParams: { categoryId: 'restaurants' },
+    });
+    const amount = await screen.findByTestId('analytics.capForm.amount');
+    await fireEvent.changeText(amount, '150000');
+    expect(screen.getByTestId('analytics.capForm.amount')).toHaveDisplayValue('150.000');
+    await fireEvent.press(screen.getByTestId('analytics.capForm.save'));
+    await waitFor(async () =>
+      expect((await h.service.listCapStatuses())[0]?.cap.capMinor).toBe(cop(150_000)),
+    );
   });
 
   it('lists caps with progress and state', async () => {
