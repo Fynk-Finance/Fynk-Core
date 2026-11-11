@@ -68,7 +68,9 @@ describe('GoalFormScreen', () => {
     // The categories are a dropdown (QA review 2026-11-07, V11): open it, then pick.
     await fireEvent.press(screen.getByTestId('savings.form.category'));
     await fireEvent.press(screen.getByTestId('savings.form.category.travel'));
-    await fireEvent.changeText(screen.getByTestId('savings.form.target'), '5.000.000');
+    // Typed without dots, shown as $ 5.000.000 (SCRUM-97).
+    await fireEvent.changeText(screen.getByTestId('savings.form.target'), '5000000');
+    expect(screen.getByTestId('savings.form.target')).toHaveDisplayValue('5.000.000');
     await toJune2027();
     expect(screen.getByTestId('savings.form.deadline')).toHaveTextContent('Jun 2027');
     expect(screen.getByTestId('savings.form.suggested')).toHaveTextContent(

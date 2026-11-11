@@ -110,6 +110,18 @@ describe('Recordatorio de día de pago', () => {
     });
   });
 
+  // SCRUM-97: the amount reads $ 450.000 while it is typed.
+  it('shows a typed amount in COP format and schedules it', async () => {
+    await renderReminder({ goalId, amountMinor: pesos(300_000) });
+    await fireEvent.changeText(await screen.findByTestId('savings.payday.amount'), '450000');
+    expect(screen.getByTestId('savings.payday.amount')).toHaveDisplayValue('450.000');
+    await fireEvent.press(screen.getByTestId('savings.payday.save'));
+    await waitFor(() => expect(notifications.scheduled()).toHaveLength(1));
+    expect(notifications.scheduled()[0]?.body).toBe(
+      'Hoy es día de pago: aparta $450.000 para Viaje a Cartagena.',
+    );
+  });
+
   it('shows the errors of a bad amount and day, and saves nothing', async () => {
     await renderReminder({ goalId, amountMinor: pesos(300_000) });
     await fireEvent.changeText(await screen.findByTestId('savings.payday.amount'), '0');
