@@ -21,6 +21,7 @@ import {
   Chip,
   GhostButton,
   Icon,
+  MoneyField,
   PrimaryButton,
   SegmentedControl,
   TextField,
@@ -178,22 +179,18 @@ export function createFiltersSheet({ useAccounts, clock }: FiltersSheetDeps) {
         <Group title={s.amount}>
           <View style={styles.pair}>
             <View style={styles.half}>
-              <TextField
+              <MoneyField
                 label={s.min}
-                prefix="$"
                 value={draft.minText}
                 onChangeText={(minText) => set({ minText })}
-                keyboardType="number-pad"
                 error={fieldError('min', 'amounts')}
               />
             </View>
             <View style={styles.half}>
-              <TextField
+              <MoneyField
                 label={s.max}
-                prefix="$"
                 value={draft.maxText}
                 onChangeText={(maxText) => set({ maxText })}
-                keyboardType="number-pad"
                 error={fieldError('max')}
               />
             </View>

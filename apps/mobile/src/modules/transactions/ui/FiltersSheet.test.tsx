@@ -89,8 +89,11 @@ describe('Filtros', () => {
   it('filters by amount, account and category, and keeps the choices when opened again', async () => {
     await setup();
     await fireEvent.press(screen.getByLabelText('Filtros'));
-    await fireEvent.changeText(await screen.findByLabelText('Mínimo'), '50.000');
-    await fireEvent.changeText(screen.getByLabelText('Máximo'), '200.000');
+    // Typed without dots, shown in COP format (SCRUM-97).
+    await fireEvent.changeText(await screen.findByLabelText('Mínimo'), '50000');
+    await fireEvent.changeText(screen.getByLabelText('Máximo'), '200000');
+    expect(screen.getByLabelText('Mínimo')).toHaveDisplayValue('50.000');
+    expect(screen.getByLabelText('Máximo')).toHaveDisplayValue('200.000');
     await fireEvent.press(screen.getByText('Bancolombia · Ahorros'));
     await fireEvent.press(screen.getByText('Mercado'));
     await fireEvent.press(screen.getByText('Restaurantes'));
