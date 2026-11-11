@@ -22,6 +22,7 @@ Daniel shared two notes Juan Carlos's M4 and M5 review left on 7 Nov (one for Da
 * The one still open: with `EXPO_PUBLIC_DEV_AUTH=dev-token` the app registers no device, so `POST /bank/authorizations`, completing the link and creating the consent answer `device_required` (422). Conectar banco shows "Este teléfono no está registrado en tu cuenta. Inicia sesión de nuevo."
 * `apps/mobile/.env.example`: the comment of `EXPO_PUBLIC_DEV_AUTH` says that linking a bank fails in that mode and points to the fix.
 * `docs/local-dev.md`, section 8: a troubleshooting row with the message, the cause and the fix (leave `EXPO_PUBLIC_DEV_AUTH` empty, restart Metro with `--clear`, sign in with a real account).
+* `apps/mobile/.env.example`, on Daniel's request ("add the .env.example al commit"): `EXPO_PUBLIC_API_URL` now points to the real local API (`http://localhost:8080/v1`, marked as the default, the Prism mock listed second), and a new `EXPO_PUBLIC_BANCO_DEMO_PORTAL_URL=http://localhost:8082` with its comment. Without it, "+ Invertir" opens M15's built-in default `https://localhost:8082`, but the local simulator serves plain http.
 * `apps/mobile/src/modules/identity/index.ts`: the comment where the dev session skips the device names the consequence and links to the doc.
 
 ## Result
@@ -34,7 +35,8 @@ Daniel shared two notes Juan Carlos's M4 and M5 review left on 7 Nov (one for Da
 * Documented the limit instead of registering a test device in dev mode. The review marked it optional, and a fake device would change the M1 sign in flow for a dev-only case.
 * The note names only the calls that need a device (bank link and consent creation), checked with `grep` for `ErrDeviceRequired` in `services/api/internal`.
 * `apps/mobile/.env.example` and `docs/local-dev.md` are M0 files, so Sofia reviews them.
-* Daniel's local, uncommitted change to `apps/mobile/.env.example` (real API URL and `EXPO_PUBLIC_BANCO_DEMO_PORTAL_URL`) was stashed and left out of this branch.
+* Daniel's local change to `apps/mobile/.env.example` was first left out, then added to this branch at his request, with comments that match the new values.
+* Found, not fixed (M15, Julián): `DEFAULT_PORTAL_URL` in `apps/mobile/src/modules/investment/index.ts` is `https://localhost:8082`, while the local simulator answers on http.
 
 ## Next step
 
