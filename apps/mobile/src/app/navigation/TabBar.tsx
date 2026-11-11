@@ -8,7 +8,7 @@ import { Animated, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } f
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
-import type { TabName } from '@shared/navigation';
+import { useSyncTabHeader, type TabName } from '@shared/navigation';
 import {
   Icon,
   fonts,
@@ -54,6 +54,16 @@ export function TabBar({ state, navigation, position }: MaterialTopTabBarProps) 
   const [width, setWidth] = useState<number>(size.screenWidth);
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
   const indexes = state.routes.map((_, i) => i);
+  const pressTab = (index: number) => {
+    const route = state.routes[index];
+    if (!route) return;
+    const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+    if (state.index !== index && !event.defaultPrevented) {
+      navigation.navigate(route.name, route.params);
+    }
+  };
+  // The shared blue header follows the pager and switches tab on a flick (TabHeaderHost).
+  useSyncTabHeader(position, state.index, pressTab);
   const notchX = position.interpolate({
     inputRange: indexes,
     outputRange: indexes.map((i) => notchLeft(width, state.routes.length, i)),
@@ -70,18 +80,10 @@ export function TabBar({ state, navigation, position }: MaterialTopTabBarProps) 
         const name = route.name as TabName;
         const focused = state.index === index;
         const label = TAB_LABELS[name];
-        const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          });
-          if (!focused && !event.defaultPrevented) navigation.navigate(route.name, route.params);
-        };
         return (
           <Pressable
             key={route.key}
-            onPress={onPress}
+            onPress={() => pressTab(index)}
             accessibilityRole="tab"
             accessibilityLabel={label}
             accessibilityState={{ selected: focused }}
