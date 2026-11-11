@@ -1,8 +1,9 @@
 // Detalle de cuentas (design DashboardDetalles): the Dashboard header expands in place to one
 // row per account. The tab under it opens and closes it by tap; dragging the header opens and
 // closes it gradually (DashboardScreen, G1).
-// Until a bank account is connected, a ghost of an account card invites to connect one (QA review
-// 2026-11-07, V5; new state, needs design review).
+// Cash shows as a row like any account. With no account and no cash, a line says so (new copy,
+// needs design review). The panel has no ghost card and no button to connect a bank: that lives
+// in Mi cuenta › Mis cuentas.
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
@@ -11,7 +12,6 @@ import {
   AmountText,
   AppText,
   Badge,
-  GhostCard,
   Icon,
   fontSize,
   radius,
@@ -38,20 +38,17 @@ export function rowDetail(row: Pick<AccountRow, 'kind' | 'last4'>): string {
 export function AccountsPanel({
   rows,
   onPressRow,
-  onConnect,
 }: {
   rows: AccountRow[];
   /** Opens Detalle de cuenta. */
   onPressRow: (id: AccountRow['id']) => void;
-  /** Set while no bank account is connected: the ghost card's "Conectar cuenta" opens M5. */
-  onConnect?: () => void;
 }) {
   const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.panel} testID="accounts.panel">
-      {rows.length === 0 && !onConnect ? (
-        <AppText variant="small" color="onPrimary">
-          {t.noAccounts}
+      {rows.length === 0 ? (
+        <AppText variant="small" color="onPrimary" testID="accounts.panel.empty">
+          {t.noAccountsOrCash}
         </AppText>
       ) : null}
       {rows.map((row) => (
@@ -83,15 +80,6 @@ export function AccountsPanel({
           <AmountText amountMinor={row.amountMinor} size={13} color="onPrimary" />
         </Pressable>
       ))}
-      {onConnect ? (
-        <GhostCard
-          actionLabel={t.connectAccount}
-          message={t.noAccounts}
-          onAction={onConnect}
-          onPrimary
-          testID="accounts.panel.ghost"
-        />
-      ) : null}
     </View>
   );
 }

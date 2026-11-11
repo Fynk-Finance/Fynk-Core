@@ -43,8 +43,8 @@ export const accountsStrings = {
     hideDetails: 'Ocultar detalle de cuentas',
     cashDetail: 'Registrado manualmente',
     noAccounts: 'Aún no tienes cuentas conectadas.',
-    // Ghost card while no bank account is connected: new copy, needs design review.
-    connectAccount: 'Conectar cuenta',
+    // Detalle de cuentas with no account and no cash: new copy, needs design review.
+    noAccountsOrCash: 'Aún no tienes cuentas conectadas ni efectivo registrado.',
     loadError: 'No pudimos cargar tus cuentas.',
     // Pull to sync (QA review 2026-11-07, F3), also an accessibility action.
     sync: 'Actualizar',
