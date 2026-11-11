@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { categoryLabel, formatCop } from '@shared/domain';
+import { useTabHeader } from '@shared/navigation';
 import {
   AmountText,
   AppText,
@@ -13,7 +14,6 @@ import {
   Donut,
   EmptyState,
   ErrorState,
-  HeaderBlue,
   Icon,
   Screen,
   Skeleton,
@@ -105,58 +105,47 @@ export function createRecommendationsScreen(
 
     const top = view ? highlight(view.opportunities, stepCopy) : null;
 
+    // The tabs' shared blue header (QA review 2026-11-07, G2); a plain HeaderBlue outside the tabs.
+    const header = useTabHeader({
+      name,
+      hasUnread: unread > 0,
+      onPressAccount: () => navigation.navigate(navigationTargets.accountRoute),
+      onPressNotifications: () => navigation.navigate(navigationTargets.notificationsRoute),
+      onPressStatistics: () => navigation.navigate(navigationTargets.statisticsRoute),
+      title: s.title,
+      children: top ? (
+        <Pressable
+          onPress={() => run(top.action)}
+          accessibilityRole="button"
+          accessibilityLabel={s.highlightLabel(top.title, formatCop(top.amountMinor))}
+          testID="recommendations.highlight"
+          style={({ pressed }) => [styles.highlight, pressed ? styles.pressed : null]}
+        >
+          <View style={styles.highlightBody}>
+            <View style={styles.badge}>
+              <AppText style={styles.badgeText} color="onPrimary">
+                {s.highlightBadge}
+              </AppText>
+            </View>
+            <AppText variant="cardTitle" color="onPrimary">
+              {top.title}
+            </AppText>
+            <View style={styles.amountRow}>
+              <AmountText amountMinor={top.amountMinor} size={18} color="onPrimary" />
+              <AppText variant="captionStrong" color="onPrimary">
+                {s.perMonth}
+              </AppText>
+            </View>
+          </View>
+          <View style={styles.go}>
+            <Icon name="chevronRight" size={20} strokeWidth={2.4} color={colors.primaryDark} />
+          </View>
+        </Pressable>
+      ) : null,
+    });
+
     return (
-      <Screen
-        withTabBar
-        padded={false}
-        gap={0}
-        testID="recommendations.screen"
-        header={
-          <HeaderBlue
-            name={name}
-            hasUnread={unread > 0}
-            onPressAccount={() => navigation.navigate(navigationTargets.accountRoute)}
-            onPressNotifications={() => navigation.navigate(navigationTargets.notificationsRoute)}
-            onPressStatistics={() => navigation.navigate(navigationTargets.statisticsRoute)}
-            title={s.title}
-          >
-            {top ? (
-              <Pressable
-                onPress={() => run(top.action)}
-                accessibilityRole="button"
-                accessibilityLabel={s.highlightLabel(top.title, formatCop(top.amountMinor))}
-                testID="recommendations.highlight"
-                style={({ pressed }) => [styles.highlight, pressed ? styles.pressed : null]}
-              >
-                <View style={styles.highlightBody}>
-                  <View style={styles.badge}>
-                    <AppText style={styles.badgeText} color="onPrimary">
-                      {s.highlightBadge}
-                    </AppText>
-                  </View>
-                  <AppText variant="cardTitle" color="onPrimary">
-                    {top.title}
-                  </AppText>
-                  <View style={styles.amountRow}>
-                    <AmountText amountMinor={top.amountMinor} size={18} color="onPrimary" />
-                    <AppText variant="captionStrong" color="onPrimary">
-                      {s.perMonth}
-                    </AppText>
-                  </View>
-                </View>
-                <View style={styles.go}>
-                  <Icon
-                    name="chevronRight"
-                    size={20}
-                    strokeWidth={2.4}
-                    color={colors.primaryDark}
-                  />
-                </View>
-              </Pressable>
-            ) : null}
-          </HeaderBlue>
-        }
-      >
+      <Screen withTabBar padded={false} gap={0} testID="recommendations.screen" header={header}>
         <ScrollView
           contentContainerStyle={styles.content}
           refreshControl={
