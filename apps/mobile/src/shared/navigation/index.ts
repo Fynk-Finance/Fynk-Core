@@ -9,3 +9,12 @@ export type { BackGesture, ModuleRoutes, ModuleScreen, ScreenTransition, TabName
  * stack (the onboarding flow) moves exactly like the root stack.
  */
 export { flowOptions, screenOptionsFor, type MotionSettings } from './screenOptions';
+/** How the tabs' shared blue header changes between tabs (QA review 2026-11-07, G2). */
+export {
+  blend,
+  fillUnknown,
+  flickTarget,
+  layerOpacity,
+  nearestTab,
+  UNKNOWN,
+} from './tabHeaderBlend';
