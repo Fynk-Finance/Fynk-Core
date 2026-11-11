@@ -6,7 +6,7 @@ module: M1
 jira: [SCRUM-67]
 branch: docs/dev-token-device-required
 tool: Claude Code
-pr: none
+pr: "#363"
 status: done
 ---
 
@@ -27,7 +27,7 @@ Daniel shared two notes Juan Carlos's M4 and M5 review left on 7 Nov (one for Da
 ## Result
 
 * Prettier (from the repository root, as `make format-check`) and ESLint pass on the changed files. Only comments and docs changed, so no tests were added.
-* Pull request: not opened yet.
+* Pull request: #363.
 
 ## Decisions and problems
 
