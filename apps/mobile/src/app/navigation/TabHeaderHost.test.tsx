@@ -201,6 +201,31 @@ describe('TabHeaderHost', () => {
     expect(screen.getByTestId('tab-header').props.pointerEvents).toBe('none');
   });
 
+  // Android draws an elevation shadow with the view's own opacity, so the fade must be on the card
+  // that casts it, or the shadow stays on the Dashboard after the card is gone.
+  it('fades the card itself, shadow included, toward a tab with its own header', async () => {
+    await renderTabs(<InTab tab="Billetera" title="Billetera" />, { focused: 0 });
+    expect(screen.getByTestId('tab-header.card')).toHaveStyle({ opacity: 0 });
+    expect(screen.getByTestId('tab-header')).not.toHaveStyle({ opacity: 0 });
+  });
+
+  it('shows the card on a tab that uses the shared header', async () => {
+    // Jest computes animated styles at mount only: mount the host again once the position is on
+    // Billetera.
+    const tree = (hostKey: string) => (
+      <GestureHandlerRootView>
+        <TabHeaderProvider tabs={TABS} shared={['Billetera']}>
+          <Probe focused={1} />
+          <InTab tab="Billetera" title="Billetera" />
+          <TabHeaderHost key={hostKey} />
+        </TabHeaderProvider>
+      </GestureHandlerRootView>
+    );
+    const { rerender } = await render(tree('first'));
+    await rerender(tree('again'));
+    expect(screen.getByTestId('tab-header.card')).toHaveStyle({ opacity: 1 });
+  });
+
   it('draws nothing when no tab uses the shared header', async () => {
     await renderTabs(<InTab tab="Billetera" title="Billetera" />, { shared: [] });
     expect(screen.queryByTestId('tab-header')).toBeNull();
