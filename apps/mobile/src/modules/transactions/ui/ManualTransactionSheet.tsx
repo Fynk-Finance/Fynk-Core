@@ -24,6 +24,7 @@ import {
   Dropdown,
   EmptyState,
   Icon,
+  MoneyField,
   PrimaryButton,
   SegmentedControl,
   TextField,
@@ -221,12 +222,10 @@ function Form({
         onChange={(kind) => set({ kind })}
         accessibilityLabel={t.kind}
       />
-      <TextField
+      <MoneyField
         label={t.amount}
-        prefix="$"
         value={draft.amountText}
         onChangeText={(amountText) => set({ amountText })}
-        keyboardType="number-pad"
         error={
           errorOf('amount') ??
           (cashShort === null ? undefined : t.errors.cashShort(formatCop(cashShort)))
