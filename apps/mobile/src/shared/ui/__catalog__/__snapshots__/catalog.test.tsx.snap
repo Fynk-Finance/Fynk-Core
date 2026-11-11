@@ -11407,77 +11407,85 @@ exports[`design system catalog HeaderBlue / BilleteraTitle matches its dark snap
     <View
       style={
         {
-          "alignItems": "flex-end",
-          "flexDirection": "row",
-          "justifyContent": "space-between",
+          "gap": 12,
         }
       }
     >
       <View
         style={
           {
-            "flexShrink": 1,
-            "gap": 4,
+            "alignItems": "flex-end",
+            "flexDirection": "row",
+            "justifyContent": "space-between",
           }
         }
       >
+        <View
+          style={
+            {
+              "flexShrink": 1,
+              "gap": 4,
+            }
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "SpaceGrotesk_700Bold",
+                  "fontSize": 26,
+                  "lineHeight": 32,
+                },
+                {
+                  "color": "#FFFFFF",
+                },
+                null,
+                undefined,
+              ]
+            }
+          >
+            Billetera
+          </Text>
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "PlusJakartaSans_400Regular",
+                  "fontSize": 13,
+                  "lineHeight": 18,
+                },
+                {
+                  "color": "#FFFFFF",
+                },
+                null,
+                {
+                  "opacity": 0.92,
+                },
+              ]
+            }
+          >
+            Gastos fijos de este mes
+          </Text>
+        </View>
         <Text
+          accessibilityLabel="$1.930.600"
+          numberOfLines={1}
           style={
             [
               {
-                "fontFamily": "SpaceGrotesk_700Bold",
-                "fontSize": 26,
-                "lineHeight": 32,
-              },
-              {
                 "color": "#FFFFFF",
+                "fontFamily": "IBMPlexMono_600SemiBold",
+                "fontSize": 24,
+                "letterSpacing": -0.48,
+                "lineHeight": 30,
               },
-              null,
               undefined,
             ]
           }
         >
-          Billetera
-        </Text>
-        <Text
-          style={
-            [
-              {
-                "fontFamily": "PlusJakartaSans_400Regular",
-                "fontSize": 13,
-                "lineHeight": 18,
-              },
-              {
-                "color": "#FFFFFF",
-              },
-              null,
-              {
-                "opacity": 0.92,
-              },
-            ]
-          }
-        >
-          Gastos fijos de este mes
+          $1.930.600
         </Text>
       </View>
-      <Text
-        accessibilityLabel="$1.930.600"
-        numberOfLines={1}
-        style={
-          [
-            {
-              "color": "#FFFFFF",
-              "fontFamily": "IBMPlexMono_600SemiBold",
-              "fontSize": 24,
-              "letterSpacing": -0.48,
-              "lineHeight": 30,
-            },
-            undefined,
-          ]
-        }
-      >
-        $1.930.600
-      </Text>
     </View>
   </View>
 </View>
@@ -11816,77 +11824,85 @@ exports[`design system catalog HeaderBlue / BilleteraTitle matches its snapshot 
     <View
       style={
         {
-          "alignItems": "flex-end",
-          "flexDirection": "row",
-          "justifyContent": "space-between",
+          "gap": 12,
         }
       }
     >
       <View
         style={
           {
-            "flexShrink": 1,
-            "gap": 4,
+            "alignItems": "flex-end",
+            "flexDirection": "row",
+            "justifyContent": "space-between",
           }
         }
       >
+        <View
+          style={
+            {
+              "flexShrink": 1,
+              "gap": 4,
+            }
+          }
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "SpaceGrotesk_700Bold",
+                  "fontSize": 26,
+                  "lineHeight": 32,
+                },
+                {
+                  "color": "#FFFFFF",
+                },
+                null,
+                undefined,
+              ]
+            }
+          >
+            Billetera
+          </Text>
+          <Text
+            style={
+              [
+                {
+                  "fontFamily": "PlusJakartaSans_400Regular",
+                  "fontSize": 13,
+                  "lineHeight": 18,
+                },
+                {
+                  "color": "#FFFFFF",
+                },
+                null,
+                {
+                  "opacity": 0.92,
+                },
+              ]
+            }
+          >
+            Gastos fijos de este mes
+          </Text>
+        </View>
         <Text
+          accessibilityLabel="$1.930.600"
+          numberOfLines={1}
           style={
             [
               {
-                "fontFamily": "SpaceGrotesk_700Bold",
-                "fontSize": 26,
-                "lineHeight": 32,
-              },
-              {
                 "color": "#FFFFFF",
+                "fontFamily": "IBMPlexMono_600SemiBold",
+                "fontSize": 24,
+                "letterSpacing": -0.48,
+                "lineHeight": 30,
               },
-              null,
               undefined,
             ]
           }
         >
-          Billetera
-        </Text>
-        <Text
-          style={
-            [
-              {
-                "fontFamily": "PlusJakartaSans_400Regular",
-                "fontSize": 13,
-                "lineHeight": 18,
-              },
-              {
-                "color": "#FFFFFF",
-              },
-              null,
-              {
-                "opacity": 0.92,
-              },
-            ]
-          }
-        >
-          Gastos fijos de este mes
+          $1.930.600
         </Text>
       </View>
-      <Text
-        accessibilityLabel="$1.930.600"
-        numberOfLines={1}
-        style={
-          [
-            {
-              "color": "#FFFFFF",
-              "fontFamily": "IBMPlexMono_600SemiBold",
-              "fontSize": 24,
-              "letterSpacing": -0.48,
-              "lineHeight": 30,
-            },
-            undefined,
-          ]
-        }
-      >
-        $1.930.600
-      </Text>
     </View>
   </View>
 </View>
@@ -20165,38 +20181,46 @@ exports[`design system catalog Screen / WithHeaderAndTabBar matches its dark sna
       <View
         style={
           {
-            "alignItems": "flex-end",
-            "flexDirection": "row",
-            "justifyContent": "space-between",
+            "gap": 12,
           }
         }
       >
         <View
           style={
             {
-              "flexShrink": 1,
-              "gap": 4,
+              "alignItems": "flex-end",
+              "flexDirection": "row",
+              "justifyContent": "space-between",
             }
           }
         >
-          <Text
+          <View
             style={
-              [
-                {
-                  "fontFamily": "SpaceGrotesk_700Bold",
-                  "fontSize": 26,
-                  "lineHeight": 32,
-                },
-                {
-                  "color": "#FFFFFF",
-                },
-                null,
-                undefined,
-              ]
+              {
+                "flexShrink": 1,
+                "gap": 4,
+              }
             }
           >
-            Billetera
-          </Text>
+            <Text
+              style={
+                [
+                  {
+                    "fontFamily": "SpaceGrotesk_700Bold",
+                    "fontSize": 26,
+                    "lineHeight": 32,
+                  },
+                  {
+                    "color": "#FFFFFF",
+                  },
+                  null,
+                  undefined,
+                ]
+              }
+            >
+              Billetera
+            </Text>
+          </View>
         </View>
       </View>
     </View>
@@ -20566,38 +20590,46 @@ exports[`design system catalog Screen / WithHeaderAndTabBar matches its snapshot
       <View
         style={
           {
-            "alignItems": "flex-end",
-            "flexDirection": "row",
-            "justifyContent": "space-between",
+            "gap": 12,
           }
         }
       >
         <View
           style={
             {
-              "flexShrink": 1,
-              "gap": 4,
+              "alignItems": "flex-end",
+              "flexDirection": "row",
+              "justifyContent": "space-between",
             }
           }
         >
-          <Text
+          <View
             style={
-              [
-                {
-                  "fontFamily": "SpaceGrotesk_700Bold",
-                  "fontSize": 26,
-                  "lineHeight": 32,
-                },
-                {
-                  "color": "#FFFFFF",
-                },
-                null,
-                undefined,
-              ]
+              {
+                "flexShrink": 1,
+                "gap": 4,
+              }
             }
           >
-            Billetera
-          </Text>
+            <Text
+              style={
+                [
+                  {
+                    "fontFamily": "SpaceGrotesk_700Bold",
+                    "fontSize": 26,
+                    "lineHeight": 32,
+                  },
+                  {
+                    "color": "#FFFFFF",
+                  },
+                  null,
+                  undefined,
+                ]
+              }
+            >
+              Billetera
+            </Text>
+          </View>
         </View>
       </View>
     </View>
