@@ -31,7 +31,7 @@ function tabComponent(tab: (typeof tabOrder)[number]) {
 const TAB_SCREENS = tabOrder.map((tab) => ({ tab, component: tabComponent(tab) }));
 
 /** The tabs whose screen draws its header with useTabHeader. The others keep their own. */
-const SHARED_HEADER_TABS: readonly TabName[] = [];
+const SHARED_HEADER_TABS: readonly TabName[] = ['Billetera', 'Recomendaciones', 'Inversion'];
 
 export function MainTabs() {
   const reduceMotion = useReducedMotion();
