@@ -28,7 +28,7 @@ Several screens can be used with buttons and with gestures. **Every gesture has 
 
 | Kind | Opens with | Closes or goes back with | Transition (default) |
 | --- | --- | --- | --- |
-| Tab (Dashboard, Billetera, Recomendaciones, Inversión) | Tap on the tab bar, or a horizontal swipe on the page | Another tab | The pages slide side by side and the notch of the tab bar follows the finger. A carousel inside the page scrolls first and passes the swipe to the tabs at its edge |
+| Tab (Dashboard, Billetera, Recomendaciones, Inversión) | Tap on the tab bar, or a horizontal swipe on the page | Another tab | The pages slide side by side and the notch of the tab bar follows the finger. A carousel inside the page scrolls first and passes the swipe to the tabs at its edge. **Override (QA review 2026-11-07, G2):** the blue header does not slide with the page. It stays in place and its height follows the finger to the next tab's header; the greeting row never moves and each tab's own header content fades out and back in. A sideways flick on the header switches tab when the finger lifts (the header sits above the pager, so it cannot drag it). With Reduce Motion the header switches at once. Billetera, Recomendaciones and Inversión so far; the Dashboard keeps its own header until it moves too |
 | Pushed screen (`push`) | A button, row or link | The "Volver" button, an edge swipe (iOS), or the system back gesture (Android, predictive back) | Slides in from the right, the previous screen moves back |
 | Modal (`modal`) | A button | The chevron button, or a swipe down | Slides up from the bottom |
 | Bottom sheet (`sheet`) | A button (FAB, "Abonar", "Filtros") | Its button, a tap on the scrim, a drag down, or system back | Scrim `fb-scrim .2s ease-out`, sheet `fb-sheet .38s cubic-bezier(.22,1,.36,1)`, actions `fb-pop .25s cubic-bezier(.34,1.56,.64,1)` |
@@ -49,6 +49,7 @@ Several screens can be used with buttons and with gestures. **Every gesture has 
 | Movimientos, Dashboard, Billetera | Pull to refresh starts a sync (rule 4 of CLAUDE.md, 60 s cooldown). On the Dashboard the pull is Fynk's own (QA review 2026-11-07, F3): the header and the page move down, an indicator grows in size and opacity above them, and letting go at the maximum syncs; it is also the page's "Actualizar" accessibility action | none: the app also syncs on open |
 | Metas, Centro de ayuda, Detalle de cuenta | Tap to expand a goal, a question or the movements list (`mt-open .28s ease-out`) | it is a button |
 | Notificaciones, Billetera, Recomendaciones, Inversión | Horizontal chips or cards with snap | Each chip is a button |
+| Billetera, Recomendaciones, Inversión | A sideways flick on the blue header switches to the next or previous tab when the finger lifts (QA review 2026-11-07, G2) | The tab bar |
 
 ## How to bring a screen from the design into React Native
 
