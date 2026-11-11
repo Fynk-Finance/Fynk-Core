@@ -6,11 +6,11 @@ import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { formatCop } from '@shared/domain';
+import { useTabHeader } from '@shared/navigation';
 import {
   AmountText,
   AppText,
   Badge,
-  HeaderBlue,
   Icon,
   LineChart,
   Screen,
@@ -68,6 +68,60 @@ export function createInvestmentScreen(header: InvestmentHeader) {
       if (deps) void Linking.openURL(deps.portalUrl);
     };
 
+    // The tabs' shared blue header (QA review 2026-11-07, G2); a plain HeaderBlue outside the tabs.
+    const tabHeader = useTabHeader({
+      name,
+      hasUnread: unread > 0,
+      onPressAccount: () => navigation.navigate(header.accountRoute),
+      onPressNotifications: () => navigation.navigate(header.notificationsRoute),
+      onPressStatistics: () => navigation.navigate(header.statisticsRoute),
+      children: (
+        <View style={styles.hero}>
+          <AppText variant="subtitle" color="onPrimary" style={styles.heroLabel}>
+            {s.headerLabel}
+          </AppText>
+          <AmountText
+            amountMinor={summary.totalMinor}
+            size={38}
+            color="onPrimary"
+            testID="investment.total"
+          />
+          {points.length > 1 ? (
+            <LineChart
+              values={points.map((p) => p.balanceMinor)}
+              width={width - spacing.screen * 2}
+              height={96}
+              color={colors.onPrimary}
+              accessibilityLabel={s.chartLabel(formatCop(summary.totalMinor))}
+            />
+          ) : null}
+          <View
+            style={styles.periods}
+            accessibilityRole="radiogroup"
+            accessibilityLabel={s.periodLabel}
+          >
+            {PERIODS.map((p) => (
+              <Pressable
+                key={p}
+                onPress={() => setPeriod(p)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: period === p }}
+                testID={`investment.period.${p}`}
+                style={[styles.period, period === p ? styles.periodOn : null]}
+              >
+                <AppText
+                  style={styles.periodText}
+                  color={period === p ? 'primaryDark' : 'onPrimary'}
+                >
+                  {s.periods[p]}
+                </AppText>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      ),
+    });
+
     return (
       <Screen
         scroll
@@ -75,59 +129,7 @@ export function createInvestmentScreen(header: InvestmentHeader) {
         padded={false}
         gap={spacing.block}
         testID="investment.screen"
-        header={
-          <HeaderBlue
-            name={name}
-            hasUnread={unread > 0}
-            onPressAccount={() => navigation.navigate(header.accountRoute)}
-            onPressNotifications={() => navigation.navigate(header.notificationsRoute)}
-            onPressStatistics={() => navigation.navigate(header.statisticsRoute)}
-          >
-            <View style={styles.hero}>
-              <AppText variant="subtitle" color="onPrimary" style={styles.heroLabel}>
-                {s.headerLabel}
-              </AppText>
-              <AmountText
-                amountMinor={summary.totalMinor}
-                size={38}
-                color="onPrimary"
-                testID="investment.total"
-              />
-              {points.length > 1 ? (
-                <LineChart
-                  values={points.map((p) => p.balanceMinor)}
-                  width={width - spacing.screen * 2}
-                  height={96}
-                  color={colors.onPrimary}
-                  accessibilityLabel={s.chartLabel(formatCop(summary.totalMinor))}
-                />
-              ) : null}
-              <View
-                style={styles.periods}
-                accessibilityRole="radiogroup"
-                accessibilityLabel={s.periodLabel}
-              >
-                {PERIODS.map((p) => (
-                  <Pressable
-                    key={p}
-                    onPress={() => setPeriod(p)}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: period === p }}
-                    testID={`investment.period.${p}`}
-                    style={[styles.period, period === p ? styles.periodOn : null]}
-                  >
-                    <AppText
-                      style={styles.periodText}
-                      color={period === p ? 'primaryDark' : 'onPrimary'}
-                    >
-                      {s.periods[p]}
-                    </AppText>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          </HeaderBlue>
-        }
+        header={tabHeader}
       >
         <View style={styles.tiles}>
           <Tile label={s.tiles.yearInterest(summary.year)} testID="investment.tile.interest">
