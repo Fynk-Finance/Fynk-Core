@@ -89,7 +89,6 @@ function Host({ bridge }: { bridge: TabHeaderBridge }) {
     return blend(position.value, fillUnknown(totals), reduceMotion);
   });
   const rootStyle = useAnimatedStyle(() => ({
-    opacity: blend(position.value, sharedFlags, reduceMotion),
     transform: [
       {
         translateY: blend(
@@ -100,7 +99,13 @@ function Host({ bridge }: { bridge: TabHeaderBridge }) {
       },
     ],
   }));
-  const cardStyle = useAnimatedStyle(() => ({ height: cardHeight.value }));
+  // The fade toward a tab with its own header goes on the card itself, not on a parent: Android
+  // draws an elevation shadow with the view's own opacity only, so a parent's fade left the
+  // shadow behind.
+  const cardStyle = useAnimatedStyle(() => ({
+    height: cardHeight.value,
+    opacity: blend(position.value, sharedFlags, reduceMotion),
+  }));
   const dashboardStyle = useAnimatedStyle(() => ({
     opacity: blend(position.value, dashboardFlags, reduceMotion),
   }));
