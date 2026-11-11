@@ -28,7 +28,8 @@ export const strings = {
     emailPlaceholder: 'tucorreo@ejemplo.com',
     passwordLabel: 'Contraseña',
     passwordPlaceholder: 'Crea una contraseña',
-    passwordHint: 'Mínimo 8 caracteres, con una letra y un número.',
+    // Copy change (QA F1, SCRUM-91): the policy now asks for a special character too.
+    passwordHint: 'Mínimo 8 caracteres, con letras, números y un carácter especial.',
     // New copy (not in the design): Keycloak 26 asks to repeat the password when it is on this form.
     passwordConfirmLabel: 'Confirma tu contraseña',
     passwordConfirmPlaceholder: 'Repite tu contraseña',
@@ -74,8 +75,10 @@ export const strings = {
     confirmPlaceholder: 'Repite tu contraseña',
     rulesLabel: 'Tu contraseña debe tener:',
     ruleLength: 'Mínimo 8 caracteres',
-    ruleLetter: 'Una letra',
-    ruleNumber: 'Un número',
+    // QA F1 (SCRUM-91): "Una letra" and "Un número" became one alphanumeric rule, plus the
+    // special character.
+    ruleAlphanumeric: 'Combinación de caracteres alfanuméricos',
+    ruleSpecial: 'Un carácter especial (! # $ - _ …)',
     savePassword: 'Guardar contraseña',
     // Password change started from the app (Seguridad › Cambiar contraseña). New screen without a
     // design, needs design review.
