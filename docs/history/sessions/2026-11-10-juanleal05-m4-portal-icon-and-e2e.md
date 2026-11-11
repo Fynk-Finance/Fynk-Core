@@ -6,7 +6,7 @@ module: M4
 jira: [SCRUM-20, SCRUM-21, SCRUM-22, SCRUM-23, SCRUM-24, SCRUM-25, SCRUM-44, SCRUM-45]
 branch: fix/consents-portal-button-icon
 tool: Claude Code
-pr: none
+pr: "#362"
 status: done
 ---
 
@@ -27,7 +27,7 @@ After the team merged the review follow-ups for M4 and M5, Juan Carlos asked to 
 
 * Tests: M4 and M5 mobile tests 252 passed; `tsc` and ESLint clean.
 * End to end: 14 of 14 checks passed. Consent page at the bank names entity, data, receiver, purpose and term; return to `fynk://bank/callback` with the same state; tokens to the phone; consent active; accounts with only the last 4 digits; 252 movements over 12 months; replay rejected; refresh rotates the token; cancelling at the bank returns `access_denied`; a second entity only asks for the consent; revoking in Fynk and revoking at the bank's portal both make the next read fail with `consent_revoked`; audit events written.
-* Pull request: not opened yet.
+* Pull request: #362.
 
 ## Decisions and problems
 
