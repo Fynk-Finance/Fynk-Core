@@ -39,7 +39,7 @@ export const recurringStrings = {
     kinds: { fixed: 'Gasto fijo', subscription: 'Suscripción' },
     category: 'Categoría',
     amount: 'Monto',
-    amountPlaceholder: '$0',
+    amountPlaceholder: '0',
     periodicity: 'Cada cuánto',
     periodicities: { monthly: 'Mensual', weekly: 'Semanal', daily: 'Diario' },
     day: 'Día de cobro',
