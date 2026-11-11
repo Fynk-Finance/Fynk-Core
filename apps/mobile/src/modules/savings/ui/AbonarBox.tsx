@@ -1,13 +1,21 @@
 // "Abonar a esta meta" inside an open goal card (design Metas): lime tinted box with three amount
-// chips ($50.000, $100.000, $200.000), "Otro monto" with a "$" prefix, and the lime "Abonar"
-// button. A chip and a typed amount exclude each other. It records today's aporte; Fynk never
+// chips ($50.000, $100.000, $200.000), "Otro monto" with a "$" prefix and dot thousands while it
+// is typed (SCRUM-97), and the lime "Abonar" button. A chip and a typed amount exclude each other. It records today's aporte; Fynk never
 // moves money, so the line under it says it is a record.
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { formatCop, parseCopInput } from '@shared/domain/money';
 import type { MoneyMinor } from '@shared/domain/types';
-import { AppText, Icon, fonts, useTheme, useThemedStyles, type Theme } from '@shared/ui';
+import {
+  AppText,
+  Icon,
+  fonts,
+  formatMoneyInput,
+  useTheme,
+  useThemedStyles,
+  type Theme,
+} from '@shared/ui';
 
 import { savingsStrings } from './strings.es-CO';
 
@@ -83,11 +91,12 @@ export function AbonarBox({ goalId, goalName, onAbonar }: AbonarBoxProps) {
           <TextInput
             value={typed}
             onChangeText={(value) => {
-              setTyped(value);
+              setTyped(formatMoneyInput(value));
               setChip(null);
               setError(null);
             }}
-            keyboardType="numeric"
+            keyboardType="number-pad"
+            inputMode="numeric"
             placeholder={t.other}
             placeholderTextColor={colors.textPlaceholder}
             accessibilityLabel={t.other}
