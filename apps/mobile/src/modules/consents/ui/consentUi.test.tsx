@@ -162,6 +162,15 @@ describe('HU-006: registrar explícitamente', () => {
     expect(button()).toBeDisabled();
   });
 
+  it('draws the external link icon after "Ir al portal de…", as in ConectarBanco.html', async () => {
+    await renderConsent();
+    const json = JSON.stringify(screen.toJSON());
+    const label = json.indexOf('Ir al portal de Banco Demo');
+    expect(label).toBeGreaterThan(-1);
+    // The design's icon path (docs/design/sources/light/ConectarBanco.html).
+    expect(json.indexOf('M10 14 21 3')).toBeGreaterThan(label);
+  });
+
   it('enables the button only while the box is checked', async () => {
     await renderConsent();
     await accept();
