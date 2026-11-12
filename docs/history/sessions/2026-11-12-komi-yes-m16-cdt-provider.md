@@ -6,7 +6,7 @@ module: M16
 jira: [SCRUM-65]
 branch: fix/banco-demo-cdt-provider
 tool: Claude Code
-pr: none
+pr: "#380"
 status: done
 ---
 
@@ -25,7 +25,7 @@ Same session as `2026-11-12-komi-yes-m16-portal-login.md`. After the portal logi
 ## Result
 
 * Tests: the new tests and the other packages of the simulator pass. The `internal/oauth` test binary was blocked by Windows App Control on this machine; it is not changed here and CI runs it.
-* Pull request: not opened yet.
+* Pull request: #380.
 * Works with the portal login fix (`fix/banco-demo-portal-login`): without it, portal actions run on the demo customer and never reach the person's app.
 
 ## Decisions and problems
