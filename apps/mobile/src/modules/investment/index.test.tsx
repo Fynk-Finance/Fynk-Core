@@ -43,6 +43,33 @@ describe('investment module wiring', () => {
   });
 });
 
+describe('investment refresh after a sync', () => {
+  const { appEvents } = jest.requireActual<typeof import('@shared/events/appEvents')>(
+    '@shared/events/appEvents',
+  );
+
+  it('tells the tab the accounts changed when a sync ends or the vault opens or closes', () => {
+    const changed = jest.fn();
+    const unsubscribe = cdtAccounts.subscribe!(changed);
+    appEvents.emit({
+      type: 'sync.completed',
+      at: '2026-11-12T22:00:00Z',
+      linkIds: ['l'],
+      newTransactionIds: [],
+      changedAccountIds: ['cdt-1'],
+    });
+    appEvents.emit({ type: 'vault.unlocked' });
+    appEvents.emit({ type: 'vault.locked' });
+    expect(changed).toHaveBeenCalledTimes(3);
+
+    // Other events do not touch the CDTs, and after unsubscribing nothing arrives.
+    appEvents.emit({ type: 'transactions.changed', ids: ['t'] });
+    unsubscribe();
+    appEvents.emit({ type: 'vault.unlocked' });
+    expect(changed).toHaveBeenCalledTimes(3);
+  });
+});
+
 describe('investment header', () => {
   const onboarding = jest.requireMock<{ useDisplayName: jest.Mock }>('@modules/onboarding');
 

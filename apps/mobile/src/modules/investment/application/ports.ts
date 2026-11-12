@@ -7,6 +7,11 @@ import type { BalancePoint, CdtProduct } from '../domain/investment';
 export interface AccountsPort {
   getCdtAccounts(): Promise<Account[]>;
   getCdtBalanceHistory?(): Promise<BalancePoint[]>;
+  /**
+   * Calls onChange when the accounts may have changed (a sync ended, the vault opened or
+   * closed), so the tab reloads its CDTs. Returns the unsubscribe.
+   */
+  subscribe?(onChange: () => void): () => void;
 }
 
 export interface CdtReference {

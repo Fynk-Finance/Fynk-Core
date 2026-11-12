@@ -1,5 +1,6 @@
 // Public API of the investment module (M15). Other modules import only from this file.
 import type { Clock } from '@shared/domain';
+import { appEvents } from '@shared/events/appEvents';
 import type { ModuleRoutes } from '@shared/navigation';
 
 import { getBalanceHistory, getCdtAccounts } from '@modules/accounts';
@@ -61,9 +62,20 @@ const DEFAULT_PORTAL_URL = 'https://localhost:8082';
 /** Since when the chart reads the history: everything M6 keeps ("Todo"). */
 const HISTORY_FROM = '2000-01-01';
 
-/** M6: the user's CDT accounts and the daily total of their balances, for the chart. */
+/**
+ * M6: the user's CDT accounts and the daily total of their balances, for the chart. The tab
+ * reloads them when a sync ends (pull to refresh on Inicio, app open) or the vault opens or closes.
+ */
 export const cdtAccounts: AccountsPort = {
   getCdtAccounts: () => getCdtAccounts(),
+  subscribe(onChange) {
+    const offs = [
+      appEvents.on('sync.completed', () => onChange()),
+      appEvents.on('vault.unlocked', () => onChange()),
+      appEvents.on('vault.locked', () => onChange()),
+    ];
+    return () => offs.forEach((off) => off());
+  },
   async getCdtBalanceHistory() {
     const cdts = await getCdtAccounts();
     if (cdts.length === 0) return [];
