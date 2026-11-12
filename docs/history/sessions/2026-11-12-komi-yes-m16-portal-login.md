@@ -48,6 +48,12 @@ The developer then asked: "check why when for example generating a CDT with my a
 * Tests: `internal/store/portal_actions_test.go` runs the four actions through `GetAccounts` and `GetTransactions` of a consent, including a transfer between Banco Demo and Cooperativa Demo and a CDT paid from Cooperativa Demo. They failed before the fix and pass after it.
 * Found and not fixed (other modules, frozen contract): the app accepts only `banco-demo`, `billetera-demo` and `bancolombia` as providers (`ProviderId` in `apps/mobile/src/shared/domain/types.ts` and `00-shared-contracts.md`, `PROVIDERS` in `modules/bank/domain/syncMapping.ts`, the `CHECK` on `provider` in `modules/accounts/adapters/vault/migrations.ts`). A link to Banco Digital Demo or Cooperativa Demo can be made, but every sync of it fails with `Unknown provider`, so nothing from those two entities shows. This needs a shared contract change reviewed by M0, M5 and M6.
 
+## Follow-up: "is still not working"
+
+* Checked the running stack: the simulator image had both fixes, and `GET /portal/actions` redirected to the banco-demo login. But every sync since the API started had stopped at `POST /v1/bank/tokens/refresh` with 409 (39 calls, 3 links), and no consent or link call had been made. Restarting the stack, and rebuilding the simulator, cleared the simulator's in-memory tokens and consents. So the links in the app were dead, and nothing done in the portal could reach it.
+* Found and not fixed (M5): the app ends a link only on `consent_revoked` or `link_not_found`, and nothing listens for `sync.failed`. So a link the bank no longer knows (`invalid_grant`) stays "active" and fails silently on every sync.
+* The right test flow: rebuild the simulator once, remove and reconnect the simulated banks in the app with "Ingresar con Fynk", then use the portal (also with "Ingresar con Fynk"), wait 60 s and pull to refresh. Do not restart the simulator in between.
+
 ## Next step
 
 Try it in docker compose: log in to Fynk, tap "+ Invertir", choose "Ingresar con Fynk", and check the portal shows the user's accounts. Then push and open the pull request.
