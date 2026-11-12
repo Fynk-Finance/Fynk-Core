@@ -40,20 +40,14 @@ The developer reported that money actions and investments in the simulator alway
 
 ## Follow-up in the same session: a CDT opened in the portal does not reach the app
 
-The developer then asked: "check why when for example generating a CDT with my account is not appering in the app check if the error is also happening with the other 3 options".
-
-* Cause in the simulator: `OpenCDT` in `internal/store/store.go` created the CDT account with no `ProviderID`. `GET /accounts` returns only the accounts of the consent's entity, so the new CDT was filtered out for every link. The CDT now gets the provider of the account that paid for it.
-* The other three actions (Registrar un pago, Transferir, Pagar tarjeta) did reach `GET /transactions`; their movements only had an empty `providerId`, which the Fynk backend does not read. Every movement the portal books now carries its account's provider id.
-* Before the portal login fix above, none of the four actions could reach the app, because they ran on the demo customer.
-* Tests: `internal/store/portal_actions_test.go` runs the four actions through `GetAccounts` and `GetTransactions` of a consent, including a transfer between Banco Demo and Cooperativa Demo and a CDT paid from Cooperativa Demo. They failed before the fix and pass after it.
-* Found and not fixed (other modules, frozen contract): the app accepts only `banco-demo`, `billetera-demo` and `bancolombia` as providers (`ProviderId` in `apps/mobile/src/shared/domain/types.ts` and `00-shared-contracts.md`, `PROVIDERS` in `modules/bank/domain/syncMapping.ts`, the `CHECK` on `provider` in `modules/accounts/adapters/vault/migrations.ts`). A link to Banco Digital Demo or Cooperativa Demo can be made, but every sync of it fails with `Unknown provider`, so nothing from those two entities shows. This needs a shared contract change reviewed by M0, M5 and M6.
+The developer then asked why a CDT opened in the portal did not appear in the app. That fix went to its own branch and pull request, `fix/banco-demo-cdt-provider`, to keep this one small. See `2026-11-12-komi-yes-m16-cdt-provider.md`.
 
 ## Follow-up: "is still not working"
 
-* Checked the running stack: the simulator image had both fixes, and `GET /portal/actions` redirected to the banco-demo login. But every sync since the API started had stopped at `POST /v1/bank/tokens/refresh` with 409 (39 calls, 3 links), and no consent or link call had been made. Restarting the stack, and rebuilding the simulator, cleared the simulator's in-memory tokens and consents. So the links in the app were dead, and nothing done in the portal could reach it.
+* Checked the running stack: the simulator image had the login and CDT fixes, and `GET /portal/actions` redirected to the banco-demo login. But every sync since the API started had stopped at `POST /v1/bank/tokens/refresh` with 409 (39 calls, 3 links), and no consent or link call had been made. Restarting the stack, and rebuilding the simulator, cleared the simulator's in-memory tokens and consents. So the links in the app were dead, and nothing done in the portal could reach it.
 * Found and not fixed (M5): the app ends a link only on `consent_revoked` or `link_not_found`, and nothing listens for `sync.failed`. So a link the bank no longer knows (`invalid_grant`) stays "active" and fails silently on every sync.
 * The right test flow: rebuild the simulator once, remove and reconnect the simulated banks in the app with "Ingresar con Fynk", then use the portal (also with "Ingresar con Fynk"), wait 60 s and pull to refresh. Do not restart the simulator in between.
 
 ## Next step
 
-Try it in docker compose: log in to Fynk, tap "+ Invertir", choose "Ingresar con Fynk", and check the portal shows the user's accounts. Then push and open the pull request.
+Try it in docker compose: reconnect Banco Demo in the app, tap "+ Invertir", choose "Ingresar con Fynk", and check the portal shows the user's accounts.
