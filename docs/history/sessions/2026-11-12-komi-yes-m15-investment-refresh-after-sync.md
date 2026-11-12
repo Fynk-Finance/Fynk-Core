@@ -6,7 +6,7 @@ module: M15
 jira: [SCRUM-66]
 branch: fix/investment-refresh-after-sync
 tool: Claude Code
-pr: none
+pr: "#381"
 status: done
 ---
 
@@ -27,7 +27,7 @@ While testing CDTs opened in the Banco Demo portal, the developer asked that the
 ## Result
 
 * Tests: the 32 tests of the investment module pass. `tsc`, ESLint and Prettier are clean.
-* Pull request: not opened yet.
+* Pull request: #381.
 * Works: pulling to refresh on Inicio (or any sync) now also updates the CDT list and total of Inversión.
 
 ## Decisions and problems
