@@ -33,6 +33,7 @@ Bancolombia's support had not answered and time is short. Juan Carlos asked to t
 
 * Recommended to Juan Carlos, who agreed to record it: the jury demo uses the simulated banks; Bancolombia is shown as an adapter that reaches the bank (tests from its documentation and a live call that stops at the missing certificate) with the findings; no mock with Bancolombia's name in the app.
 * Still to try on Bancolombia's side: reply to the ticket email, the API Market chat, and a contact through the university.
+* Correction, same session: Juan Carlos found that the application's edit form does list Account Information 1.0.0 and Open Banking Authorization (the detail page's list, which Claude searched, does not). Subscribing to either from the edit form answers "no se pudo suscribir el producto … Código de referencia: 404". Finding 10 was rewritten in a new commit, and a reply to Bancolombia with that error was drafted.
 
 ## Next step
 
