@@ -133,6 +133,33 @@ it('shows the own CDT with amount, rate, term and maturity, and the tiles', asyn
   expect(screen.queryByText(/Aporte mensual/)).toBeNull();
 });
 
+it('reloads the own CDTs when M6 says the accounts changed, without reopening the app', async () => {
+  // A pull to refresh on Inicio syncs the bank; a CDT opened in the portal arrives with it.
+  let current: Account[] = [];
+  let changed: () => void = () => undefined;
+  setInvestmentDeps({
+    accounts: {
+      getCdtAccounts: async () => current,
+      subscribe: (fn) => {
+        changed = fn;
+        return () => {
+          changed = () => undefined;
+        };
+      },
+    },
+    market,
+    clock: createFixedClock('2026-10-28T17:00:00Z'),
+    portalUrl: 'https://bancodemo.example/portal/actions',
+  });
+  await renderScreens({ screens, initial: 'Inversion' });
+  expect(await screen.findByText(s.holdings.empty)).toBeOnTheScreen();
+
+  current = [cdtAccount(200_000_000)];
+  await act(async () => changed());
+  expect(await screen.findByTestId('investment.holding.acc-cdt')).toBeOnTheScreen();
+  expect(screen.getByTestId('investment.total')).toHaveTextContent('$2.000.000');
+});
+
 it('shows the empty state without CDTs', async () => {
   install([]);
   await renderScreens({ screens, initial: 'Inversion' });

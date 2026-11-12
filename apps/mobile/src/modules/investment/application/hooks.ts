@@ -1,7 +1,7 @@
 // React hooks of the Inversión tab. The ports are installed once with configureInvestment()
 // (index.ts). Until then the screen shows its empty states, and the calculator still works.
-import { useQuery } from '@tanstack/react-query';
-import { useSyncExternalStore } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useSyncExternalStore } from 'react';
 
 import type { Clock } from '@shared/domain';
 
@@ -35,11 +35,26 @@ export function useInvestmentDeps(): InvestmentDeps | null {
   );
 }
 
-/** The user's own CDT accounts and their history (vault data: dropped when unused). */
+const OWN_CDTS_KEY = [...INVESTMENT_QUERY_KEY, 'own'] as const;
+
+/**
+ * The user's own CDT accounts and their history (vault data: dropped when unused). Reloaded
+ * when M6 says the accounts changed, so a pull to refresh on Inicio also updates this tab.
+ */
 export function useOwnCdts() {
   const deps = useInvestmentDeps();
+  const queryClient = useQueryClient();
+
+  useEffect(
+    () =>
+      deps?.accounts.subscribe?.(() => {
+        void queryClient.invalidateQueries({ queryKey: OWN_CDTS_KEY });
+      }),
+    [deps, queryClient],
+  );
+
   return useQuery({
-    queryKey: [...INVESTMENT_QUERY_KEY, 'own'],
+    queryKey: OWN_CDTS_KEY,
     queryFn: async () => {
       const d = deps as InvestmentDeps;
       const [accounts, history] = await Promise.all([
