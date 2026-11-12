@@ -71,7 +71,7 @@ You are extending the simulated bank of Fynk. Today the simulator has one custom
 * `services/bank-simulator/internal/domain/generator.go`: `GenerateCustomerData` targets the same balances for every customer ($3.200.000 / $4.600.000 / card -$500.000 / CDT $2.000.000). Only the history depends on the seed.
 * `internal/store/store.go`: the store is in memory, with no `bankdemo` schema. `GetCustomer` creates a customer the first time it is read.
 * `internal/oauth/oauth.go`: `HandlePAR` binds every consent to `cliente.demo@bancodemo.local`. `CompleteAuthorization` exists but nothing calls it. There is no authorization page.
-* `internal/portal/portal.go`: the portal reads the customer from `?user=` with the demo user as fallback. Banco Demo is a simple simulator, so leave this as is unless this work needs it.
+* `internal/portal/portal.go`: the portal uses the same banco-demo realm login and session as the authorization page, so it shows the logged in customer (the Fynk `sub` for "Ingresar con Fynk"). Its forms carry the session's CSRF token. Only when the realm login is not configured (local runs without Keycloak, unit tests) it falls back to `?user=` or the demo user.
 * `services/api/internal/bank/ports/providers.go`: a static catalog of `banco-demo` and `billetera-demo`, the same for every user. Bancolombia joins through `Offer`.
 * `services/api/internal/bank/wiring.go` (`addBancoDemo`): builds the two simulated adapters with one shared client, issuer and authorize URL.
 * `services/api/internal/bank/adapters/bankdemo/bankdemo.go`: splits Billetera Demo from Banco Demo by account type (`WALLET`).
