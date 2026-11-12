@@ -6,7 +6,7 @@ module: M9
 jira: [SCRUM-94]
 branch: feature/billetera-savings-goals
 tool: Claude Code
-pr: none
+pr: "#377"
 status: done
 ---
 
@@ -39,4 +39,4 @@ F4 of the 7 Nov app review was assigned to Karol, and the team decided it is Sof
 
 ## Next step
 
-Open the pull request and ask Karol for review.
+Karol reviews #377 (M9).
