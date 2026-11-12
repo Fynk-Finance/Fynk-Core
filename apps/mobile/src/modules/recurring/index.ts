@@ -1,5 +1,6 @@
 // Public API of the recurring module. Other modules import only from this file.
 import { randomUUID } from 'expo-crypto';
+import { createElement } from 'react';
 
 import type { Clock, MoneyMinor } from '@shared/domain/types';
 import { appEvents } from '@shared/events/appEvents';
@@ -16,6 +17,7 @@ import {
   useUnreadCount,
 } from '@modules/notifications';
 import { useDisplayName } from '@modules/onboarding';
+import { GoalsCarousel } from '@modules/savings';
 import { getTransactionsBetween, TRANSACTION_DETAIL_ROUTE } from '@modules/transactions';
 import {
   getVaultDb,
@@ -183,6 +185,7 @@ export const routes: ModuleRoutes = {
     detectedRoute: DETECTED_ROUTE,
     priceUpItems: async () => new Set((await priceAlerts.openByItem()).keys()),
     refresh: () => syncNow(),
+    renderGoals: () => createElement(GoalsCarousel),
   }),
   screens: [
     {
