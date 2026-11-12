@@ -41,11 +41,18 @@ func newBankMux(s *store.BankStore, provisionClientID string, authCfg ...authori
 	if len(authCfg) > 0 {
 		cfg = authCfg[0]
 	}
-	authorize.NewHandler(oauthService, s, cfg).RegisterRoutes(mux)
+	authHandler := authorize.NewHandler(oauthService, s, cfg)
+	authHandler.RegisterRoutes(mux)
 
 	// Answers 404 unless the request came through the mTLS listener.
 	demo.NewHandler(s).RegisterRoutes(mux)
-	portalHandler := portal.NewHandler(s)
+	// With the realm login configured the portal shows the logged in customer;
+	// without it (local runs with no Keycloak) it keeps its demo fallback.
+	var portalOpts []portal.Option
+	if authHandler.Enabled() {
+		portalOpts = append(portalOpts, portal.WithAuth(authHandler))
+	}
+	portalHandler := portal.NewHandler(s, portalOpts...)
 	portalHandler.RegisterRoutes(mux)
 	return mux
 }
