@@ -11,6 +11,7 @@ import {
   AppText,
   Dropdown,
   Icon,
+  MoneyField,
   TextField,
   radius,
   size,
@@ -87,13 +88,12 @@ export function GoalFormFields({
         testID={`${testID}.category`}
       />
 
-      <TextField
+      <MoneyField
         label={t.target}
         icon="piggy"
         value={form.target}
         onChangeText={(target) => set({ target })}
         placeholder={t.targetPlaceholder}
-        keyboardType="numeric"
         error={errorOf('target')}
         testID={`${testID}.target`}
       />

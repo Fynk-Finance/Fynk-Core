@@ -31,3 +31,4 @@ export * from './components/States';
 export * from './components/StepProgress';
 export * from './components/Switch';
 export * from './components/TextField';
+export * from './components/MoneyField';

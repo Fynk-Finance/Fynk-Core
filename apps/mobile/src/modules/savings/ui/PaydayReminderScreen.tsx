@@ -21,6 +21,7 @@ import {
   AppText,
   BackButton,
   GhostButton,
+  MoneyField,
   PrimaryButton,
   Screen,
   Skeleton,
@@ -148,13 +149,11 @@ export function createPaydayReminderScreen({
     return (
       <Screen header={header} scroll padded gap={spacing.xl} testID="savings.payday">
         <AppText variant="body">{t.intro(goal.name)}</AppText>
-        <TextField
+        <MoneyField
           label={t.amount}
           icon="piggy"
-          prefix="$"
           value={amount}
           onChangeText={setAmount}
-          keyboardType="numeric"
           error={errors.includes('amount') ? t.errors.amount : undefined}
           testID="savings.payday.amount"
         />

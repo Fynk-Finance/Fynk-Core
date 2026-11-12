@@ -25086,6 +25086,7 @@ exports[`design system catalog TextField / Money matches its dark snapshot 1`] =
     <TextInput
       accessibilityLabel="¿Cuánto tienes en efectivo?"
       defaultValue="600.000"
+      inputMode="numeric"
       keyboardType="number-pad"
       onBlur={[Function]}
       onFocus={[Function]}
@@ -25254,6 +25255,7 @@ exports[`design system catalog TextField / Money matches its snapshot 1`] = `
     <TextInput
       accessibilityLabel="¿Cuánto tienes en efectivo?"
       defaultValue="600.000"
+      inputMode="numeric"
       keyboardType="number-pad"
       onBlur={[Function]}
       onFocus={[Function]}

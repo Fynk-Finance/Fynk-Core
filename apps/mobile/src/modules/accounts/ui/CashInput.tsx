@@ -1,8 +1,9 @@
 // Cash field of OnbCuentas (onboarding step 3) and "Editar efectivo": the cash icon, "$" and the
-// amount in whole pesos with dot thousands (`600.000`). The parent saves it with setCash().
+// amount in whole pesos with dot thousands (`600.000`), from the shared MoneyField (SCRUM-97).
+// The parent saves it with setCash().
 import { formatCop } from '@shared/domain/money';
 import type { MoneyMinor } from '@shared/domain/types';
-import { TextField } from '@shared/ui';
+import { MoneyField } from '@shared/ui';
 
 import { parseCashInput } from '../domain/cash';
 import { accountsStrings } from './strings.es-CO';
@@ -25,16 +26,13 @@ export function CashInput({
   autoFocus,
   testID = 'accounts.cashInput',
 }: CashInputProps) {
-  // formatCop gives `$600.000`; the field already shows the "$".
-  const text = value === null ? '' : formatCop(value).slice(1);
+  // MoneyField drops the "$" of formatCop and shows `600.000` after its own "$".
+  const text = value === null ? '' : formatCop(value);
   return (
-    <TextField
+    <MoneyField
       label={t.label}
       icon="cash"
-      prefix="$"
       placeholder={t.placeholder}
-      keyboardType="number-pad"
-      inputMode="numeric"
       value={text}
       onChangeText={(next) => onChange(parseCashInput(next))}
       error={error}

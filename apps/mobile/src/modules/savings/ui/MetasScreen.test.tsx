@@ -247,7 +247,9 @@ describe('Abonar a esta meta (SCRUM-52)', () => {
     await addDesignGoals();
     await renderMetas();
     await fireEvent.press(await screen.findByTestId('savings.goal.g2.head'));
-    await fireEvent.changeText(screen.getByTestId('savings.abonar.g2.other'), '280.000');
+    // Typed without dots, shown as $ 280.000 (SCRUM-97).
+    await fireEvent.changeText(screen.getByTestId('savings.abonar.g2.other'), '280000');
+    expect(screen.getByTestId('savings.abonar.g2.other')).toHaveDisplayValue('280.000');
     await fireEvent.press(screen.getByTestId('savings.abonar.g2.submit'));
     await waitFor(() =>
       expect(screen.getByTestId('savings.done.g2')).toHaveTextContent(

@@ -1,3 +1,4 @@
+import { MoneyField } from '../components/MoneyField';
 import { TextField } from '../components/TextField';
 import type { StoryGroup } from './types';
 
@@ -19,13 +20,11 @@ export default {
       />
     ),
     Money: () => (
-      <TextField
+      <MoneyField
         label="¿Cuánto tienes en efectivo?"
         icon="cash"
-        prefix="$"
         placeholder="0"
-        defaultValue="600.000"
-        keyboardType="number-pad"
+        defaultValue="600000"
       />
     ),
     WithError: () => (

@@ -17,10 +17,10 @@ import {
   Dropdown,
   GhostButton,
   Icon,
+  MoneyField,
   PrimaryButton,
   Screen,
   SegmentedControl,
-  TextField,
   categoryOptions,
   spacing,
   useTheme,
@@ -62,7 +62,7 @@ export interface CapFormParams {
   suggestedMinor?: MoneyMinor;
 }
 
-/** "$200.000" from centavos, for prefilled fields. */
+/** "$200.000" from centavos, for prefilled fields; MoneyField shows it as $ 200.000. */
 function asInput(minor: MoneyMinor | null | undefined): string {
   return minor && minor > 0 ? formatCop(minor) : '';
 }
@@ -180,12 +180,11 @@ function CapForm({
       />
 
       {categoryId === 'treats' ? (
-        <TextField
+        <MoneyField
           label={s.treatsThreshold}
           helper={s.treatsHelper}
           value={treats}
           onChangeText={setTypedTreats}
-          keyboardType="numeric"
           error={treatsValid ? undefined : s.amountInvalid}
           testID="analytics.capForm.treats"
         />
@@ -205,12 +204,11 @@ function CapForm({
         />
       </View>
 
-      <TextField
+      <MoneyField
         label={s.amount}
         helper={suggested.data ? s.suggested(formatCop(suggested.data)) : s.amountHelper}
         value={amount}
         onChangeText={setTypedAmount}
-        keyboardType="numeric"
         error={amount && !amountValid ? s.amountInvalid : undefined}
         testID="analytics.capForm.amount"
       />

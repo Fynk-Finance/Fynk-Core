@@ -9,6 +9,7 @@ import {
   AppText,
   Badge,
   Chip,
+  MoneyField,
   SectionHeader,
   SegmentedControl,
   TextField,
@@ -226,12 +227,11 @@ export function ExploreSection() {
 
       <View style={styles.calculator} testID="investment.calculator">
         <AppText variant="cardTitle">{s.calculator.title}</AppText>
-        <TextField
+        <MoneyField
           label={s.calculator.amount}
           helper={s.calculator.amountHelper}
           value={amount}
           onChangeText={setAmount}
-          keyboardType="numeric"
           testID="investment.calculator.amount"
         />
         <TextField

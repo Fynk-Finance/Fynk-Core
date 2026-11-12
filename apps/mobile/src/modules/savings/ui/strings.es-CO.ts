@@ -84,7 +84,7 @@ export const savingsStrings = {
     namePlaceholder: 'Ej: Viaje a Cartagena',
     category: 'Categoría',
     target: 'Monto objetivo',
-    targetPlaceholder: '$0',
+    targetPlaceholder: '0',
     deadline: 'Fecha límite',
     previousMonth: 'Mes anterior',
     nextMonth: 'Mes siguiente',

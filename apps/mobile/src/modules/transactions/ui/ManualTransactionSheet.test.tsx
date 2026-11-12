@@ -101,6 +101,19 @@ describe('Registrar movimiento', () => {
     });
   });
 
+  // SCRUM-97: the amount reads $ 30.000 while the person types it.
+  it('shows the amount in COP format while it is typed, and saves it', async () => {
+    const m = await setup();
+    await fireEvent.changeText(await screen.findByLabelText('Monto'), '30000');
+    expect(screen.getByLabelText('Monto')).toHaveDisplayValue('30.000');
+    expect(screen.getByText('$', { includeHiddenElements: true })).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText('Descripción'), 'Almuerzo');
+    await fireEvent.press(screen.getByText('Guardar'));
+
+    const [tx] = await m.service.getTransactionsBetween('2026-09-22', '2026-09-22');
+    expect(tx).toMatchObject({ amountMinor: -3_000_000 });
+  });
+
   it('registers an ingreso in a bank account with the category the person picks', async () => {
     const m = await setup();
     await fireEvent.press(await screen.findByText('Ingreso'));
