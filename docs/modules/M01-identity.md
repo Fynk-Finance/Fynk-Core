@@ -28,7 +28,7 @@ You are building module M1 Identity and access of Fynk. Keycloak is the identity
 * El realm "fynk" se define como código versionado y se importa automáticamente.
 * La aplicación móvil es un cliente público con Authorization Code y PKCE S256, abierto en el navegador del sistema.
 * Los tokens se firman con PS256. Access token de 5 minutos y refresh token con rotación.
-* Política de contraseña: mínimo 8 caracteres, al menos una letra y un número.
+* Política de contraseña: mínimo 8 caracteres, combinación de letras y números, al menos un carácter especial, y distinta de la contraseña actual (QA F1, SCRUM-91).
 * Protección contra fuerza bruta activada.
 * Verificación de correo y recuperación de contraseña por correo con vencimiento de 10 minutos.
 * Las pantallas de Keycloak usan el tema visual del diseño de Fynk.
@@ -36,7 +36,7 @@ You are building module M1 Identity and access of Fynk. Keycloak is the identity
 
 **HU-001 Registro de usuario (SCRUM-5)**
 * El correo debe validarse antes de crear la cuenta. No deben existir cuentas duplicadas para el mismo correo.
-* Contraseña de al menos 8 caracteres, una letra y un número. Debe registrarse la fecha de creación. Mensaje de éxito o error.
+* Contraseña de al menos 8 caracteres, con letras, números y un carácter especial. Debe registrarse la fecha de creación. Mensaje de éxito o error.
 * El registro se hace en Keycloak. No se solicita ni se almacena la cédula.
 * Deben aceptarse los Términos y condiciones y la Política de privacidad.
 * Al terminar el registro se genera el código de recuperación del respaldo (HU-045, built by M2).
@@ -62,7 +62,7 @@ You are building module M1 Identity and access of Fynk. Keycloak is the identity
 ### Keycloak (`services/keycloak/`)
 
 * `realms/fynk-realm.json` exported from a configured realm and imported at start (`--import-realm`). Keep secrets out of it with environment placeholders.
-* Realm settings: login with email, registration allowed, verify email required, duplicate emails not allowed, brute force detection on (lock after 5 failures for 15 minutes), password policy `length(8) and regexPattern(.*[A-Za-z].*) and digits(1) and notEmail`, default signature algorithm `PS256`, access token lifespan 5 minutes, SSO session idle 30 days for the mobile client, refresh token rotation (`Revoke Refresh Token` on, max reuse 0), action token lifespan for reset credentials and verify email 10 minutes, required action "Terms and Conditions".
+* Realm settings: login with email, registration allowed, verify email required, duplicate emails not allowed, brute force detection on (lock after 5 failures for 15 minutes), password policy `length(8) and regexPattern(.*[A-Za-z].*) and digits(1) and specialChars(1) and notEmail and passwordHistory(1)` (special character and no reuse of the current password added by QA F1, SCRUM-91), default signature algorithm `PS256`, access token lifespan 5 minutes, SSO session idle 30 days for the mobile client, refresh token rotation (`Revoke Refresh Token` on, max reuse 0), action token lifespan for reset credentials and verify email 10 minutes, required action "Terms and Conditions".
 * Client `fynk-mobile`: public, standard flow only, PKCE `S256` required, redirect URI `co.fynk.app://oauth/callback`, web origins none, consent off, scopes `openid profile email`, normal refresh tokens (the team decided against offline sessions).
 * Client `fynk-api`: bearer only, used as the access token audience (add an audience mapper to `fynk-mobile`).
 * Client `fynk-admin`: confidential, service account with `view-users` and `manage-users`, used by the backend to read and update the profile and to end a removed device's session.
@@ -117,7 +117,7 @@ create index on identity.devices (user_id)
 
 ## Tests
 
-* One test per criterion above. Examples: password `abcdefgh` is rejected, `abcdefg1` is accepted. A token signed with RS256 or HS256 is rejected. An expired access token triggers one refresh and one retry. Asking for a new email code within 60 s sends nothing. Five wrong codes kill the code. An unknown email gets the same reset pages and no email.
+* One test per criterion above. Examples: passwords `abcdefgh` and `abcdefg1` are rejected, `abcdefg1!` is accepted, and the current password is refused as the new one. A token signed with RS256 or HS256 is rejected. An expired access token triggers one refresh and one retry. Asking for a new email code within 60 s sends nothing. Five wrong codes kill the code. An unknown email gets the same reset pages and no email.
 * Maestro flow `e2e/identity-signup.yaml`: Empezar, register in Keycloak, verify email from the local mail catcher (Mailpit in docker compose), land on the recovery code screen.
 
 ## Done when

@@ -17,7 +17,7 @@ The file is written by hand and only holds what differs from Keycloak's defaults
 | Setting | Value | Why |
 | --- | --- | --- |
 | Login | Email as username, one account per email, verified email required (by a 6-digit code), reset by a 6-digit code | HU-001, HU-005 |
-| Password policy | `length(8) and regexPattern(.*[A-Za-z].*) and digits(1) and notEmail` | HU-050, HU-001 |
+| Password policy | `length(8) and regexPattern(.*[A-Za-z].*) and digits(1) and specialChars(1) and notEmail and passwordHistory(1)`. `passwordHistory(1)` refuses the current password as the new one. The four Spanish errors of the policy are overridden in `localizationTexts.es` | HU-050, HU-001, QA F1 (SCRUM-91) |
 | Brute force | Locked 15 minutes after 5 failures, never permanently | HU-050 |
 | Tokens | Signed with PS256 from the `fynk-ps256` key, access token 5 minutes, refresh tokens rotate (`revokeRefreshToken`, reuse 0) | HU-050, HU-002 |
 | Sessions | 30 days idle, 90 days max, **no `offline_access`** | Team decision (CLAUDE.md, Decisions taken: Offline sessions) |
