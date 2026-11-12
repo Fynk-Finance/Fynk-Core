@@ -6,7 +6,7 @@ module: M5
 jira: [SCRUM-23]
 branch: docs/bancolombia-support-status
 tool: Claude Code
-pr: none
+pr: "#378"
 status: done
 ---
 
@@ -27,7 +27,7 @@ Bancolombia's support had not answered and time is short. Juan Carlos asked to t
 ## Result
 
 * No code changed. Prettier passes on the ADR.
-* Pull request: not opened yet.
+* Pull request: #378.
 
 ## Decisions and problems
 
