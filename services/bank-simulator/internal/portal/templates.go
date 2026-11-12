@@ -147,7 +147,7 @@ const portalTemplates = `
       <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
         Simula una compra en un comercio. Aparece de inmediato en la API de Fynk.
       </p>
-      <form method="POST" action="/portal/actions/pay">
+      <form method="POST" action="/portal/actions/pay"><input type="hidden" name="csrf" value="{{$.CSRF}}">
         <div class="form-group">
           <label>Cuenta de origen</label>
           <select name="account_id" required>
@@ -183,7 +183,7 @@ const portalTemplates = `
 
     <div class="card">
       <h2>2. Transferir entre mis Cuentas</h2>
-      <form method="POST" action="/portal/actions/transfer">
+      <form method="POST" action="/portal/actions/transfer"><input type="hidden" name="csrf" value="{{$.CSRF}}">
         <div class="form-group">
           <label>Desde cuenta</label>
           <select name="from_account" required>
@@ -214,7 +214,7 @@ const portalTemplates = `
 
     <div class="card">
       <h2>3. Pagar Tarjeta de Crédito</h2>
-      <form method="POST" action="/portal/actions/pay-card">
+      <form method="POST" action="/portal/actions/pay-card"><input type="hidden" name="csrf" value="{{$.CSRF}}">
         <div class="form-group">
           <label>Cuenta de Débito (Ahorros / Billetera)</label>
           <select name="from_account" required>
@@ -245,7 +245,7 @@ const portalTemplates = `
 
     <div class="card">
       <h2>4. Invertir / Abrir CDT</h2>
-      <form method="POST" action="/portal/actions/open-cdt">
+      <form method="POST" action="/portal/actions/open-cdt"><input type="hidden" name="csrf" value="{{$.CSRF}}">
         <div class="form-group">
           <label>Producto CDT</label>
           <select name="product_id" required>
@@ -304,11 +304,11 @@ const portalTemplates = `
             </td>
             <td>
               {{if .Active}}
-                <form method="POST" action="/portal/subscriptions/charge-now" style="display:inline;">
+                <form method="POST" action="/portal/subscriptions/charge-now" style="display:inline;"><input type="hidden" name="csrf" value="{{$.CSRF}}">
                   <input type="hidden" name="sub_id" value="{{.ID}}">
                   <button type="submit" class="btn btn-sm" style="background:#2b6cb0;">⚡ Cobrar ahora</button>
                 </form>
-                <form method="POST" action="/portal/subscriptions/cancel" style="display:inline; margin-left: 6px;">
+                <form method="POST" action="/portal/subscriptions/cancel" style="display:inline; margin-left: 6px;"><input type="hidden" name="csrf" value="{{$.CSRF}}">
                   <input type="hidden" name="sub_id" value="{{.ID}}">
                   <button type="submit" class="btn btn-sm btn-danger">Cancelar</button>
                 </form>
@@ -328,7 +328,7 @@ const portalTemplates = `
       <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
         Cambiar el precio de una suscripción dispara la alerta de incremento en Fynk.
       </p>
-      <form method="POST" action="/portal/subscriptions/change-price">
+      <form method="POST" action="/portal/subscriptions/change-price"><input type="hidden" name="csrf" value="{{$.CSRF}}">
         <div class="form-group">
           <label>Suscripción</label>
           <select name="sub_id" required>
@@ -349,7 +349,7 @@ const portalTemplates = `
 
     <div class="card">
       <h2>Nueva Suscripción</h2>
-      <form method="POST" action="/portal/subscriptions/new">
+      <form method="POST" action="/portal/subscriptions/new"><input type="hidden" name="csrf" value="{{$.CSRF}}">
         <div class="form-group">
           <label>Comercio</label>
           <input type="text" name="merchant" placeholder="Ej: SPOTIFY PREMIUM" required>
@@ -411,7 +411,7 @@ const portalTemplates = `
             </td>
             <td>
               {{if eq .Status "active"}}
-                <form method="POST" action="/portal/consents/revoke">
+                <form method="POST" action="/portal/consents/revoke"><input type="hidden" name="csrf" value="{{$.CSRF}}">
                   <input type="hidden" name="consent_id" value="{{.ID}}">
                   <button type="submit" class="btn btn-sm btn-danger">Revocar</button>
                 </form>
@@ -440,7 +440,7 @@ const portalTemplates = `
         <p style="font-size: 0.85rem; color: var(--text-muted); margin: 8px 0 16px 0;">
           Restaura saldos canónicos: Ahorros $3.200.000, Billetera $4.600.000, Tarjeta -$500.000, CDT $2.000.000.
         </p>
-        <form method="POST" action="/portal/admin/reset">
+        <form method="POST" action="/portal/admin/reset"><input type="hidden" name="csrf" value="{{$.CSRF}}">
           <button type="submit" class="btn" style="background:#dd6b20;">Restablecer Datos</button>
         </form>
       </div>
@@ -450,7 +450,7 @@ const portalTemplates = `
         <p style="font-size: 0.85rem; color: var(--text-muted); margin: 8px 0 16px 0;">
           Avanza N días para probar cargos recurrentes, vencimientos de CDT o límites de tiempo.
         </p>
-        <form method="POST" action="/portal/admin/advance-time">
+        <form method="POST" action="/portal/admin/advance-time"><input type="hidden" name="csrf" value="{{$.CSRF}}">
           <div class="form-group">
             <input type="number" name="days" value="30" min="1" max="365" style="width: 120px; display:inline-block;"> días
           </div>
