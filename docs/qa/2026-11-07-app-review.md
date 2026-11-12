@@ -6,7 +6,7 @@ Sofia Ariza tested the app end to end on a phone and listed visual bugs, gesture
 
 * **Small or visual changes are assigned to Sofia, whatever module they touch.** This was decided by Sofia on 7 Nov 2026 so the polish work moves in one place.
 * **The owner of each touched module still approves the pull request.** When Sofia's pull request edits files of another person's module, that person must approve it before merge, as `.github/CODEOWNERS` already asks. The "Approval" column below names them.
-* Larger new functionality stays with the module owner (only F4 so far).
+* Larger new functionality stays with the module owner (only F4 so far). On 11 Nov 2026 the team moved F4 to Sofia too.
 * Every pull request for these tasks says in its body: `QA review 2026-11-07, item <ID>` and the Jira key, and lists the approvals it needs.
 * States, components or illustrations that the design does not have are listed in the pull request as "new screen state, needs design review" (or "new component", "new illustration"), as `CLAUDE.md` asks.
 * Changes to gestures, transitions or copy that differ from the design are written in the screen inventory of `docs/design/README.md` in the same pull request.
@@ -43,7 +43,7 @@ Sofia Ariza tested the app end to end on a phone and listed visual bugs, gesture
 | F1 | [SCRUM-91](https://fynk-swnt.atlassian.net/browse/SCRUM-91) | Stronger password rules: at least one special character. The "Una letra" check reads oddly; it should say the password is alphanumeric. | M1 `services/keycloak/realms/fynk-realm.json` (`passwordPolicy`), `services/keycloak/theme/src/login/strings.es-CO.ts`, `components/FynkPasswordRules.tsx` | Sofia | Daniel Palacios (M1) |
 | F2 | [SCRUM-92](https://fynk-swnt.atlassian.net/browse/SCRUM-92) | Onboarding did not show up for a new account. | M3 `onboarding/ui/useOnboardingGate.ts`, `app/startup.ts` | Sofia | Daniel Palacios (M1, M2) if the fix touches identity or the vault |
 | F3 | [SCRUM-93](https://fynk-swnt.atlassian.net/browse/SCRUM-93) | Pull down at the top of the Dashboard: everything moves down and a loading indicator grows in size and opacity. Releasing at the maximum syncs with the banks (60 s cooldown still applies). | M6 `DashboardScreen.tsx` (has a `TODO(M5)`), sync from M5 `bank/index.ts` | Sofia | Juan Carlos Leal (M5) if `modules/bank` changes |
-| F4 | [SCRUM-94](https://fynk-swnt.atlassian.net/browse/SCRUM-94) | Billetera needs a savings goals section, like the recurring expenses one. | M9 `BilleteraScreen.tsx`, M8 `savings/index.ts` | Karol | Sofia (M0) only if `shared/ui` changes |
+| F4 | [SCRUM-94](https://fynk-swnt.atlassian.net/browse/SCRUM-94) | Billetera needs a savings goals section, like the recurring expenses one. | M9 `BilleteraScreen.tsx`, M8 `savings/index.ts` | Sofia (moved from Karol on 11 Nov 2026) | Karol (M9, and M8 if `modules/savings` changes) |
 | F5 | [SCRUM-95](https://fynk-swnt.atlassian.net/browse/SCRUM-95) | The + button cannot add money when the balance is zero, and if cash was skipped in onboarding there is no way to add money at all. Tapping + offers Ingreso or Gasto, and each opens the existing form. | M6 `DashboardScreen.tsx`, M7 `ManualTransactionSheet.tsx`, M6 cash (HU-054) | Sofia | none (M6 and M7 are Sofia's) |
 
 ## Notes
