@@ -1,7 +1,7 @@
 # ADR 0003: Bancolombia's Open Finance sandbox
 
-* Status: accepted for the sandbox; production blocked by the findings below
-* Date: 2026-11-05
+* Status: accepted for the sandbox; live calls blocked until Bancolombia enables Fynk (findings 7, 8, 10, 11); production blocked by the findings below
+* Date: 2026-11-05, updated 2026-11-12
 * Owner: M5 Bank and sync (Juan Carlos Leal / `@JuanLeal05`)
 * Jira: SCRUM-23 (HU-009), SCRUM-24 (HU-010), SCRUM-44 (HU-030), SCRUM-45 (HU-031)
 
@@ -39,8 +39,16 @@ Every call also carries the API Market's `Client-Id` and `Client-Secret` headers
 5. **The sandbox is a set of mocks.** Each API answers its documented examples, chosen by the exact request, the `authorization` header value or the account id (for example the token `4uth0r1z4t100n`, the account `abcd1234ok`). The consent creation only succeeds for its documented fictional customer. A full chain (a real login at `/auth` that returns a code for a real consent) cannot be shown in the sandbox.
 6. **The docs disagree on the token scope.** The token API lists `account`; the PAR, discovery and resource docs say `accounts`. The adapter uses `account` (the token API's own list), and the sandbox test settles it once Fynk's credentials are in place.
 7. **Even the sandbox needs mTLS with a certificate from its own test CA.** With Fynk's API Market credentials the discovery answers, but every resource call answers `401 invalid_client`: "Client certificate not recieved. MTLS connection not established". A self-signed certificate is refused ("not issued by a trusted CA"). The TLS handshake of `rs1-api-open-finance-sandbox.ambientesbc.com` only accepts the CAs "Ozone Unsecured Certificates 2021/2026" (`OU=NON-PROD-ONLY`), the test CA of the Ozone platform the sandbox runs on. Fynk cannot make such a certificate: Bancolombia has to issue it or say how to get it. Checked on 5 Nov 2026 with `curl` and the sandbox tests.
-8. **The Open Finance products are not in Fynk's access package.** Bancolombia approved "CO - Paquete Acceso APISPortalEx - PDN". In the sandbox portal, creating an application lists only corporate and partner products; searching `account`, `information`, `open`, `banking`, `consent` and `finance` finds neither Open Banking Authorization nor Account Information. The application "Fynk" was created without a product and without a certificate, and the portal does not let a certificate be added afterwards. Both were requested from Bancolombia's developer support on 5 Nov 2026.
+8. **The Open Finance products are not in Fynk's access package.** Bancolombia approved "CO - Paquete Acceso APISPortalEx - PDN". In the sandbox portal, creating an application lists only corporate and partner products; searching `account`, `information`, `open`, `banking`, `consent` and `finance` finds neither Open Banking Authorization nor Account Information. The application "Fynk" was created without a product and without a certificate, and the portal does not let a certificate be added afterwards. Both were requested from Bancolombia's developer support on 6 Nov 2026 (an earlier version of this ADR said 5 Nov; the request went out the next day).
 9. **The redirect URL must be `http://` or `https://`.** The portal refuses Fynk's deep link `fynk://bank/callback` (`BANK_REDIRECT_URI`), so the application holds a placeholder `https://` URL. A real login would need an `https://` return link that opens the app (Universal Links on iOS, App Links on Android), which needs a domain Fynk controls and changes `linking.ts` (M0) and the bank settings. A team decision, not taken here. The contract tests do not use it.
+10. **The Open Finance products are listed but cannot be subscribed.** Checked again on 12 Nov 2026, signed in as Juan Carlos. The portal moved to `api-portal-external.apps.bancolombia.com` (the old sandbox address redirects there). The application "Fynk" (Sandbox) still has 0 products.
+    * The "Suscribir producto" list of the application's detail page offers 93 products and none of them is Open Finance. The catalog's "Open Finance" filter shows four products (Account Information, Open Banking Authorization, Domestic Payment Initiation, Variable Recurring Payment), without the "Sandbox" tag the subscribable products carry.
+    * The application's edit form ("Actualizar Aplicación") does list **Account Information 1.0.0** and **Open Banking Authorization**, which it did not on 6 Nov. Selecting either one and saving answers "Aplicación actualizada, pero no se pudo suscribir el producto … Código de referencia: 404". The products are visible, but Bancolombia has not opened a sandbox subscription to them for Fynk.
+    * For production their page says "Según cotización · Solicita más información", which opens the same support form.
+    * The closest names that can be subscribed (Deposit Account Operations And Services, Deposit Account Ownership, Transactional Information, Customer Functional Event History) are Bancolombia's own partner and corporate APIs, not a person's data shared by consent, so they cannot replace Account Information.
+    * An earlier version of this finding (same day) said the Open Finance products appear nowhere in the application. That came from searching the detail page's list only; the edit form shows them.
+11. **No answer from support, and the request cannot be followed online.** By 12 Nov 2026 the 6 Nov request had no answer. "Gestiona tus tickets" signs in through Bancolombia's Microsoft app "CO - Zendesk - PDN", which rejects the university account (`AADSTS50105`: the user is not assigned to the application). Answers only arrive by email.
+12. **The application's certificate is the `private_key_jwt` key, not the mTLS one.** Bancolombia's help center says the certificate uploaded to an application is the public key that checks the signature of the client assertion, and that the `kid` is provided with the credentials and registered in a JWKS. So uploading a certificate there would not open the mTLS connection of finding 7. The help center's example signs with RS256; the live discovery also accepts PS256, which Fynk uses (CLAUDE.md, Security rules).
 
 ## 4. Decision
 
@@ -81,9 +89,9 @@ Who does what, in order. Nothing here goes in the repository: credentials live i
 
    The certificate files are the ones Bancolombia issues (finding 7), kept in `certs/`, which git ignores. **Result on 5 Nov 2026:** the discovery test passed with Fynk's credentials; the accounts, transactions and revoked consent tests got `401 invalid_client` because there is no sandbox certificate yet. The adapter reports that answer as `provider_unavailable`, not `invalid_grant`, so a certificate problem never asks a person to reconnect.
 
-3. **Juan Carlos (M5): register Fynk's keys at Bancolombia.** Pending Bancolombia's support (findings 7 and 8): the sandbox client certificate, the Open Finance products and a way to attach the certificate to the application. Then, in the API Market application, register the public key or certificate of Fynk's `private_key_jwt` signer (the same key as Banco Demo: `BANK_SIGNER_KEY_FILE` locally, the KMS key `BANK_SIGNER_KMS_KEY_ID` in staging) and the egress's mTLS client certificate. Production requires certificates from a Colombian certification authority (finding 4).
+3. **Juan Carlos (M5): register Fynk's keys at Bancolombia.** Still pending Bancolombia's support on 12 Nov 2026 (findings 7, 8, 10 and 11): the sandbox mTLS client certificate from the Ozone test CA, the Open Finance products for the application "Fynk", and a way to register the `private_key_jwt` key (finding 12). Then, in the API Market application, register the public key or certificate of Fynk's `private_key_jwt` signer (the same key as Banco Demo: `BANK_SIGNER_KEY_FILE` locally, the KMS key `BANK_SIGNER_KMS_KEY_ID` in staging) and the egress's mTLS client certificate. Production requires certificates from a Colombian certification authority (finding 4).
 
-4. **Juan Pablo (M14): egress routes.** `services/caddy/Caddyfile` has a placeholder `/bancolombia/*` route to `api.sandbox.bancolombia.com`, which is not the documented host. The adapter calls two routes:
+4. **Juan Pablo (M14): egress routes.** Done in #326 (7 Nov 2026). The placeholder `/bancolombia/*` route to `api.sandbox.bancolombia.com` was replaced by the two routes the adapter calls:
 
    ```
    handle_path /bancolombia-auth/* {
@@ -106,19 +114,35 @@ Who does what, in order. Nothing here goes in the repository: credentials live i
 
    The same two routes go in `Caddyfile.local`, and the staging task gets the `BANCOLOMBIA_*` settings from Secrets Manager.
 
-5. **Sofia (M0): local stack.** `docker-compose.yml` passes the `BANCOLOMBIA_*` settings from `.env` to the API, next to the bank settings it still lacks (`BANK_SIGNER_KEY_FILE`, `BANK_FINGERPRINT_KEY_FILE`, `BANCO_DEMO_*`).
+5. **Sofia (M0): local stack.** The bank settings (`BANK_SIGNER_KEY_FILE`, `BANK_FINGERPRINT_KEY_FILE`, `BANCO_DEMO_*`) are in `docker-compose.yml` since `a5bd451`. The `BANCOLOMBIA_*` settings go next to them once Bancolombia enables Fynk.
 
 6. **Then, on the phone.** Conectar banco lists "Bancolombia" with the "Simulado" badge. Choosing it creates the consent at Bancolombia, sends the PAR and opens Bancolombia's `/auth` page in the system browser. Because the sandbox is a set of mocks (finding 5), the login there may not return a code; the accounts and movements mapping is proven by the contract tests instead.
 
-## 6. Consequences
+## 6. How to present it to the jury
+
+If Bancolombia does not enable Fynk before the presentation, the demo does not depend on it. CLAUDE.md asks for exactly this: a production barrier we cannot cross is documented as a finding, never hidden.
+
+1. **The working demo uses the simulated banks.** Banco Demo, Billetera Demo, Banco Digital Demo and Cooperativa Demo go through the same consent, PAR, PKCE, `private_key_jwt` and mTLS flow as a real bank (CLAUDE.md, rule 8). On 10 Nov 2026 that flow passed 14 of 14 end-to-end checks on the local stack.
+2. **Bancolombia is shown as an integration that reaches the bank and stops at its onboarding.**
+   * The adapter sits behind the same `Provider` port as the simulated banks (rule 7), with tests built from Bancolombia's own documented examples (`services/api/internal/bank/adapters/bancolombia/*_test.go`).
+   * A live run of the sandbox tests (section 5, step 2) shows the discovery answering with Fynk's credentials, then the gateway refusing the account calls with `invalid_client` because the Ozone certificate is missing. It proves the call reaches Bancolombia and names the exact missing piece.
+   * The findings above explain what production would need: Bancolombia's onboarding and certificates (4, 7, 8, 10, 11, 12), the cédula (1), 90 days of history (2) and revocation (3).
+3. **No fake Bancolombia in the app.** The app offers Bancolombia only when its settings are present. A mock with Bancolombia's name, even labelled "Simulado", could look like a real connection.
+
+If Bancolombia answers in time: put the certificate in `certs/`, run section 5, step 2 again, and set the `BANCOLOMBIA_*` settings.
+
+## 7. Consequences
 
 * M5's port and domain did not change for a new bank, only one optional field (`PARResult.ProviderConsentID`) and one error (`ErrRevocationNotSupported`). Rule 7 holds.
 * The jury sees a working adapter against the real sandbox, and these findings explain why production would need a team decision (rule 10) and Bancolombia's onboarding.
 * If the team later accepts asking for the document for Bancolombia only, Conectar banco would ask it, pass it through to the consent and never store it; `AccountOwner` would then come from the request instead of the settings.
 
-## 7. Sources
+## 8. Sources
 
 * Bancolombia API Market sandbox, *Soluciones de Open Finance*: Open Banking Authorization (Access Token Management, Pushed Authorization Request, OpenID Discovery) and Account Information (Account Access Consents, Accounts, Balances, Transactions), read on 5 Nov 2026 at `developer-portal-public-sbx.apps.ambientesbc.com/documentacion`.
 * Live discovery: `https://auth1-api-open-finance-sandbox.ambientesbc.com/.well-known/openid-configuration`, 5 Nov 2026.
 * TLS handshake and `401 invalid_client` answers of `https://rs1-api-open-finance-sandbox.ambientesbc.com`, and the application form of the sandbox portal (`/mis-apps/crear-app`), 5 Nov 2026.
 * Bancolombia developer support: the account ownership API does not cover balances or movements (`soportedevs.bancolombia.com`, articles updated 2023 and 2025).
+* API Market portal, signed in, 12 Nov 2026: `api-portal-external.apps.bancolombia.com` (`/my-apps`, the "Suscribir producto" list and the edit form of the application "Fynk" with its 404 answer for Account Information and Open Banking Authorization, `/products` with the "Open Finance" filter, `/documentacion/categorizacion/publicos/open-finance/account-information`).
+* Bancolombia help center, 12 Nov 2026: "¿Qué debo enviar cuando me solicitan el certificado de la aplicación?" (2024), "Utilidad: Prepare private key JWT" (2026), "¿Que es JWKS?" (2024), and the "Gestiona tus tickets" sign-in.
+* Live sandbox, 12 Nov 2026: discovery answers 200; `rs1-api-open-finance-sandbox.ambientesbc.com` still answers `401 invalid_client` without the Ozone certificate.
