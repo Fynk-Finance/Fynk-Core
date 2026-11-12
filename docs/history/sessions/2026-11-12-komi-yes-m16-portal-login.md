@@ -38,6 +38,16 @@ The developer reported that money actions and investments in the simulator alway
 * `services/bank-simulator/` is owned by `@juancontrerasp` in CODEOWNERS, so the pull request needs that approval.
 * Not done: the `demo-admin` role check of `/portal/admin` from the M16 spec, and a "Cerrar sesión" link. The app could send `kc_idp_hint=fynk` so the realm skips its own login form; that touches M15 and the realm, so it is left for the owners.
 
+## Follow-up in the same session: a CDT opened in the portal does not reach the app
+
+The developer then asked: "check why when for example generating a CDT with my account is not appering in the app check if the error is also happening with the other 3 options".
+
+* Cause in the simulator: `OpenCDT` in `internal/store/store.go` created the CDT account with no `ProviderID`. `GET /accounts` returns only the accounts of the consent's entity, so the new CDT was filtered out for every link. The CDT now gets the provider of the account that paid for it.
+* The other three actions (Registrar un pago, Transferir, Pagar tarjeta) did reach `GET /transactions`; their movements only had an empty `providerId`, which the Fynk backend does not read. Every movement the portal books now carries its account's provider id.
+* Before the portal login fix above, none of the four actions could reach the app, because they ran on the demo customer.
+* Tests: `internal/store/portal_actions_test.go` runs the four actions through `GetAccounts` and `GetTransactions` of a consent, including a transfer between Banco Demo and Cooperativa Demo and a CDT paid from Cooperativa Demo. They failed before the fix and pass after it.
+* Found and not fixed (other modules, frozen contract): the app accepts only `banco-demo`, `billetera-demo` and `bancolombia` as providers (`ProviderId` in `apps/mobile/src/shared/domain/types.ts` and `00-shared-contracts.md`, `PROVIDERS` in `modules/bank/domain/syncMapping.ts`, the `CHECK` on `provider` in `modules/accounts/adapters/vault/migrations.ts`). A link to Banco Digital Demo or Cooperativa Demo can be made, but every sync of it fails with `Unknown provider`, so nothing from those two entities shows. This needs a shared contract change reviewed by M0, M5 and M6.
+
 ## Next step
 
 Try it in docker compose: log in to Fynk, tap "+ Invertir", choose "Ingresar con Fynk", and check the portal shows the user's accounts. Then push and open the pull request.
