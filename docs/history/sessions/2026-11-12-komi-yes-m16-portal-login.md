@@ -6,7 +6,7 @@ module: M16
 jira: [SCRUM-65]
 branch: fix/banco-demo-portal-login
 tool: Claude Code
-pr: none
+pr: "#379"
 status: done
 ---
 
@@ -29,7 +29,7 @@ The developer reported that money actions and investments in the simulator alway
 ## Result
 
 * Tests: `go vet` clean. `cmd/bank-simulator`, `internal/authorize`, `internal/portal`, `internal/api`, `internal/domain`, `internal/oidc` and `internal/store` pass. The `internal/oauth` test binary could not run on this Windows machine because App Control blocked the executable; that package was not changed and CI runs it. golangci-lint is not installed locally.
-* Pull request: not opened yet.
+* Pull request: #379.
 * Works: opening the portal (from "+ Invertir" or directly) asks for the banco-demo login; with "Ingresar con Fynk" the portal shows and changes the Fynk user's simulated products.
 
 ## Decisions and problems
