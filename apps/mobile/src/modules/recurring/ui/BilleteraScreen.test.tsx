@@ -1,9 +1,11 @@
 // Billetera (SCRUM-54 "En Billetera"): "Gastos fijos de este mes", the recurring cards of the
 // design with their schedule and next charge, "+ Agregar", editing a card, empty state, themes.
 // SCRUM-56: "Otros gastos" with the subscriptions, "Poco uso" and the savings banner.
+// QA review 2026-11-07, F4: the savings goals section of M8.
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import type { ReactNode } from 'react';
 import { Text } from 'react-native';
 
 import type { Account } from '@shared/domain/types';
@@ -63,6 +65,7 @@ let vault: InMemoryVault;
 let service: RecurringService;
 let accountsDep: (() => Promise<Account[]>) | undefined;
 let refreshDep: (() => Promise<unknown>) | undefined;
+let goalsDep: (() => ReactNode) | undefined;
 
 beforeEach(async () => {
   vault = await createInMemoryVault();
@@ -80,6 +83,7 @@ afterEach(() => {
   vault.close();
   accountsDep = undefined;
   refreshDep = undefined;
+  goalsDep = undefined;
 });
 
 function Target({ route }: { route: { name: string; params?: { id?: string } } }) {
@@ -103,6 +107,7 @@ async function renderBilletera(
     recommendationsRoute: 'Recomendaciones',
     accounts: accountsDep,
     refresh: refreshDep,
+    renderGoals: goalsDep,
   });
   await render(
     <ThemeProvider initialPreference={preference} store={noStore}>
@@ -353,6 +358,30 @@ describe('Billetera', () => {
     expect(await screen.findByTestId('header-unread-dot')).toBeTruthy();
     await fireEvent.press(screen.getByTestId('header-bell'));
     expect(await screen.findByText('arrived:notifications.Inbox:')).toBeTruthy();
+  });
+
+  // QA review 2026-11-07, F4: M8's goals not reached yet, with "Ver todos" and the empty card.
+  it('shows the savings goals under "Mis cuentas", above the recurring expenses', async () => {
+    await addAll();
+    goalsDep = () => <Text testID="savings.carousel">Planes de ahorro</Text>;
+    await renderBilletera();
+    await screen.findByTestId('recurring.billetera.grid');
+    const tree = JSON.stringify(screen.toJSON());
+    expect(tree.indexOf('Planes de ahorro')).toBeGreaterThan(-1);
+    expect(tree.indexOf('Planes de ahorro')).toBeLessThan(tree.indexOf('Gastos recurrentes'));
+  });
+
+  it('shows the savings goals also without recurring expenses', async () => {
+    goalsDep = () => <Text testID="savings.carousel">Planes de ahorro</Text>;
+    await renderBilletera();
+    expect(await screen.findByTestId('recurring.billetera.ghost')).toBeOnTheScreen();
+    expect(screen.getByTestId('savings.carousel')).toBeOnTheScreen();
+  });
+
+  it('has no savings goals section when M8 is not wired', async () => {
+    await renderBilletera();
+    await screen.findByTestId('recurring.billetera.ghost');
+    expect(screen.queryByTestId('savings.carousel')).toBeNull();
   });
 
   it('renders in the dark theme', async () => {

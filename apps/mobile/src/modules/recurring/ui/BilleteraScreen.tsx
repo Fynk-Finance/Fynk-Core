@@ -1,15 +1,15 @@
 // Billetera tab (design Billetera, inventory row 9), owned by M9 with "Mis cuentas" from M6.
 // Blue header with "Gastos fijos de este mes", then "Gastos recurrentes" with "+ Agregar" and
 // the 2 column cards of the fixed expenses (an empty card without any), the savings banner when a subscription is marked
-// "Casi nunca" (SCRUM-56), and "Otros gastos" with the subscriptions. M6 adds "Mis cuentas"
-// above when it lands.
+// "Casi nunca" (SCRUM-56), and "Otros gastos" with the subscriptions. "Mis cuentas" (M6) and
+// "Planes de ahorro" (M8, QA review 2026-11-07, F4; new section, needs design review) go above.
 import {
   useNavigation,
   useRoute,
   type NavigationProp,
   type ParamListBase,
 } from '@react-navigation/native';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { formatCop } from '@shared/domain/money';
@@ -83,6 +83,11 @@ export interface BilleteraDeps {
   refresh?: () => Promise<unknown>;
   /** Ids of the subscriptions with an open price alert (SCRUM-61). */
   priceUpItems?: () => Promise<Set<string>>;
+  /**
+   * "Planes de ahorro" (QA review 2026-11-07, F4): M8's GoalsCarousel, with the goals not
+   * reached yet, "Ver todos" and an empty card without goals.
+   */
+  renderGoals?: () => ReactNode;
 }
 
 export function createBilleteraScreen(deps: BilleteraDeps) {
@@ -154,6 +159,7 @@ export function createBilleteraScreen(deps: BilleteraDeps) {
           }
         >
           <MisCuentasBilletera />
+          {deps.renderGoals?.()}
           {detected > 0 && deps.detectedRoute ? (
             <DetectedBanner
               count={detected}
