@@ -124,7 +124,7 @@ func TestPostRateLimited(t *testing.T) {
 
 func TestSettingsDefaults(t *testing.T) {
 	s := loadSettings(func(string) string { return "" })
-	if s.ModelID != "amazon.nova-lite-v1:0" || s.Region != "us-east-1" || s.DailyLimit != 10 {
+	if s.ModelID != "amazon.nova-lite-v1:0" || s.Region != "us-east-2" || s.DailyLimit != 10 {
 		t.Fatalf("defaults: %+v", s)
 	}
 	env := map[string]string{"RECOMMENDATIONS_MODEL_ID": "anthropic.claude-haiku-4-5", "AWS_REGION": "us-west-2", "RECOMMENDATIONS_DAILY_LIMIT": "3"}
