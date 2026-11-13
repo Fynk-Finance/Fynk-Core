@@ -191,7 +191,7 @@ resource "aws_cloudwatch_metric_alarm" "bedrock_errors" {
 resource "aws_cloudwatch_log_metric_filter" "pii_leak" {
   name           = "fynk-${var.environment}-pii-leak-detector"
   log_group_name = var.api_log_group_name
-  pattern        = "[..., val = *Bearer* || val = *4[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]* || val = *5[1-5][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]*]"
+  pattern        = "?\"Bearer \" ?token ?password ?pan ?cvv"
 
   metric_transformation {
     name      = "PiiDetectedCount"
