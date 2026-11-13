@@ -16,7 +16,7 @@ jobs:
     name: Build ARM64 & Deploy to ECS
     runs-on: ubuntu-latest
     env:
-      AWS_REGION: us-east-1
+      AWS_REGION: us-east-2
       ECS_CLUSTER: fynk-staging-cluster
       DEPLOY_ROLE_ARN: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/fynk-staging-github-deploy-role
 
