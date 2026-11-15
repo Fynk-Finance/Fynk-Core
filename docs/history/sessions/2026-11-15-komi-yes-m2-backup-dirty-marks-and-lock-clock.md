@@ -6,7 +6,7 @@ module: M2
 jira: [SCRUM-62, SCRUM-8]
 branch: fix/vault-dirty-marks-and-lock-clock
 tool: Claude Code
-pr: none
+pr: "#383"
 status: done
 ---
 
@@ -26,7 +26,7 @@ Daniel asked for "a deep code analysis of the whole Fynk repository" with "a ver
 ## Result
 
 * Tests: `make lint` clean, `make test` passes (247 Jest suites, 2,880 tests, Go and script tests).
-* Pull request: not opened yet.
+* Pull request: #383.
 * A record edited while its own upload is in flight now always stays marked, so the next round uploads the edit.
 
 ## Decisions and problems
