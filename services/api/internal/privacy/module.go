@@ -31,6 +31,10 @@ func New(d module.Deps) module.Module {
 
 	collector := NewCollector(d.DB, profile, d.Clock)
 	deleter := NewDeleter(d.DB, d.Clock, d.Audit, sessions, consentsRevoker, userDeleter)
+	if !d.Config.IsLocal() {
+		// Without FYNK_ADMIN_CLIENT_SECRET a deletion is refused, never answered as completed.
+		deleter.RequireKeycloak()
+	}
 
 	return mod{
 		Stub:      module.Stub{ModuleName: "privacy", Prefixes: []string{"/privacy"}},
