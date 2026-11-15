@@ -6,7 +6,7 @@ module: M1
 jira: [SCRUM-6]
 branch: fix/identity-revoke-session-after-audit-failure
 tool: Claude Code
-pr: none
+pr: "#385"
 status: done
 ---
 
@@ -27,7 +27,7 @@ Daniel asked for "a deep code analysis of the whole Fynk repository" with "a ver
 
 * Tests: `make lint` clean, `make test` passes (247 Jest suites, 2,878 tests, Go and script tests).
 * golangci-lint with `--build-tags integration` reports 6 issues in files this branch does not touch. They are on `develop` too.
-* Pull request: not opened yet.
+* Pull request: #385.
 * The answer is still an error (500) when the audit fails. The device stays removed, as before.
 
 ## Decisions and problems
