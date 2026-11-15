@@ -162,6 +162,7 @@ module "ecs_api" {
     { name = "BANCO_DEMO_ISSUER", valueFrom = module.secrets.secret_arns["banco_demo_issuer"] },
     { name = "BANCO_DEMO_AUTHORIZE_URL", valueFrom = module.secrets.secret_arns["banco_demo_authorize_url"] }
   ]
+  secrets_kms_key_arn = module.kms.data_key_arn
 
   task_policy_statements = [
     {
@@ -215,6 +216,7 @@ module "ecs_keycloak" {
   secrets = [
     { name = "KEYCLOAK_ADMIN_PASSWORD", valueFrom = module.secrets.keycloak_admin_secret_arn }
   ]
+  secrets_kms_key_arn = module.kms.data_key_arn
 }
 
 # 3. ECS Service: bank-simulator (0.25 vCPU, 0.5 GB)
