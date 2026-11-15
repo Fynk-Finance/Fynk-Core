@@ -67,22 +67,26 @@ resource "aws_iam_role_policy_attachment" "execution_standard" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+# The execution role reads only the secrets of this service, and decrypts only with their key.
 resource "aws_iam_role_policy" "execution_secrets" {
-  name = "fynk-${var.environment}-${var.service_name}-execution-secrets"
-  role = aws_iam_role.execution.id
+  count = length(var.secrets) > 0 ? 1 : 0
+  name  = "fynk-${var.environment}-${var.service_name}-execution-secrets"
+  role  = aws_iam_role.execution.id
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "secretsmanager:GetSecretValue",
-          "kms:Decrypt"
-        ]
-        Resource = "*"
-      }
-    ]
+    Statement = concat(
+      [{
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = distinct([for s in var.secrets : s.valueFrom])
+      }],
+      var.secrets_kms_key_arn == null ? [] : [{
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt"]
+        Resource = [var.secrets_kms_key_arn]
+      }]
+    )
   })
 }
 

@@ -31,8 +31,12 @@ resource "aws_iam_role" "github_deploy" {
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
+          # Only the refs that deploy. "repo:<repo>:*" would also trust every branch, pull
+          # request and workflow of the repository.
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repository}:*"
+            "token.actions.githubusercontent.com:sub" = [
+              for ref in var.deploy_refs : "repo:${var.github_repository}:ref:${ref}"
+            ]
           }
         }
       }
