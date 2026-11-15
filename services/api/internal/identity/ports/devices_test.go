@@ -71,9 +71,15 @@ func (t *fakeTx) Update(_ context.Context, d devices.Device) error {
 	return nil
 }
 
-type fakeAudit struct{ events []audit.Event }
+type fakeAudit struct {
+	events []audit.Event
+	err    error
+}
 
 func (f *fakeAudit) Record(_ context.Context, e audit.Event) error {
+	if f.err != nil {
+		return f.err
+	}
 	f.events = append(f.events, e)
 	return nil
 }
@@ -121,6 +127,20 @@ func TestReaderRemoveOthersRevokesSessionsAndAudits(t *testing.T) {
 	}
 	if len(rec.events) != 2 || rec.events[0].Type != audit.DeviceRemoved {
 		t.Fatalf("events = %+v", rec.events)
+	}
+}
+
+// The devices are removed before the audit runs, so their sessions end even when it fails.
+func TestReaderRemoveOthersRevokesSessionsWhenTheAuditFails(t *testing.T) {
+	rv := &fakeRevoker{}
+	r, rec := newReader(rv)
+	rec.err = errors.New("audit down")
+	if err := r.RemoveOthers(context.Background(), "u1", "b"); !errors.Is(err, rec.err) {
+		t.Fatalf("err = %v", err)
+	}
+	sort.Strings(rv.got)
+	if len(rv.got) != 2 || rv.got[0] != "sa" || rv.got[1] != "sc" {
+		t.Fatalf("revoked %v", rv.got)
 	}
 }
 
