@@ -87,7 +87,7 @@ describe('markDirty', () => {
 });
 
 describe('clearDirty', () => {
-  it('deletes only the given rows, and not a row marked again after maxSeq', async () => {
+  it('deletes only the given rows, and not a row marked again after it was read', async () => {
     const { registry, dirty } = await createLockableVault();
     registry.registerBackupCollection(goals());
     registry.markDirty('savings.goals', 'g1');
@@ -95,11 +95,28 @@ describe('clearDirty', () => {
     registry.markDirty('savings.goals', 'g3');
     await registry.settled();
     const seen = await registry.readDirty();
-    const maxSeq = Math.max(...seen.map((r) => r.seq));
     // g1 changes again while an upload of g1 and g2 is in flight.
     registry.markDirty('savings.goals', 'g1');
     await registry.settled();
-    await registry.clearDirty(seen.slice(0, 2), maxSeq);
+    await registry.clearDirty(seen.slice(0, 2));
     expect((await dirty()).map((r) => r.record_id)).toEqual(['g1', 'g3']);
+  });
+
+  // A new seq is MAX(seq) + 1 of the rows still in the table. Once the row that held the highest
+  // seq is cleared, a later mark can get a seq that an upload in flight has already seen.
+  it('keeps a row marked again after the row with the highest seq was cleared', async () => {
+    const { registry, dirty } = await createLockableVault();
+    registry.registerBackupCollection(goals());
+    registry.markDirty('savings.goals', 'g1');
+    registry.markDirty('savings.goals', 'g2');
+    await registry.settled();
+    const [g1, g2] = await registry.readDirty();
+    // g2 (the highest seq) is cleared first: its record is gone, or its chunk was uploaded.
+    await registry.clearDirty([g2!]);
+    // g1 changes while its upload is in flight. Its new seq is 2 again.
+    registry.markDirty('savings.goals', 'g1');
+    await registry.settled();
+    await registry.clearDirty([g1!]);
+    expect((await dirty()).map((r) => r.record_id)).toEqual(['g1']);
   });
 });

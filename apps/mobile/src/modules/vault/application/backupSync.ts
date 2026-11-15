@@ -158,7 +158,6 @@ export function createBackupSync(deps: BackupSyncDeps): BackupSync {
     if (rows.length === 0) return 'done';
     const creds = await credentials();
     if (!creds || mine !== generation) return 'stopped';
-    const maxSeq = Math.max(...rows.map((r) => r.seq));
 
     const byCollection = new Map<string, DirtyRow[]>();
     for (const row of rows)
@@ -196,7 +195,7 @@ export function createBackupSync(deps: BackupSyncDeps): BackupSync {
         }
       }
     }
-    await registry.clearDirty(gone, maxSeq);
+    await registry.clearDirty(gone);
 
     for (let i = 0; i < items.length; i += UPLOAD_BATCH_SIZE) {
       const chunk = items.slice(i, i + UPLOAD_BATCH_SIZE);
@@ -207,11 +206,8 @@ export function createBackupSync(deps: BackupSyncDeps): BackupSync {
         await pullRemote(creds, new Set(chunk.map((c) => c.sealed.collection)));
         return mine === generation ? round(true) : 'stopped';
       }
-      // Only the marks this upload saw: a change made meanwhile has a higher seq and stays.
-      await registry.clearDirty(
-        chunk.map((c) => c.row),
-        maxSeq,
-      );
+      // Only the marks this upload saw: a change made meanwhile has another seq and stays.
+      await registry.clearDirty(chunk.map((c) => c.row));
       if (mine !== generation) return 'stopped';
     }
     return 'done';
