@@ -381,8 +381,9 @@ func (s *Service) HandleToken(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		rec, ok := s.store.LookupToken(rt)
-		if !ok || rec.Kind != store.TokenKindRefresh {
+		// The refresh token is rotated: it works once, and the answer carries the next one.
+		rec, ok := s.store.TakeRefreshToken(rt)
+		if !ok {
 			writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "refresh token is invalid or expired")
 			return
 		}

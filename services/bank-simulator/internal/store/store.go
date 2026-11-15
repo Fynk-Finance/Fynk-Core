@@ -173,6 +173,22 @@ func (s *BankStore) LookupToken(token string) (TokenRecord, bool) {
 	return rec, true
 }
 
+// TakeRefreshToken returns the record of a live refresh token and forgets the token, so each
+// refresh token works once. Two calls with the same token cannot both succeed.
+func (s *BankStore) TakeRefreshToken(token string) (TokenRecord, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rec, ok := s.tokens[token]
+	if !ok || rec.Kind != TokenKindRefresh {
+		return TokenRecord{}, false
+	}
+	delete(s.tokens, token)
+	if !rec.ExpiresAt.IsZero() && time.Now().After(rec.ExpiresAt) {
+		return TokenRecord{}, false
+	}
+	return rec, true
+}
+
 // CreatePendingConsent registers a consent for one entity with no customer yet.
 func (s *BankStore) CreatePendingConsent(id, clientID, providerID string, scopes []string, purpose string, termDays int) *domain.Consent {
 	s.mu.Lock()
@@ -358,9 +374,9 @@ func (s *BankStore) GetTransactions(consentID, accountID string, fromDate time.T
 		}
 		return nil, false, "", ErrAccountNotFound
 	}
-	s.mu.RUnlock()
 
-	// Filter transactions for this account
+	// Filter transactions for this account. Still under the lock: the portal replaces
+	// custData.Transactions while Fynk reads.
 	var filtered []domain.Transaction
 	for _, tx := range custData.Transactions {
 		if tx.AccountID != accountID {
@@ -371,6 +387,7 @@ func (s *BankStore) GetTransactions(consentID, accountID string, fromDate time.T
 		}
 		filtered = append(filtered, tx)
 	}
+	s.mu.RUnlock()
 
 	if pageSize <= 0 || pageSize > 200 {
 		pageSize = 50

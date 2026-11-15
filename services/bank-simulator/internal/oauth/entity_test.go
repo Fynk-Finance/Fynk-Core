@@ -251,3 +251,28 @@ func TestRevoke_UnknownTokenIsNoOp(t *testing.T) {
 		t.Error("an unknown token must not revoke the demo consent")
 	}
 }
+
+func TestRefresh_RotatesTheRefreshToken(t *testing.T) {
+	e := newEnv(t)
+	l := e.link(findCustomer(t, domain.ProviderBancoDemo, ""), domain.ProviderBancoDemo)
+	refresh := func(token string) (int, map[string]any) {
+		return e.post("/oauth/token", url.Values{"grant_type": {"refresh_token"}, "refresh_token": {token}})
+	}
+
+	status, first := refresh(l.refresh)
+	if status != http.StatusOK {
+		t.Fatalf("first refresh: expected 200, got %d %v", status, first)
+	}
+	next, _ := first["refresh_token"].(string)
+	if next == "" || next == l.refresh {
+		t.Fatalf("the refresh must return a new refresh token, got %q", next)
+	}
+
+	// The token that was used is gone: a copy of it cannot mint tokens for 30 days.
+	if status, body := refresh(l.refresh); status != http.StatusBadRequest || body["error"] != "invalid_grant" {
+		t.Errorf("used refresh token: expected 400 invalid_grant, got %d %v", status, body)
+	}
+	if status, body := refresh(next); status != http.StatusOK || body["consent_id"] != l.consentID {
+		t.Errorf("new refresh token: expected 200 for the same consent, got %d %v", status, body)
+	}
+}
