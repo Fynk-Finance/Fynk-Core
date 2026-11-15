@@ -16,6 +16,9 @@ var (
 	ErrCustomerNotFound     = errors.New("customer not found")
 	ErrSubscriptionNotFound = errors.New("subscription not found")
 	ErrInsufficientFunds    = errors.New("insufficient funds")
+	ErrWrongAccountType     = errors.New("this kind of account cannot be used for this action")
+	ErrInvalidAmount        = errors.New("amount must be greater than zero")
+	ErrSubscriptionInactive = errors.New("subscription is cancelled")
 
 	ErrConsentNotAuthorized = errors.New("consent_not_authorized")
 	ErrAccountNotInConsent  = errors.New("account_not_in_consent")
@@ -432,6 +435,18 @@ func (s *BankStore) GetCdtProducts() []domain.CdtProduct {
 
 // ---------------- Portal Banking Operations ----------------
 
+// canSpend says whether acc can pay amountMinor. AvailableMinor is the balance of a deposit
+// account and the credit left of a card. A CDT holds its money until it is cancelled.
+func canSpend(acc *domain.Account, amountMinor int64) error {
+	if acc.Type == domain.AccountTypeCDT || acc.Status != domain.AccountStatusActive {
+		return ErrWrongAccountType
+	}
+	if amountMinor > acc.AvailableMinor {
+		return ErrInsufficientFunds
+	}
+	return nil
+}
+
 func (s *BankStore) RecordPayment(customerID, accountID, merchant, category string, amountMinor int64) (*domain.Transaction, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -454,6 +469,9 @@ func (s *BankStore) RecordPayment(customerID, accountID, merchant, category stri
 
 	if amountMinor <= 0 {
 		return nil, errors.New("amount must be greater than zero")
+	}
+	if err := canSpend(acc, amountMinor); err != nil {
+		return nil, err
 	}
 
 	// Apply debit to account
@@ -553,6 +571,12 @@ func (s *BankStore) TransferOwn(customerID, fromAccID, toAccID string, amountMin
 	if amountMinor <= 0 {
 		return errors.New("amount must be positive")
 	}
+	if fromAcc == toAcc || toAcc.Type == domain.AccountTypeCDT {
+		return ErrWrongAccountType
+	}
+	if err := canSpend(fromAcc, amountMinor); err != nil {
+		return err
+	}
 
 	fromAcc.BalanceMinor -= amountMinor
 	fromAcc.Balance = domain.MinorToDecimal(fromAcc.BalanceMinor, fromAcc.Type == domain.AccountTypeCreditCard)
@@ -619,6 +643,12 @@ func (s *BankStore) PayCard(customerID, fromAccID, cardAccID string, amountMinor
 	}
 	if amountMinor <= 0 {
 		return errors.New("amount must be positive")
+	}
+	if cardAcc.Type != domain.AccountTypeCreditCard || fromAcc.Type == domain.AccountTypeCreditCard {
+		return ErrWrongAccountType
+	}
+	if err := canSpend(fromAcc, amountMinor); err != nil {
+		return err
 	}
 
 	fromAcc.BalanceMinor -= amountMinor
@@ -696,6 +726,12 @@ func (s *BankStore) OpenCDT(customerID, fromAccID string, productID string, amou
 	if amountMinor < prod.MinAmountMinor {
 		return fmt.Errorf("amount must be at least %s", prod.MinAmount)
 	}
+	if fromAcc.Type == domain.AccountTypeCreditCard {
+		return ErrWrongAccountType
+	}
+	if err := canSpend(fromAcc, amountMinor); err != nil {
+		return err
+	}
 
 	fromAcc.BalanceMinor -= amountMinor
 	fromAcc.Balance = domain.MinorToDecimal(fromAcc.BalanceMinor, false)
@@ -770,6 +806,11 @@ func (s *BankStore) CancelCDT(customerID, cdtAccID, toAccID string) error {
 	if cdtAcc == nil || toAcc == nil {
 		return ErrAccountNotFound
 	}
+	// Only an open CDT can be cancelled, and its money goes to another kind of account.
+	if cdtAcc.Type != domain.AccountTypeCDT || cdtAcc.Status != domain.AccountStatusActive ||
+		toAcc.Type == domain.AccountTypeCDT {
+		return ErrWrongAccountType
+	}
 
 	amount := cdtAcc.BalanceMinor
 	cdtAcc.BalanceMinor = 0
@@ -812,6 +853,9 @@ func (s *BankStore) AddSubscription(customerID, accID, merchant string, amountMi
 	if !ok {
 		return nil, ErrCustomerNotFound
 	}
+	if amountMinor <= 0 {
+		return nil, ErrInvalidAmount
+	}
 
 	sub := domain.Subscription{
 		ID:          fmt.Sprintf("sub-custom-%d", time.Now().UnixNano()),
@@ -835,6 +879,9 @@ func (s *BankStore) UpdateSubscriptionPrice(customerID, subID string, newPriceMi
 	custData, ok := s.customers[customerID]
 	if !ok {
 		return ErrCustomerNotFound
+	}
+	if newPriceMinor <= 0 {
+		return ErrInvalidAmount
 	}
 
 	for i := range custData.Subscriptions {
@@ -865,6 +912,9 @@ func (s *BankStore) ChargeSubscriptionNow(customerID, subID string) (*domain.Tra
 	if sub == nil {
 		return nil, ErrSubscriptionNotFound
 	}
+	if !sub.Active {
+		return nil, ErrSubscriptionInactive
+	}
 
 	var acc *domain.Account
 	for i := range custData.Accounts {
@@ -875,6 +925,9 @@ func (s *BankStore) ChargeSubscriptionNow(customerID, subID string) (*domain.Tra
 	}
 	if acc == nil {
 		return nil, ErrAccountNotFound
+	}
+	if err := canSpend(acc, sub.AmountMinor); err != nil {
+		return nil, err
 	}
 
 	acc.BalanceMinor -= sub.AmountMinor

@@ -196,3 +196,64 @@ func TestPortalSubscriptionsAndAdmin(t *testing.T) {
 		t.Errorf("expected reset balance 320000000, got %d", resetCust.Accounts[0].BalanceMinor)
 	}
 }
+
+func TestParseMoneyInput(t *testing.T) {
+	for in, want := range map[string]int64{
+		"78500":       78_500_00,
+		"1.250.000":   1_250_000_00,
+		"$ 1.250.000": 1_250_000_00,
+		"1.250,50":    1_250_50,
+		"1250,5":      1_250_50,
+		"1000.50":     1_000_50, // a decimal point, not 100.050 pesos
+		"12.5":        12_50,
+		"1.000":       1_000_00, // three digits after the point: thousands
+		"0,50":        50,
+	} {
+		got, err := parseMoneyInput(in)
+		if err != nil || got != want {
+			t.Errorf("parseMoneyInput(%q) = %d, %v; want %d", in, got, err, want)
+		}
+	}
+	for _, in := range []string{"", "abc", "-500", "-0,50", "1,ab", "1,505", "12a", ",50", "99999999999999999999"} {
+		if got, err := parseMoneyInput(in); err == nil {
+			t.Errorf("parseMoneyInput(%q) = %d, want an error", in, got)
+		}
+	}
+}
+
+// balanceOf reads the balance of one account from the store.
+func balanceOf(s *store.BankStore, customerID, accountID string) int64 {
+	for _, a := range s.GetCustomer(customerID).Accounts {
+		if a.ID == accountID {
+			return a.BalanceMinor
+		}
+	}
+	return 0
+}
+
+func TestPortalRefusesATransferBiggerThanTheBalance(t *testing.T) {
+	ts, s := setupTestServer()
+	defer ts.Close()
+	customerID := "cliente.demo@bancodemo.local"
+	accounts := s.GetCustomer(customerID).Accounts
+	ahorrosID, walletID := accounts[0].ID, accounts[1].ID
+	before := balanceOf(s, customerID, ahorrosID)
+
+	client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	resp, err := client.PostForm(ts.URL+"/portal/actions/transfer", url.Values{
+		"from_account": {ahorrosID},
+		"to_account":   {walletID},
+		"amount":       {"999.999.999"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+
+	if got := balanceOf(s, customerID, ahorrosID); got != before {
+		t.Errorf("balance went from %d to %d: the transfer must be refused", before, got)
+	}
+	if loc := resp.Header.Get("Location"); !strings.Contains(loc, "error=insufficient+funds") {
+		t.Errorf("redirect = %q, want the insufficient funds error", loc)
+	}
+}

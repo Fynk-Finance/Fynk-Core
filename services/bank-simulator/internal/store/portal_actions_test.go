@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -194,5 +195,87 @@ func TestOpenCDT_BelongsToTheFundingEntity(t *testing.T) {
 	}
 	if !found {
 		t.Error("CDT opened from a Cooperativa Demo account is not in that link")
+	}
+}
+
+// The simulated bank never lets a person spend money they do not have (ADR 0008: balances are
+// never negative), and each action only takes the kinds of account it is meant for.
+func TestPortalMoneyActions_CheckFundsAndAccountTypes(t *testing.T) {
+	s := NewBankStore(time.Time{})
+	p := domain.ProviderBancoDemo
+	cust, _ := linkedCustomer(t, s, p, domain.AccountTypeSavings, domain.AccountTypeCreditCard, domain.AccountTypeCDT)
+	savings := accountOf(t, s, cust, p, domain.AccountTypeSavings)
+	card := accountOf(t, s, cust, p, domain.AccountTypeCreditCard)
+	cdt := accountOf(t, s, cust, p, domain.AccountTypeCDT)
+	tooMuch := savings.AvailableMinor + 1
+
+	if _, err := s.RecordPayment(cust, savings.ID, "TIENDA", "shopping", tooMuch); !errors.Is(err, ErrInsufficientFunds) {
+		t.Errorf("payment over the balance: %v", err)
+	}
+	if err := s.TransferOwn(cust, savings.ID, card.ID, tooMuch); !errors.Is(err, ErrInsufficientFunds) {
+		t.Errorf("transfer over the balance: %v", err)
+	}
+	if err := s.PayCard(cust, savings.ID, card.ID, tooMuch); !errors.Is(err, ErrInsufficientFunds) {
+		t.Errorf("card payment over the balance: %v", err)
+	}
+	if err := s.OpenCDT(cust, savings.ID, "cdt-demo-90", savings.AvailableMinor+1_000_000_00); !errors.Is(err, ErrInsufficientFunds) {
+		t.Errorf("CDT over the balance: %v", err)
+	}
+	if _, err := s.RecordPayment(cust, card.ID, "TIENDA", "shopping", card.AvailableMinor+1); !errors.Is(err, ErrInsufficientFunds) {
+		t.Errorf("purchase over the credit left: %v", err)
+	}
+	if _, err := s.RecordPayment(cust, cdt.ID, "TIENDA", "shopping", 1_00); !errors.Is(err, ErrWrongAccountType) {
+		t.Errorf("payment from a CDT: %v", err)
+	}
+	if err := s.PayCard(cust, savings.ID, savings.ID, 1_00); !errors.Is(err, ErrWrongAccountType) {
+		t.Errorf("card payment to a savings account: %v", err)
+	}
+	if err := s.CancelCDT(cust, savings.ID, card.ID); !errors.Is(err, ErrWrongAccountType) {
+		t.Errorf("cancelling a savings account as a CDT: %v", err)
+	}
+
+	for _, a := range s.GetCustomer(cust).Accounts {
+		for _, before := range []domain.Account{savings, card, cdt} {
+			if a.ID == before.ID && (a.BalanceMinor != before.BalanceMinor || a.Status != before.Status) {
+				t.Errorf("%s changed after refused actions: %d %s, was %d %s", a.Type, a.BalanceMinor, a.Status, before.BalanceMinor, before.Status)
+			}
+		}
+	}
+
+	// An open CDT is cancelled once.
+	if err := s.CancelCDT(cust, cdt.ID, savings.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.CancelCDT(cust, cdt.ID, savings.ID); !errors.Is(err, ErrWrongAccountType) {
+		t.Errorf("cancelling a closed CDT again: %v", err)
+	}
+}
+
+func TestSubscriptions_RefuseBadAmountsAndCancelledCharges(t *testing.T) {
+	s := NewBankStore(time.Time{})
+	p := domain.ProviderBancoDemo
+	cust, _ := linkedCustomer(t, s, p, domain.AccountTypeSavings)
+	savings := accountOf(t, s, cust, p, domain.AccountTypeSavings)
+	if _, err := s.ReceiveMoney(cust, savings.ID, "FONDEO PRUEBA", 1_000_000_00); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, amount := range []int64{0, -20_000_00} {
+		if _, err := s.AddSubscription(cust, savings.ID, "MUSICA DEMO", amount, "monthly", 5); !errors.Is(err, ErrInvalidAmount) {
+			t.Errorf("new subscription of %d: %v", amount, err)
+		}
+	}
+	sub, err := s.AddSubscription(cust, savings.ID, "MUSICA DEMO", 20_000_00, "monthly", 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpdateSubscriptionPrice(cust, sub.ID, -1); !errors.Is(err, ErrInvalidAmount) {
+		t.Errorf("negative price: %v", err)
+	}
+	if err := s.CancelSubscription(cust, sub.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ChargeSubscriptionNow(cust, sub.ID); !errors.Is(err, ErrSubscriptionInactive) {
+		t.Errorf("charge of a cancelled subscription: %v", err)
 	}
 }

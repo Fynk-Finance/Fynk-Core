@@ -2,6 +2,7 @@ package portal
 
 import (
 	"crypto/subtle"
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -513,36 +514,29 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /portal/admin/advance-time", h.action(h.PostAdminAdvanceTime))
 }
 
+// parseMoneyInput reads an amount in pesos as people type it in Colombia and returns centavos:
+// "." groups thousands and "," starts the cents ("1.250.000", "1250000", "1.250,50"). One "."
+// followed by one or two digits is read as cents too ("1000.50"), so a decimal point does not
+// multiply the amount by 100. Empty, negative or malformed input is an error.
 func parseMoneyInput(s string) (int64, error) {
-	cleaned := strings.ReplaceAll(s, "$", "")
-	cleaned = strings.ReplaceAll(cleaned, ".", "")
-	cleaned = strings.ReplaceAll(cleaned, ",", ".")
-	cleaned = strings.TrimSpace(cleaned)
-
-	var major int64
-	var minor int64 = 0
-
-	parts := strings.Split(cleaned, ".")
-	if len(parts) > 0 {
-		val, err := strconv.ParseInt(parts[0], 10, 64)
-		if err != nil {
-			return 0, err
-		}
-		major = val
+	cleaned := strings.ReplaceAll(strings.ReplaceAll(s, "$", ""), " ", "")
+	whole, cents := cleaned, ""
+	if i := strings.LastIndex(cleaned, ","); i >= 0 {
+		whole, cents = cleaned[:i], cleaned[i+1:]
+	} else if i := strings.Index(cleaned, "."); i >= 0 && i == strings.LastIndex(cleaned, ".") && len(cleaned)-i-1 <= 2 {
+		whole, cents = cleaned[:i], cleaned[i+1:]
 	}
-	if len(parts) > 1 {
-		decStr := parts[1]
-		if len(decStr) > 2 {
-			decStr = decStr[:2]
-		} else if len(decStr) == 1 {
-			decStr += "0"
-		}
-		decVal, err := strconv.ParseInt(decStr, 10, 64)
-		if err == nil {
-			minor = decVal
-		}
+	whole = strings.ReplaceAll(whole, ".", "")
+	if len(cents) == 1 {
+		cents += "0"
 	}
-	return (major * 100) + minor, nil
+	const digits = "0123456789"
+	if whole == "" || len(whole) > 15 || len(cents) > 2 || strings.Trim(whole+cents, digits) != "" {
+		return 0, errors.New("invalid amount")
+	}
+	major, _ := strconv.ParseInt(whole, 10, 64)
+	minor, _ := strconv.ParseInt("0"+cents, 10, 64)
+	return major*100 + minor, nil
 }
 
 func urlQueryEscape(s string) string {
