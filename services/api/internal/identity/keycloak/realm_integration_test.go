@@ -40,7 +40,7 @@ const (
 	// Fake values that only live inside the throwaway containers.
 	adminUser     = "admin"
 	adminPassword = "integration-only-admin"
-	goodPassword  = "abcdefg1"
+	goodPassword  = "abcdefg1!"
 )
 
 // env is the running stack, set once by TestMain.
@@ -138,7 +138,8 @@ func TestIntegrationJWKSPublishesAPS256Key(t *testing.T) {
 	t.Fatalf("no PS256 signing key in JWKS: %+v", jwks.Keys)
 }
 
-// HU-050 and HU-001: abcdefgh is rejected and abcdefg1 is accepted (prompt example).
+// HU-050, HU-001 and QA F1 (SCRUM-91): letters, digits and a special character are needed, so
+// abcdefgh and abcdefg1 are rejected and abcdefg1! is accepted.
 func TestIntegrationPasswordPolicy(t *testing.T) {
 	for _, tc := range []struct {
 		name, password string
@@ -146,8 +147,9 @@ func TestIntegrationPasswordPolicy(t *testing.T) {
 	}{
 		{"no digit", "abcdefgh", http.StatusBadRequest},
 		{"no letter", "12345678", http.StatusBadRequest},
-		{"too short", "abcde1", http.StatusBadRequest},
-		{"letter and digit", goodPassword, http.StatusCreated},
+		{"too short", "abcde1!", http.StatusBadRequest},
+		{"no special character", "abcdefg1", http.StatusBadRequest},
+		{"letters, digit and special character", goodPassword, http.StatusCreated},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := createUser(t, newEmail("policy"), tc.password, true); got.status != tc.want {
@@ -462,7 +464,7 @@ func TestIntegrationBancoDemoRealmWorksInTheSharedImage(t *testing.T) {
 }
 
 // HU-005: password recovery with the 6-digit code. The wrong code is refused, the right one
-// leads to the new password (policy applies), an info page ends the flow without logging in, the
+// leads to the new password (policy applies, the current password is refused), an info page ends the flow without logging in, the
 // new password works, the old one does not, and the other sessions of the user are ended.
 func TestIntegrationPasswordResetWithTheCode(t *testing.T) {
 	email := newEmail("reset")
@@ -499,6 +501,9 @@ func TestIntegrationPasswordResetWithTheCode(t *testing.T) {
 		t.Fatal("a password that breaks the policy should be refused on the same page")
 	}
 	code, page = b.submit(formAction(t, page, "login-update-password.ftl"),
+		url.Values{"password-new": {goodPassword}, "password-confirm": {goodPassword}})
+	assertCurrentPasswordRefused(t, code, page)
+	code, page = b.submit(formAction(t, page, "login-update-password.ftl"),
 		url.Values{"password-new": {"nueva-clave-2"}, "password-confirm": {"nueva-clave-2"}})
 	if code != "" {
 		t.Fatal("the reset must end on an info page, not log the person in")
@@ -520,7 +525,8 @@ func TestIntegrationPasswordResetWithTheCode(t *testing.T) {
 
 // HU-050: the app's "Cambiar contraseña" opens the authorization endpoint with
 // kc_action=UPDATE_PASSWORD, an application initiated action. Keycloak shows the update password
-// page flagged isAppInitiatedAction (the theme draws the change variant), the hidden
+// page flagged isAppInitiatedAction (the theme draws the change variant), the current password is
+// refused (QA F1), the hidden
 // logout-sessions field ends the other sessions, and the person lands back in the app with a code.
 func TestIntegrationAppInitiatedPasswordChange(t *testing.T) {
 	email := newEmail("aia")
@@ -536,6 +542,11 @@ func TestIntegrationAppInitiatedPasswordChange(t *testing.T) {
 	}
 
 	code, page := b.submit(formAction(t, page, "login-update-password.ftl"), url.Values{
+		"password-new": {goodPassword}, "password-confirm": {goodPassword}, "logout-sessions": {"on"},
+	})
+	assertCurrentPasswordRefused(t, code, page)
+
+	code, page = b.submit(formAction(t, page, "login-update-password.ftl"), url.Values{
 		"password-new": {"nueva-clave-2"}, "password-confirm": {"nueva-clave-2"}, "logout-sessions": {"on"},
 	})
 	if code == "" {
@@ -599,6 +610,18 @@ func (b *browser) startPasswordChange(t *testing.T, p pkce, email string) string
 		t.Fatal("kc_action=UPDATE_PASSWORD should show the update password page")
 	}
 	return page
+}
+
+// assertCurrentPasswordRefused checks QA F1 (SCRUM-91): the current password as the new one is
+// refused on the same page with the realm's message (passwordHistory(1)).
+func assertCurrentPasswordRefused(t *testing.T, code, page string) {
+	t.Helper()
+	if code != "" || pageID(t, page) != "login-update-password.ftl" {
+		t.Fatal("the current password was accepted as the new one")
+	}
+	if got := messageSummary(t, page); !strings.Contains(got, "diferente a la actual") {
+		t.Fatalf("the page does not say the new password must differ from the current one: %q", got)
+	}
 }
 
 // HU-005: an email without an account gets the same page as one with an account, no email is

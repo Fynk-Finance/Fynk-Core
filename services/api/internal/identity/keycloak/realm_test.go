@@ -59,6 +59,7 @@ type realm struct {
 	Components                          map[string][]component
 	Clients                             []client
 	Users                               []user
+	LocalizationTexts                   map[string]map[string]string
 }
 
 type flow struct {
@@ -193,12 +194,30 @@ func TestRegistrationUsesTheEmailOnceAndVerifiesIt(t *testing.T) {
 	}
 }
 
-// HU-050 and HU-001: at least 8 characters, one letter, one digit, not the email.
+// HU-050, HU-001 and QA F1 (SCRUM-91): at least 8 characters, letters and digits, one special
+// character, not the email, and not the current password (passwordHistory(1) checks the stored one).
 func TestPasswordPolicy(t *testing.T) {
 	r, _ := loadRealm(t)
-	want := "length(8) and regexPattern(.*[A-Za-z].*) and digits(1) and notEmail"
+	want := "length(8) and regexPattern(.*[A-Za-z].*) and digits(1) and specialChars(1) and notEmail and passwordHistory(1)"
 	if r.PasswordPolicy != want {
 		t.Fatalf("passwordPolicy = %q, want %q", r.PasswordPolicy, want)
+	}
+}
+
+// QA F1 (SCRUM-91): Keycloak's own Spanish errors say "las últimas 1 contraseñas" and "1
+// caracteres especiales". The realm overrides them with plain Spanish, shown under the field.
+func TestPasswordPolicyErrorsAreInPlainSpanish(t *testing.T) {
+	r, _ := loadRealm(t)
+	want := map[string]string{
+		"invalidPasswordHistoryMessage":         "La nueva contraseña debe ser diferente a la actual.",
+		"invalidPasswordMinSpecialCharsMessage": "La contraseña debe tener al menos un carácter especial, por ejemplo ! # $ - _.",
+		"invalidPasswordRegexPatternMessage":    "La contraseña debe combinar letras y números.",
+		"invalidPasswordMinDigitsMessage":       "La contraseña debe combinar letras y números.",
+	}
+	for key, text := range want {
+		if got := r.LocalizationTexts["es"][key]; got != text {
+			t.Errorf("localizationTexts.es.%s = %q, want %q", key, got, text)
+		}
 	}
 }
 

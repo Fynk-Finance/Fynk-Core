@@ -451,6 +451,7 @@ func (s *BankStore) RecordPayment(customerID, accountID, merchant, category stri
 		MerchantName:    &merchant,
 		Category:        &category,
 		Simulated:       true,
+		ProviderID:      acc.ProviderID,
 	}
 
 	// Prepend so newest is first
@@ -498,6 +499,7 @@ func (s *BankStore) ReceiveMoney(customerID, accountID, description string, amou
 		Description:     description,
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      acc.ProviderID,
 	}
 
 	custData.Transactions = append([]domain.Transaction{tx}, custData.Transactions...)
@@ -552,6 +554,7 @@ func (s *BankStore) TransferOwn(customerID, fromAccID, toAccID string, amountMin
 		Description:     fmt.Sprintf("TRANSFERENCIA A %s", toAcc.Name),
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      fromAcc.ProviderID,
 	}
 	txIn := domain.Transaction{
 		ID:              fmt.Sprintf("tx-trf-in-%d", now.UnixNano()+1),
@@ -563,6 +566,7 @@ func (s *BankStore) TransferOwn(customerID, fromAccID, toAccID string, amountMin
 		Description:     fmt.Sprintf("TRANSFERENCIA DESDE %s", fromAcc.Name),
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      toAcc.ProviderID,
 	}
 
 	custData.Transactions = append([]domain.Transaction{txOut, txIn}, custData.Transactions...)
@@ -617,6 +621,7 @@ func (s *BankStore) PayCard(customerID, fromAccID, cardAccID string, amountMinor
 		Description:     fmt.Sprintf("PAGO TARJETA %s", cardAcc.MaskedNumber),
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      fromAcc.ProviderID,
 	}
 	txCredit := domain.Transaction{
 		ID:              fmt.Sprintf("tx-card-pay-cred-%d", now.UnixNano()+1),
@@ -628,6 +633,7 @@ func (s *BankStore) PayCard(customerID, fromAccID, cardAccID string, amountMinor
 		Description:     "ABONO PAGO TARJETA DE CREDITO",
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      cardAcc.ProviderID,
 	}
 
 	custData.Transactions = append([]domain.Transaction{txDebit, txCredit}, custData.Transactions...)
@@ -696,6 +702,9 @@ func (s *BankStore) OpenCDT(customerID, fromAccID string, productID string, amou
 			Maturity:  now.AddDate(0, 0, prod.TermDays).Format("2006-01-02"),
 		},
 		Simulated: true,
+		// Held at the entity whose account paid for it, so that entity's consent
+		// (GET accounts filters by provider) lets Fynk see it.
+		ProviderID: fromAcc.ProviderID,
 	}
 
 	cat := "savings"
@@ -709,6 +718,7 @@ func (s *BankStore) OpenCDT(customerID, fromAccID string, productID string, amou
 		Description:     fmt.Sprintf("APERTURA %s", prod.Name),
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      fromAcc.ProviderID,
 	}
 
 	custData.Accounts = append(custData.Accounts, newCDT)
@@ -763,6 +773,7 @@ func (s *BankStore) CancelCDT(customerID, cdtAccID, toAccID string) error {
 		Description:     fmt.Sprintf("CANCELACION %s", cdtAcc.Name),
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      toAcc.ProviderID,
 	}
 
 	custData.Transactions = append([]domain.Transaction{tx}, custData.Transactions...)
@@ -862,6 +873,7 @@ func (s *BankStore) ChargeSubscriptionNow(customerID, subID string) (*domain.Tra
 		MerchantName:    &sub.Merchant,
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      acc.ProviderID,
 	}
 
 	custData.Transactions = append([]domain.Transaction{tx}, custData.Transactions...)

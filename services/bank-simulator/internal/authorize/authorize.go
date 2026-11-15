@@ -1,6 +1,7 @@
 // Package authorize is the authorization page of the simulated bank. It sits on
 // the public listener: the person logs in at the banco-demo realm (with the bank's
 // own user or "Ingresar con Fynk"), sees what Fynk asks for, and accepts or declines.
+// The same login and session identify the person in the web portal (PortalSession).
 //
 // Nothing here logs a token, a code, a subject, an email or an amount.
 package authorize
@@ -29,8 +30,11 @@ const (
 	sessionCookie = "bank_session"
 	loginCookie   = "bank_login"
 	cookiePath    = "/oauth"
-	sessionTTL    = 30 * time.Minute
-	loginTTL      = 10 * time.Minute
+	// The session is also read by the portal, so its cookie covers the whole site.
+	sessionPath = "/"
+	portalPath  = "/portal"
+	sessionTTL  = 30 * time.Minute
+	loginTTL    = 10 * time.Minute
 
 	authorizePath = "/oauth/authorize"
 	callbackPath  = "/oauth/authorize/callback"
@@ -60,9 +64,11 @@ type session struct {
 type login struct {
 	requestURI string
 	clientID   string
-	nonce      string
-	verifier   string
-	expires    time.Time
+	// returnTo is the portal page to go back to; empty means the authorization page.
+	returnTo string
+	nonce    string
+	verifier string
+	expires  time.Time
 }
 
 type Handler struct {
@@ -178,10 +184,15 @@ func (h *Handler) pushedRequest(requestURI, clientID string) (oauth.PARData, boo
 }
 
 func (h *Handler) startLogin(w http.ResponseWriter, r *http.Request, par oauth.PARData) {
+	h.beginLogin(w, r, &login{requestURI: par.RequestURI, clientID: par.ClientID})
+}
+
+func (h *Handler) beginLogin(w http.ResponseWriter, r *http.Request, l *login) {
 	state, nonce, verifier := oidc.RandomString(), oidc.RandomString(), oidc.RandomString()
+	l.nonce, l.verifier, l.expires = nonce, verifier, h.now().Add(loginTTL)
 	h.mu.Lock()
 	h.sweepLocked()
-	h.logins[state] = &login{requestURI: par.RequestURI, clientID: par.ClientID, nonce: nonce, verifier: verifier, expires: h.now().Add(loginTTL)}
+	h.logins[state] = l
 	h.mu.Unlock()
 	h.setCookie(w, r, loginCookie, state, loginTTL)
 	http.Redirect(w, r, h.oidc.AuthURL(state, nonce, verifier), http.StatusFound)
@@ -233,9 +244,45 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	h.mu.Lock()
 	h.sessions[sid] = &session{customerID: customerID, csrf: csrf, expires: h.now().Add(sessionTTL)}
 	h.mu.Unlock()
-	h.setCookie(w, r, sessionCookie, sid, sessionTTL)
+	h.setCookieAt(w, r, sessionCookie, sid, sessionPath, sessionTTL)
+	if l.returnTo != "" {
+		http.Redirect(w, r, l.returnTo, http.StatusSeeOther)
+		return
+	}
 	back := url.Values{"request_uri": {l.requestURI}, "client_id": {l.clientID}}
 	http.Redirect(w, r, authorizePath+"?"+back.Encode(), http.StatusSeeOther)
+}
+
+// Enabled says whether the realm login is configured. Without it the portal
+// keeps its local development fallback.
+func (h *Handler) Enabled() bool { return h.oidc != nil }
+
+// PortalSession returns the customer logged in to the portal and the CSRF token
+// of the session. With no session it sends the browser to the realm login, which
+// comes back to the page that was asked for, and returns ok false.
+func (h *Handler) PortalSession(w http.ResponseWriter, r *http.Request) (customerID, csrf string, ok bool) {
+	if h.oidc == nil {
+		h.fail(w, http.StatusServiceUnavailable, "El inicio de sesión del banco simulado no está configurado.")
+		return "", "", false
+	}
+	if sess := h.currentSession(r); sess != nil {
+		return sess.customerID, sess.csrf, true
+	}
+	returnTo := portalPath
+	if r.Method == http.MethodGet {
+		returnTo = portalReturn(r.URL.RequestURI())
+	}
+	h.beginLogin(w, r, &login{returnTo: returnTo})
+	return "", "", false
+}
+
+// portalReturn keeps the login's way back inside the portal.
+func portalReturn(p string) string {
+	inside := p == portalPath || strings.HasPrefix(p, portalPath+"/") || strings.HasPrefix(p, portalPath+"?")
+	if inside && !strings.ContainsAny(p, "\\\r\n") {
+		return p
+	}
+	return portalPath
 }
 
 // customerFor picks the customer id from the ID token: the Fynk sub for brokered
@@ -365,8 +412,12 @@ func secure(r *http.Request) bool {
 }
 
 func (h *Handler) setCookie(w http.ResponseWriter, r *http.Request, name, value string, ttl time.Duration) {
+	h.setCookieAt(w, r, name, value, cookiePath, ttl)
+}
+
+func (h *Handler) setCookieAt(w http.ResponseWriter, r *http.Request, name, value, path string, ttl time.Duration) {
 	http.SetCookie(w, &http.Cookie{
-		Name: name, Value: value, Path: cookiePath, MaxAge: int(ttl.Seconds()),
+		Name: name, Value: value, Path: path, MaxAge: int(ttl.Seconds()),
 		HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: secure(r),
 	})
 }
