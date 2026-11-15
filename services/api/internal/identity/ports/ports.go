@@ -109,20 +109,18 @@ func (r deviceReader) Get(ctx context.Context, userID, deviceID string) (DeviceI
 }
 
 func (r deviceReader) RemoveOthers(ctx context.Context, userID, keepDeviceID string) error {
+	// Session ids next to an error mean the devices were removed and only the audit failed:
+	// their sessions end before the error goes back.
 	sids, err := r.svc.RemoveOthersTrusted(ctx, userID, keepDeviceID)
-	if err != nil {
-		return err
+	if r.revoker != nil {
+		// The devices are already removed: a caller that hangs up must not cancel the revocation.
+		rctx := context.WithoutCancel(ctx)
+		for _, sid := range sids {
+			// Best effort, like the HTTP path. The error is dropped: it may carry ids.
+			_ = r.revoker.DeleteSession(rctx, sid)
+		}
 	}
-	if r.revoker == nil {
-		return nil
-	}
-	// The devices are already removed: a caller that hangs up must not cancel the revocation.
-	ctx = context.WithoutCancel(ctx)
-	for _, sid := range sids {
-		// Best effort, like the HTTP path. The error is dropped: it may carry ids.
-		_ = r.revoker.DeleteSession(ctx, sid)
-	}
-	return nil
+	return err
 }
 
 // EmailResets lets M2 know when the person last reset the password with the email code, which

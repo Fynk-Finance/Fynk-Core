@@ -180,6 +180,9 @@ func (s server) RemoveDevice(ctx context.Context, req httpapi.RemoveDeviceReques
 		return nil, errNoUser
 	}
 	sid, err := s.devices.Remove(ctx, user.ID, user.DeviceID, req.DeviceId.String())
+	// Before the error: a session id next to an error means the device was removed and only the
+	// audit failed. No device was removed when the id is blank.
+	s.revoke(ctx, sid)
 	switch {
 	case errors.Is(err, devices.ErrNotActive):
 		return httpapi.RemoveDevice403ApplicationProblemPlusJSONResponse(notActive()), nil
@@ -188,7 +191,6 @@ func (s server) RemoveDevice(ctx context.Context, req httpapi.RemoveDeviceReques
 	case err != nil:
 		return nil, err
 	}
-	s.revoke(ctx, sid)
 	return httpapi.RemoveDevice204Response{}, nil
 }
 
@@ -200,6 +202,7 @@ func (s server) SignOutOtherDevices(ctx context.Context, req httpapi.SignOutOthe
 	// The raw header, not user.DeviceID: a removed phone must still get 410 to wipe itself.
 	// The service checks it belongs to the user and is active.
 	sids, err := s.devices.RemoveOthers(ctx, user.ID, req.Params.XDeviceId)
+	s.revoke(ctx, sids...) // before the error, as in RemoveDevice
 	switch {
 	case errors.Is(err, devices.ErrNotActive):
 		return httpapi.SignOutOtherDevices403ApplicationProblemPlusJSONResponse(notActive()), nil
@@ -210,7 +213,6 @@ func (s server) SignOutOtherDevices(ctx context.Context, req httpapi.SignOutOthe
 	case err != nil:
 		return nil, err
 	}
-	s.revoke(ctx, sids...)
 	return httpapi.SignOutOtherDevices204Response{}, nil
 }
 

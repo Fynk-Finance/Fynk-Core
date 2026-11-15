@@ -124,3 +124,23 @@ func TestGet(t *testing.T) {
 		t.Fatalf("removed: %v", err)
 	}
 }
+
+// The removal is committed before the audit runs. When the audit fails, the session ids still
+// go back with the error, so the caller can end those sessions: a retry finds the devices
+// already removed and returns none.
+func TestRemoveReturnsTheSessionsWhenTheAuditFails(t *testing.T) {
+	e := setup()
+	ctx := context.Background()
+	a, b, _ := threeDevices(t, e)
+	boom := errors.New("audit down")
+	e.rec.err = boom
+
+	sid, err := e.svc.Remove(ctx, "u1", a.ID, b.ID)
+	if !errors.Is(err, boom) || sid != "sid-b" {
+		t.Fatalf("remove: sid=%q err=%v", sid, err)
+	}
+	sids, err := e.svc.RemoveOthers(ctx, "u1", a.ID)
+	if !errors.Is(err, boom) || len(sids) != 1 || sids[0] != "sid-c" {
+		t.Fatalf("remove others: sids=%v err=%v", sids, err)
+	}
+}

@@ -421,3 +421,18 @@ func TestRevocationOutlivesAClientThatHangsUp(t *testing.T) {
 		t.Fatalf("status %d revoked %v canceled %v", rec.Code, r.got, r.canceled)
 	}
 }
+
+// The service removed the devices and then failed to audit: the answer is an error, but the
+// sessions of the removed devices are ended all the same.
+func TestRemovalEndsTheSessionsEvenWhenTheServiceFailsAfterRemoving(t *testing.T) {
+	r := &fakeRevoker{}
+	f := &fakeService{sid: "sess-1", sids: []string{"s-a", "s-b"}, err: errors.New("audit down")}
+	h := serveRevoking(t, f, r, &bytes.Buffer{})
+	if rec := do(h, "DELETE", "/v1/devices/"+devB, "", nil); rec.Code != 500 {
+		t.Fatalf("remove: status %d", rec.Code)
+	}
+	rec := do(h, "POST", "/v1/devices/sign-out-others", "", map[string]string{"X-Device-Id": devA})
+	if rec.Code != 500 || strings.Join(r.got, ",") != "sess-1,s-a,s-b" {
+		t.Fatalf("sign out: status %d revoked %v", rec.Code, r.got)
+	}
+}
