@@ -106,6 +106,10 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
     return inserted;
   };
 
+  // The answer to the permission question of this app run. "Más tarde" leaves the phone's
+  // permission undecided, so without it every later reminder would show the explanation again.
+  let asked: Promise<boolean> | null = null;
+
   /**
    * The OS notification of a reminder. Permission is asked the first time something is
    * scheduled, after a short explanation. Without permission, or if the OS fails, the reminder
@@ -124,7 +128,7 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
       const permission = await notifier.permission();
       const allowed =
         permission === 'granted' ||
-        (permission === 'undetermined' && (await notifier.askPermission()));
+        (permission === 'undetermined' && (await (asked ??= notifier.askPermission())));
       if (!allowed) return null;
       return await notifier.schedule({
         title: r.title,
@@ -156,6 +160,13 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
       if (!(await enabled(store, n.kind))) return;
       const { kind, title, body, deepLink, dedupeKey } = n;
       const fireAt = normalize(n.fireAt);
+      // A reminder of this id whose time already passed goes to the inbox before the new time
+      // replaces it. Otherwise a reschedule that runs before deliverDue would lose it.
+      const delivered = await store.transaction(async (tx) => {
+        const due = (await tx.listDue(now())).find((row) => row.id === n.id);
+        return due && due.fireAt !== fireAt ? deliver(tx, due.payload, due.fireAt) : false;
+      });
+      if (delivered) changed();
       // Scheduling the same id again replaces the reminder, so its old OS notification goes.
       await cancelOs(store, n.id);
       await store.saveScheduled({

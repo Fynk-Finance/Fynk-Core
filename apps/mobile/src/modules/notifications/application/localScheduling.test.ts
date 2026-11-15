@@ -119,6 +119,22 @@ describe('local notifications for scheduled reminders', () => {
     expect(await service.deliverDue()).toBe(2);
   });
 
+  it('shows the explanation once per app run when the person answers "Más tarde"', async () => {
+    const { notifier, scheduled } = fakeNotifier();
+    // "Más tarde" closes the explanation without the OS prompt: the permission stays undecided.
+    notifier.askPermission.mockImplementation(async () => false);
+    const service = await setup(notifier);
+
+    await service.schedule(reminder);
+    await service.schedule({ ...reminder, id: 'reminder:r2', dedupeKey: 'other' });
+    await service.schedule({ ...reminder, id: 'reminder:r3', dedupeKey: 'third' });
+
+    expect(notifier.askPermission).toHaveBeenCalledTimes(1);
+    expect(scheduled.size).toBe(0);
+    clock.set('2026-10-30T12:00:00Z');
+    expect(await service.deliverDue()).toBe(3); // the inbox still gets them
+  });
+
   it('does not ask the phone for a time that already passed: the inbox takes it', async () => {
     const { notifier } = fakeNotifier('granted');
     const service = await setup(notifier);
