@@ -1,6 +1,6 @@
 variable "aws_region" {
   type        = string
-  default     = "us-east-1"
+  default     = "us-east-2"
   description = "AWS region for deployment"
 }
 
@@ -24,7 +24,7 @@ variable "vpc_cidr" {
 
 variable "availability_zones" {
   type        = list(string)
-  default     = ["us-east-1a", "us-east-1b"]
+  default     = ["us-east-2a", "us-east-2b"]
   description = "Availability zones for subnets"
 }
 

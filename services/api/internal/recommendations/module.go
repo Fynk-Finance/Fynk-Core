@@ -24,7 +24,7 @@ import (
 // .env locally). None of them is a secret: Bedrock uses the task role.
 type settings struct {
 	ModelID    string // RECOMMENDATIONS_MODEL_ID, default amazon.nova-lite-v1:0
-	Region     string // RECOMMENDATIONS_AWS_REGION, default AWS_REGION, default us-east-1
+	Region     string // RECOMMENDATIONS_AWS_REGION, default AWS_REGION, default us-east-2
 	DailyLimit int64  // RECOMMENDATIONS_DAILY_LIMIT, default 10
 }
 
@@ -37,7 +37,7 @@ func loadSettings(getenv func(string) string) settings {
 		s.Region = getenv("AWS_REGION")
 	}
 	if s.Region == "" {
-		s.Region = "us-east-1"
+		s.Region = "us-east-2"
 	}
 	if n, err := strconv.ParseInt(getenv("RECOMMENDATIONS_DAILY_LIMIT"), 10, 64); err == nil && n > 0 {
 		s.DailyLimit = n
