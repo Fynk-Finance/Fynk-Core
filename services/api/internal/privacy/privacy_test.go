@@ -192,6 +192,12 @@ func TestDeletionMessage(t *testing.T) {
 
 func setupTestRouter(t *testing.T) *httptest.Server {
 	t.Helper()
+	return setupTestRouterIn(t, config.EnvLocal)
+}
+
+// setupTestRouterIn mounts the module as it runs in env, with no Keycloak admin secret.
+func setupTestRouterIn(t *testing.T, env config.Env) *httptest.Server {
+	t.Helper()
 	auth.Install(auth.DevVerifier{Env: config.EnvLocal})
 	t.Cleanup(func() { auth.Install(nil) })
 
@@ -199,7 +205,7 @@ func setupTestRouter(t *testing.T) *httptest.Server {
 		Clock: clock.System{},
 		Log:   quiet,
 		Config: config.Config{
-			AppEnv: config.EnvLocal,
+			AppEnv: env,
 		},
 	}
 
@@ -334,6 +340,50 @@ func TestPrivacyHTTPRoutes(t *testing.T) {
 	// For pool == nil fallback, returns 404 (not 401!)
 	if resGetPub.StatusCode != http.StatusNotFound {
 		t.Errorf("public GET deletion-requests status = %d, want 404", resGetPub.StatusCode)
+	}
+}
+
+func TestDeletionIsRefusedOutsideLocalWithoutTheKeycloakAdminClient(t *testing.T) {
+	// Staging without FYNK_ADMIN_CLIENT_SECRET: no fresh login check and no Keycloak delete.
+	srv := setupTestRouterIn(t, config.EnvStaging)
+	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/privacy/deletion-requests",
+		strings.NewReader(`{"confirmation": "ELIMINAR"}`))
+	req.Header.Set("Authorization", "Bearer "+auth.DevToken)
+	req.Header.Set("Content-Type", "application/json")
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = res.Body.Close() }()
+	if res.StatusCode != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500: the deletion must not be answered as accepted", res.StatusCode)
+	}
+
+	revoker := &fakeConsentsRevoker{}
+	deleter := privacy.NewDeleter(nil, clock.NewFixed(time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)),
+		&memAuditRecorder{}, nil, revoker, nil).RequireKeycloak()
+	_, err = deleter.DeleteAccount(context.Background(), auth.User{ID: "user-1", SessionID: "sid-1"},
+		httpapi.PrivacyDeletionRequestCreate{})
+	if !errors.Is(err, privacy.ErrKeycloakRequired) {
+		t.Fatalf("err = %v, want ErrKeycloakRequired", err)
+	}
+	if len(revoker.revokedUsers) != 0 {
+		t.Fatal("a refused deletion revoked the consents")
+	}
+}
+
+func TestLocalDeletionWithoutKeycloakDoesNotClaimTheKeycloakStep(t *testing.T) {
+	deleter := privacy.NewDeleter(nil, clock.NewFixed(time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)),
+		&memAuditRecorder{}, nil, &fakeConsentsRevoker{}, nil)
+	resp, err := deleter.DeleteAccount(context.Background(), auth.User{ID: "user-1"},
+		httpapi.PrivacyDeletionRequestCreate{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, step := range *resp.StepsDone {
+		if step == "keycloak_deleted" {
+			t.Fatal("steps claim keycloak_deleted, but no Keycloak user was deleted")
+		}
 	}
 }
 

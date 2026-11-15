@@ -24,6 +24,9 @@ var (
 	ErrFreshLoginRequired  = errors.New("fresh login required")
 	ErrInvalidConfirmation = errors.New("invalid confirmation")
 	ErrDeletionNotFound    = errors.New("deletion request not found")
+	// ErrKeycloakRequired means the Keycloak admin client is not configured, so the deletion
+	// could neither check the fresh login nor delete the login.
+	ErrKeycloakRequired = errors.New("privacy: account deletion needs the Keycloak admin client")
 )
 
 var spanishMonths = [...]string{
@@ -50,6 +53,15 @@ type Deleter struct {
 	sessions        identity.Sessions
 	consentsRevoker consents.ConsentsRevoker
 	userDeleter     identity.UserDeleter
+	// keycloakRequired refuses a deletion while sessions or userDeleter is missing.
+	keycloakRequired bool
+}
+
+// RequireKeycloak makes DeleteAccount refuse to run without the Keycloak ports. Only a developer
+// machine may delete an account without the fresh login check and the Keycloak delete.
+func (d *Deleter) RequireKeycloak() *Deleter {
+	d.keycloakRequired = true
+	return d
 }
 
 // NewDeleter creates a new Deleter.
@@ -76,6 +88,10 @@ func NewDeleter(
 
 // DeleteAccount executes cascade account deletion.
 func (d *Deleter) DeleteAccount(ctx context.Context, user auth.User, req httpapi.PrivacyDeletionRequestCreate) (httpapi.PrivacyDeletionRequest, error) {
+	if d.keycloakRequired && (d.sessions == nil || d.userDeleter == nil) {
+		return httpapi.PrivacyDeletionRequest{}, ErrKeycloakRequired
+	}
+
 	// 0. Verify fresh login if sessions port is configured
 	if d.sessions != nil {
 		if user.SessionID == "" {
@@ -183,8 +199,8 @@ func (d *Deleter) DeleteAccount(ctx context.Context, user auth.User, req httpapi
 		if err := d.userDeleter.DeleteUser(ctx, user.ID); err != nil {
 			return fail(fmt.Errorf("privacy: delete keycloak user: %w", err))
 		}
+		stepsDone = append(stepsDone, "keycloak_deleted")
 	}
-	stepsDone = append(stepsDone, "keycloak_deleted")
 
 	// Step 6: Complete deletion request
 	completedAt := d.clock.Now().UTC()
