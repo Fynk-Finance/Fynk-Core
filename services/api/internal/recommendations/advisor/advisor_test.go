@@ -199,6 +199,41 @@ func TestNotJSONAndModelErrorsFallBack(t *testing.T) {
 	}
 }
 
+// slowModel never answers: it waits until the context of the call ends.
+type slowModel struct{ calls int }
+
+func (m *slowModel) Generate(ctx context.Context, _ ModelRequest) (ModelResponse, error) {
+	m.calls++
+	<-ctx.Done()
+	return ModelResponse{}, ctx.Err()
+}
+
+func TestASlowModelFallsBackBeforeTheRequestEnds(t *testing.T) {
+	req := loadFixture(t, "design")
+	m := &slowModel{}
+	cfg := DefaultConfig("amazon.nova-lite-v1:0")
+	cfg.AttemptTimeout = 20 * time.Millisecond
+	s := NewService(m, nil, Prompt{Version: "test", System: "system"}, cfg,
+		func() time.Time { return testNow }, slog.New(slog.NewJSONHandler(io.Discard, nil)))
+	// The request itself lasts much longer than the two attempts.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := s.Generate(ctx, "u", req)
+	if err != nil || !res.Fallback || m.calls != 2 {
+		t.Fatalf("want fallback after 2 attempts, got fallback=%v calls=%d err=%v", res.Fallback, m.calls, err)
+	}
+	if ctx.Err() != nil {
+		t.Fatal("the attempts used up the whole request")
+	}
+}
+
+func TestDefaultAttemptsEndBeforeTheServerWriteLimit(t *testing.T) {
+	cfg := DefaultConfig("m")
+	if total := time.Duration(cfg.Attempts) * cfg.AttemptTimeout; total <= 0 || total >= 30*time.Second {
+		t.Fatalf("attempts last %v, the server cuts the answer at 30 s", total)
+	}
+}
+
 func TestRetriesOnceThenSucceeds(t *testing.T) {
 	req := loadFixture(t, "design")
 	m := &fakeModel{answers: []string{`{"summary":"Ganaste $1.000.000.000.","steps":[]}`, answer(t, goodOutput())}}
