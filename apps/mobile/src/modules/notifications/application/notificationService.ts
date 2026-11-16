@@ -6,12 +6,40 @@
 // fires even with the app closed. deliverDue() moves the ones whose time has passed into the
 // inbox when the app opens, so they appear even if the person never tapped the OS notification.
 import type { Clock, Id, IsoDateTime } from '@shared/domain/types';
-import type { NotificationKind, NotificationsPort, NotifyInput } from '@shared/ports';
+import type {
+  BackupCollection,
+  MarkDirty,
+  NotificationKind,
+  NotificationsPort,
+  NotifyInput,
+} from '@shared/ports';
 
 import { idsOverLimit, INBOX_LIMIT, type InboxItem } from '../domain/inbox';
 import { ALWAYS_ON, NOTIFICATION_KINDS } from '../domain/kinds';
 import { parseLeadDays, type PaymentLeadDays } from '../domain/settings';
 import type { InboxStore, LocalNotifier } from './ports';
+
+/** The backup collection of Ajustes de notificaciones (shared contracts 3.2, HU-045). */
+export const SETTINGS_BACKUP_COLLECTION = 'notifications.settings';
+const SETTINGS_RECORD_ID = 'settings';
+
+/** What the encrypted backup keeps: the switches and the reminder lead time, one record. */
+export interface SettingsBackupData {
+  allowAll: boolean;
+  kinds: Partial<Record<NotificationKind, boolean>>;
+  paymentLeadDays: number;
+}
+
+function isSettingsData(d: unknown): d is SettingsBackupData {
+  const s = d as Partial<SettingsBackupData> | null;
+  return (
+    !!s &&
+    typeof s.allowAll === 'boolean' &&
+    typeof s.kinds === 'object' &&
+    s.kinds !== null &&
+    typeof s.paymentLeadDays === 'number'
+  );
+}
 
 export interface NotificationServiceDeps {
   /** The vault store. Throws VaultLockedError while the vault is locked. */
@@ -21,6 +49,8 @@ export interface NotificationServiceDeps {
   inboxLimit?: number;
   /** The phone's local notifications. Without it, reminders only reach the inbox. */
   notifier?: LocalNotifier;
+  /** M2's markDirty. Without it the settings are not uploaded to the backup. */
+  markDirty?: MarkDirty;
 }
 
 export interface NotificationService extends NotificationsPort {
@@ -45,6 +75,8 @@ export interface NotificationService extends NotificationsPort {
   onSettingsChanged(listener: () => void): () => void;
   /** Called after every change of the inbox. Returns a function that unsubscribes. */
   subscribe(listener: () => void): () => void;
+  /** Ajustes de notificaciones in M2's encrypted backup. The inbox itself is not backed up. */
+  backupCollection: BackupCollection<SettingsBackupData>;
 }
 
 export interface NotificationSettings {
@@ -74,6 +106,29 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
   };
 
   const allowAll = async (store: InboxStore) => (await store.preference('allowAll')) !== '0';
+
+  const readSettings = async (store: InboxStore): Promise<NotificationSettings> => {
+    const kinds = {} as Record<NotificationKind, boolean>;
+    for (const kind of NOTIFICATION_KINDS) {
+      kinds[kind] = ALWAYS_ON.has(kind) || (await store.isEnabled(kind));
+    }
+    return {
+      allowAll: await allowAll(store),
+      kinds,
+      paymentLeadDays: parseLeadDays(await store.preference('paymentLeadDays')),
+    };
+  };
+
+  // How many times the person changed the settings: the version of their backup record.
+  const settingsVersion = async (store: InboxStore) =>
+    Number(await store.preference('settingsVersion')) || 0;
+
+  /** After the person changes a setting: a new version for the backup, and the listeners. */
+  const settingsSaved = async (store: InboxStore) => {
+    await store.setPreference('settingsVersion', String((await settingsVersion(store)) + 1));
+    deps.markDirty?.(SETTINGS_BACKUP_COLLECTION, SETTINGS_RECORD_ID);
+    settingsChanged();
+  };
 
   const enabled = async (store: InboxStore, kind: NotificationKind) =>
     ALWAYS_ON.has(kind) || ((await allowAll(store)) && (await store.isEnabled(kind)));
@@ -196,27 +251,18 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
       await store.setEnabled(kind, on);
       // A kind turned off stops ringing at once: its pending reminders are dropped.
       if (!on) await dropDisabledReminders(store);
-      settingsChanged();
+      await settingsSaved(store);
     },
 
     async settings() {
-      const store = deps.store();
-      const kinds = {} as Record<NotificationKind, boolean>;
-      for (const kind of NOTIFICATION_KINDS) {
-        kinds[kind] = ALWAYS_ON.has(kind) || (await store.isEnabled(kind));
-      }
-      return {
-        allowAll: await allowAll(store),
-        kinds,
-        paymentLeadDays: parseLeadDays(await store.preference('paymentLeadDays')),
-      };
+      return readSettings(deps.store());
     },
 
     async setAllowAll(on) {
       const store = deps.store();
       await store.setPreference('allowAll', on ? '1' : '0');
       if (!on) await dropDisabledReminders(store);
-      settingsChanged();
+      await settingsSaved(store);
     },
 
     async paymentLeadDays() {
@@ -224,8 +270,9 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
     },
 
     async setPaymentLeadDays(days) {
-      await deps.store().setPreference('paymentLeadDays', String(parseLeadDays(String(days))));
-      settingsChanged();
+      const store = deps.store();
+      await store.setPreference('paymentLeadDays', String(parseLeadDays(String(days))));
+      await settingsSaved(store);
     },
 
     onSettingsChanged(listener) {
@@ -271,6 +318,45 @@ export function createNotificationService(deps: NotificationServiceDeps): Notifi
       return () => {
         listeners.delete(listener);
       };
+    },
+
+    backupCollection: {
+      module: 'notifications',
+      collection: SETTINGS_BACKUP_COLLECTION,
+      async exportAll() {
+        const store = deps.store();
+        const version = await settingsVersion(store);
+        // Settings the person never changed are the defaults: nothing to keep.
+        if (version === 0) return [];
+        const { allowAll: all, kinds, paymentLeadDays } = await readSettings(store);
+        return [
+          {
+            id: SETTINGS_RECORD_ID,
+            version,
+            deleted: false,
+            data: { allowAll: all, kinds, paymentLeadDays },
+          },
+        ];
+      },
+      async importAll(records) {
+        const store = deps.store();
+        for (const r of records) {
+          if (r.id !== SETTINGS_RECORD_ID || r.deleted || !isSettingsData(r.data)) continue;
+          if (r.version <= (await settingsVersion(store))) continue;
+          for (const kind of NOTIFICATION_KINDS) {
+            const on = r.data.kinds[kind];
+            if (typeof on === 'boolean' && !ALWAYS_ON.has(kind)) await store.setEnabled(kind, on);
+          }
+          await store.setPreference('allowAll', r.data.allowAll ? '1' : '0');
+          await store.setPreference(
+            'paymentLeadDays',
+            String(parseLeadDays(String(r.data.paymentLeadDays))),
+          );
+          await store.setPreference('settingsVersion', String(r.version));
+          await dropDisabledReminders(store);
+          settingsChanged();
+        }
+      },
     },
   };
 }

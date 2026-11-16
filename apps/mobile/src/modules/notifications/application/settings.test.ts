@@ -115,3 +115,92 @@ describe('settings', () => {
     expect(listener).toHaveBeenCalledTimes(3);
   });
 });
+
+// HU-045 and shared contracts 3.2: notifications.settings is one of the backup collections.
+describe('backup of the settings', () => {
+  const newService = async () => {
+    const other = await createInMemoryVault();
+    other.registerMigrations('notifications', notificationsMigrations);
+    await other.migrate();
+    const marked: [string, string][] = [];
+    return {
+      vault: other,
+      marked,
+      service: createNotificationService({
+        store: () => createVaultInboxStore(other.db),
+        clock,
+        newId: () => 'x',
+        markDirty: (collection, id) => marked.push([collection, id]),
+      }),
+    };
+  };
+
+  it('has nothing to keep while the settings are the defaults', async () => {
+    expect(await service.backupCollection.exportAll()).toEqual([]);
+  });
+
+  it('marks the record after every change and exports a higher version each time', async () => {
+    const phone = await newService();
+    await phone.service.setEnabled('sync_result', false);
+    await phone.service.setPaymentLeadDays(0);
+    await phone.service.setAllowAll(false);
+    expect(phone.marked).toEqual([
+      ['notifications.settings', 'settings'],
+      ['notifications.settings', 'settings'],
+      ['notifications.settings', 'settings'],
+    ]);
+    const [record] = await phone.service.backupCollection.exportAll();
+    expect(record).toMatchObject({ id: 'settings', version: 3, deleted: false });
+    expect(record!.data).toMatchObject({ allowAll: false, paymentLeadDays: 0 });
+    expect(record!.data.kinds.sync_result).toBe(false);
+    expect(record!.data.kinds.payment_due).toBe(true);
+    phone.vault.close();
+  });
+
+  it('restores the settings on a new phone and tells the modules that schedule', async () => {
+    const old = await newService();
+    await old.service.setEnabled('sync_result', false);
+    await old.service.setPaymentLeadDays(1);
+    const records = await old.service.backupCollection.exportAll();
+    old.vault.close();
+
+    const listener = jest.fn();
+    service.onSettingsChanged(listener);
+    await service.backupCollection.importAll(records);
+
+    const s = await service.settings();
+    expect(s.kinds.sync_result).toBe(false);
+    expect(s.paymentLeadDays).toBe(1);
+    expect(listener).toHaveBeenCalledTimes(1);
+    // The restored copy is not a new change: the same version goes back out.
+    expect((await service.backupCollection.exportAll())[0]!.version).toBe(records[0]!.version);
+  });
+
+  it('keeps the newer local settings when an older copy arrives', async () => {
+    await service.setPaymentLeadDays(0);
+    await service.setPaymentLeadDays(1);
+    await service.backupCollection.importAll([
+      {
+        id: 'settings',
+        version: 1,
+        deleted: false,
+        data: { allowAll: false, kinds: {}, paymentLeadDays: 2 },
+      },
+    ]);
+    const s = await service.settings();
+    expect(s.allowAll).toBe(true);
+    expect(s.paymentLeadDays).toBe(1);
+  });
+
+  it('never turns off the new device notice from a backup copy', async () => {
+    await service.backupCollection.importAll([
+      {
+        id: 'settings',
+        version: 5,
+        deleted: false,
+        data: { allowAll: true, kinds: { device_approval: false }, paymentLeadDays: 2 },
+      },
+    ]);
+    expect((await service.settings()).kinds.device_approval).toBe(true);
+  });
+});
