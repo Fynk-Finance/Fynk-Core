@@ -136,13 +136,19 @@ paths:
                 authorizationId: 01928c80-1a2b-7c3d-8e4f-5a6b7c8d9e0f
                 authorizeUrl: https://auth.fynk.local/realms/banco-demo/protocol/openid-connect/auth?client_id=fynk&request_uri=urn%3Aietf%3Aparams%3Aoauth%3Arequest_uri%3Aabc
                 expiresAt: '2026-10-28T15:14:05Z'
+        '400':
+          $ref: '../openapi.yaml#/components/responses/Problem'
         '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '404':
           $ref: '../openapi.yaml#/components/responses/Problem'
         '409':
           $ref: '../openapi.yaml#/components/responses/Problem'
         '422':
           $ref: '../openapi.yaml#/components/responses/Problem'
         '501':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '503':
           $ref: '../openapi.yaml#/components/responses/Problem'
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
@@ -186,13 +192,19 @@ paths:
                 accessToken: eyJhbGciOiJQUzI1NiJ9.example-access
                 refreshToken: eyJhbGciOiJQUzI1NiJ9.example-refresh
                 expiresIn: 300
+        '400':
+          $ref: '../openapi.yaml#/components/responses/Problem'
         '401':
           $ref: '../openapi.yaml#/components/responses/Problem'
         '404':
           $ref: '../openapi.yaml#/components/responses/Problem'
         '409':
           $ref: '../openapi.yaml#/components/responses/Problem'
+        '422':
+          $ref: '../openapi.yaml#/components/responses/Problem'
         '501':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '503':
           $ref: '../openapi.yaml#/components/responses/Problem'
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
@@ -232,13 +244,21 @@ paths:
                     availableMinor: 320000000
                     status: active
                     isSimulated: true
+        '400':
+          $ref: '../openapi.yaml#/components/responses/Problem'
         '401':
           $ref: '../openapi.yaml#/components/responses/Problem'
+        '404':
+          $ref: '../openapi.yaml#/components/responses/Problem'
         '409':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '422':
           $ref: '../openapi.yaml#/components/responses/Problem'
         '429':
           $ref: '#/components/responses/BankRateLimited'
         '501':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '503':
           $ref: '../openapi.yaml#/components/responses/Problem'
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
@@ -279,13 +299,21 @@ paths:
                     bankCategory: salary
                     status: booked
                 nextCursor: c2FsYXJpbw
+        '400':
+          $ref: '../openapi.yaml#/components/responses/Problem'
         '401':
           $ref: '../openapi.yaml#/components/responses/Problem'
+        '404':
+          $ref: '../openapi.yaml#/components/responses/Problem'
         '409':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '422':
           $ref: '../openapi.yaml#/components/responses/Problem'
         '429':
           $ref: '#/components/responses/BankRateLimited'
         '501':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '503':
           $ref: '../openapi.yaml#/components/responses/Problem'
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
@@ -322,11 +350,21 @@ paths:
                 accessToken: eyJhbGciOiJQUzI1NiJ9.example-access-2
                 refreshToken: eyJhbGciOiJQUzI1NiJ9.example-refresh-2
                 expiresIn: 300
+        '400':
+          $ref: '../openapi.yaml#/components/responses/Problem'
         '401':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '404':
           $ref: '../openapi.yaml#/components/responses/Problem'
         '409':
           $ref: '../openapi.yaml#/components/responses/Problem'
+        '422':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/BankRateLimited'
         '501':
+          $ref: '../openapi.yaml#/components/responses/Problem'
+        '503':
           $ref: '../openapi.yaml#/components/responses/Problem'
         default:
           $ref: '../openapi.yaml#/components/responses/Problem'
