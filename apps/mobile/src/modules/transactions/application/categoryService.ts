@@ -52,14 +52,14 @@ export function createCategoryService(deps: CategoryServiceDeps): CategoryServic
         override = { kind: 'transaction', key: tx.providerTxId };
       }
 
-      const { changed } = await categories.recategorize({
+      const { changed, overrides } = await categories.recategorize({
         ids,
         to,
         at: deps.clock.now().toISOString(),
         newId: deps.newId,
         override,
       });
-      if (override) deps.markDirty(OVERRIDES_COLLECTION, overrideRecordId(override));
+      for (const o of overrides) deps.markDirty(OVERRIDES_COLLECTION, overrideRecordId(o));
       if (changed.length > 0) deps.events.emit({ type: 'transactions.changed', ids: changed });
       return changed;
     },
