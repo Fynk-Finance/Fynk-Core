@@ -44,5 +44,19 @@ export function createMilestoneNotifier(deps: MilestoneNotifierDeps) {
         await store.record(goal.id, plan.record, deps.clock.now().toISOString());
       }
     },
+
+    /**
+     * After a restore: the milestones the goals already passed are recorded without a notice.
+     * They were noticed on the phone where they happened, and the list of noticed milestones
+     * is not in the backup.
+     */
+    async catchUp(): Promise<void> {
+      const store = deps.store();
+      for (const goal of await deps.goals()) {
+        const plan = planMilestones(goal.percent, await store.noticed(goal.id));
+        if (plan.record.length > 0)
+          await store.record(goal.id, plan.record, deps.clock.now().toISOString());
+      }
+    },
   };
 }
