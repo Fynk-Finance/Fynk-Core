@@ -41,6 +41,9 @@ var (
 	moneyPattern = regexp.MustCompile(`\$\s?(\d{1,3}(?:\.\d{3})+|\d+)(?:,\d+)?`)
 	// "30 %", "30%", "4,6 %".
 	percentPattern = regexp.MustCompile(`(\d+(?:[.,]\d+)?)\s?%`)
+	// Amounts without the peso sign, in folded text: "56.800", "56800 pesos", "300 mil",
+	// "1,2 millones". A number with no thousands dots and no unit is a count, not an amount.
+	plainAmountPattern = regexp.MustCompile(`\b(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d+))?(?:\s?(millon(?:es)?|mil|pesos|cop)\b)?`) //nolint:misspell // Spanish word
 	// Ticker-like words: 2 to 5 capital letters, or a $TICKER.
 	tickerPattern = regexp.MustCompile(`\$[A-Z]{1,5}\b|\b[A-Z]{2,5}\b`)
 	codeFence     = regexp.MustCompile("(?s)^\\s*```(?:json)?\\s*(.*?)\\s*```\\s*$")
@@ -197,7 +200,51 @@ func checkText(field, text string, maxRunes int, pesos, percents map[int64]bool)
 			return unsafe("%s mentions a percent that is not in the snapshot", field)
 		}
 	}
+	// The same rule for an amount the model wrote without the peso sign.
+	rest := percentPattern.ReplaceAllString(moneyPattern.ReplaceAllString(folded, " "), " ")
+	for _, m := range plainAmountPattern.FindAllStringSubmatch(rest, -1) {
+		v, isAmount := plainAmount(m[1], m[2], m[3])
+		if isAmount && !pesos[v] {
+			return unsafe("%s mentions an amount that is not in the snapshot", field)
+		}
+	}
 	return nil
+}
+
+// plainAmount reads a number written without the peso sign: its whole part, its decimals after
+// the comma and its unit. It answers the pesos it means and whether it is an amount at all. A
+// number that cannot be an exact amount of pesos answers -1, which no snapshot has.
+func plainAmount(whole, decimals, unit string) (int64, bool) {
+	if unit == "" && !strings.Contains(whole, ".") {
+		return 0, false
+	}
+	v, err := strconv.ParseInt(strings.ReplaceAll(whole, ".", ""), 10, 64)
+	if err != nil {
+		return -1, true
+	}
+	var scale int64
+	switch unit {
+	case "mil":
+		scale = 1_000
+	case "millon", "millones": //nolint:misspell // Spanish word
+		scale = 1_000_000
+	default:
+		return v, true // pesos: the cents after the comma are not compared, as with "$"
+	}
+	if len(decimals) > 3 || v > 1_000_000_000 {
+		return -1, true
+	}
+	frac, den := int64(0), int64(1)
+	if decimals != "" {
+		frac, _ = strconv.ParseInt(decimals, 10, 64)
+		for range decimals {
+			den *= 10
+		}
+	}
+	if (frac*scale)%den != 0 {
+		return -1, true
+	}
+	return v*scale + frac*scale/den, true
 }
 
 // containsWord reports whether phrase appears in s on word boundaries.
