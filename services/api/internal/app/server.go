@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"time"
@@ -46,6 +47,10 @@ func WithAuditVerifier(v AuditVerifier) Option {
 // readyTimeout bounds each readiness check.
 const readyTimeout = 2 * time.Second
 
+// maxBodyBytes is the most any request body may hold. It is a backstop for every route: the
+// biggest body of the contract is a backup upload (6 MiB, checked by its own module).
+const maxBodyBytes = 8 << 20
+
 // NewRouter builds the HTTP handler: /healthz, /readyz, /internal, and every module under /v1.
 // checks maps a dependency name ("postgres", "redis") to its Pinger.
 func NewRouter(log *slog.Logger, modules []Module, checks map[string]Pinger, opts ...Option) (http.Handler, error) {
@@ -63,7 +68,7 @@ func NewRouter(log *slog.Logger, modules []Module, checks map[string]Pinger, opt
 	}
 
 	r := chi.NewRouter()
-	r.Use(requestid.Middleware, accessLog(log), middleware.Recoverer)
+	r.Use(requestid.Middleware, accessLog(log), recoverer(log), limitBody)
 	r.NotFound(problem.NotFound)
 	r.MethodNotAllowed(problem.MethodNotAllowed)
 
@@ -140,6 +145,43 @@ func accessLog(log *slog.Logger) func(http.Handler) http.Handler {
 			)
 		})
 	}
+}
+
+// recoverer answers a panic with a 500 problem and logs it through the application logger. The
+// panic text is left out: it can hold what the request carried, and the redacting logger only
+// masks known keys. The type of the value and the stack say where it happened.
+func recoverer(log *slog.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				v := recover()
+				if v == nil {
+					return
+				}
+				if v == http.ErrAbortHandler { //nolint:errorlint // the sentinel net/http panics with
+					panic(v)
+				}
+				log.LogAttrs(r.Context(), slog.LevelError, "panic",
+					slog.String("request_id", requestid.From(r.Context())),
+					slog.String("method", r.Method),
+					slog.String("path", r.URL.Path),
+					slog.String("panic_type", fmt.Sprintf("%T", v)),
+					slog.String("stack", string(debug.Stack())),
+				)
+				problem.Write(w, problem.New(http.StatusInternalServerError, "internal", "Internal error",
+					"Something went wrong. Try again later."))
+			}()
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// limitBody stops a request body at maxBodyBytes, so no route reads an endless one.
+func limitBody(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
+		next.ServeHTTP(w, r)
+	})
 }
 
 func writeJSON(w http.ResponseWriter, status int, body any) {
