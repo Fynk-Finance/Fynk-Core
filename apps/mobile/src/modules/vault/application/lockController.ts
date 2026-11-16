@@ -606,7 +606,13 @@ export function createLockController(deps: LockControllerDeps): LockController {
     async appForegrounded() {
       const since = backgroundSince;
       backgroundSince = null;
-      const open = state.status === 'unlocked' || state.status === 'biometricOffer';
+      // The recovery code screen locks too: the code must not stay readable on a phone left
+      // alone. It was not confirmed, so nothing is lost and the next unlock offers a new one.
+      // A restore in progress is left alone, it shows no secret and needs the vault open.
+      const open =
+        state.status === 'unlocked' ||
+        state.status === 'biometricOffer' ||
+        state.status === 'recoveryCode';
       if (since !== null && open && shouldLock(since, deps.nowMs())) {
         await controller.lock();
       }
