@@ -54,9 +54,14 @@ func (f fakeSessions) SessionStart(ctx context.Context, userID, sid string) (tim
 
 type memAuditRecorder struct {
 	events []audit.Event
+	// failOn makes Record fail for that event type, as a broken audit store would.
+	failOn string
 }
 
 func (m *memAuditRecorder) Record(_ context.Context, e audit.Event) error {
+	if e.Type == m.failOn {
+		return errors.New("audit store down")
+	}
 	m.events = append(m.events, e)
 	return nil
 }
@@ -433,5 +438,55 @@ func TestDeleterFreshLoginValidation(t *testing.T) {
 	}
 	if rec.events[1].Type != audit.PrivacyDeletionCompleted {
 		t.Errorf("second audit event = %q, want %q", rec.events[1].Type, audit.PrivacyDeletionCompleted)
+	}
+}
+
+func TestADeletionWithoutItsRequestedEventDeletesNothing(t *testing.T) {
+	now := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
+	rec := &memAuditRecorder{failOn: audit.PrivacyDeletionRequested}
+	revoker := &fakeConsentsRevoker{}
+	users := &fakeUserDeleter{}
+	deleter := privacy.NewDeleter(nil, clock.NewFixed(now), rec, fakeSessions{start: now, found: true}, revoker, users)
+
+	_, err := deleter.DeleteAccount(context.Background(), auth.User{ID: "user-1", SessionID: "sid-1"}, httpapi.PrivacyDeletionRequestCreate{})
+	if err == nil {
+		t.Fatal("a deletion that cannot be audited must not start")
+	}
+	if len(revoker.revokedUsers) != 0 || len(users.deletedUsers) != 0 {
+		t.Fatalf("nothing may be deleted without the audit event: revoked %v, deleted %v", revoker.revokedUsers, users.deletedUsers)
+	}
+}
+
+func TestAFinishedDeletionLogsACompletedEventThatWasNotAudited(t *testing.T) {
+	now := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
+	rec := &memAuditRecorder{failOn: audit.PrivacyDeletionCompleted}
+	var logged bytes.Buffer
+	deleter := privacy.NewDeleter(nil, clock.NewFixed(now), rec, fakeSessions{start: now, found: true}, &fakeConsentsRevoker{}, &fakeUserDeleter{}).
+		LogTo(slog.New(slog.NewJSONHandler(&logged, nil)))
+
+	resp, err := deleter.DeleteAccount(context.Background(), auth.User{ID: "user-1", SessionID: "sid-1"}, httpapi.PrivacyDeletionRequestCreate{})
+	if err != nil || resp.Status != httpapi.Completed {
+		t.Fatalf("the account is already deleted, the answer must say so: %v %v", resp.Status, err)
+	}
+	if !strings.Contains(logged.String(), audit.PrivacyDeletionCompleted) {
+		t.Fatalf("the lost audit event must be logged, got %q", logged.String())
+	}
+	if strings.Contains(logged.String(), "user-1") {
+		t.Fatal("the log must not name the user")
+	}
+}
+
+func TestTheExportFailsInsteadOfInventingAnEmail(t *testing.T) {
+	now := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
+	for name, err := range map[string]error{"keycloak down": identity.ErrUnavailable, "unknown user": identity.ErrNotFound} {
+		collector := privacy.NewCollector(nil, fakeProfileReader{err: err}, clock.NewFixed(now))
+		if export, got := collector.Export(context.Background(), "user-123"); got == nil {
+			t.Errorf("%s: the export answered email %q", name, export.Profile.Email)
+		}
+	}
+	// A developer machine has no Keycloak admin client: the export still answers.
+	local := privacy.NewCollector(nil, nil, clock.NewFixed(now))
+	if _, err := local.Export(context.Background(), "user-123"); err != nil {
+		t.Fatalf("local export: %v", err)
 	}
 }
