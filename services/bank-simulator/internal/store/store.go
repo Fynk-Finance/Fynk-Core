@@ -393,12 +393,17 @@ func (s *BankStore) GetTransactions(consentID, accountID string, fromDate time.T
 		pageSize = 50
 	}
 
-	// Cursor is an index offset string
+	// The cursor is the id of the last movement of the page before. The list is newest first
+	// and the portal adds new movements at the front, so a position in the list would shift
+	// with every payment made between two pages. An id the list does not have starts again
+	// from the newest movement.
 	startIndex := 0
 	if cursor != "" {
-		var offset int
-		if _, err := fmt.Sscanf(cursor, "%d", &offset); err == nil && offset >= 0 && offset < len(filtered) {
-			startIndex = offset
+		for i := range filtered {
+			if filtered[i].ID == cursor {
+				startIndex = i + 1
+				break
+			}
 		}
 	}
 
@@ -408,7 +413,7 @@ func (s *BankStore) GetTransactions(consentID, accountID string, fromDate time.T
 
 	if endIndex < len(filtered) {
 		hasMore = true
-		nextCursor = fmt.Sprintf("%d", endIndex)
+		nextCursor = filtered[endIndex-1].ID
 	} else {
 		endIndex = len(filtered)
 	}
