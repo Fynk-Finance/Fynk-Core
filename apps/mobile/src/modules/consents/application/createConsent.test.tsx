@@ -109,6 +109,45 @@ describe('useCreateConsent', () => {
     expect(api.create.mock.calls.map((c) => c[1])).toEqual(['key-1', 'key-1']);
   });
 
+  it('keeps the key when the screen is closed and opened again', async () => {
+    const { api, deps } = fakeDeps();
+    const first = await renderHook(() => useCreateConsent(deps), {
+      wrapper: wrapperWith(newClient()),
+    });
+    await act(async () => {
+      await first.result.current.submit({ provider, text });
+    });
+    // The person cancels in the bank's page and comes back: the screen is a new one.
+    await first.unmount();
+    const second = await renderHook(() => useCreateConsent(deps), {
+      wrapper: wrapperWith(newClient()),
+    });
+    await act(async () => {
+      await second.result.current.submit({ provider, text });
+    });
+    expect(api.create.mock.calls.map((c) => c[1])).toEqual(['key-1', 'key-1']);
+  });
+
+  it('takes a new key when the consent of the old key is no longer pending', async () => {
+    const used: Consent = { ...pending, status: 'revoked' };
+    const fresh: Consent = { ...pending, id: '01928c7e-5b1a-7c3d-9e2f-4a6b8c0d2e50' };
+    const answers = [pending, used, fresh];
+    const { api, deps } = fakeDeps(async () => answers.shift()!);
+    const { result } = await renderHook(() => useCreateConsent(deps), {
+      wrapper: wrapperWith(newClient()),
+    });
+    await act(async () => {
+      await result.current.submit({ provider, text });
+    });
+    // That consent was linked and later revoked. The same entity is connected again.
+    let consent: Consent | undefined;
+    await act(async () => {
+      consent = await result.current.submit({ provider, text });
+    });
+    expect(consent).toEqual(fresh);
+    expect(api.create.mock.calls.map((c) => c[1])).toEqual(['key-1', 'key-1', 'key-2']);
+  });
+
   it('uses a new key for another provider', async () => {
     const { api, deps } = fakeDeps();
     const { result } = await renderHook(() => useCreateConsent(deps), {
