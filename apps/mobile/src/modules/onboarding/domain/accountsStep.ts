@@ -41,7 +41,11 @@ export function registeredTotal(
   return balanceTotalMinor - (savedCash ?? 0) + (typedCash ?? 0);
 }
 
-/** The amount "Continuar" has to save, or null when the field is empty or unchanged. */
+/**
+ * The amount "Continuar" has to save, or null when nothing changed. An emptied field means no
+ * cash, as "Total registrado" already shows, so a saved cash goes to $0.
+ */
 export function cashToSave(savedCash: MoneyMinor | null, typedCash: MoneyMinor | null) {
-  return typedCash !== null && typedCash !== savedCash ? typedCash : null;
+  const amount = typedCash ?? (savedCash === null ? null : 0);
+  return amount !== null && amount !== savedCash ? amount : null;
 }
