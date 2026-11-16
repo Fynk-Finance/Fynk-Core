@@ -73,6 +73,9 @@ type Store interface {
 	Rotate(ctx context.Context, id string, old, next []byte, at time.Time) error
 	// Revoke ends the link. Revoking twice keeps the first date.
 	Revoke(ctx context.Context, id string, at time.Time) error
+	// Delete forgets a link whose consent could not be granted, so the consent can be linked
+	// again. An unknown id is not an error.
+	Delete(ctx context.Context, id string) error
 }
 
 // UsableBy checks the link before a bank call: it must belong to the user and to the device
