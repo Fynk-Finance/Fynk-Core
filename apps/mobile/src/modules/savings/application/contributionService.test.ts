@@ -262,6 +262,18 @@ describe('"Deshacer"', () => {
     expect((await goals.get(goalId))?.savedMinor).toBe(pesos(300_000));
   });
 
+  it('keeps the contribution when M7 cannot free its movement, so the undo can be retried', async () => {
+    const id = await contributions.linkMovement(goalId, movement('t1', -300_000));
+    linker.setTransactionGoal.mockRejectedValueOnce(new Error('vault busy'));
+    await expect(contributions.undo(id)).rejects.toThrow('vault busy');
+    expect((await goals.get(goalId))?.savedMinor).toBe(pesos(300_000));
+    expect(marks.get('t1')).toBe(goalId);
+
+    await contributions.undo(id);
+    expect(await contributions.list(goalId)).toEqual([]);
+    expect(marks.get('t1')).toBeNull();
+  });
+
   it('does nothing for a contribution already undone', async () => {
     const id = await contributions.add(goalId, { amountMinor: 1, contributedOn: '2026-10-28' });
     await contributions.undo(id);

@@ -166,9 +166,11 @@ export function createContributionService(deps: ContributionServiceDeps): Contri
       const store = deps.store();
       const contribution = await store.get(contributionId);
       if (!contribution) return;
-      await store.markDeleted(contributionId, deps.clock.now().toISOString());
+      // The movement is freed first. If M7 fails, the contribution is still there and the undo
+      // can be tried again; the other order left a movement tied to a goal for good.
       if (contribution.transactionId && deps.movements)
         await deps.movements.setTransactionGoal(contribution.transactionId, null);
+      await store.markDeleted(contributionId, deps.clock.now().toISOString());
       deps.onChange();
     },
 
