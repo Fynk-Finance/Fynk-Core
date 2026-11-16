@@ -212,6 +212,35 @@ it.each(['consent_revoked', 'link_not_found'])(
   },
 );
 
+// The API renewed the tokens but its answer never arrived (or the bank no longer takes the
+// refresh token): the phone's token is dead for good, so the person has to connect again.
+it.each(['refresh_token_mismatch', 'invalid_grant'])(
+  'ends the link when the refresh token is dead (%s) instead of failing on every sync',
+  async (code) => {
+    await store.updateTokens('link-1', {
+      accessToken: 'at-1',
+      refreshToken: 'rt-1',
+      accessExpiresAt: '2026-10-29T15:00:30.000Z', // 30 s left
+    });
+    const { engine, bank, accounts, events } = setup({
+      refresh: jest.fn(async () =>
+        Promise.reject(new ApiError({ status: 409, code, title: code })),
+      ),
+    });
+    const report = await engine.syncAll();
+    expect(report.links).toEqual([
+      { linkId: 'link-1', provider: 'banco-demo', kind: 'revoked', code },
+    ]);
+    expect(bank.accounts).not.toHaveBeenCalled();
+    expect((await store.getLinks())[0]).toMatchObject({ status: 'revoked' });
+    expect(await store.getTokens('link-1')).toBeNull();
+    expect(accounts.markLinkRevoked).toHaveBeenCalledWith('link-1');
+    expect(events).toEqual([
+      { type: 'sync.failed', at: '2026-10-29T15:00:00.000Z', linkId: 'link-1', code },
+    ]);
+  },
+);
+
 it('never syncs a revoked link', async () => {
   await store.revokeLink('link-1', '2026-10-29T14:30:00Z');
   const { engine, bank, events } = setup();
