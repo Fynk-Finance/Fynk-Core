@@ -25,6 +25,7 @@ import {
 
 import { useInvestmentDeps, useOwnCdts } from '../application/hooks';
 import {
+  bogotaDate,
   chartPoints,
   formatRate,
   holdingsFrom,
@@ -59,7 +60,7 @@ export function createInvestmentScreen(header: InvestmentHeader) {
     const name = header.useDisplayName();
     const unread = header.useUnreadCount();
 
-    const today = deps ? deps.clock.now().toISOString().slice(0, 10) : '1970-01-01';
+    const today = deps ? bogotaDate(deps.clock.now()) : '1970-01-01';
     const holdings = holdingsFrom(own.data?.accounts ?? []);
     const summary = portfolioSummary(holdings, today);
     const points = chartPoints(own.data?.history ?? [], period, today);

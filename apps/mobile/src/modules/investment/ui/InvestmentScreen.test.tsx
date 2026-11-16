@@ -101,11 +101,11 @@ const screens = {
   [header.statisticsRoute]: RouteProbe,
 };
 
-function install(accounts: Account[]) {
+function install(accounts: Account[], now = '2026-10-28T17:00:00Z') {
   setInvestmentDeps({
     accounts: { getCdtAccounts: async () => accounts },
     market,
-    clock: createFixedClock('2026-10-28T17:00:00Z'),
+    clock: createFixedClock(now),
     portalUrl: 'https://bancodemo.example/portal/actions',
   });
 }
@@ -131,6 +131,16 @@ it('shows the own CDT with amount, rate, term and maturity, and the tiles', asyn
     within(screen.getByTestId('investment.tile.maturity')).getByText('27 feb'),
   ).toBeOnTheScreen();
   expect(screen.queryByText(/Aporte mensual/)).toBeNull();
+});
+
+it('uses the day in Bogotá, not in UTC, for the next maturity and the year', async () => {
+  // 20:00 of 27 Feb 2027 in Bogotá is already 28 Feb in UTC. The CDT matures on the 27th.
+  install([cdtAccount(200_000_000)], '2027-02-28T01:00:00Z');
+  await renderScreens({ screens, initial: 'Inversion' });
+  await screen.findByTestId('investment.holding.acc-cdt');
+  expect(
+    within(screen.getByTestId('investment.tile.maturity')).getByText('27 feb'),
+  ).toBeOnTheScreen();
 });
 
 it('reloads the own CDTs when M6 says the accounts changed, without reopening the app', async () => {
