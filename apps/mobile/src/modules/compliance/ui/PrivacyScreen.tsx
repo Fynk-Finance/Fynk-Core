@@ -29,9 +29,10 @@ import { complianceStrings } from './strings.es-CO';
 
 const t = complianceStrings.privacy;
 
+// "Mejorar Fynk" (anonymous usage statistics) is in the design but not here: that data is not
+// in "Where data lives", so it stays hidden until the team decides (CLAUDE.md, open item 5).
 export interface PrivacyPreferences {
   aiRecommendations: boolean;
-  improveFynk: boolean;
   marketingEmails: boolean;
 }
 
@@ -50,7 +51,6 @@ export function createPrivacyScreen({
 
     const [prefs, setPrefs] = useState<PrivacyPreferences>({
       aiRecommendations: true,
-      improveFynk: true,
       marketingEmails: false,
     });
 
@@ -97,22 +97,6 @@ export function createPrivacyScreen({
                   onValueChange={(val) => setPrefs((prev) => ({ ...prev, aiRecommendations: val }))}
                   accessibilityLabel={t.usage.ai.title}
                   testID="privacy.switch.ai"
-                />
-              </View>
-
-              <View style={[styles.toggleRow, styles.divider]}>
-                <IconTile icon="chartLine" tone="soft" size={40} />
-                <View style={styles.texts}>
-                  <AppText variant="bodyStrong">{t.usage.improve.title}</AppText>
-                  <AppText variant="small" color="textSecondary">
-                    {t.usage.improve.subtitle}
-                  </AppText>
-                </View>
-                <Switch
-                  value={prefs.improveFynk}
-                  onValueChange={(val) => setPrefs((prev) => ({ ...prev, improveFynk: val }))}
-                  accessibilityLabel={t.usage.improve.title}
-                  testID="privacy.switch.improve"
                 />
               </View>
 

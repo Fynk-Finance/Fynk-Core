@@ -48,21 +48,25 @@ describe('PrivacyScreen (CfgPrivacidad)', () => {
     await renderScreen();
 
     expect(screen.getByText(t.usage.ai.title)).toBeOnTheScreen();
-    expect(screen.getByText(t.usage.improve.title)).toBeOnTheScreen();
     expect(screen.getByText(t.usage.offers.title)).toBeOnTheScreen();
 
     const aiSwitch = screen.getByTestId('privacy.switch.ai');
     expect(aiSwitch).toBeOnTheScreen();
 
-    const improveSwitch = screen.getByTestId('privacy.switch.improve');
-    expect(improveSwitch).toBeOnTheScreen();
-
     const offersSwitch = screen.getByTestId('privacy.switch.offers');
     expect(offersSwitch).toBeOnTheScreen();
 
     await fireEvent.press(aiSwitch);
-    await fireEvent.press(improveSwitch);
     await fireEvent.press(offersSwitch);
+  });
+
+  // CLAUDE.md, open item 5: sharing usage statistics is not in "Where data lives", so the
+  // switch stays hidden until the team decides.
+  it('does not offer "Mejorar Fynk"', async () => {
+    await renderScreen();
+
+    expect(screen.queryByText(t.usage.improve.title)).toBeNull();
+    expect(screen.queryByTestId('privacy.switch.improve')).toBeNull();
   });
 
   it('renders legal and data information rows', async () => {
