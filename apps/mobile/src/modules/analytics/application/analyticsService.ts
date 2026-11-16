@@ -228,10 +228,16 @@ export function createAnalyticsService(deps: AnalyticsServiceDeps) {
       const { alerts, record } = capAlertsDue(statuses, sent);
       const s = analyticsStrings.alerts;
       let shown = 0;
+      // Alerts whose kind is turned off are not recorded as sent: they arrive if the person
+      // turns the kind back on while the cap is still over the mark in the same period.
+      const silenced = new Set<string>();
       for (const alert of alerts) {
         const { cap, spentMinor, percent, periodKey } = alert.status;
         const kind = alert.level === 'reached' ? 'cap_reached' : 'cap_warning';
-        if (!(await deps.notifications.isEnabled(kind))) continue;
+        if (!(await deps.notifications.isEnabled(kind))) {
+          silenced.add(`${cap.id}|${periodKey}`);
+          continue;
+        }
         const category = categoryLabel(cap.categoryId);
         await deps.notifications.notify({
           kind,
@@ -245,7 +251,10 @@ export function createAnalyticsService(deps: AnalyticsServiceDeps) {
         });
         shown += 1;
       }
-      await deps.caps.recordAlerts(record, deps.clock.now().toISOString());
+      await deps.caps.recordAlerts(
+        record.filter((r) => !silenced.has(`${r.capId}|${r.periodKey}`)),
+        deps.clock.now().toISOString(),
+      );
       return shown;
     },
   };
