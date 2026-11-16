@@ -54,6 +54,7 @@ export function createVaultCategoryStore(db: VaultDb): CategoryStore {
 
     recategorize({ ids, to, at, newId, override }) {
       return db.transaction(async (tx) => {
+        const overrides: Pick<CategoryOverride, 'kind' | 'key'>[] = [];
         if (override) {
           const current = await readOverride(tx, override.kind, override.key);
           await writeOverride(
@@ -61,6 +62,28 @@ export function createVaultCategoryStore(db: VaultDb): CategoryStore {
             { ...override, categoryId: to, updatedAt: at },
             (current?.backup_version ?? 0) + 1,
           );
+          overrides.push(override);
+        }
+        if (override?.kind === 'merchant') {
+          // A choice made before for one movement of this merchant wins over the merchant's
+          // when movements are categorized again (a new phone, a restore). It follows the new
+          // choice, so "apply to all" stays applied.
+          const older = await tx.query<{ k: string; backup_version: number }>(
+            `SELECT o.provider_tx_id AS k, o.backup_version
+               FROM transactions_tx_overrides o
+               JOIN transactions_transactions t ON t.provider_tx_id = o.provider_tx_id
+              WHERE t.merchant_key = ? AND o.category_id <> ?`,
+            [override.key, to],
+          );
+          for (const row of older) {
+            const own = { kind: 'transaction' as const, key: row.k };
+            await writeOverride(
+              tx,
+              { ...own, categoryId: to, updatedAt: at },
+              row.backup_version + 1,
+            );
+            overrides.push(own);
+          }
         }
         const changed: Id[] = [];
         for (const id of ids) {
@@ -85,7 +108,7 @@ export function createVaultCategoryStore(db: VaultDb): CategoryStore {
             [to, id],
           );
         }
-        return { changed };
+        return { changed, overrides };
       });
     },
 
