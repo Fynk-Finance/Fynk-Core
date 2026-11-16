@@ -18,6 +18,7 @@ var (
 	ErrInsufficientFunds    = errors.New("insufficient funds")
 	ErrWrongAccountType     = errors.New("this kind of account cannot be used for this action")
 	ErrInvalidAmount        = errors.New("amount must be greater than zero")
+	ErrMoreThanDebt         = errors.New("payment is more than the card owes")
 	ErrSubscriptionInactive = errors.New("subscription is cancelled")
 
 	ErrConsentNotAuthorized = errors.New("consent_not_authorized")
@@ -649,6 +650,11 @@ func (s *BankStore) PayCard(customerID, fromAccID, cardAccID string, amountMinor
 	}
 	if err := canSpend(fromAcc, amountMinor); err != nil {
 		return err
+	}
+	// A card's balance is what it owes, as a negative amount. Paying more would leave the card
+	// with money in favor and more credit than its limit.
+	if amountMinor > -cardAcc.BalanceMinor {
+		return ErrMoreThanDebt
 	}
 
 	fromAcc.BalanceMinor -= amountMinor

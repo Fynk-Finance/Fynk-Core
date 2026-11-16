@@ -279,3 +279,34 @@ func TestSubscriptions_RefuseBadAmountsAndCancelledCharges(t *testing.T) {
 		t.Errorf("charge of a cancelled subscription: %v", err)
 	}
 }
+
+// A card payment never goes over what the card owes: the card would end with money in favor
+// and more credit than its limit.
+func TestPayCard_RefusesMoreThanTheDebt(t *testing.T) {
+	s := NewBankStore(time.Time{})
+	p := domain.ProviderBancoDemo
+	cust, _ := linkedCustomer(t, s, p, domain.AccountTypeSavings, domain.AccountTypeCreditCard)
+	savings := accountOf(t, s, cust, p, domain.AccountTypeSavings)
+	card := accountOf(t, s, cust, p, domain.AccountTypeCreditCard)
+	debt := -card.BalanceMinor
+	if debt <= 0 {
+		t.Fatalf("the demo card owes nothing: %d", card.BalanceMinor)
+	}
+	// Enough money to pay more than the debt, so only the debt can stop the payment.
+	if _, err := s.ReceiveMoney(cust, savings.ID, "ABONO", debt+1_00); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := s.PayCard(cust, savings.ID, card.ID, debt+1_00); !errors.Is(err, ErrMoreThanDebt) {
+		t.Fatalf("payment over the debt: %v", err)
+	}
+	if got := accountOf(t, s, cust, p, domain.AccountTypeCreditCard); got.BalanceMinor != card.BalanceMinor {
+		t.Fatalf("the card changed after a refused payment: %d, was %d", got.BalanceMinor, card.BalanceMinor)
+	}
+	if err := s.PayCard(cust, savings.ID, card.ID, debt); err != nil {
+		t.Fatalf("paying the whole debt: %v", err)
+	}
+	if got := accountOf(t, s, cust, p, domain.AccountTypeCreditCard); got.BalanceMinor != 0 {
+		t.Fatalf("the card still owes %d after paying everything", got.BalanceMinor)
+	}
+}
