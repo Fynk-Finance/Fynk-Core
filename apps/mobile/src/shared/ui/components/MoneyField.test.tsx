@@ -7,6 +7,13 @@ import { parseCopInput } from '../../domain/money';
 import { formatMoneyInput, MoneyField } from './MoneyField';
 
 describe('formatMoneyInput', () => {
+  it('drops the cents of a pasted amount instead of reading them as pesos', () => {
+    expect(formatMoneyInput('1.500,50')).toBe('1.500');
+    expect(formatMoneyInput('$ 1.500,5')).toBe('1.500');
+    expect(formatMoneyInput('200,00')).toBe('200');
+    expect(formatMoneyInput(',50')).toBe('');
+  });
+
   it.each([
     ['30000', '30.000'],
     ['3000', '3.000'],
