@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -55,6 +56,14 @@ type Deleter struct {
 	userDeleter     identity.UserDeleter
 	// keycloakRequired refuses a deletion while sessions or userDeleter is missing.
 	keycloakRequired bool
+	log              *slog.Logger
+}
+
+// LogTo sets where the Deleter reports what it cannot undo, such as an audit event that was
+// not written after the account was already deleted. It never logs who the user is.
+func (d *Deleter) LogTo(l *slog.Logger) *Deleter {
+	d.log = l
+	return d
 }
 
 // RequireKeycloak makes DeleteAccount refuse to run without the Keycloak ports. Only a developer
@@ -127,9 +136,18 @@ func (d *Deleter) DeleteAccount(ctx context.Context, user auth.User, req httpapi
 		}
 	}
 
-	// Audit start
+	stepsDone := make([]string, 0, 5)
+	fail := func(err error) (httpapi.PrivacyDeletionRequest, error) {
+		if d.pool != nil {
+			_, _ = d.pool.Exec(ctx, `UPDATE privacy.deletion_requests SET status = 'failed', steps_done = $2 WHERE id = $1`, reqID, stepsDone)
+		}
+		return httpapi.PrivacyDeletionRequest{}, err
+	}
+
+	// Audit start. Nothing is deleted yet, so a deletion that cannot leave its evidence stops
+	// here and the person can ask again.
 	if d.audit != nil {
-		_ = d.audit.Record(ctx, audit.Event{
+		if err := d.audit.Record(ctx, audit.Event{
 			Type:     audit.PrivacyDeletionRequested,
 			UserID:   user.ID,
 			DeviceID: user.DeviceID,
@@ -137,15 +155,9 @@ func (d *Deleter) DeleteAccount(ctx context.Context, user auth.User, req httpapi
 			Meta: map[string]string{
 				"request_id": reqID.String(),
 			},
-		})
-	}
-
-	stepsDone := make([]string, 0, 5)
-	fail := func(err error) (httpapi.PrivacyDeletionRequest, error) {
-		if d.pool != nil {
-			_, _ = d.pool.Exec(ctx, `UPDATE privacy.deletion_requests SET status = 'failed', steps_done = $2 WHERE id = $1`, reqID, stepsDone)
+		}); err != nil {
+			return fail(fmt.Errorf("privacy: audit deletion request: %w", err))
 		}
-		return httpapi.PrivacyDeletionRequest{}, err
 	}
 
 	// Step 1: Revoke every consent through M4 (notifies bank provider)
@@ -215,8 +227,10 @@ func (d *Deleter) DeleteAccount(ctx context.Context, user auth.User, req httpapi
 		}
 	}
 
+	// The account is already gone and cannot come back, so a failed audit is reported and the
+	// answer still says the deletion is complete.
 	if d.audit != nil {
-		_ = d.audit.Record(ctx, audit.Event{
+		if err := d.audit.Record(ctx, audit.Event{
 			Type:     audit.PrivacyDeletionCompleted,
 			UserID:   user.ID,
 			DeviceID: user.DeviceID,
@@ -224,7 +238,9 @@ func (d *Deleter) DeleteAccount(ctx context.Context, user auth.User, req httpapi
 			Meta: map[string]string{
 				"request_id": reqID.String(),
 			},
-		})
+		}); err != nil && d.log != nil {
+			d.log.ErrorContext(ctx, "audit record failed", "type", audit.PrivacyDeletionCompleted, "request_id", reqID.String(), "error", err)
+		}
 	}
 
 	msg := DeletionMessage(completedAt)
