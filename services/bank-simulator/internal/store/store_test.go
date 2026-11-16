@@ -107,3 +107,39 @@ func TestGetTransactions_IsSafeWhileThePortalWrites(t *testing.T) {
 		t.Errorf("Fynk sees %d of the 200 payments", payments)
 	}
 }
+
+// Fynk reads the movements page by page while the person keeps using the portal. A payment
+// made between two pages must not shift the next page: no movement twice, none skipped.
+func TestGetTransactions_APaymentBetweenTwoPagesDoesNotShiftTheNextPage(t *testing.T) {
+	s := NewBankStore(time.Time{})
+	p := domain.ProviderBancoDemo
+	cust, consent := linkedCustomer(t, s, p, domain.AccountTypeSavings)
+	acc := accountOf(t, s, cust, p, domain.AccountTypeSavings)
+
+	all, _, _, err := s.GetTransactions(consent, acc.ID, time.Time{}, "", 200)
+	if err != nil || len(all) < 5 {
+		t.Fatalf("need at least 5 movements, got %d (%v)", len(all), err)
+	}
+	first, more, cursor, err := s.GetTransactions(consent, acc.ID, time.Time{}, "", 2)
+	if err != nil || !more || len(first) != 2 {
+		t.Fatalf("first page: %d items, more=%v, %v", len(first), more, err)
+	}
+
+	if _, err := s.ReceiveMoney(cust, acc.ID, "ABONO ENTRE PAGINAS", 1_00); err != nil {
+		t.Fatal(err)
+	}
+
+	second, _, _, err := s.GetTransactions(consent, acc.ID, time.Time{}, cursor, 2)
+	if err != nil || len(second) != 2 {
+		t.Fatalf("second page: %d items, %v", len(second), err)
+	}
+	if second[0].ID != all[2].ID || second[1].ID != all[3].ID {
+		t.Fatalf("second page = %s, %s; want %s, %s", second[0].ID, second[1].ID, all[2].ID, all[3].ID)
+	}
+
+	// A cursor the bank does not know starts again from the newest movement.
+	again, _, _, err := s.GetTransactions(consent, acc.ID, time.Time{}, "no-such-movement", 1)
+	if err != nil || len(again) != 1 || again[0].Description != "ABONO ENTRE PAGINAS" {
+		t.Fatalf("unknown cursor: %+v, %v", again, err)
+	}
+}
