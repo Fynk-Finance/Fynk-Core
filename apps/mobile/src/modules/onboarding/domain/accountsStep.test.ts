@@ -63,9 +63,15 @@ describe('cashToSave', () => {
     expect(cashToSave(60_000_000, 0)).toBe(0);
   });
 
-  it('saves nothing when the field is empty or unchanged', () => {
+  it('saves nothing when the field is unchanged, or empty with no cash saved', () => {
     expect(cashToSave(null, null)).toBeNull();
-    expect(cashToSave(60_000_000, null)).toBeNull();
     expect(cashToSave(60_000_000, 60_000_000)).toBeNull();
+  });
+
+  // "Total registrado" leaves the cash out as soon as the field is emptied, so "Continuar"
+  // must save what the box shows: no cash.
+  it('saves $0 when the person empties the field of a saved cash', () => {
+    expect(cashToSave(60_000_000, null)).toBe(0);
+    expect(cashToSave(0, null)).toBeNull();
   });
 });
