@@ -79,3 +79,11 @@ func (p *Postgres) Revoke(ctx context.Context, id string, at time.Time) error {
 	}
 	return nil
 }
+
+// Delete implements link.Store.
+func (p *Postgres) Delete(ctx context.Context, id string) error {
+	if _, err := p.db.Exec(ctx, `DELETE FROM bank.links WHERE id = $1`, id); err != nil {
+		return fmt.Errorf("bank: delete link: %w", err)
+	}
+	return nil
+}

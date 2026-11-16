@@ -73,3 +73,11 @@ func (m *Memory) Revoke(_ context.Context, id string, at time.Time) error {
 	m.links[id] = l
 	return nil
 }
+
+// Delete implements link.Store.
+func (m *Memory) Delete(_ context.Context, id string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.links, id)
+	return nil
+}
