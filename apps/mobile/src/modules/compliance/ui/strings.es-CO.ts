@@ -11,6 +11,7 @@ export const complianceStrings = {
         title: 'Recomendaciones con IA',
         subtitle: 'Analizar tus gastos para darte consejos',
       },
+      // Not shown yet: see PrivacyScreen.tsx.
       improve: {
         title: 'Mejorar Fynk',
         subtitle: 'Compartir estadísticas anónimas de uso',
