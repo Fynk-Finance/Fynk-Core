@@ -3,7 +3,9 @@
 # The generated handlers (internal/*/http/api.gen.go) are not committed: run `make generate-go`
 # before building. make dev does it for you.
 
-FROM golang:1.27.3-bookworm AS build
+FROM --platform=$BUILDPLATFORM golang:1.27.3-bookworm AS build
+ARG TARGETOS
+ARG TARGETARCH
 WORKDIR /src
 ENV CGO_ENABLED=0 GOWORK=off GOTOOLCHAIN=local
 COPY go.mod go.sum ./
@@ -13,8 +15,8 @@ RUN if [ -z "$(find internal -name api.gen.go -print -quit)" ]; then \
       echo "The generated handlers are missing: run make generate-go first." >&2; exit 1; \
     fi
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api && \
-    go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate
+    GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-arm64} go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api && \
+    GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-arm64} go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate
 
 # Distroless: no shell, no package manager, runs as a non-root user.
 FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab

@@ -172,7 +172,7 @@ resource "aws_ecs_service" "main" {
   name            = "fynk-${var.environment}-${var.service_name}"
   cluster         = var.cluster_id
   task_definition = aws_ecs_task_definition.main.arn
-  desired_count   = 1
+  desired_count   = var.desired_count
   launch_type     = "FARGATE"
 
   network_configuration {

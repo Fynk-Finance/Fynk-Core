@@ -70,17 +70,17 @@ resource "aws_acm_certificate" "wildcard" {
   }
 }
 
-# Target Groups (HTTPS 8443 backend, targets are Fargate IPs)
+# Target Groups (HTTP 8080 backend, targets are Fargate IPs)
 resource "aws_lb_target_group" "api" {
   name        = "fynk-${var.environment}-tg-api"
-  port        = 8443
-  protocol    = "HTTPS"
+  port        = 8080
+  protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
 
   health_check {
     path                = "/healthz"
-    protocol            = "HTTPS"
+    protocol            = "HTTP"
     matcher             = "200"
     interval            = 15
     timeout             = 5
@@ -98,15 +98,15 @@ resource "aws_lb_target_group" "api" {
 
 resource "aws_lb_target_group" "keycloak" {
   name        = "fynk-${var.environment}-tg-keycloak"
-  port        = 8443
-  protocol    = "HTTPS"
+  port        = 8080
+  protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
 
   health_check {
-    path                = "/health/ready"
-    protocol            = "HTTPS"
-    matcher             = "200"
+    path                = "/"
+    protocol            = "HTTP"
+    matcher             = "200-404"
     interval            = 20
     timeout             = 5
     healthy_threshold   = 2
@@ -123,14 +123,14 @@ resource "aws_lb_target_group" "keycloak" {
 
 resource "aws_lb_target_group" "bank_simulator" {
   name        = "fynk-${var.environment}-tg-bankdemo"
-  port        = 8443
-  protocol    = "HTTPS"
+  port        = 8080
+  protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
 
   health_check {
     path                = "/healthz"
-    protocol            = "HTTPS"
+    protocol            = "HTTP"
     matcher             = "200"
     interval            = 15
     timeout             = 5

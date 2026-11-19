@@ -40,6 +40,7 @@ module "network" {
 }
 
 module "endpoints" {
+  count  = var.enable_staging_traffic ? 1 : 0
   source = "../../modules/endpoints"
 
   vpc_id      = module.network.vpc_id
@@ -143,18 +144,24 @@ module "ecs_api" {
   image                 = "${aws_ecr_repository.services["fynk-api"].repository_url}:latest"
   cpu                   = 512
   memory                = 1024
-  port                  = 8443
+  port                  = 8080
+  desired_count         = var.enable_staging_traffic ? 1 : 0
   environment           = var.environment
 
   environment_variables = [
     { name = "APP_ENV", value = var.environment },
-    { name = "PORT", value = "8443" },
-    { name = "DATABASE_URL", value = "postgres://fynk_master@${module.rds.endpoint}/fynk?sslmode=verify-full" },
+    { name = "PORT", value = "8080" },
+    { name = "DATABASE_URL", value = "postgres://fynk_master@${module.rds.endpoint}/fynk?sslmode=require" },
     { name = "REDIS_URL", value = "rediss://${module.redis.primary_endpoint_address}:6379/0" },
-    { name = "KEYCLOAK_ISSUER", value = "https://auth.${var.domain_name}/realms/fynk" }
+    { name = "KEYCLOAK_ISSUER", value = "https://auth.${var.domain_name}/realms/fynk" },
+    { name = "KEYCLOAK_URL", value = "https://auth.${var.domain_name}" },
+    { name = "KEYCLOAK_AUDIENCE", value = "fynk-api" },
+    { name = "KEYCLOAK_REALM", value = "fynk" }
   ]
 
   secrets = [
+    { name = "PGPASSWORD", valueFrom = "${module.rds.master_user_secret_arn}:password::" },
+    { name = "FYNK_ADMIN_CLIENT_SECRET", valueFrom = module.secrets.secret_arns["fynk_admin_client_secret"] },
     { name = "BANK_SIGNER_KMS_KEY_ID", valueFrom = module.secrets.secret_arns["bank_signer_kms_key_id"] },
     { name = "BANK_FINGERPRINT_KMS_KEY_ID", valueFrom = module.secrets.secret_arns["bank_fingerprint_kms_key_id"] },
     { name = "BANK_REDIRECT_URI", valueFrom = module.secrets.secret_arns["bank_redirect_uri"] },
@@ -203,17 +210,31 @@ module "ecs_keycloak" {
   image                 = "${aws_ecr_repository.services["fynk-keycloak"].repository_url}:latest"
   cpu                   = 1024
   memory                = 2048
-  port                  = 8443
+  port                  = 8080
+  desired_count         = var.enable_staging_traffic ? 1 : 0
   environment           = var.environment
 
   environment_variables = [
     { name = "KC_HOSTNAME", value = "https://auth.${var.domain_name}" },
+    { name = "FYNK_AUTH_URL", value = "https://auth.${var.domain_name}" },
+    { name = "FYNK_BACKCHANNEL_AUTH_URL", value = "https://auth.${var.domain_name}" },
+    { name = "KC_HTTP_ENABLED", value = "true" },
+    { name = "KC_PROXY_HEADERS", value = "xforwarded" },
     { name = "KC_DB", value = "postgres" },
-    { name = "KC_DB_URL", value = "jdbc:postgresql://${module.rds.endpoint}/keycloak?ssl=true&sslmode=verify-full" }
+    { name = "KC_DB_URL", value = "jdbc:postgresql://${module.rds.endpoint}/fynk?ssl=true&sslmode=require" },
+    { name = "KC_DB_USERNAME", value = "fynk_master" },
+    { name = "KC_BOOTSTRAP_ADMIN_USERNAME", value = "admin" },
+    { name = "FYNK_DEMO_USER_PASSWORD", value = "Demo-staging-1" },
+    { name = "BANCO_DEMO_USER_PASSWORD", value = "Banco-staging-1" },
+    { name = "BANCO_DEMO_BROKER_SECRET", value = "banco-demo-broker-staging" },
+    { name = "BANK_PORTAL_CLIENT_SECRET", value = "bank-portal-staging" }
   ]
 
   secrets = [
-    { name = "KEYCLOAK_ADMIN_PASSWORD", valueFrom = module.secrets.keycloak_admin_secret_arn }
+    { name = "KEYCLOAK_ADMIN_PASSWORD", valueFrom = module.secrets.keycloak_admin_secret_arn },
+    { name = "KC_BOOTSTRAP_ADMIN_PASSWORD", valueFrom = module.secrets.keycloak_admin_secret_arn },
+    { name = "KC_DB_PASSWORD", valueFrom = "${module.rds.master_user_secret_arn}:password::" },
+    { name = "FYNK_ADMIN_CLIENT_SECRET", valueFrom = module.secrets.secret_arns["fynk_admin_client_secret"] }
   ]
 }
 
@@ -230,12 +251,13 @@ module "ecs_bank_simulator" {
   image                 = "${aws_ecr_repository.services["fynk-bank-simulator"].repository_url}:latest"
   cpu                   = 256
   memory                = 512
-  port                  = 8443
+  port                  = 8080
+  desired_count         = var.enable_staging_traffic ? 1 : 0
   environment           = var.environment
 
   environment_variables = [
-    { name = "BANK_PUBLIC_ADDR", value = ":8443" },
-    { name = "BANK_INTERNAL_ADDR", value = ":9443" }
+    { name = "BANK_PUBLIC_ADDR", value = ":8080" },
+    { name = "BANK_DEV_MODE", value = "1" }
   ]
 }
 
@@ -267,6 +289,7 @@ module "monitoring" {
 
 # GitHub Actions OIDC Deploy Role (No static AWS keys per HU-034)
 module "github_oidc" {
+  count  = var.enable_github_oidc ? 1 : 0
   source = "../../modules/github-oidc"
 
   environment = var.environment

@@ -39,3 +39,15 @@ variable "private_subnet_cidrs" {
   default     = ["10.0.10.0/24", "10.0.20.0/24"]
   description = "CIDR blocks for private subnets"
 }
+
+variable "enable_github_oidc" {
+  type        = bool
+  default     = false
+  description = "Enable GitHub Actions OIDC deploy role (set to false if AWS Organization SCP blocks iam:CreateOpenIDConnectProvider)"
+}
+
+variable "enable_staging_traffic" {
+  type        = bool
+  default     = true
+  description = "When true, runs VPC endpoints and ECS tasks. When false, turns them off to save AWS credits (sleep mode)."
+}
