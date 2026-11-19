@@ -1,11 +1,15 @@
 //go:build bedrock
 
-// Live check of the recommendations against the real Bedrock model (SCRUM-38, criterion
-// "revisión manual de 20 respuestas en staging"). It is not part of `make test`: it needs AWS
-// credentials with bedrock:InvokeModel and costs a few cents. Run it from services/api:
+// Live check of the recommendations against the real model (SCRUM-38, criterion "revisión
+// manual de 20 respuestas en staging"). It is not part of `make test`. With Bedrock it needs AWS
+// credentials with bedrock:InvokeModel and costs a few cents; with -provider=ollama it needs
+// `ollama serve` and the model pulled (ADR 0009). Run it from services/api:
 //
 //	AWS_REGION=us-east-2 go test -tags bedrock -run TestLiveBedrock -count=1 -v \
 //	  ./internal/recommendations/ -args -report=../../docs/qa/bedrock-live-report.md
+//
+//	go test -tags bedrock -run TestLiveBedrock -count=1 -v ./internal/recommendations/ \
+//	  -args -provider=ollama -model=qwen2.5:3b -report=../../docs/qa/ollama-live-report.md
 //
 // Every answer goes through the same post checks as POST /recommendations. The report lists,
 // for each run, the snapshot fixture, the raw text of the model, whether the checks accepted it
@@ -26,17 +30,17 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/advisor"
-	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/bedrock"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/prompt"
 )
 
 var (
-	liveRuns   = flag.Int("runs", 4, "runs per fixture (5 fixtures × 4 = 20 answers)")
-	liveModel  = flag.String("model", "amazon.nova-lite-v1:0", "Bedrock model id")
-	liveReport = flag.String("report", "", "Markdown file for the report (stdout only when empty)")
+	liveRuns     = flag.Int("runs", 4, "runs per fixture (5 fixtures × 4 = 20 answers)")
+	liveProvider = flag.String("provider", providerBedrock, "bedrock or ollama")
+	liveModel    = flag.String("model", "", "model id (default amazon.nova-lite-v1:0, or qwen2.5:3b on Ollama)")
+	liveOllama   = flag.String("ollama-url", "", "Ollama server (default http://localhost:11434)")
+	liveReport   = flag.String("report", "", "Markdown file for the report (stdout only when empty)")
 )
 
 // recorder keeps the raw text of every model call, also the ones the checks reject.
@@ -66,26 +70,41 @@ func (r *recorder) Generate(ctx context.Context, req advisor.ModelRequest) (advi
 
 func TestLiveBedrock(t *testing.T) {
 	ctx := context.Background()
-	awsCfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		t.Fatalf("AWS credentials: %v (run aws configure first)", err)
-	}
-	if awsCfg.Region == "" {
-		awsCfg.Region = "us-east-2" // the region of the project (infra/terraform/envs/staging)
+	// The same settings and model choice as the running API (module.go).
+	cfg := loadSettings(func(k string) string {
+		return map[string]string{
+			"RECOMMENDATIONS_PROVIDER":   *liveProvider,
+			"RECOMMENDATIONS_MODEL_ID":   *liveModel,
+			"RECOMMENDATIONS_OLLAMA_URL": *liveOllama,
+			"AWS_REGION":                 os.Getenv("AWS_REGION"),
+		}[k]
+	})
+	region := "local"
+	if cfg.Provider == providerBedrock {
+		awsCfg, err := config.LoadDefaultConfig(ctx)
+		if err != nil {
+			t.Fatalf("AWS credentials: %v (run aws configure first)", err)
+		}
+		if awsCfg.Region != "" && os.Getenv("AWS_REGION") == "" {
+			cfg.Region = awsCfg.Region // the region of aws configure
+		}
+		region = cfg.Region
 	}
 	fixtures, err := filepath.Glob(filepath.Join("advisor", "testdata", "*.json"))
 	if err != nil || len(fixtures) == 0 {
 		t.Fatalf("no fixtures in advisor/testdata: %v", err)
 	}
 
-	rec := &recorder{model: bedrock.New(bedrockruntime.NewFromConfig(awsCfg), *liveModel)}
+	quiet := slog.New(slog.NewTextHandler(io.Discard, nil))
+	model, advCfg := newModel(cfg, quiet)
+	rec := &recorder{model: model}
 	svc := advisor.NewService(rec, nil, advisor.Prompt{Version: prompt.Version(), System: prompt.SystemES()},
-		advisor.DefaultConfig(*liveModel), time.Now, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		advCfg, time.Now, quiet)
 
 	var report strings.Builder
-	fmt.Fprintf(&report, "# Bedrock live check, %s\n\n", time.Now().Format("2006-01-02 15:04"))
-	fmt.Fprintf(&report, "Model `%s`, region `%s`, prompt `%s`, %d runs per fixture.\n\n",
-		*liveModel, awsCfg.Region, prompt.Version(), *liveRuns)
+	fmt.Fprintf(&report, "# Live check of the recommendations, %s\n\n", time.Now().Format("2006-01-02 15:04"))
+	fmt.Fprintf(&report, "Provider `%s`, model `%s`, region `%s`, prompt `%s`, %d runs per fixture.\n\n",
+		cfg.Provider, cfg.ModelID, region, prompt.Version(), *liveRuns)
 	report.WriteString("Mark each answer: [ ] correct numbers, [ ] clear Spanish, [ ] no product advice.\n\n")
 
 	accepted, total := 0, 0
@@ -137,8 +156,8 @@ func TestLiveBedrock(t *testing.T) {
 		}
 	}
 	if failed == len(rec.calls) {
-		t.Fatalf("every call to Bedrock failed, check the credentials, the region and the access to the model: %v",
-			rec.calls[0].err)
+		t.Fatalf("every call to %s failed (credentials, region or model access on Bedrock; "+
+			"ollama serve and ollama pull on Ollama): %v", cfg.Provider, rec.calls[0].err)
 	}
 
 	t.Log("\n" + report.String())

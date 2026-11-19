@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -131,6 +133,27 @@ func TestSettingsDefaults(t *testing.T) {
 	s = loadSettings(func(k string) string { return env[k] })
 	if s.ModelID != "anthropic.claude-haiku-4-5" || s.Region != "us-west-2" || s.DailyLimit != 3 {
 		t.Fatalf("from env: %+v", s)
+	}
+}
+
+func TestOllamaProviderUsesTheLocalModelAndOneAttemptUnderTheServerLimit(t *testing.T) {
+	s := loadSettings(func(string) string { return "" })
+	if s.Provider != providerBedrock || s.OllamaURL != "http://localhost:11434" {
+		t.Fatalf("Bedrock must stay the default: %+v", s)
+	}
+	env := map[string]string{"RECOMMENDATIONS_PROVIDER": "ollama", "RECOMMENDATIONS_OLLAMA_URL": "http://host.docker.internal:11434"}
+	s = loadSettings(func(k string) string { return env[k] })
+	if s.Provider != providerOllama || s.ModelID != "qwen2.5:3b" || s.OllamaURL != "http://host.docker.internal:11434" {
+		t.Fatalf("ollama: %+v", s)
+	}
+	_, cfg := newModel(s, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if cfg.Attempts != 1 || cfg.AttemptTimeout <= 0 || cfg.AttemptTimeout >= 30*time.Second {
+		t.Fatalf("attempts must end before the 30 s write limit: %+v", cfg)
+	}
+	// An unknown provider falls back to Bedrock, never to an empty model.
+	s = loadSettings(func(k string) string { return map[string]string{"RECOMMENDATIONS_PROVIDER": "openai"}[k] })
+	if s.Provider != providerBedrock {
+		t.Fatalf("unknown provider: %+v", s)
 	}
 }
 
