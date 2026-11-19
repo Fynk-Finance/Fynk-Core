@@ -175,6 +175,16 @@ describe('Cuentas', () => {
     expect(await saved()).toMatchObject({ step: 'goals', completed: ['name', 'accounts'] });
   });
 
+  it('"Continuar" saves $0 when the cash field was emptied, as "Total registrado" shows', async () => {
+    const setCash = jest.fn(async () => undefined);
+    await openAccountsStep(DESIGN, setCash);
+    await fireEvent.changeText(cashField(), '');
+    await fireEvent.press(continueButton());
+
+    expect(setCash).toHaveBeenCalledWith(0);
+    await waitFor(() => expect(screen.getByText('Paso 3 de 4')).toBeTruthy());
+  });
+
   it('"Continuar" does not save the cash when it did not change', async () => {
     const setCash = jest.fn(async () => undefined);
     await openAccountsStep(DESIGN, setCash);

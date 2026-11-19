@@ -11,7 +11,7 @@ import {
   type GoalSummary as AnalyticsGoal,
   type PaydayContribution,
 } from '@modules/analytics';
-import { notificationsPort } from '@modules/notifications';
+import { notificationsPort, onNotificationSettingsChanged } from '@modules/notifications';
 import { getTransactionsBetween, setTransactionGoal } from '@modules/transactions';
 import {
   getVaultDb,
@@ -83,8 +83,17 @@ const milestones = createMilestoneNotifier({
   notifications: notificationsPort,
   clock,
 });
+// One check at a time. The first check after a restore is quiet: a restored goal that is
+// already at 50 % or more passed those milestones on another phone, so they are recorded
+// without a notice (the list of noticed milestones is not in the backup).
+let milestoneWork: Promise<void> = Promise.resolve();
+let restored = false;
 const checkMilestones = () => {
-  void milestones.check().catch(() => undefined);
+  const quiet = restored;
+  restored = false;
+  milestoneWork = milestoneWork
+    .then(() => (quiet ? milestones.catchUp() : milestones.check()))
+    .catch(() => undefined);
 };
 appEvents.on('vault.unlocked', checkMilestones);
 service.subscribe(checkMilestones);
@@ -97,9 +106,13 @@ const payday = createPaydayService({
   notifications: notificationsPort,
   clock,
 });
-appEvents.on('vault.unlocked', () => {
+const refreshPayday = () => {
   void payday.refresh().catch(() => undefined);
-});
+};
+appEvents.on('vault.unlocked', refreshPayday);
+// M12 drops the pending reminders of a kind that is turned off. When it is turned on again
+// they are scheduled again here, without waiting for the next time the vault opens.
+onNotificationSettingsChanged(refreshPayday);
 
 export { PAYDAY_REMINDER_ROUTE };
 
@@ -114,7 +127,10 @@ export const openPaydayReminder = (
 const backup = createSavingsBackup({
   db: getVaultDb,
   markDirty,
-  onImported: () => service.notifyChanged(),
+  onImported: () => {
+    restored = true;
+    service.notifyChanged();
+  },
 });
 registerBackupCollection(backup.goals);
 registerBackupCollection(backup.contributions);

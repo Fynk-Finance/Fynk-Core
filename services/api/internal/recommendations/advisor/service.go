@@ -62,11 +62,14 @@ type Config struct {
 	MaxTokens   int32   // 800
 	Temperature float32 // 0.2
 	Attempts    int     // 2: the first call and one retry
+	// AttemptTimeout ends one model call. Every attempt must end before the server's 30 s write
+	// limit, or the phone gets a cut connection in place of the fallback. Zero means no limit.
+	AttemptTimeout time.Duration
 }
 
 // DefaultConfig is the configuration of docs/modules/M11-recommendations.md.
 func DefaultConfig(modelID string) Config {
-	return Config{ModelID: modelID, MaxTokens: 800, Temperature: 0.2, Attempts: 2}
+	return Config{ModelID: modelID, MaxTokens: 800, Temperature: 0.2, Attempts: 2, AttemptTimeout: 12 * time.Second}
 }
 
 // Service generates recommendations. It stores nothing: the snapshot is in transit only.
@@ -130,7 +133,12 @@ func (s *Service) Generate(ctx context.Context, userID string, req Request) (Res
 
 	for attempt := 1; attempt <= s.cfg.Attempts; attempt++ {
 		started := time.Now()
-		resp, err := s.model.Generate(ctx, mreq)
+		callCtx, cancel := ctx, context.CancelFunc(func() {})
+		if s.cfg.AttemptTimeout > 0 {
+			callCtx, cancel = context.WithTimeout(ctx, s.cfg.AttemptTimeout)
+		}
+		resp, err := s.model.Generate(callCtx, mreq)
+		cancel()
 		latency := time.Since(started)
 		outcome := "ok"
 		var out Output

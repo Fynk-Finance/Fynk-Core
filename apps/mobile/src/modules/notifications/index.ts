@@ -12,7 +12,12 @@ import {
   startLocalNotificationListeners,
 } from './adapters/os/expoLocalNotifier';
 import { notificationsMigrations } from './adapters/vault/migrations';
-import { getVaultDb, registerVaultMigrations } from './adapters/vault/vaultAccess';
+import {
+  getVaultDb,
+  markDirty,
+  registerBackupCollection,
+  registerVaultMigrations,
+} from './adapters/vault/vaultAccess';
 import { createVaultInboxStore } from './adapters/vault/vaultInboxStore';
 import { createNotificationService } from './application/notificationService';
 import type { PaymentLeadDays } from './domain/settings';
@@ -29,7 +34,10 @@ const service = createNotificationService({
   clock,
   newId: randomUUID,
   notifier: createExpoLocalNotifier(),
+  markDirty: (collection, id) => markDirty(collection, id),
 });
+// Ajustes de notificaciones travel in the encrypted backup (HU-045). The inbox does not.
+registerBackupCollection(service.backupCollection);
 
 const deliverDue = () => {
   void service.deliverDue().catch(() => undefined);

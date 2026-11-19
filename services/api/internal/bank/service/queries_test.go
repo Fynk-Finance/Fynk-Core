@@ -62,6 +62,25 @@ func TestARevokedConsentAnswersConsentRevokedAndEndsTheLink(t *testing.T) {
 	}
 }
 
+func TestASyncRefusedByFynksOwnConsentCheckIsAudited(t *testing.T) {
+	f := setup(t)
+	l := f.link(t)
+	f.consents.active["c-1"] = false // M4 revoked it
+	for _, when := range []string{"when the link ends", "on a link that already ended"} {
+		before := len(f.audit.events)
+		if _, err := f.svc.Accounts(context.Background(), owner, l.LinkID, "access-1"); !errors.Is(err, ErrConsentRevoked) {
+			t.Fatalf("%s: got %v, want consent_revoked", when, err)
+		}
+		if len(f.audit.events) != before+1 {
+			t.Fatalf("%s: %d events written, want 1", when, len(f.audit.events)-before)
+		}
+		last := f.audit.events[len(f.audit.events)-1]
+		if last.Type != audit.BankSyncFailed || last.Meta["error_code"] != "consent_revoked" || last.Meta["provider"] != "banco-demo" {
+			t.Fatalf("%s: event = %+v", when, last)
+		}
+	}
+}
+
 func TestTheBankRefusingTheConsentEndsTheLinkToo(t *testing.T) {
 	f := setup(t)
 	l := f.link(t)

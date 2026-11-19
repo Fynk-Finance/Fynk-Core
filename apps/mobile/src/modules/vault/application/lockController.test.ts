@@ -764,6 +764,23 @@ describe('recovery code after an open', () => {
     expect(t.controller.getState().status).toBe('recoveryCode');
   });
 
+  it('locks the recovery code screen after 5 minutes in the background, and offers a new code after the unlock', async () => {
+    const t = setup({ recoveryKey: 'missing' });
+    await t.controller.unlock();
+    expect(t.controller.getState().status).toBe('recoveryCode');
+
+    t.controller.appBackgrounded();
+    t.advance(5 * MIN + 1);
+    await t.controller.appForegrounded();
+    expect(t.controller.getState().status).toBe('locked');
+    expect(t.vault.close).toHaveBeenCalled();
+
+    // The code was never confirmed, so nothing reached the server: the next unlock shows one.
+    await t.controller.unlock();
+    expect(t.controller.getState().status).toBe('recoveryCode');
+    expect(t.prepare).toHaveBeenCalledTimes(2);
+  });
+
   it('does not ask for a device that is not active', async () => {
     const t = setup({ recoveryKey: 'missing', device: { id: 'd1', status: 'pending' } });
     await t.controller.unlock();

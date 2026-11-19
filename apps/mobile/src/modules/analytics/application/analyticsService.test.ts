@@ -112,6 +112,18 @@ describe('analytics service', () => {
     expect(notifications.inbox()).toEqual([]);
   });
 
+  it('shows the alert of this period once the user turns it back on', async () => {
+    const { service, notifications } = await setup([tx('2026-10-26', -190_000, 'restaurants')]);
+    notifications.setEnabled('cap_warning', false);
+    await service.saveCap({ categoryId: 'restaurants', period: 'week', capMinor: cop(200_000) });
+    expect(await service.evaluateCaps()).toBe(0);
+
+    notifications.setEnabled('cap_warning', true);
+    expect(await service.evaluateCaps()).toBe(1);
+    expect(notifications.inbox().map((n) => n.kind)).toEqual(['cap_warning']);
+    expect(await service.evaluateCaps()).toBe(0);
+  });
+
   it('backs up caps and settings and restores them on a new phone', async () => {
     const first = await setup();
     await first.service.saveCap({ categoryId: 'treats', period: 'month', capMinor: cop(100_000) });

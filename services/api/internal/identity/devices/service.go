@@ -231,7 +231,8 @@ func activeCaller(ctx context.Context, tx Tx, userID, callerID string) error {
 }
 
 // Remove removes the device deviceID on behalf of callerDeviceID and returns its Keycloak
-// session id for the caller to revoke. A device may always remove itself. Removing another
+// session id for the caller to revoke (also next to an audit error, when the device is already
+// removed). A device may always remove itself. Removing another
 // device needs an active caller (ErrNotActive otherwise, also for a blank caller id); the
 // check runs in the same transaction as the removal.
 // Removing a removed device is not an error: it returns an empty session id and audits nothing.
@@ -265,8 +266,10 @@ func (s *Service) Remove(ctx context.Context, userID, callerDeviceID, deviceID s
 	if err != nil || !removed {
 		return "", err
 	}
+	// The device is already removed: its session id goes back even when the audit fails, so
+	// the caller can still end the session. A retry would find the device removed and get none.
 	if err := s.auditRemoved(ctx, userID, deviceID, "user"); err != nil {
-		return "", err
+		return sid, err
 	}
 	return sid, nil
 }
@@ -324,8 +327,9 @@ func (s *Service) removeOthers(ctx context.Context, userID, currentDeviceID stri
 		return nil, err
 	}
 	for _, id := range ids {
+		// As in Remove: the devices are already removed, so the session ids go back with the error.
 		if err := s.auditRemoved(ctx, userID, id, "others"); err != nil {
-			return nil, err
+			return sids, err
 		}
 	}
 	return sids, nil

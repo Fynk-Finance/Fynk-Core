@@ -41,3 +41,105 @@ func TestActivateConsent_SetsCustomerAndStatus(t *testing.T) {
 		t.Errorf("unknown consent: got %v", err)
 	}
 }
+
+func TestTakeRefreshToken_WorksOnceAndOnlyForRefreshTokens(t *testing.T) {
+	s := NewBankStore(time.Time{})
+	s.IssueToken("rt-live", TokenRecord{Kind: TokenKindRefresh, ConsentID: "c1", ExpiresAt: time.Now().Add(time.Minute)})
+	s.IssueToken("rt-dead", TokenRecord{Kind: TokenKindRefresh, ConsentID: "c1", ExpiresAt: time.Now().Add(-time.Second)})
+	s.IssueToken("at-live", TokenRecord{Kind: TokenKindAccess, ConsentID: "c1", ExpiresAt: time.Now().Add(time.Minute)})
+
+	if rec, ok := s.TakeRefreshToken("rt-live"); !ok || rec.ConsentID != "c1" {
+		t.Errorf("live refresh token not found: %+v", rec)
+	}
+	if _, ok := s.TakeRefreshToken("rt-live"); ok {
+		t.Error("a refresh token must work once")
+	}
+	if _, ok := s.TakeRefreshToken("rt-dead"); ok {
+		t.Error("an expired refresh token must count as missing")
+	}
+	if _, ok := s.TakeRefreshToken("at-live"); ok {
+		t.Error("an access token is not a refresh token")
+	}
+	if _, ok := s.LookupToken("at-live"); !ok {
+		t.Error("an access token must survive a wrong refresh attempt")
+	}
+}
+
+// Fynk reads movements while the person acts in the portal. Run with -race (CI does): reading
+// the customer's movements outside the store lock is a data race with RecordPayment.
+func TestGetTransactions_IsSafeWhileThePortalWrites(t *testing.T) {
+	s := NewBankStore(time.Time{})
+	p := domain.ProviderBancoDemo
+	cust, consent := linkedCustomer(t, s, p, domain.AccountTypeSavings)
+	savings := accountOf(t, s, cust, p, domain.AccountTypeSavings)
+	if _, err := s.ReceiveMoney(cust, savings.ID, "FONDEO PRUEBA", 1_000_000_00); err != nil {
+		t.Fatal(err)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < 200; i++ {
+			if _, err := s.RecordPayment(cust, savings.ID, "TIENDA", "shopping", 1_00); err != nil {
+				t.Errorf("payment %d: %v", i, err)
+				return
+			}
+		}
+	}()
+	for i := 0; i < 200; i++ {
+		if _, _, _, err := s.GetTransactions(consent, savings.ID, time.Time{}, "", 50); err != nil {
+			t.Fatalf("read %d: %v", i, err)
+		}
+	}
+	<-done
+
+	txs, _, _, err := s.GetTransactions(consent, savings.ID, time.Now().Add(-time.Hour), "", 200)
+	if err != nil {
+		t.Fatal(err)
+	}
+	payments := 0
+	for _, tx := range txs {
+		if tx.Description == "PAGO TIENDA" {
+			payments++
+		}
+	}
+	if payments != 200 {
+		t.Errorf("Fynk sees %d of the 200 payments", payments)
+	}
+}
+
+// Fynk reads the movements page by page while the person keeps using the portal. A payment
+// made between two pages must not shift the next page: no movement twice, none skipped.
+func TestGetTransactions_APaymentBetweenTwoPagesDoesNotShiftTheNextPage(t *testing.T) {
+	s := NewBankStore(time.Time{})
+	p := domain.ProviderBancoDemo
+	cust, consent := linkedCustomer(t, s, p, domain.AccountTypeSavings)
+	acc := accountOf(t, s, cust, p, domain.AccountTypeSavings)
+
+	all, _, _, err := s.GetTransactions(consent, acc.ID, time.Time{}, "", 200)
+	if err != nil || len(all) < 5 {
+		t.Fatalf("need at least 5 movements, got %d (%v)", len(all), err)
+	}
+	first, more, cursor, err := s.GetTransactions(consent, acc.ID, time.Time{}, "", 2)
+	if err != nil || !more || len(first) != 2 {
+		t.Fatalf("first page: %d items, more=%v, %v", len(first), more, err)
+	}
+
+	if _, err := s.ReceiveMoney(cust, acc.ID, "ABONO ENTRE PAGINAS", 1_00); err != nil {
+		t.Fatal(err)
+	}
+
+	second, _, _, err := s.GetTransactions(consent, acc.ID, time.Time{}, cursor, 2)
+	if err != nil || len(second) != 2 {
+		t.Fatalf("second page: %d items, %v", len(second), err)
+	}
+	if second[0].ID != all[2].ID || second[1].ID != all[3].ID {
+		t.Fatalf("second page = %s, %s; want %s, %s", second[0].ID, second[1].ID, all[2].ID, all[3].ID)
+	}
+
+	// A cursor the bank does not know starts again from the newest movement.
+	again, _, _, err := s.GetTransactions(consent, acc.ID, time.Time{}, "no-such-movement", 1)
+	if err != nil || len(again) != 1 || again[0].Description != "ABONO ENTRE PAGINAS" {
+		t.Fatalf("unknown cursor: %+v, %v", again, err)
+	}
+}

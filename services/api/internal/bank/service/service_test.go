@@ -13,6 +13,7 @@ import (
 
 	audit "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/keys"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/link"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/store"
 	consentports "github.com/Fynk-Finance/Fynk-Core/services/api/internal/consents/ports"
@@ -82,6 +83,7 @@ type fakeConsents struct {
 	pending map[string]consentports.Pending // by consent id, all owned by userA
 	granted map[string]string               // consent id -> provider consent id
 	active  map[string]bool
+	err     error // what MarkGranted answers
 }
 
 func (f *fakeConsents) Pending(_ context.Context, userID, id string) (consentports.Pending, error) {
@@ -99,6 +101,9 @@ func (f *fakeConsents) Pending(_ context.Context, userID, id string) (consentpor
 func (f *fakeConsents) MarkGranted(_ context.Context, id, providerConsentID string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.err != nil {
+		return f.err
+	}
 	f.granted[id] = providerConsentID
 	f.active[id] = true
 	return nil
@@ -123,6 +128,7 @@ func (r *recorder) Record(_ context.Context, e audit.Event) error {
 
 type fixture struct {
 	svc      *Service
+	deps     Deps
 	bank     *fakeProvider
 	consents *fakeConsents
 	links    *store.Memory
@@ -151,13 +157,14 @@ func setup(t *testing.T) *fixture {
 		},
 		links: store.NewMemory(), audit: &recorder{}, clock: c, fp: fp,
 	}
-	f.svc = New(Deps{
+	f.deps = Deps{
 		Providers: ProviderMap{"banco-demo": f.bank}, Pending: f.consents, Consents: f.consents,
 		Links: f.links, Authorizations: store.NewMemoryAuthorizations(c), Fingerprints: fp,
 		Limiter: store.NewMemoryLimits(c), Nonces: store.NewMemoryLimits(c),
 		Audit: f.audit, Clock: c, Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
 		RedirectURI: "fynk://bank/callback",
-	})
+	}
+	f.svc = New(f.deps)
 	return f
 }
 
@@ -330,6 +337,48 @@ func TestARejectedCodeGrantsNothingAndStoresNoLink(t *testing.T) {
 	}
 	if len(f.consents.granted) != 0 || len(f.audit.events) != 0 {
 		t.Fatal("nothing may be granted or audited after a rejected code")
+	}
+}
+
+// brokenLinks is a link store whose Insert fails, as a database error would.
+type brokenLinks struct{ link.Store }
+
+func (brokenLinks) Insert(context.Context, link.Link) error { return errors.New("database down") }
+
+func TestALinkThatCannotBeStoredLeavesTheConsentPending(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	s, _ := f.svc.CreateAuthorization(ctx, User{userA, deviceA}, start)
+	d := f.deps
+	d.Links = brokenLinks{f.links}
+	if _, err := New(d).Exchange(ctx, User{userA, deviceA}, s.AuthorizationID, "code-1", "verifier-1"); err == nil {
+		t.Fatal("a failed insert must fail the exchange")
+	}
+	if len(f.consents.granted) != 0 || len(f.audit.events) != 0 {
+		t.Fatal("the consent must stay pending and nothing is audited when the link was not stored")
+	}
+	// The person starts again with the same consent and it works.
+	if l := f.link(t); l.LinkID == "" {
+		t.Fatal("the pending consent must be linkable again")
+	}
+}
+
+func TestAConsentThatCannotBeGrantedKeepsNoLink(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	s, _ := f.svc.CreateAuthorization(ctx, User{userA, deviceA}, start)
+	f.consents.err = consentports.ErrConsentNotPending
+	_, err := f.svc.Exchange(ctx, User{userA, deviceA}, s.AuthorizationID, "code-1", "verifier-1")
+	if !errors.Is(err, consentports.ErrConsentNotPending) {
+		t.Fatalf("got %v, want ErrConsentNotPending", err)
+	}
+	if len(f.audit.events) != 0 {
+		t.Fatal("no link is audited when the consent was not granted")
+	}
+	// No link is left on the consent, so it can be linked once the grant works.
+	f.consents.err = nil
+	if l := f.link(t); l.LinkID == "" {
+		t.Fatal("the consent must be linkable again")
 	}
 }
 

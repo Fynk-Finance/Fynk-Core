@@ -468,6 +468,18 @@ func TestGetBelongsOnlyToTheCreatingDevice(t *testing.T) {
 	}
 }
 
+// A failed device lookup is not "no such request": the new phone polls this call, and a 404
+// would make it give up on a request that is still open.
+func TestGetReturnsTheDeviceLookupError(t *testing.T) {
+	e := setup()
+	a := e.create(t)
+	boom := errors.New("db down")
+	e.id.gone[newID] = boom
+	if _, err := e.s.Get(context.Background(), newPhone, a.ID); !errors.Is(err, boom) || errors.Is(err, approvals.ErrNotFound) {
+		t.Fatalf("err = %v, want the lookup error", err)
+	}
+}
+
 func TestGetReportsExpiredAndStoresIt(t *testing.T) {
 	e := setup()
 	a := e.create(t)

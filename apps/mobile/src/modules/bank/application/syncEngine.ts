@@ -38,8 +38,16 @@ export interface SyncReport {
   links: LinkSyncResult[];
 }
 
-// The backend no longer has the link or its consent: the person has to connect again.
-const GONE = new Set(['consent_revoked', 'link_not_found']);
+// The person has to connect again: the backend no longer has the link or its consent, or the
+// phone's refresh token is dead. That happens when the API renewed the tokens and its answer
+// was lost (refresh_token_mismatch), or when the bank stopped taking the token (invalid_grant).
+// Neither heals by trying again.
+const GONE = new Set([
+  'consent_revoked',
+  'link_not_found',
+  'refresh_token_mismatch',
+  'invalid_grant',
+]);
 // A safety stop for a bank that keeps sending a next page.
 const MAX_PAGES = 500;
 

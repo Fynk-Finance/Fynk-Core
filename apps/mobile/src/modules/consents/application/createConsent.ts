@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRef } from 'react';
 
 import { isApiError } from '@shared/api';
 
@@ -35,21 +34,33 @@ export function createConsent(deps: ConsentsDeps, input: CreateConsentInput): Pr
 export const errorKindOf = (e: unknown): ConsentErrorKind =>
   consentErrorKind(isApiError(e) ? e.code : undefined);
 
+// The keys live as long as the app run, not as long as a screen: the acceptance screen is
+// closed while the bank's page is open, and a retry after it must not record a second consent.
+const keysOf = new WeakMap<ConsentsDeps, Map<string, string>>();
+
 /**
  * `createConsent` for a screen. One Idempotency-Key per provider and text version, so a double
- * tap or a retry after a lost answer returns the same pending consent. When the text changed
+ * tap, a retry after a lost answer or a new try after a cancelled bank page returns the same
+ * pending consent. A key whose consent is no longer pending (it was linked, revoked or it
+ * failed) is dropped, because the next acceptance is a new consent. When the text changed
  * since it was shown, the text is loaded again and the person has to accept the new one.
  */
 export function useCreateConsent(deps: ConsentsDeps) {
   const queryClient = useQueryClient();
-  const key = useRef<{ for: string; value: string } | null>(null);
 
   const mutation = useMutation({
-    mutationFn: (input: Omit<CreateConsentInput, 'idempotencyKey'>) => {
+    mutationFn: async (input: Omit<CreateConsentInput, 'idempotencyKey'>) => {
+      let keys = keysOf.get(deps);
+      if (!keys) keysOf.set(deps, (keys = new Map()));
       const target = `${input.provider.id}|${input.text.version}|${input.text.sha256}`;
-      if (key.current?.for !== target)
-        key.current = { for: target, value: deps.newIdempotencyKey() };
-      return createConsent(deps, { ...input, idempotencyKey: key.current.value });
+      const known = keys.get(target);
+      if (known) {
+        const consent = await createConsent(deps, { ...input, idempotencyKey: known });
+        if (consent.status === 'pending') return consent;
+      }
+      const key = deps.newIdempotencyKey();
+      keys.set(target, key);
+      return createConsent(deps, { ...input, idempotencyKey: key });
     },
     onError: (e) => {
       if (errorKindOf(e) === 'text_changed') {

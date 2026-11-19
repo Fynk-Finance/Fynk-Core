@@ -53,7 +53,14 @@ export interface CategoryStore {
     at: IsoDateTime;
     newId: () => Id;
     override: Pick<CategoryOverride, 'kind' | 'key'> | null;
-  }): Promise<{ changed: Id[] }>;
+  }): Promise<{
+    changed: Id[];
+    /**
+     * Every override it wrote: the one asked for and, for a merchant, the older choices for
+     * single movements of that merchant, which now carry the same category.
+     */
+    overrides: Pick<CategoryOverride, 'kind' | 'key'>[];
+  }>;
   /** History of a movement, newest first. */
   history(transactionId: Id): Promise<CategoryChange[]>;
   exportOverrides(): Promise<BackupRecord<CategoryOverride>[]>;

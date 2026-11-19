@@ -17,6 +17,12 @@ describe('shouldLock', () => {
     expect(shouldLock(1_000, 1_000 + FIVE_MIN + 1)).toBe(true);
     expect(shouldLock(0, 60 * 60 * 1000)).toBe(true);
   });
+
+  // The time comes from the phone's clock, which the person can set back while the app waits.
+  it('locks when the clock went back while the app was in the background', () => {
+    expect(shouldLock(60 * 60 * 1000, 0)).toBe(true);
+    expect(shouldLock(1_000, 999)).toBe(true);
+  });
 });
 
 describe('isFreshLogin', () => {

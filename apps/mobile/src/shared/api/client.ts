@@ -5,6 +5,7 @@
 //   * X-Device-Id, when the device is registered;
 //   * X-Request-Id, a fresh id per attempt.
 // On 401 the client asks for a token refresh once (M1 provides the hook) and retries once.
+// An attempt the server does not answer in time is aborted and reported as a network error.
 //
 // Usage:
 //   const health = await unwrap(api.GET('/bank/health'));
@@ -29,7 +30,15 @@ export interface ApiClientOptions {
   hooks: () => Partial<ApiHooks>;
   fetch?: (input: Request) => Promise<Response>;
   newRequestId?: () => string;
+  /** How long one attempt waits for the server to start answering. */
+  timeoutMs?: number;
 }
+
+/**
+ * Longer than the API's own 30 s limit, so a slow answer is cut by the server first and this
+ * only ends a connection that hangs. Without it a screen waits forever on a dead network.
+ */
+export const DEFAULT_TIMEOUT_MS = 35_000;
 
 export type ApiClient = Client<paths>;
 
@@ -45,6 +54,7 @@ export function newRequestId(): string {
 export function createAuthFetch(options: ApiClientOptions): (input: Request) => Promise<Response> {
   const baseFetch = options.fetch ?? ((input: Request) => globalThis.fetch(input));
   const makeId = options.newRequestId ?? newRequestId;
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   let refreshing: Promise<boolean> | null = null;
 
   // One refresh at a time: concurrent 401s wait for the same refresh.
@@ -66,10 +76,17 @@ export function createAuthFetch(options: ApiClientOptions): (input: Request) => 
     if (token) headers.set('Authorization', `Bearer ${token}`);
     if (deviceId) headers.set('X-Device-Id', deviceId);
     headers.set('X-Request-Id', makeId());
+    const controller = new AbortController();
+    // A caller that cancels its own request still cancels it.
+    if (request.signal.aborted) controller.abort();
+    else request.signal.addEventListener('abort', () => controller.abort());
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      return await baseFetch(new Request(request, { headers }));
+      return await baseFetch(new Request(request, { headers, signal: controller.signal }));
     } catch {
       throw ApiError.network();
+    } finally {
+      clearTimeout(timer);
     }
   };
 

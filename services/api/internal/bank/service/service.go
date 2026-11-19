@@ -161,8 +161,8 @@ type Linked struct {
 	ExpiresIn    time.Duration
 }
 
-// Exchange trades the code for the bank tokens with PKCE, marks the consent granted (M4),
-// stores the link with the refresh token's fingerprint, and returns the tokens.
+// Exchange trades the code for the bank tokens with PKCE, stores the link with the refresh
+// token's fingerprint, marks the consent granted (M4), and returns the tokens.
 func (s *Service) Exchange(ctx context.Context, u User, authorizationID, code, verifier string) (Linked, error) {
 	if u.DeviceID == "" {
 		return Linked{}, ErrDeviceRequired
@@ -198,17 +198,24 @@ func (s *Service) Exchange(ctx context.Context, u User, authorizationID, code, v
 	if providerConsentID == "" {
 		providerConsentID = a.ProviderConsentID
 	}
-	if err := s.d.Consents.MarkGranted(ctx, a.ConsentID, providerConsentID); err != nil {
-		return Linked{}, err
-	}
 	now := s.d.Clock.Now()
 	l := link.Link{
 		ID: NewID(now), UserID: u.ID, DeviceID: u.DeviceID, Provider: a.Provider,
 		ConsentID: a.ConsentID, TokenFingerprint: fp, Status: link.StatusActive, CreatedAt: now,
 	}
+	// The link is stored before the consent is granted. A link that cannot be stored leaves
+	// the consent pending, so the person can start again; a granted consent with no link
+	// could never be linked.
 	if err := s.d.Links.Insert(ctx, l); err != nil {
 		if errors.Is(err, link.ErrConsentLinked) {
 			return Linked{}, ErrConsentAlreadyLinked
+		}
+		return Linked{}, err
+	}
+	if err := s.d.Consents.MarkGranted(ctx, a.ConsentID, providerConsentID); err != nil {
+		// One link per consent: without this the pending consent could not be linked again.
+		if delErr := s.d.Links.Delete(ctx, l.ID); delErr != nil {
+			s.d.Log.ErrorContext(ctx, "link of an ungranted consent not deleted", "error", delErr)
 		}
 		return Linked{}, err
 	}

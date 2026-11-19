@@ -159,6 +159,32 @@ describe('scheduled reminders', () => {
     expect(await service.deliverDue()).toBe(0);
   });
 
+  it('keeps a reminder that already fired when the same id is scheduled for a later time', async () => {
+    await service.schedule(reminder);
+    clock.set('2026-10-30T12:00:00Z'); // the app opens after it fired, and M9 reschedules first
+    await service.schedule({
+      ...reminder,
+      fireAt: '2026-11-29T14:00:00Z',
+      dedupeKey: 'recurring:r1:2026-11-30',
+    });
+
+    expect(await service.list()).toEqual([
+      expect.objectContaining({ createdAt: '2026-10-29T14:00:00.000Z', readAt: null }),
+    ]);
+    expect(await service.deliverDue()).toBe(0); // the new time has not come
+    clock.set('2026-11-30T12:00:00Z');
+    expect(await service.deliverDue()).toBe(1);
+    expect(await service.list()).toHaveLength(2);
+  });
+
+  it('does not deliver twice a past reminder scheduled again for the same time', async () => {
+    clock.set('2026-10-30T12:00:00Z');
+    await service.schedule(reminder);
+    await service.schedule(reminder);
+    expect(await service.deliverDue()).toBe(1);
+    expect(await service.list()).toHaveLength(1);
+  });
+
   it('delivers nothing after cancel', async () => {
     await service.schedule(reminder);
     await service.cancel('reminder:r1');

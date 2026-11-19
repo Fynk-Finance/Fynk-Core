@@ -173,6 +173,29 @@ describe('api client', () => {
     });
   });
 
+  it('gives up on a request the server never answers, as a network_error', async () => {
+    // A connection that hangs: it ends only when the request is aborted.
+    const hanging = jest.fn(
+      (req: Request) =>
+        new Promise<Response>((_resolve, reject) => {
+          req.signal.addEventListener('abort', () => reject(new Error('aborted')));
+        }),
+    );
+    let n = 0;
+    const api = createApiClient({
+      baseUrl: BASE,
+      hooks: () => ({}),
+      fetch: hanging,
+      newRequestId: () => `req-${++n}`,
+      timeoutMs: 20,
+    });
+
+    await expect(unwrap(api.GET('/bank/health'))).rejects.toMatchObject({
+      code: 'network_error',
+    });
+    expect(hanging).toHaveBeenCalledTimes(1);
+  });
+
   it('turns a failed connection into a network_error ApiError', async () => {
     const fn = async () => {
       throw new TypeError('Network request failed');

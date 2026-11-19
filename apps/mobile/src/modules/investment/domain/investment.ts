@@ -4,6 +4,13 @@
 import type { Account, IsoDate, MoneyMinor } from '@shared/domain';
 
 const DAY_MS = 86_400_000;
+// Colombia has no daylight saving time, so America/Bogota is a fixed UTC-05:00.
+const BOGOTA_OFFSET_MS = -5 * 60 * 60 * 1000;
+
+/** The calendar day in America/Bogota of an instant. */
+export function bogotaDate(now: Date): IsoDate {
+  return new Date(now.getTime() + BOGOTA_OFFSET_MS).toISOString().slice(0, 10);
+}
 
 function days(from: IsoDate, to: IsoDate): number {
   return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS);

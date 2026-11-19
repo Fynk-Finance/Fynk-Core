@@ -3,7 +3,6 @@ package privacy
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -52,7 +51,11 @@ func (c *Collector) Export(ctx context.Context, userID string) (httpapi.PrivacyD
 	}
 
 	// 1. Profile from Keycloak
-	export.Profile = c.fetchProfile(ctx, userID, now)
+	profile, err := c.fetchProfile(ctx, userID, now)
+	if err != nil {
+		return export, err
+	}
+	export.Profile = profile
 
 	if c.pool == nil {
 		return export, nil
@@ -96,7 +99,10 @@ func (c *Collector) Export(ctx context.Context, userID string) (httpapi.PrivacyD
 	return export, nil
 }
 
-func (c *Collector) fetchProfile(ctx context.Context, userID string, fallbackTime time.Time) httpapi.PrivacyProfileData {
+// fetchProfile reads the profile from Keycloak. Without a profile reader (a developer machine
+// with no admin client) it answers a placeholder address. With one, a failed read fails the
+// export: the document is the person's data, so it never carries an address nobody gave.
+func (c *Collector) fetchProfile(ctx context.Context, userID string, fallbackTime time.Time) (httpapi.PrivacyProfileData, error) {
 	prof := httpapi.PrivacyProfileData{
 		Id:            userID,
 		Email:         openapi_types.Email(userID + "@fynk.local"),
@@ -105,15 +111,12 @@ func (c *Collector) fetchProfile(ctx context.Context, userID string, fallbackTim
 	}
 
 	if c.profile == nil {
-		return prof
+		return prof, nil
 	}
 
 	u, err := c.profile.GetUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, identity.ErrNotFound) || errors.Is(err, identity.ErrUnavailable) {
-			return prof
-		}
-		return prof
+		return httpapi.PrivacyProfileData{}, fmt.Errorf("privacy: read profile: %w", err)
 	}
 
 	if u.Email != "" {
@@ -129,7 +132,7 @@ func (c *Collector) fetchProfile(ctx context.Context, userID string, fallbackTim
 	if u.LastName != "" {
 		prof.LastName = &u.LastName
 	}
-	return prof
+	return prof, nil
 }
 
 func (c *Collector) fetchDevices(ctx context.Context, userID string) ([]httpapi.PrivacyDeviceData, error) {

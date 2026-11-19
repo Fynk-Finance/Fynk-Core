@@ -25,8 +25,8 @@ export interface BackupRegistry {
   /** Resolves when every markDirty made so far has reached the table. */
   settled(): Promise<void>;
   readDirty(): Promise<DirtyRow[]>;
-  /** Deletes these rows unless they were marked again after `maxSeq`. */
-  clearDirty(rows: DirtyRow[], maxSeq: number): Promise<void>;
+  /** Deletes these rows unless they were marked again after they were read (their seq changed). */
+  clearDirty(rows: DirtyRow[]): Promise<void>;
   /** Forgets the marks kept in memory while the vault was locked (wipe). */
   reset(): void;
 }
@@ -127,13 +127,15 @@ export function createBackupRegistry({ getVaultDb, events }: BackupRegistryDeps)
         seq: Number(r.seq),
       }));
     },
-    async clearDirty(rows, maxSeq) {
+    async clearDirty(rows) {
       if (rows.length === 0) return;
       await getVaultDb().transaction(async (tx) => {
         for (const row of rows) {
           await tx.execute(
-            'DELETE FROM vault_backup_dirty WHERE collection = ? AND record_id = ? AND seq <= ?',
-            [row.collection, row.recordId, maxSeq],
+            // The exact seq, not "up to the highest seen": a new seq is MAX(seq) + 1 of the rows
+            // left in the table, so after other rows are cleared a new mark can repeat an old seq.
+            'DELETE FROM vault_backup_dirty WHERE collection = ? AND record_id = ? AND seq = ?',
+            [row.collection, row.recordId, row.seq],
           );
         }
       });

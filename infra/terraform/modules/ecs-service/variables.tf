@@ -86,3 +86,9 @@ variable "task_policy_statements" {
   default     = []
   description = "Additional IAM policy statements for the ECS task role"
 }
+
+variable "secrets_kms_key_arn" {
+  type        = string
+  default     = null
+  description = "ARN of the KMS key that encrypts the secrets of this service. Null when they use the AWS managed key"
+}

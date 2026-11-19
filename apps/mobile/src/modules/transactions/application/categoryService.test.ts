@@ -189,6 +189,31 @@ describe('transactions.category_overrides backup', () => {
     phone.close();
   });
 
+  it('applies a merchant-wide choice over an older choice for one movement, also after a restore', async () => {
+    await categories.changeCategory('c1', 'cinema');
+    await categories.changeCategory('c2', 'restaurants', { applyToMerchant: true });
+    expect((await service.getTransaction('c1'))?.categoryId).toBe('restaurants');
+    expect(backup.dirty('transactions.category_overrides').sort()).toEqual([
+      'merchant:juan valdez',
+      'transaction:p-c1',
+    ]);
+    const exported = await backup.exportAll();
+
+    // New phone: the older choice for c1 must not come back and win over the merchant's.
+    const phone = await newVault();
+    build(phone);
+    await backup.importAll(exported);
+    const { newIds } = await service.upsertFromSync({
+      accountId: 'acc-ahorros',
+      since: '2020-01-01T00:00:00Z',
+      transactions: [coffee('c1', '2026-09-20T15:00:00Z'), coffee('c2', '2026-09-10T15:00:00Z')],
+    });
+    await service.categorizeNew(newIds);
+    expect((await service.getTransaction('c1'))?.categoryId).toBe('restaurants');
+    expect((await service.getTransaction('c2'))?.categoryId).toBe('restaurants');
+    phone.close();
+  });
+
   it('never lets an older backup undo a newer choice', async () => {
     await categories.changeCategory('c1', 'restaurants', { applyToMerchant: true });
     await categories.changeCategory('c1', 'other', { applyToMerchant: true });

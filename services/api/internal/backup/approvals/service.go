@@ -125,10 +125,14 @@ func (s *Service) Pending(ctx context.Context, user auth.User) ([]Open, error) {
 
 // Get returns the request to the new device that created it; anything else is ErrNotFound. A
 // pending request past its expiry is reported (and stored) as expired. The grant is returned
-// once: the same transaction clears it and audits the read.
+// once: the same transaction clears it and audits the read. A device lookup that fails is
+// returned as it is: the new phone polls this call and must not read it as "no such request".
 func (s *Service) Get(ctx context.Context, user auth.User, id string) (View, error) {
 	if _, err := s.device(ctx, user); err != nil {
-		return View{}, ErrNotFound
+		if errors.Is(err, ErrNotActive) {
+			return View{}, ErrNotFound
+		}
+		return View{}, err
 	}
 	now := s.clock.Now()
 	var out View

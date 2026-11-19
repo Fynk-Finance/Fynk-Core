@@ -98,6 +98,23 @@ func testStore(t *testing.T, s link.Store, id func(n int) string) {
 		}
 	})
 
+	t.Run("delete forgets the link and frees its consent", func(t *testing.T) {
+		l := newLink(id(6), id(106))
+		_ = s.Insert(ctx, l)
+		if err := s.Delete(ctx, l.ID); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := s.Get(ctx, l.ID); !errors.Is(err, link.ErrNotFound) {
+			t.Fatalf("got %v, want ErrNotFound", err)
+		}
+		if err := s.Insert(ctx, newLink(id(7), id(106))); err != nil {
+			t.Fatalf("the consent must be free again: %v", err)
+		}
+		if err := s.Delete(ctx, id(98)); err != nil {
+			t.Fatalf("deleting an unknown link: %v", err)
+		}
+	})
+
 	t.Run("revoke ends the link, keeps the first date and stops rotations", func(t *testing.T) {
 		l := newLink(id(5), id(105))
 		_ = s.Insert(ctx, l)

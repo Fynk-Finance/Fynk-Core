@@ -7,9 +7,14 @@ import { TextField, type TextFieldProps } from './TextField';
 /** Most digits of pesos, as the cash field (a trillion pesos is far above any balance). */
 const MAX_PESO_DIGITS = 12;
 
-/** `30000` → `30.000`, `$200.000` → `200.000`, `007` → `7`. Digits only; empty stays empty. */
+/**
+ * `30000` → `30.000`, `$200.000` → `200.000`, `007` → `7`. Digits only; empty stays empty.
+ * The field is whole pesos, so the cents of a pasted amount are dropped: `1.500,50` → `1.500`.
+ * Without that its digits would join the pesos and give 100 times the amount.
+ */
 export function formatMoneyInput(text: string): string {
-  const digits = text
+  const [pesos = ''] = text.split(',');
+  const digits = pesos
     .replace(/\D/g, '')
     .replace(/^0+(?=\d)/, '')
     .slice(0, MAX_PESO_DIGITS);

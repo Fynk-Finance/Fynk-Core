@@ -5,8 +5,11 @@ import type { NotificationKind, NotifyInput } from '@shared/ports';
 
 import type { InboxItem } from '../domain/inbox';
 
-/** allowAll: "Permitir notificaciones". paymentLeadDays: days before a payment for its reminder. */
-export type PreferenceKey = 'allowAll' | 'paymentLeadDays';
+/**
+ * allowAll: "Permitir notificaciones". paymentLeadDays: days before a payment for its reminder.
+ * settingsVersion: how many times the settings changed, the version of their backup record.
+ */
+export type PreferenceKey = 'allowAll' | 'paymentLeadDays' | 'settingsVersion';
 
 export interface NewInboxRow extends InboxItem {
   dedupeKey: string;

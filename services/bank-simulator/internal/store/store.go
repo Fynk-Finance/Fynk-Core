@@ -16,6 +16,10 @@ var (
 	ErrCustomerNotFound     = errors.New("customer not found")
 	ErrSubscriptionNotFound = errors.New("subscription not found")
 	ErrInsufficientFunds    = errors.New("insufficient funds")
+	ErrWrongAccountType     = errors.New("this kind of account cannot be used for this action")
+	ErrInvalidAmount        = errors.New("amount must be greater than zero")
+	ErrMoreThanDebt         = errors.New("payment is more than the card owes")
+	ErrSubscriptionInactive = errors.New("subscription is cancelled")
 
 	ErrConsentNotAuthorized = errors.New("consent_not_authorized")
 	ErrAccountNotInConsent  = errors.New("account_not_in_consent")
@@ -168,6 +172,22 @@ func (s *BankStore) LookupToken(token string) (TokenRecord, bool) {
 	}
 	if !rec.ExpiresAt.IsZero() && time.Now().After(rec.ExpiresAt) {
 		delete(s.tokens, token)
+		return TokenRecord{}, false
+	}
+	return rec, true
+}
+
+// TakeRefreshToken returns the record of a live refresh token and forgets the token, so each
+// refresh token works once. Two calls with the same token cannot both succeed.
+func (s *BankStore) TakeRefreshToken(token string) (TokenRecord, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rec, ok := s.tokens[token]
+	if !ok || rec.Kind != TokenKindRefresh {
+		return TokenRecord{}, false
+	}
+	delete(s.tokens, token)
+	if !rec.ExpiresAt.IsZero() && time.Now().After(rec.ExpiresAt) {
 		return TokenRecord{}, false
 	}
 	return rec, true
@@ -358,9 +378,9 @@ func (s *BankStore) GetTransactions(consentID, accountID string, fromDate time.T
 		}
 		return nil, false, "", ErrAccountNotFound
 	}
-	s.mu.RUnlock()
 
-	// Filter transactions for this account
+	// Filter transactions for this account. Still under the lock: the portal replaces
+	// custData.Transactions while Fynk reads.
 	var filtered []domain.Transaction
 	for _, tx := range custData.Transactions {
 		if tx.AccountID != accountID {
@@ -371,17 +391,23 @@ func (s *BankStore) GetTransactions(consentID, accountID string, fromDate time.T
 		}
 		filtered = append(filtered, tx)
 	}
+	s.mu.RUnlock()
 
 	if pageSize <= 0 || pageSize > 200 {
 		pageSize = 50
 	}
 
-	// Cursor is an index offset string
+	// The cursor is the id of the last movement of the page before. The list is newest first
+	// and the portal adds new movements at the front, so a position in the list would shift
+	// with every payment made between two pages. An id the list does not have starts again
+	// from the newest movement.
 	startIndex := 0
 	if cursor != "" {
-		var offset int
-		if _, err := fmt.Sscanf(cursor, "%d", &offset); err == nil && offset >= 0 && offset < len(filtered) {
-			startIndex = offset
+		for i := range filtered {
+			if filtered[i].ID == cursor {
+				startIndex = i + 1
+				break
+			}
 		}
 	}
 
@@ -391,7 +417,7 @@ func (s *BankStore) GetTransactions(consentID, accountID string, fromDate time.T
 
 	if endIndex < len(filtered) {
 		hasMore = true
-		nextCursor = fmt.Sprintf("%d", endIndex)
+		nextCursor = filtered[endIndex-1].ID
 	} else {
 		endIndex = len(filtered)
 	}
@@ -409,6 +435,18 @@ func (s *BankStore) GetCdtProducts() []domain.CdtProduct {
 }
 
 // ---------------- Portal Banking Operations ----------------
+
+// canSpend says whether acc can pay amountMinor. AvailableMinor is the balance of a deposit
+// account and the credit left of a card. A CDT holds its money until it is cancelled.
+func canSpend(acc *domain.Account, amountMinor int64) error {
+	if acc.Type == domain.AccountTypeCDT || acc.Status != domain.AccountStatusActive {
+		return ErrWrongAccountType
+	}
+	if amountMinor > acc.AvailableMinor {
+		return ErrInsufficientFunds
+	}
+	return nil
+}
 
 func (s *BankStore) RecordPayment(customerID, accountID, merchant, category string, amountMinor int64) (*domain.Transaction, error) {
 	s.mu.Lock()
@@ -433,6 +471,9 @@ func (s *BankStore) RecordPayment(customerID, accountID, merchant, category stri
 	if amountMinor <= 0 {
 		return nil, errors.New("amount must be greater than zero")
 	}
+	if err := canSpend(acc, amountMinor); err != nil {
+		return nil, err
+	}
 
 	// Apply debit to account
 	acc.BalanceMinor -= amountMinor
@@ -451,6 +492,7 @@ func (s *BankStore) RecordPayment(customerID, accountID, merchant, category stri
 		MerchantName:    &merchant,
 		Category:        &category,
 		Simulated:       true,
+		ProviderID:      acc.ProviderID,
 	}
 
 	// Prepend so newest is first
@@ -498,6 +540,7 @@ func (s *BankStore) ReceiveMoney(customerID, accountID, description string, amou
 		Description:     description,
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      acc.ProviderID,
 	}
 
 	custData.Transactions = append([]domain.Transaction{tx}, custData.Transactions...)
@@ -529,6 +572,12 @@ func (s *BankStore) TransferOwn(customerID, fromAccID, toAccID string, amountMin
 	if amountMinor <= 0 {
 		return errors.New("amount must be positive")
 	}
+	if fromAcc == toAcc || toAcc.Type == domain.AccountTypeCDT {
+		return ErrWrongAccountType
+	}
+	if err := canSpend(fromAcc, amountMinor); err != nil {
+		return err
+	}
 
 	fromAcc.BalanceMinor -= amountMinor
 	fromAcc.Balance = domain.MinorToDecimal(fromAcc.BalanceMinor, fromAcc.Type == domain.AccountTypeCreditCard)
@@ -552,6 +601,7 @@ func (s *BankStore) TransferOwn(customerID, fromAccID, toAccID string, amountMin
 		Description:     fmt.Sprintf("TRANSFERENCIA A %s", toAcc.Name),
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      fromAcc.ProviderID,
 	}
 	txIn := domain.Transaction{
 		ID:              fmt.Sprintf("tx-trf-in-%d", now.UnixNano()+1),
@@ -563,6 +613,7 @@ func (s *BankStore) TransferOwn(customerID, fromAccID, toAccID string, amountMin
 		Description:     fmt.Sprintf("TRANSFERENCIA DESDE %s", fromAcc.Name),
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      toAcc.ProviderID,
 	}
 
 	custData.Transactions = append([]domain.Transaction{txOut, txIn}, custData.Transactions...)
@@ -594,6 +645,17 @@ func (s *BankStore) PayCard(customerID, fromAccID, cardAccID string, amountMinor
 	if amountMinor <= 0 {
 		return errors.New("amount must be positive")
 	}
+	if cardAcc.Type != domain.AccountTypeCreditCard || fromAcc.Type == domain.AccountTypeCreditCard {
+		return ErrWrongAccountType
+	}
+	if err := canSpend(fromAcc, amountMinor); err != nil {
+		return err
+	}
+	// A card's balance is what it owes, as a negative amount. Paying more would leave the card
+	// with money in favor and more credit than its limit.
+	if amountMinor > -cardAcc.BalanceMinor {
+		return ErrMoreThanDebt
+	}
 
 	fromAcc.BalanceMinor -= amountMinor
 	fromAcc.Balance = domain.MinorToDecimal(fromAcc.BalanceMinor, false)
@@ -617,6 +679,7 @@ func (s *BankStore) PayCard(customerID, fromAccID, cardAccID string, amountMinor
 		Description:     fmt.Sprintf("PAGO TARJETA %s", cardAcc.MaskedNumber),
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      fromAcc.ProviderID,
 	}
 	txCredit := domain.Transaction{
 		ID:              fmt.Sprintf("tx-card-pay-cred-%d", now.UnixNano()+1),
@@ -628,6 +691,7 @@ func (s *BankStore) PayCard(customerID, fromAccID, cardAccID string, amountMinor
 		Description:     "ABONO PAGO TARJETA DE CREDITO",
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      cardAcc.ProviderID,
 	}
 
 	custData.Transactions = append([]domain.Transaction{txDebit, txCredit}, custData.Transactions...)
@@ -668,6 +732,12 @@ func (s *BankStore) OpenCDT(customerID, fromAccID string, productID string, amou
 	if amountMinor < prod.MinAmountMinor {
 		return fmt.Errorf("amount must be at least %s", prod.MinAmount)
 	}
+	if fromAcc.Type == domain.AccountTypeCreditCard {
+		return ErrWrongAccountType
+	}
+	if err := canSpend(fromAcc, amountMinor); err != nil {
+		return err
+	}
 
 	fromAcc.BalanceMinor -= amountMinor
 	fromAcc.Balance = domain.MinorToDecimal(fromAcc.BalanceMinor, false)
@@ -696,6 +766,9 @@ func (s *BankStore) OpenCDT(customerID, fromAccID string, productID string, amou
 			Maturity:  now.AddDate(0, 0, prod.TermDays).Format("2006-01-02"),
 		},
 		Simulated: true,
+		// Held at the entity whose account paid for it, so that entity's consent
+		// (GET accounts filters by provider) lets Fynk see it.
+		ProviderID: fromAcc.ProviderID,
 	}
 
 	cat := "savings"
@@ -709,6 +782,7 @@ func (s *BankStore) OpenCDT(customerID, fromAccID string, productID string, amou
 		Description:     fmt.Sprintf("APERTURA %s", prod.Name),
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      fromAcc.ProviderID,
 	}
 
 	custData.Accounts = append(custData.Accounts, newCDT)
@@ -738,6 +812,11 @@ func (s *BankStore) CancelCDT(customerID, cdtAccID, toAccID string) error {
 	if cdtAcc == nil || toAcc == nil {
 		return ErrAccountNotFound
 	}
+	// Only an open CDT can be cancelled, and its money goes to another kind of account.
+	if cdtAcc.Type != domain.AccountTypeCDT || cdtAcc.Status != domain.AccountStatusActive ||
+		toAcc.Type == domain.AccountTypeCDT {
+		return ErrWrongAccountType
+	}
 
 	amount := cdtAcc.BalanceMinor
 	cdtAcc.BalanceMinor = 0
@@ -763,6 +842,7 @@ func (s *BankStore) CancelCDT(customerID, cdtAccID, toAccID string) error {
 		Description:     fmt.Sprintf("CANCELACION %s", cdtAcc.Name),
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      toAcc.ProviderID,
 	}
 
 	custData.Transactions = append([]domain.Transaction{tx}, custData.Transactions...)
@@ -778,6 +858,9 @@ func (s *BankStore) AddSubscription(customerID, accID, merchant string, amountMi
 	custData, ok := s.customers[customerID]
 	if !ok {
 		return nil, ErrCustomerNotFound
+	}
+	if amountMinor <= 0 {
+		return nil, ErrInvalidAmount
 	}
 
 	sub := domain.Subscription{
@@ -802,6 +885,9 @@ func (s *BankStore) UpdateSubscriptionPrice(customerID, subID string, newPriceMi
 	custData, ok := s.customers[customerID]
 	if !ok {
 		return ErrCustomerNotFound
+	}
+	if newPriceMinor <= 0 {
+		return ErrInvalidAmount
 	}
 
 	for i := range custData.Subscriptions {
@@ -832,6 +918,9 @@ func (s *BankStore) ChargeSubscriptionNow(customerID, subID string) (*domain.Tra
 	if sub == nil {
 		return nil, ErrSubscriptionNotFound
 	}
+	if !sub.Active {
+		return nil, ErrSubscriptionInactive
+	}
 
 	var acc *domain.Account
 	for i := range custData.Accounts {
@@ -842,6 +931,9 @@ func (s *BankStore) ChargeSubscriptionNow(customerID, subID string) (*domain.Tra
 	}
 	if acc == nil {
 		return nil, ErrAccountNotFound
+	}
+	if err := canSpend(acc, sub.AmountMinor); err != nil {
+		return nil, err
 	}
 
 	acc.BalanceMinor -= sub.AmountMinor
@@ -862,6 +954,7 @@ func (s *BankStore) ChargeSubscriptionNow(customerID, subID string) (*domain.Tra
 		MerchantName:    &sub.Merchant,
 		Category:        &cat,
 		Simulated:       true,
+		ProviderID:      acc.ProviderID,
 	}
 
 	custData.Transactions = append([]domain.Transaction{tx}, custData.Transactions...)

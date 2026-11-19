@@ -78,14 +78,14 @@ func (s *Service) usableLink(ctx context.Context, u User, linkID string) (link.L
 	case errors.Is(err, link.ErrNotFound):
 		return link.Link{}, nil, ErrLinkNotFound
 	case errors.Is(err, link.ErrRevoked):
-		return link.Link{}, nil, ErrConsentRevoked
+		return link.Link{}, nil, s.syncFailed(ctx, u, l, ErrConsentRevoked)
 	}
 	active, err := s.d.Consents.Active(ctx, u.ID, l.ConsentID)
 	if err != nil {
 		return link.Link{}, nil, err
 	}
 	if !active {
-		return link.Link{}, nil, s.endLink(ctx, l)
+		return link.Link{}, nil, s.syncFailed(ctx, u, l, s.endLink(ctx, l))
 	}
 	p, ok := s.provider(l.Provider)
 	if !ok {
@@ -110,6 +110,12 @@ func (s *Service) bankError(ctx context.Context, u User, l link.Link, err error)
 	case errors.Is(err, ports.ErrConsentRevoked):
 		err = s.endLink(ctx, l)
 	}
+	return s.syncFailed(ctx, u, l, err)
+}
+
+// syncFailed audits a bank query that was refused, by the bank or by Fynk's own consent
+// check, and returns the same error.
+func (s *Service) syncFailed(ctx context.Context, u User, l link.Link, err error) error {
 	s.record(ctx, audit.Event{
 		Type: audit.BankSyncFailed, UserID: u.ID, DeviceID: u.DeviceID, At: s.d.Clock.Now(),
 		Meta: map[string]string{"provider": l.Provider, "error_code": codeOf(err), "status": "failed"},

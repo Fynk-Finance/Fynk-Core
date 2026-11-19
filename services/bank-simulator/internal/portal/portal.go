@@ -1,6 +1,8 @@
 package portal
 
 import (
+	"crypto/subtle"
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -11,12 +13,32 @@ import (
 	"github.com/Fynk-Finance/Fynk-Core/services/bank-simulator/internal/store"
 )
 
+// Auth identifies the person using the portal: the banco-demo realm login of the
+// authorization page. With no session it answers the request itself (a redirect
+// to the login) and returns ok false.
+type Auth interface {
+	PortalSession(w http.ResponseWriter, r *http.Request) (customerID, csrf string, ok bool)
+}
+
+// Option configures the portal.
+type Option func(*Handler)
+
+// WithAuth makes every page and action use the logged in customer.
+func WithAuth(a Auth) Option { return func(h *Handler) { h.auth = a } }
+
 type Handler struct {
 	store *store.BankStore
 	tmpl  *template.Template
+	auth  Auth // nil: local development fallback, see identify
 }
 
-func NewHandler(s *store.BankStore) *Handler {
+// visitor is who is using the portal for one request.
+type visitor struct {
+	customerID string
+	csrf       string
+}
+
+func NewHandler(s *store.BankStore, opts ...Option) *Handler {
 	tmpl := template.Must(template.New("portal").Funcs(template.FuncMap{
 		"formatMoney": func(minor int64) string {
 			return domain.MinorToDecimal(minor, false)
@@ -29,22 +51,59 @@ func NewHandler(s *store.BankStore) *Handler {
 		},
 	}).Parse(portalTemplates))
 
-	return &Handler{
+	h := &Handler{
 		store: s,
 		tmpl:  tmpl,
 	}
-}
-
-func (h *Handler) currentCustomerID(r *http.Request) string {
-	// Keycloak or dev fallback
-	if c := r.URL.Query().Get("user"); c != "" {
-		return c
+	for _, o := range opts {
+		o(h)
 	}
-	return "cliente.demo@bancodemo.local"
+	return h
 }
 
-func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
-	customerID := h.currentCustomerID(r)
+// identify returns who is using the portal. With the realm login configured it
+// is the session's customer, never a query parameter. Without it (local runs and
+// tests with no Keycloak) `?user=` or the seeded demo customer is used.
+func (h *Handler) identify(w http.ResponseWriter, r *http.Request) (visitor, bool) {
+	if h.auth == nil {
+		if c := r.URL.Query().Get("user"); c != "" {
+			return visitor{customerID: c}, true
+		}
+		return visitor{customerID: domain.DemoCustomerID}, true
+	}
+	id, csrf, ok := h.auth.PortalSession(w, r)
+	return visitor{customerID: id, csrf: csrf}, ok
+}
+
+type visitorHandler func(w http.ResponseWriter, r *http.Request, v visitor)
+
+// page serves a portal page to the identified visitor.
+func (h *Handler) page(next visitorHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if v, ok := h.identify(w, r); ok {
+			next(w, r, v)
+		}
+	}
+}
+
+// action runs a form post of the identified visitor after checking its CSRF token.
+func (h *Handler) action(next visitorHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		v, ok := h.identify(w, r)
+		if !ok {
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
+		if h.auth != nil && subtle.ConstantTimeCompare([]byte(v.csrf), []byte(r.PostFormValue("csrf"))) != 1 {
+			http.Error(w, "La sesión no es válida. Abre de nuevo el portal.", http.StatusForbidden)
+			return
+		}
+		next(w, r, v)
+	}
+}
+
+func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request, v visitor) {
+	customerID := v.customerID
 	custData := h.store.GetCustomer(customerID)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -54,14 +113,15 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		"Transactions":  custData.Transactions,
 		"Subscriptions": custData.Subscriptions,
 		"CdtProducts":   custData.CdtProducts,
+		"CSRF":          v.csrf,
 		"ActiveTab":     "resumen",
 		"Notice":        r.URL.Query().Get("notice"),
 		"Error":         r.URL.Query().Get("error"),
 	})
 }
 
-func (h *Handler) AccountDetails(w http.ResponseWriter, r *http.Request) {
-	customerID := h.currentCustomerID(r)
+func (h *Handler) AccountDetails(w http.ResponseWriter, r *http.Request, v visitor) {
+	customerID := v.customerID
 	accID := r.URL.Query().Get("id")
 	custData := h.store.GetCustomer(customerID)
 
@@ -89,12 +149,13 @@ func (h *Handler) AccountDetails(w http.ResponseWriter, r *http.Request) {
 		"Customer":     custData,
 		"Account":      targetAcc,
 		"Transactions": accTxs,
+		"CSRF":         v.csrf,
 		"ActiveTab":    "resumen",
 	})
 }
 
-func (h *Handler) ActionsPage(w http.ResponseWriter, r *http.Request) {
-	customerID := h.currentCustomerID(r)
+func (h *Handler) ActionsPage(w http.ResponseWriter, r *http.Request, v visitor) {
+	customerID := v.customerID
 	custData := h.store.GetCustomer(customerID)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -102,14 +163,15 @@ func (h *Handler) ActionsPage(w http.ResponseWriter, r *http.Request) {
 		"Customer":    custData,
 		"Accounts":    custData.Accounts,
 		"CdtProducts": custData.CdtProducts,
+		"CSRF":        v.csrf,
 		"ActiveTab":   "acciones",
 		"Notice":      r.URL.Query().Get("notice"),
 		"Error":       r.URL.Query().Get("error"),
 	})
 }
 
-func (h *Handler) SubscriptionsPage(w http.ResponseWriter, r *http.Request) {
-	customerID := h.currentCustomerID(r)
+func (h *Handler) SubscriptionsPage(w http.ResponseWriter, r *http.Request, v visitor) {
+	customerID := v.customerID
 	custData := h.store.GetCustomer(customerID)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -117,32 +179,36 @@ func (h *Handler) SubscriptionsPage(w http.ResponseWriter, r *http.Request) {
 		"Customer":      custData,
 		"Accounts":      custData.Accounts,
 		"Subscriptions": custData.Subscriptions,
+		"CSRF":          v.csrf,
 		"ActiveTab":     "suscripciones",
 		"Notice":        r.URL.Query().Get("notice"),
 		"Error":         r.URL.Query().Get("error"),
 	})
 }
 
-func (h *Handler) ConsentsPage(w http.ResponseWriter, r *http.Request) {
-	customerID := h.currentCustomerID(r)
+func (h *Handler) ConsentsPage(w http.ResponseWriter, r *http.Request, v visitor) {
+	customerID := v.customerID
 	consents := h.store.GetCustomerConsents(customerID)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_ = h.tmpl.ExecuteTemplate(w, "consents", map[string]any{
+		"Customer":  h.store.GetCustomer(customerID),
 		"Consents":  consents,
+		"CSRF":      v.csrf,
 		"ActiveTab": "consentimientos",
 		"Notice":    r.URL.Query().Get("notice"),
 		"Error":     r.URL.Query().Get("error"),
 	})
 }
 
-func (h *Handler) AdminPage(w http.ResponseWriter, r *http.Request) {
-	customerID := h.currentCustomerID(r)
+func (h *Handler) AdminPage(w http.ResponseWriter, r *http.Request, v visitor) {
+	customerID := v.customerID
 	custData := h.store.GetCustomer(customerID)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_ = h.tmpl.ExecuteTemplate(w, "admin", map[string]any{
 		"Customer":  custData,
+		"CSRF":      v.csrf,
 		"ActiveTab": "admin",
 		"Notice":    r.URL.Query().Get("notice"),
 		"Error":     r.URL.Query().Get("error"),
@@ -151,12 +217,12 @@ func (h *Handler) AdminPage(w http.ResponseWriter, r *http.Request) {
 
 // ---------------- Action Handlers ----------------
 
-func (h *Handler) PostPayment(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostPayment(w http.ResponseWriter, r *http.Request, v visitor) {
 	if err := r.ParseForm(); err != nil {
 		http.Redirect(w, r, "/portal/actions?error=Error+en+el+formulario", http.StatusSeeOther)
 		return
 	}
-	customerID := h.currentCustomerID(r)
+	customerID := v.customerID
 	accountID := r.FormValue("account_id")
 	merchant := r.FormValue("merchant")
 	category := r.FormValue("category")
@@ -177,12 +243,12 @@ func (h *Handler) PostPayment(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/portal/actions?notice=Pago+registrado+exitosamente+con+id+%s", tx.ID), http.StatusSeeOther)
 }
 
-func (h *Handler) PostReceive(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostReceive(w http.ResponseWriter, r *http.Request, v visitor) {
 	if err := r.ParseForm(); err != nil {
 		http.Redirect(w, r, "/portal/actions?error=Error+en+el+formulario", http.StatusSeeOther)
 		return
 	}
-	customerID := h.currentCustomerID(r)
+	customerID := v.customerID
 	accountID := r.FormValue("account_id")
 	desc := r.FormValue("description")
 	amountStr := r.FormValue("amount")
@@ -202,12 +268,12 @@ func (h *Handler) PostReceive(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/portal/actions?notice=Dinero+recibido+exitosamente", http.StatusSeeOther)
 }
 
-func (h *Handler) PostTransfer(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostTransfer(w http.ResponseWriter, r *http.Request, v visitor) {
 	if err := r.ParseForm(); err != nil {
 		http.Redirect(w, r, "/portal/actions?error=Error+en+el+formulario", http.StatusSeeOther)
 		return
 	}
-	customerID := h.currentCustomerID(r)
+	customerID := v.customerID
 	fromAcc := r.FormValue("from_account")
 	toAcc := r.FormValue("to_account")
 	amountStr := r.FormValue("amount")
@@ -232,12 +298,12 @@ func (h *Handler) PostTransfer(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/portal/actions?notice=Transferencia+realizada+con+exito", http.StatusSeeOther)
 }
 
-func (h *Handler) PostPayCard(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostPayCard(w http.ResponseWriter, r *http.Request, v visitor) {
 	if err := r.ParseForm(); err != nil {
 		http.Redirect(w, r, "/portal/actions?error=Error+en+el+formulario", http.StatusSeeOther)
 		return
 	}
-	customerID := h.currentCustomerID(r)
+	customerID := v.customerID
 	fromAcc := r.FormValue("from_account")
 	cardAcc := r.FormValue("card_account")
 	amountStr := r.FormValue("amount")
@@ -257,12 +323,12 @@ func (h *Handler) PostPayCard(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/portal/actions?notice=Tarjeta+pagada+con+exito", http.StatusSeeOther)
 }
 
-func (h *Handler) PostOpenCDT(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostOpenCDT(w http.ResponseWriter, r *http.Request, v visitor) {
 	if err := r.ParseForm(); err != nil {
 		http.Redirect(w, r, "/portal/actions?error=Error+en+el+formulario", http.StatusSeeOther)
 		return
 	}
-	customerID := h.currentCustomerID(r)
+	customerID := v.customerID
 	fromAcc := r.FormValue("from_account")
 	productID := r.FormValue("product_id")
 	amountStr := r.FormValue("amount")
@@ -282,12 +348,12 @@ func (h *Handler) PostOpenCDT(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/portal/actions?notice=CDT+aperturado+con+exito", http.StatusSeeOther)
 }
 
-func (h *Handler) PostCancelCDT(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostCancelCDT(w http.ResponseWriter, r *http.Request, v visitor) {
 	if err := r.ParseForm(); err != nil {
 		http.Redirect(w, r, "/portal/actions?error=Error+en+el+formulario", http.StatusSeeOther)
 		return
 	}
-	customerID := h.currentCustomerID(r)
+	customerID := v.customerID
 	cdtAcc := r.FormValue("cdt_account")
 	toAcc := r.FormValue("to_account")
 
@@ -302,12 +368,12 @@ func (h *Handler) PostCancelCDT(w http.ResponseWriter, r *http.Request) {
 
 // ---------------- Subscription Actions ----------------
 
-func (h *Handler) PostNewSubscription(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostNewSubscription(w http.ResponseWriter, r *http.Request, v visitor) {
 	if err := r.ParseForm(); err != nil {
 		http.Redirect(w, r, "/portal/subscriptions?error=Error+en+el+formulario", http.StatusSeeOther)
 		return
 	}
-	customerID := h.currentCustomerID(r)
+	customerID := v.customerID
 	accID := r.FormValue("account_id")
 	merchant := r.FormValue("merchant")
 	periodicity := r.FormValue("periodicity")
@@ -327,12 +393,12 @@ func (h *Handler) PostNewSubscription(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/portal/subscriptions?notice=Suscripcion+creada+con+exito", http.StatusSeeOther)
 }
 
-func (h *Handler) PostChangePrice(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostChangePrice(w http.ResponseWriter, r *http.Request, v visitor) {
 	if err := r.ParseForm(); err != nil {
 		http.Redirect(w, r, "/portal/subscriptions?error=Error", http.StatusSeeOther)
 		return
 	}
-	customerID := h.currentCustomerID(r)
+	customerID := v.customerID
 	subID := r.FormValue("sub_id")
 	newPriceMinor, err := parseMoneyInput(r.FormValue("new_amount"))
 	if err != nil {
@@ -349,12 +415,12 @@ func (h *Handler) PostChangePrice(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/portal/subscriptions?notice=Precio+de+suscripcion+actualizado", http.StatusSeeOther)
 }
 
-func (h *Handler) PostChargeNow(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostChargeNow(w http.ResponseWriter, r *http.Request, v visitor) {
 	if err := r.ParseForm(); err != nil {
 		http.Redirect(w, r, "/portal/subscriptions?error=Error", http.StatusSeeOther)
 		return
 	}
-	customerID := h.currentCustomerID(r)
+	customerID := v.customerID
 	subID := r.FormValue("sub_id")
 
 	tx, err := h.store.ChargeSubscriptionNow(customerID, subID)
@@ -366,12 +432,12 @@ func (h *Handler) PostChargeNow(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/portal/subscriptions?notice=Cargo+aplicado+inmediatamente+(ID:+%s)", tx.ID), http.StatusSeeOther)
 }
 
-func (h *Handler) PostCancelSubscription(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostCancelSubscription(w http.ResponseWriter, r *http.Request, v visitor) {
 	if err := r.ParseForm(); err != nil {
 		http.Redirect(w, r, "/portal/subscriptions?error=Error", http.StatusSeeOther)
 		return
 	}
-	customerID := h.currentCustomerID(r)
+	customerID := v.customerID
 	subID := r.FormValue("sub_id")
 
 	err := h.store.CancelSubscription(customerID, subID)
@@ -383,12 +449,16 @@ func (h *Handler) PostCancelSubscription(w http.ResponseWriter, r *http.Request)
 	http.Redirect(w, r, "/portal/subscriptions?notice=Suscripcion+cancelada", http.StatusSeeOther)
 }
 
-func (h *Handler) PostRevokeConsent(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostRevokeConsent(w http.ResponseWriter, r *http.Request, v visitor) {
 	if err := r.ParseForm(); err != nil {
 		http.Redirect(w, r, "/portal/consents?error=Error", http.StatusSeeOther)
 		return
 	}
 	consentID := r.FormValue("consent_id")
+	if c, err := h.store.GetConsent(consentID); err != nil || c.CustomerID != v.customerID {
+		http.Redirect(w, r, "/portal/consents?error=Consentimiento+no+encontrado", http.StatusSeeOther)
+		return
+	}
 
 	err := h.store.RevokeConsent(consentID)
 	if err != nil {
@@ -399,18 +469,18 @@ func (h *Handler) PostRevokeConsent(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/portal/consents?notice=Consentimiento+revocado+con+exito", http.StatusSeeOther)
 }
 
-func (h *Handler) PostAdminReset(w http.ResponseWriter, r *http.Request) {
-	customerID := h.currentCustomerID(r)
+func (h *Handler) PostAdminReset(w http.ResponseWriter, r *http.Request, v visitor) {
+	customerID := v.customerID
 	h.store.ResetCustomer(customerID)
 	http.Redirect(w, r, "/portal/admin?notice=Datos+del+cliente+restablecidos+a+la+semilla+inicial", http.StatusSeeOther)
 }
 
-func (h *Handler) PostAdminAdvanceTime(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PostAdminAdvanceTime(w http.ResponseWriter, r *http.Request, v visitor) {
 	if err := r.ParseForm(); err != nil {
 		http.Redirect(w, r, "/portal/admin?error=Error", http.StatusSeeOther)
 		return
 	}
-	customerID := h.currentCustomerID(r)
+	customerID := v.customerID
 	days, _ := strconv.Atoi(r.FormValue("days"))
 	if days <= 0 {
 		days = 1
@@ -420,60 +490,53 @@ func (h *Handler) PostAdminAdvanceTime(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /portal", h.Dashboard)
-	mux.HandleFunc("GET /portal/account", h.AccountDetails)
-	mux.HandleFunc("GET /portal/actions", h.ActionsPage)
-	mux.HandleFunc("GET /portal/subscriptions", h.SubscriptionsPage)
-	mux.HandleFunc("GET /portal/consents", h.ConsentsPage)
-	mux.HandleFunc("GET /portal/admin", h.AdminPage)
+	mux.HandleFunc("GET /portal", h.page(h.Dashboard))
+	mux.HandleFunc("GET /portal/account", h.page(h.AccountDetails))
+	mux.HandleFunc("GET /portal/actions", h.page(h.ActionsPage))
+	mux.HandleFunc("GET /portal/subscriptions", h.page(h.SubscriptionsPage))
+	mux.HandleFunc("GET /portal/consents", h.page(h.ConsentsPage))
+	mux.HandleFunc("GET /portal/admin", h.page(h.AdminPage))
 
-	mux.HandleFunc("POST /portal/actions/pay", h.PostPayment)
-	mux.HandleFunc("POST /portal/actions/receive", h.PostReceive)
-	mux.HandleFunc("POST /portal/actions/transfer", h.PostTransfer)
-	mux.HandleFunc("POST /portal/actions/pay-card", h.PostPayCard)
-	mux.HandleFunc("POST /portal/actions/open-cdt", h.PostOpenCDT)
-	mux.HandleFunc("POST /portal/actions/cancel-cdt", h.PostCancelCDT)
+	mux.HandleFunc("POST /portal/actions/pay", h.action(h.PostPayment))
+	mux.HandleFunc("POST /portal/actions/receive", h.action(h.PostReceive))
+	mux.HandleFunc("POST /portal/actions/transfer", h.action(h.PostTransfer))
+	mux.HandleFunc("POST /portal/actions/pay-card", h.action(h.PostPayCard))
+	mux.HandleFunc("POST /portal/actions/open-cdt", h.action(h.PostOpenCDT))
+	mux.HandleFunc("POST /portal/actions/cancel-cdt", h.action(h.PostCancelCDT))
 
-	mux.HandleFunc("POST /portal/subscriptions/new", h.PostNewSubscription)
-	mux.HandleFunc("POST /portal/subscriptions/change-price", h.PostChangePrice)
-	mux.HandleFunc("POST /portal/subscriptions/charge-now", h.PostChargeNow)
-	mux.HandleFunc("POST /portal/subscriptions/cancel", h.PostCancelSubscription)
+	mux.HandleFunc("POST /portal/subscriptions/new", h.action(h.PostNewSubscription))
+	mux.HandleFunc("POST /portal/subscriptions/change-price", h.action(h.PostChangePrice))
+	mux.HandleFunc("POST /portal/subscriptions/charge-now", h.action(h.PostChargeNow))
+	mux.HandleFunc("POST /portal/subscriptions/cancel", h.action(h.PostCancelSubscription))
 
-	mux.HandleFunc("POST /portal/consents/revoke", h.PostRevokeConsent)
-	mux.HandleFunc("POST /portal/admin/reset", h.PostAdminReset)
-	mux.HandleFunc("POST /portal/admin/advance-time", h.PostAdminAdvanceTime)
+	mux.HandleFunc("POST /portal/consents/revoke", h.action(h.PostRevokeConsent))
+	mux.HandleFunc("POST /portal/admin/reset", h.action(h.PostAdminReset))
+	mux.HandleFunc("POST /portal/admin/advance-time", h.action(h.PostAdminAdvanceTime))
 }
 
+// parseMoneyInput reads an amount in pesos as people type it in Colombia and returns centavos:
+// "." groups thousands and "," starts the cents ("1.250.000", "1250000", "1.250,50"). One "."
+// followed by one or two digits is read as cents too ("1000.50"), so a decimal point does not
+// multiply the amount by 100. Empty, negative or malformed input is an error.
 func parseMoneyInput(s string) (int64, error) {
-	cleaned := strings.ReplaceAll(s, "$", "")
-	cleaned = strings.ReplaceAll(cleaned, ".", "")
-	cleaned = strings.ReplaceAll(cleaned, ",", ".")
-	cleaned = strings.TrimSpace(cleaned)
-
-	var major int64
-	var minor int64 = 0
-
-	parts := strings.Split(cleaned, ".")
-	if len(parts) > 0 {
-		val, err := strconv.ParseInt(parts[0], 10, 64)
-		if err != nil {
-			return 0, err
-		}
-		major = val
+	cleaned := strings.ReplaceAll(strings.ReplaceAll(s, "$", ""), " ", "")
+	whole, cents := cleaned, ""
+	if i := strings.LastIndex(cleaned, ","); i >= 0 {
+		whole, cents = cleaned[:i], cleaned[i+1:]
+	} else if i := strings.Index(cleaned, "."); i >= 0 && i == strings.LastIndex(cleaned, ".") && len(cleaned)-i-1 <= 2 {
+		whole, cents = cleaned[:i], cleaned[i+1:]
 	}
-	if len(parts) > 1 {
-		decStr := parts[1]
-		if len(decStr) > 2 {
-			decStr = decStr[:2]
-		} else if len(decStr) == 1 {
-			decStr += "0"
-		}
-		decVal, err := strconv.ParseInt(decStr, 10, 64)
-		if err == nil {
-			minor = decVal
-		}
+	whole = strings.ReplaceAll(whole, ".", "")
+	if len(cents) == 1 {
+		cents += "0"
 	}
-	return (major * 100) + minor, nil
+	const digits = "0123456789"
+	if whole == "" || len(whole) > 15 || len(cents) > 2 || strings.Trim(whole+cents, digits) != "" {
+		return 0, errors.New("invalid amount")
+	}
+	major, _ := strconv.ParseInt(whole, 10, 64)
+	minor, _ := strconv.ParseInt("0"+cents, 10, 64)
+	return major*100 + minor, nil
 }
 
 func urlQueryEscape(s string) string {

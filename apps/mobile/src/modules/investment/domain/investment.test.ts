@@ -2,6 +2,7 @@ import { formatCop, type Account } from '@shared/domain';
 
 import { investmentStrings } from '../ui/strings.es-CO';
 import {
+  bogotaDate,
   chartPoints,
   estimatedInterestMinor,
   exploreCatalog,
@@ -52,6 +53,15 @@ describe('calculator (HU-049)', () => {
     expect(parseRateInput('abc')).toBeNull();
     expect(parseDaysInput('180')).toBe(180);
     expect(parseDaysInput('0')).toBeNull();
+  });
+});
+
+describe('today', () => {
+  it('is the calendar day in Bogotá, also after 19:00 and on the last day of the year', () => {
+    expect(bogotaDate(new Date('2026-10-28T17:00:00Z'))).toBe('2026-10-28');
+    expect(bogotaDate(new Date('2026-10-29T00:30:00Z'))).toBe('2026-10-28');
+    expect(bogotaDate(new Date('2027-01-01T04:59:59Z'))).toBe('2026-12-31');
+    expect(bogotaDate(new Date('2027-01-01T05:00:00Z'))).toBe('2027-01-01');
   });
 });
 

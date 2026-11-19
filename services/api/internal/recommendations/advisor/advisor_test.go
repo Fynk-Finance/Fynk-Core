@@ -102,6 +102,21 @@ func TestDesignFixtureGoodAnswerPasses(t *testing.T) {
 	}
 }
 
+// An amount of the snapshot may be written without the peso sign, and plain counts are not
+// amounts.
+func TestSnapshotAmountsInOtherFormsAndPlainCountsPass(t *testing.T) {
+	req := loadFixture(t, "design")
+	out := goodOutput()
+	out.Summary = "Este mes recibiste 5.580.000 pesos. Tienes 4 suscripciones por 112.600 al mes y 2 metas en 30 días."
+	if err := Check(out, req); err != nil {
+		t.Fatalf("snapshot amounts without the peso sign must pass: %v", err)
+	}
+	out.Summary = "Programa 300 mil para tu meta. Con mil gracias no se ahorra."
+	if err := Check(out, req); err != nil {
+		t.Fatalf("a snapshot amount in thousands must pass: %v", err)
+	}
+}
+
 func TestCodeFencedAnswerIsAccepted(t *testing.T) {
 	req := loadFixture(t, "design")
 	m := &fakeModel{answers: []string{"```json\n" + answer(t, goodOutput()) + "\n```"}}
@@ -118,6 +133,18 @@ func TestGoldenBadOutputsFallBack(t *testing.T) {
 	bad := map[string]func(req Request) Output{
 		"invented amount": func(req Request) Output {
 			return Output{Summary: "Podrías ahorrar $999.999 este mes.", Steps: stepsFor(req, "Revisa tus gastos.")}
+		},
+		"invented amount without the peso sign": func(req Request) Output {
+			return Output{Summary: "Podrías ahorrar 999.999 este mes.", Steps: stepsFor(req, "Revisa tus gastos.")}
+		},
+		"invented amount in pesos": func(req Request) Output {
+			return Output{Summary: "Podrías ahorrar 999999 pesos este mes.", Steps: stepsFor(req, "Revisa tus gastos.")}
+		},
+		"invented amount in thousands": func(req Request) Output {
+			return Output{Summary: "Podrías ahorrar 999 mil este mes.", Steps: stepsFor(req, "Revisa tus gastos.")}
+		},
+		"invented amount in millions": func(req Request) Output {
+			return Output{Summary: "Podrías ahorrar 9,5 millones este año.", Steps: stepsFor(req, "Revisa tus gastos.")}
 		},
 		"invented percent": func(req Request) Output {
 			return Output{Summary: "Gastaste un 47 % más.", Steps: stepsFor(req, "Revisa tus gastos.")}
@@ -196,6 +223,41 @@ func TestNotJSONAndModelErrorsFallBack(t *testing.T) {
 				t.Fatalf("want fallback, got %v %v", res.Fallback, err)
 			}
 		})
+	}
+}
+
+// slowModel never answers: it waits until the context of the call ends.
+type slowModel struct{ calls int }
+
+func (m *slowModel) Generate(ctx context.Context, _ ModelRequest) (ModelResponse, error) {
+	m.calls++
+	<-ctx.Done()
+	return ModelResponse{}, ctx.Err()
+}
+
+func TestASlowModelFallsBackBeforeTheRequestEnds(t *testing.T) {
+	req := loadFixture(t, "design")
+	m := &slowModel{}
+	cfg := DefaultConfig("amazon.nova-lite-v1:0")
+	cfg.AttemptTimeout = 20 * time.Millisecond
+	s := NewService(m, nil, Prompt{Version: "test", System: "system"}, cfg,
+		func() time.Time { return testNow }, slog.New(slog.NewJSONHandler(io.Discard, nil)))
+	// The request itself lasts much longer than the two attempts.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := s.Generate(ctx, "u", req)
+	if err != nil || !res.Fallback || m.calls != 2 {
+		t.Fatalf("want fallback after 2 attempts, got fallback=%v calls=%d err=%v", res.Fallback, m.calls, err)
+	}
+	if ctx.Err() != nil {
+		t.Fatal("the attempts used up the whole request")
+	}
+}
+
+func TestDefaultAttemptsEndBeforeTheServerWriteLimit(t *testing.T) {
+	cfg := DefaultConfig("m")
+	if total := time.Duration(cfg.Attempts) * cfg.AttemptTimeout; total <= 0 || total >= 30*time.Second {
+		t.Fatalf("attempts last %v, the server cuts the answer at 30 s", total)
 	}
 }
 

@@ -169,6 +169,7 @@ module "ecs_api" {
     { name = "BANCO_DEMO_ISSUER", valueFrom = module.secrets.secret_arns["banco_demo_issuer"] },
     { name = "BANCO_DEMO_AUTHORIZE_URL", valueFrom = module.secrets.secret_arns["banco_demo_authorize_url"] }
   ]
+  secrets_kms_key_arn = module.kms.data_key_arn
 
   task_policy_statements = [
     {
@@ -236,6 +237,7 @@ module "ecs_keycloak" {
     { name = "KC_DB_PASSWORD", valueFrom = "${module.rds.master_user_secret_arn}:password::" },
     { name = "FYNK_ADMIN_CLIENT_SECRET", valueFrom = module.secrets.secret_arns["fynk_admin_client_secret"] }
   ]
+  secrets_kms_key_arn = module.kms.data_key_arn
 }
 
 # 3. ECS Service: bank-simulator (0.25 vCPU, 0.5 GB)
