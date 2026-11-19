@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -131,6 +133,40 @@ func TestSettingsDefaults(t *testing.T) {
 	s = loadSettings(func(k string) string { return env[k] })
 	if s.ModelID != "anthropic.claude-haiku-4-5" || s.Region != "us-west-2" || s.DailyLimit != 3 {
 		t.Fatalf("from env: %+v", s)
+	}
+}
+
+func TestGeminiProviderReadsTheKeyFromTheEnvironmentAndBedrockStaysTheDefault(t *testing.T) {
+	s := loadSettings(func(string) string { return "" })
+	if s.Provider != providerBedrock || s.APIKey != "" {
+		t.Fatalf("Bedrock must stay the default: %+v", s)
+	}
+	env := map[string]string{"RECOMMENDATIONS_PROVIDER": "gemini", "GEMINI_API_KEY": "test-key"}
+	s = loadSettings(func(k string) string { return env[k] })
+	if s.Provider != providerGemini || s.ModelID != "gemini-4-hydrogen" || s.APIKey != "test-key" ||
+		s.BaseURL != "https://generativelanguage.googleapis.com/v1beta/openai" || s.ReasoningEffort != "low" {
+		t.Fatalf("gemini: %+v", s)
+	}
+	env = map[string]string{
+		"RECOMMENDATIONS_PROVIDER": "openai", "RECOMMENDATIONS_API_BASE_URL": "https://api.groq.com/openai/v1",
+		"RECOMMENDATIONS_API_KEY": "k", "RECOMMENDATIONS_MODEL_ID": "openai/gpt-oss-20b",
+		"RECOMMENDATIONS_RESPONSE_FORMAT": "json_object", "RECOMMENDATIONS_REASONING_EFFORT": "off",
+	}
+	s = loadSettings(func(k string) string { return env[k] })
+	if s.Provider != providerOpenAI || s.ModelID != "openai/gpt-oss-20b" || s.ResponseFormat != "json_object" ||
+		s.ReasoningEffort != "" {
+		t.Fatalf("openai: %+v", s)
+	}
+	if s = loadSettings(func(k string) string { return map[string]string{"RECOMMENDATIONS_PROVIDER": "x"}[k] }); s.Provider != providerBedrock {
+		t.Fatalf("an unknown provider stays on Bedrock: %+v", s)
+	}
+}
+
+func TestAProviderWithoutKeyFallsBackInsteadOfCrashing(t *testing.T) {
+	cfg := loadSettings(func(k string) string { return map[string]string{"RECOMMENDATIONS_PROVIDER": "gemini"}[k] })
+	m := newModel(cfg, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if _, err := m.Generate(context.Background(), advisor.ModelRequest{OutputSchema: advisor.OutputSchema}); err == nil {
+		t.Fatal("a model without key must answer an error, so the service falls back")
 	}
 }
 

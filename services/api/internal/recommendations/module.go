@@ -3,6 +3,7 @@ package recommendations
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -17,19 +18,64 @@ import (
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/advisor"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/bedrock"
 	httpapi "github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/http"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/openaicompat"
 	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/recommendations/prompt"
 )
 
+// Providers of the model. Bedrock is the default; Gemini and any OpenAI compatible API are the
+// alternative while the AWS account cannot invoke Bedrock (ADR 0009).
+const (
+	providerBedrock = "bedrock"
+	providerGemini  = "gemini" // OpenAI compatible endpoint of the Gemini API (Google AI Studio)
+	providerOpenAI  = "openai" // any OpenAI compatible API: Groq, OpenRouter, Ollama…
+)
+
 // Settings of the module, read from the environment (Secrets Manager or task definition in AWS,
-// .env locally). None of them is a secret: Bedrock uses the task role.
+// .env locally). Bedrock uses the task role; the API key of Gemini or another provider is the
+// only secret and is never logged.
 type settings struct {
-	ModelID    string // RECOMMENDATIONS_MODEL_ID, default amazon.nova-lite-v1:0
-	Region     string // RECOMMENDATIONS_AWS_REGION, default AWS_REGION, default us-east-2
-	DailyLimit int64  // RECOMMENDATIONS_DAILY_LIMIT, default 10
+	Provider        string // RECOMMENDATIONS_PROVIDER: bedrock (default), gemini or openai
+	ModelID         string // RECOMMENDATIONS_MODEL_ID, default amazon.nova-lite-v1:0, or gemini-4-hydrogen on Gemini
+	Region          string // RECOMMENDATIONS_AWS_REGION, default AWS_REGION, default us-east-2
+	BaseURL         string // RECOMMENDATIONS_API_BASE_URL, the Gemini endpoint by default on Gemini
+	APIKey          string // RECOMMENDATIONS_API_KEY, or GEMINI_API_KEY on Gemini. Secret
+	ResponseFormat  string // RECOMMENDATIONS_RESPONSE_FORMAT: json_schema (default) or json_object
+	ReasoningEffort string // RECOMMENDATIONS_REASONING_EFFORT: low by default on Gemini; off leaves it out
+	DailyLimit      int64  // RECOMMENDATIONS_DAILY_LIMIT, default 10
 }
 
 func loadSettings(getenv func(string) string) settings {
-	s := settings{ModelID: getenv("RECOMMENDATIONS_MODEL_ID"), Region: getenv("RECOMMENDATIONS_AWS_REGION"), DailyLimit: 10}
+	s := settings{
+		Provider:        getenv("RECOMMENDATIONS_PROVIDER"),
+		ModelID:         getenv("RECOMMENDATIONS_MODEL_ID"),
+		Region:          getenv("RECOMMENDATIONS_AWS_REGION"),
+		BaseURL:         getenv("RECOMMENDATIONS_API_BASE_URL"),
+		APIKey:          getenv("RECOMMENDATIONS_API_KEY"),
+		ResponseFormat:  getenv("RECOMMENDATIONS_RESPONSE_FORMAT"),
+		ReasoningEffort: getenv("RECOMMENDATIONS_REASONING_EFFORT"),
+		DailyLimit:      10,
+	}
+	switch s.Provider {
+	case providerGemini:
+		if s.BaseURL == "" {
+			s.BaseURL = openaicompat.GeminiBaseURL
+		}
+		if s.APIKey == "" {
+			s.APIKey = getenv("GEMINI_API_KEY")
+		}
+		if s.ModelID == "" {
+			s.ModelID = "gemini-4-hydrogen"
+		}
+		if s.ReasoningEffort == "" {
+			s.ReasoningEffort = "low" // short answers, well inside the 12 s of an attempt
+		}
+	case providerOpenAI:
+	default:
+		s.Provider = providerBedrock
+	}
+	if s.ReasoningEffort == "off" {
+		s.ReasoningEffort = ""
+	}
 	if s.ModelID == "" {
 		s.ModelID = "amazon.nova-lite-v1:0"
 	}
@@ -43,6 +89,32 @@ func loadSettings(getenv func(string) string) settings {
 		s.DailyLimit = n
 	}
 	return s
+}
+
+// newModel picks the model of cfg.Provider. Every provider gets the same prompt, post checks and
+// fallback; only who writes the text changes.
+func newModel(cfg settings, log *slog.Logger) advisor.Model {
+	if cfg.Provider != providerBedrock {
+		if cfg.APIKey == "" || cfg.BaseURL == "" {
+			log.Warn("recommendations: the model provider has no API key or base URL, answers will use the phone templates",
+				"provider", cfg.Provider)
+		} else {
+			log.Info("recommendations: using an OpenAI compatible model", "provider", cfg.Provider, "model", cfg.ModelID)
+		}
+		return openaicompat.New(openaicompat.Config{
+			BaseURL:         cfg.BaseURL,
+			APIKey:          cfg.APIKey,
+			Model:           cfg.ModelID,
+			ResponseFormat:  cfg.ResponseFormat,
+			ReasoningEffort: cfg.ReasoningEffort,
+		}, &http.Client{})
+	}
+	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(), awsconfig.WithRegion(cfg.Region))
+	if err != nil {
+		log.Warn("recommendations: Bedrock is not configured, answers will use the phone templates", "error", err)
+		return unavailable{err: err}
+	}
+	return bedrock.New(bedrockruntime.NewFromConfig(awsCfg), cfg.ModelID)
 }
 
 // unavailable is the model when Bedrock cannot be configured: every answer is fallback.
@@ -60,14 +132,7 @@ func New(d module.Deps) module.Module {
 	}
 	cfg := loadSettings(os.Getenv)
 
-	var model advisor.Model
-	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(), awsconfig.WithRegion(cfg.Region))
-	if err != nil {
-		log.Warn("recommendations: Bedrock is not configured, answers will use the phone templates", "error", err)
-		model = unavailable{err: err}
-	} else {
-		model = bedrock.New(bedrockruntime.NewFromConfig(awsCfg), cfg.ModelID)
-	}
+	model := newModel(cfg, log)
 
 	var limiter advisor.RateLimiter
 	if d.Redis != nil {
