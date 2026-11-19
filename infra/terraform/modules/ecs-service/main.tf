@@ -79,7 +79,7 @@ resource "aws_iam_role_policy" "execution_secrets" {
       [{
         Effect   = "Allow"
         Action   = ["secretsmanager:GetSecretValue"]
-        Resource = distinct([for s in var.secrets : s.valueFrom])
+        Resource = distinct([for s in var.secrets : length(split(":", s.valueFrom)) >= 7 ? join(":", slice(split(":", s.valueFrom), 0, 7)) : s.valueFrom])
       }],
       var.secrets_kms_key_arn == null ? [] : [{
         Effect   = "Allow"
