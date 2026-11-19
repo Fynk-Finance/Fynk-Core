@@ -162,6 +162,23 @@ func TestGeminiProviderReadsTheKeyFromTheEnvironmentAndBedrockStaysTheDefault(t 
 	}
 }
 
+func TestThinkingProvidersGetALargerTokenBudget(t *testing.T) {
+	env := func(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
+	if got := advisorConfig(loadSettings(env(nil))).MaxTokens; got != 800 {
+		t.Fatalf("bedrock max tokens = %d, want 800", got)
+	}
+	if got := advisorConfig(loadSettings(env(map[string]string{"RECOMMENDATIONS_PROVIDER": "gemini"}))).MaxTokens; got != 4096 {
+		t.Fatalf("gemini max tokens = %d, want 4096", got)
+	}
+	cfg := loadSettings(env(map[string]string{"RECOMMENDATIONS_PROVIDER": "gemini", "RECOMMENDATIONS_MAX_TOKENS": "2048"}))
+	if got := advisorConfig(cfg); got.MaxTokens != 2048 || got.ModelID != "gemini-4-hydrogen" {
+		t.Fatalf("configured budget: %+v", got)
+	}
+	if got := loadSettings(env(map[string]string{"RECOMMENDATIONS_MAX_TOKENS": "-3"})).MaxTokens; got != 800 {
+		t.Fatalf("an invalid value keeps the default, got %d", got)
+	}
+}
+
 func TestAProviderWithoutKeyFallsBackInsteadOfCrashing(t *testing.T) {
 	cfg := loadSettings(func(k string) string { return map[string]string{"RECOMMENDATIONS_PROVIDER": "gemini"}[k] })
 	m := newModel(cfg, slog.New(slog.NewTextHandler(io.Discard, nil)))
