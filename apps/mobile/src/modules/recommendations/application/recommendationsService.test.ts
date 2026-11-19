@@ -83,6 +83,29 @@ describe('recommendations service', () => {
     expect(api.create).toHaveBeenCalledTimes(2);
   });
 
+  it('asks again after 5 minutes, not an hour, when the model failed and the server fell back', async () => {
+    const fallback: ModelTexts = { ...texts, summary: '', steps: [], fallback: true };
+    let answer = fallback;
+    const { service, api, clock } = await setup(async () => answer);
+    expect((await service.refresh()).texts).toEqual(fallback);
+
+    // Same numbers: the fallback is not shown as a text again and does not block for an hour.
+    expect((await service.load()).texts).toBeNull();
+    clock.advance(4 * 60 * 1000);
+    await service.refresh();
+    expect(api.create).toHaveBeenCalledTimes(1);
+
+    answer = texts;
+    clock.advance(60 * 1000);
+    expect((await service.refresh()).texts).toEqual(texts);
+    expect(api.create).toHaveBeenCalledTimes(2);
+
+    // A real text keeps the hourly rule.
+    clock.advance(10 * 60 * 1000);
+    await service.refresh();
+    expect(api.create).toHaveBeenCalledTimes(2);
+  });
+
   it('keeps numbers and templates when offline or rate limited', async () => {
     const offline = await setup(async () => {
       throw ApiError.network();
