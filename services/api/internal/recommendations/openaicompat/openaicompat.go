@@ -168,7 +168,7 @@ func (m *Model) Generate(ctx context.Context, req advisor.ModelRequest) (advisor
 	return resp, nil
 }
 
-// errorMessage reads the provider's error message, short, from an object or an array.
+// errorMessage reads the provider's error message (long enough to name the quota), from an object or an array.
 func errorMessage(raw []byte) string {
 	var one apiError
 	if json.Unmarshal(raw, &one) == nil && one.Error.Message != "" {
@@ -183,8 +183,8 @@ func errorMessage(raw []byte) string {
 
 func truncate(s string) string {
 	s = strings.TrimSpace(s)
-	if len(s) > 300 {
-		return s[:300] + "…"
+	if len(s) > 600 {
+		return s[:600] + "…"
 	}
 	return s
 }

@@ -299,6 +299,27 @@ func TestLogsKeepOnlyHashModelAndCounts(t *testing.T) {
 	}
 }
 
+func TestLogsNameWhyTheModelFailedButNeverTheRejectedText(t *testing.T) {
+	req := loadFixture(t, "design")
+	var logs bytes.Buffer
+	bad := goodOutput()
+	bad.Summary = "Gastas $999.999 al mes."
+	m := &fakeModel{
+		errs:    []error{errors.New("status 429: RESOURCE_EXHAUSTED requests per day")},
+		answers: []string{"", answer(t, bad)},
+	}
+	if _, err := newService(m, nil, &logs).Generate(context.Background(), "user-1", req); err != nil {
+		t.Fatal(err)
+	}
+	line := logs.String()
+	if !strings.Contains(line, "RESOURCE_EXHAUSTED requests per day") {
+		t.Fatalf("the provider error is missing: %s", line)
+	}
+	if strings.Contains(line, "999") {
+		t.Fatalf("the rejected model text must not reach the logs: %s", line)
+	}
+}
+
 func TestUserMessageCarriesOnlyTheSnapshot(t *testing.T) {
 	req := loadFixture(t, "design")
 	m := &fakeModel{answers: []string{answer(t, goodOutput())}}
