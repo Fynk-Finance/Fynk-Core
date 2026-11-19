@@ -216,10 +216,20 @@ export function summaryText(
 /** Pull to refresh asks the model again at most once per hour. */
 export const REGENERATE_AFTER_MS = 60 * 60 * 1000;
 
-export function canRegenerate(lastGeneratedAt: string | null, now: Date): boolean {
+/**
+ * When the last answer was the server's fallback (the model failed: quota, timeout), the phone
+ * asks again after 5 minutes instead of an hour, so one failure does not hide the AI for long.
+ */
+export const RETRY_AFTER_FALLBACK_MS = 5 * 60 * 1000;
+
+export function canRegenerate(
+  lastGeneratedAt: string | null,
+  now: Date,
+  afterMs: number = REGENERATE_AFTER_MS,
+): boolean {
   if (!lastGeneratedAt) return true;
   const last = Date.parse(lastGeneratedAt);
-  return Number.isNaN(last) || now.getTime() - last >= REGENERATE_AFTER_MS;
+  return Number.isNaN(last) || now.getTime() - last >= afterMs;
 }
 
 /** FNV-1a 32-bit of a string, hex: the cache key of a snapshot on this phone. */
