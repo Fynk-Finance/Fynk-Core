@@ -36,6 +36,15 @@ With Bedrock blocked by the AWS account and the demo the next day for about 50 p
 * The aggregate snapshot leaves AWS with Gemini. It has no personal data, but the team has to accept it (ADR 0009).
 * In staging the key goes in Secrets Manager like the other secrets of the API task (M14), and the API needs outbound access to Google.
 
+## First live check and fixes
+
+Julián's first live run with `-provider=gemini` passed the checks in 2 of 20 answers. Those 2 were correct. The rest failed for four reasons:
+
+* `empty answer (finish reason "length")` and truncated JSON: `gemini-4-hydrogen` thinks before it answers and spent the 800 tokens of the Bedrock budget. Fix: `RECOMMENDATIONS_MAX_TOKENS`, 4096 by default on Gemini and OpenAI compatible providers, 800 on Bedrock.
+* `429 RESOURCE_EXHAUSTED`: the per minute limit of the free tier (about 40 calls in 100 seconds). Fix in the test: `-pause` between runs. For the demo: billing turned on, or a lighter model.
+* `503 UNAVAILABLE`, high demand at Google: a lighter model has less demand.
+* The report was not written because `docs/qa` did not exist. Fix: the test creates the folder.
+
 ## Next step
 
 Julián runs the live check with `-provider=gemini` and reviews the 20 answers. Then the key is set where the demo backend runs.

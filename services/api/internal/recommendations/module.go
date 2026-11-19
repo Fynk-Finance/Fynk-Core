@@ -41,6 +41,7 @@ type settings struct {
 	APIKey          string // RECOMMENDATIONS_API_KEY, or GEMINI_API_KEY on Gemini. Secret
 	ResponseFormat  string // RECOMMENDATIONS_RESPONSE_FORMAT: json_schema (default) or json_object
 	ReasoningEffort string // RECOMMENDATIONS_REASONING_EFFORT: low by default on Gemini; off leaves it out
+	MaxTokens       int32  // RECOMMENDATIONS_MAX_TOKENS: 800 on Bedrock, 4096 on the others (thinking models spend tokens before they answer)
 	DailyLimit      int64  // RECOMMENDATIONS_DAILY_LIMIT, default 10
 }
 
@@ -88,7 +89,22 @@ func loadSettings(getenv func(string) string) settings {
 	if n, err := strconv.ParseInt(getenv("RECOMMENDATIONS_DAILY_LIMIT"), 10, 64); err == nil && n > 0 {
 		s.DailyLimit = n
 	}
+	s.MaxTokens = 800
+	if s.Provider != providerBedrock {
+		s.MaxTokens = 4096
+	}
+	if n, err := strconv.ParseInt(getenv("RECOMMENDATIONS_MAX_TOKENS"), 10, 32); err == nil && n > 0 {
+		s.MaxTokens = int32(n)
+	}
 	return s
+}
+
+// advisorConfig is the advisor configuration of cfg: the defaults with the model and the token
+// budget of the provider.
+func advisorConfig(cfg settings) advisor.Config {
+	c := advisor.DefaultConfig(cfg.ModelID)
+	c.MaxTokens = cfg.MaxTokens
+	return c
 }
 
 // newModel picks the model of cfg.Provider. Every provider gets the same prompt, post checks and
@@ -143,7 +159,7 @@ func New(d module.Deps) module.Module {
 		now = d.Clock.Now
 	}
 	svc := advisor.NewService(model, limiter, advisor.Prompt{Version: prompt.Version(), System: prompt.SystemES()},
-		advisor.DefaultConfig(cfg.ModelID), now, log)
+		advisorConfig(cfg), now, log)
 
 	return mod{Stub: module.Stub{ModuleName: "recommendations"}, deps: d, gen: svc}
 }

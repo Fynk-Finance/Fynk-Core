@@ -10,7 +10,7 @@
 // With Gemini (ADR 0009), the key in GEMINI_API_KEY:
 //
 //	go test -tags bedrock -run TestLiveBedrock -count=1 -v ./internal/recommendations/ \
-//	  -args -provider=gemini -report=../../docs/qa/gemini-live-report.md
+//	  -args -provider=gemini -pause=5s -report=../../docs/qa/gemini-live-report.md
 //
 // Every answer goes through the same post checks as POST /recommendations. The report lists,
 // for each run, the snapshot fixture, the raw text of the model, whether the checks accepted it
@@ -41,6 +41,7 @@ var (
 	liveProvider = flag.String("provider", providerBedrock, "bedrock, gemini or openai")
 	liveModel    = flag.String("model", "", "model id (default amazon.nova-lite-v1:0, or gemini-4-hydrogen on Gemini)")
 	liveReport   = flag.String("report", "", "Markdown file for the report (stdout only when empty)")
+	livePause    = flag.Duration("pause", 0, "wait between runs, for the per minute limit of a free tier (for example 5s)")
 )
 
 // recorder keeps the raw text of every model call, also the ones the checks reject.
@@ -104,12 +105,12 @@ func TestLiveBedrock(t *testing.T) {
 	quiet := slog.New(slog.NewTextHandler(io.Discard, nil))
 	rec := &recorder{model: newModel(cfg, quiet)}
 	svc := advisor.NewService(rec, nil, advisor.Prompt{Version: prompt.Version(), System: prompt.SystemES()},
-		advisor.DefaultConfig(cfg.ModelID), time.Now, quiet)
+		advisorConfig(cfg), time.Now, quiet)
 
 	var report strings.Builder
 	fmt.Fprintf(&report, "# Live check of the recommendations, %s\n\n", time.Now().Format("2006-01-02 15:04"))
-	fmt.Fprintf(&report, "Provider `%s`, model `%s`, region `%s`, prompt `%s`, %d runs per fixture.\n\n",
-		cfg.Provider, cfg.ModelID, region, prompt.Version(), *liveRuns)
+	fmt.Fprintf(&report, "Provider `%s`, model `%s`, region `%s`, prompt `%s`, max tokens %d, %d runs per fixture.\n\n",
+		cfg.Provider, cfg.ModelID, region, prompt.Version(), cfg.MaxTokens, *liveRuns)
 	report.WriteString("Mark each answer: [ ] correct numbers, [ ] clear Spanish, [ ] no product advice.\n\n")
 
 	accepted, total := 0, 0
@@ -124,6 +125,9 @@ func TestLiveBedrock(t *testing.T) {
 		}
 		name := strings.TrimSuffix(filepath.Base(path), ".json")
 		for run := 1; run <= *liveRuns; run++ {
+			if total > 0 && *livePause > 0 {
+				time.Sleep(*livePause)
+			}
 			total++
 			before := len(rec.calls)
 			res, err := svc.Generate(ctx, "live-check", req)
@@ -167,6 +171,9 @@ func TestLiveBedrock(t *testing.T) {
 
 	t.Log("\n" + report.String())
 	if *liveReport != "" {
+		if err := os.MkdirAll(filepath.Dir(*liveReport), 0o755); err != nil {
+			t.Fatal(err)
+		}
 		if err := os.WriteFile(*liveReport, []byte(report.String()), 0o644); err != nil {
 			t.Fatal(err)
 		}
