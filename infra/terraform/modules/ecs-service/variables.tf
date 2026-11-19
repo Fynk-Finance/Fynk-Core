@@ -51,6 +51,12 @@ variable "port" {
   description = "Container port"
 }
 
+variable "desired_count" {
+  type        = number
+  default     = 1
+  description = "Number of desired tasks"
+}
+
 variable "environment" {
   type        = string
   default     = "staging"

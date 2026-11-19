@@ -1,12 +1,14 @@
 # syntax=docker/dockerfile:1
 # PLACEHOLDER image added by M0 for the local stack. Owned by M16, which keeps or replaces it.
 
-FROM golang:1.27.3-bookworm AS build
+FROM --platform=$BUILDPLATFORM golang:1.27.3-bookworm AS build
+ARG TARGETOS
+ARG TARGETARCH
 WORKDIR /src
 ENV CGO_ENABLED=0 GOWORK=off GOTOOLCHAIN=local
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/go-build \
-    go build -trimpath -ldflags="-s -w" -o /out/bank-simulator ./cmd/bank-simulator
+    GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-arm64} go build -trimpath -ldflags="-s -w" -o /out/bank-simulator ./cmd/bank-simulator
 
 # Distroless: no shell, no package manager, runs as a non-root user.
 FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab

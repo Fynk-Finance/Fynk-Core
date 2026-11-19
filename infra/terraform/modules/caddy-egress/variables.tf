@@ -31,6 +31,6 @@ variable "environment" {
 
 variable "instance_type" {
   type        = string
-  default     = "t4g.nano"
-  description = "EC2 instance type (ARM64 Graviton)"
+  default     = "t4g.micro"
+  description = "EC2 instance type (ARM64 Graviton, free-tier eligible)"
 }

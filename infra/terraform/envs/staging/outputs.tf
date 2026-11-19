@@ -24,7 +24,7 @@ output "primary_public_subnet_id" {
 }
 
 output "endpoint_security_group_id" {
-  value       = module.endpoints.security_group_id
+  value       = var.enable_staging_traffic ? module.endpoints[0].security_group_id : null
   description = "Security group for interface endpoints"
 }
 # ALB Outputs
@@ -129,6 +129,6 @@ output "dashboard_name" {
 
 # CI/CD Outputs
 output "github_deploy_role_arn" {
-  value       = module.github_oidc.role_arn
+  value       = var.enable_github_oidc ? module.github_oidc[0].role_arn : null
   description = "IAM Role ARN for GitHub Actions deployment workflows"
 }

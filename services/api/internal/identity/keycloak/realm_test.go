@@ -528,7 +528,11 @@ func TestBancoDemoBrokerClientSendsOnlyTheSub(t *testing.T) {
 	if c.Secret != "${BANCO_DEMO_BROKER_SECRET}" {
 		t.Fatalf("secret must come from the environment, got %q", c.Secret)
 	}
-	if !slices.Equal(c.RedirectURIs, []string{"http://localhost:8081/realms/banco-demo/broker/fynk/endpoint"}) {
+	wantRedirects := []string{
+		"http://localhost:8081/realms/banco-demo/broker/fynk/endpoint",
+		"${FYNK_AUTH_URL:http://localhost:8081}/realms/banco-demo/broker/fynk/endpoint",
+	}
+	if !slices.Equal(c.RedirectURIs, wantRedirects) {
 		t.Fatalf("redirectUris = %v", c.RedirectURIs)
 	}
 	if !slices.Equal(c.DefaultClientScopes, []string{"basic"}) || len(c.OptionalClientScopes) != 0 {

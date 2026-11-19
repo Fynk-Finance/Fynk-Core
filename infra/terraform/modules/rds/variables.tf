@@ -36,3 +36,15 @@ variable "allocated_storage" {
   default     = 20
   description = "Allocated storage in GB (gp3)"
 }
+
+variable "engine_version" {
+  type        = string
+  default     = "16.13"
+  description = "PostgreSQL engine version"
+}
+
+variable "backup_retention_period" {
+  type        = number
+  default     = 1
+  description = "Backup retention period in days (1 for free tier / staging)"
+}

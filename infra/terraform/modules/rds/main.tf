@@ -65,7 +65,7 @@ resource "aws_db_parameter_group" "pg16" {
 resource "aws_db_instance" "postgres" {
   identifier                    = "fynk-${var.environment}-db"
   engine                        = "postgres"
-  engine_version                = "16.4"
+  engine_version                = var.engine_version
   instance_class                = var.instance_class
   allocated_storage             = var.allocated_storage
   max_allocated_storage         = 50
@@ -87,7 +87,7 @@ resource "aws_db_instance" "postgres" {
   deletion_protection = false
 
   auto_minor_version_upgrade = true
-  backup_retention_period    = 7
+  backup_retention_period    = var.backup_retention_period
 
   tags = {
     Name    = "fynk-${var.environment}-db"

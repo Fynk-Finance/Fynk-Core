@@ -97,11 +97,11 @@ func TestBancoDemoOffersIngresarConFynk(t *testing.T) {
 	if c["validateSignature"] != "true" || c["useJwksUrl"] != "true" || c["disableUserInfo"] != "true" {
 		t.Fatalf("the ID token signature must be checked against the JWKS, config = %v", c)
 	}
-	// The browser goes to the public host, Keycloak itself calls the container host.
-	if !strings.HasPrefix(c["authorizationUrl"], "http://localhost:8081/realms/fynk/") ||
-		!strings.HasPrefix(c["tokenUrl"], "http://keycloak:8080/realms/fynk/") ||
-		!strings.HasPrefix(c["jwksUrl"], "http://keycloak:8080/realms/fynk/") ||
-		c["issuer"] != "http://localhost:8081/realms/fynk" {
+	// The browser goes to the public host, Keycloak itself calls the container host (parameterized for staging).
+	if c["authorizationUrl"] != "${FYNK_AUTH_URL:http://localhost:8081}/realms/fynk/protocol/openid-connect/auth" ||
+		c["tokenUrl"] != "${FYNK_BACKCHANNEL_AUTH_URL:http://keycloak:8080}/realms/fynk/protocol/openid-connect/token" ||
+		c["jwksUrl"] != "${FYNK_BACKCHANNEL_AUTH_URL:http://keycloak:8080}/realms/fynk/protocol/openid-connect/certs" ||
+		c["issuer"] != "${FYNK_AUTH_URL:http://localhost:8081}/realms/fynk" {
 		t.Fatalf("urls = %v", c)
 	}
 }

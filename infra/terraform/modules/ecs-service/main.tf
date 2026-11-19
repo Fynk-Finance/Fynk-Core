@@ -79,7 +79,7 @@ resource "aws_iam_role_policy" "execution_secrets" {
       [{
         Effect   = "Allow"
         Action   = ["secretsmanager:GetSecretValue"]
-        Resource = distinct([for s in var.secrets : s.valueFrom])
+        Resource = distinct([for s in var.secrets : length(split(":", s.valueFrom)) >= 7 ? join(":", slice(split(":", s.valueFrom), 0, 7)) : s.valueFrom])
       }],
       var.secrets_kms_key_arn == null ? [] : [{
         Effect   = "Allow"
@@ -176,7 +176,7 @@ resource "aws_ecs_service" "main" {
   name            = "fynk-${var.environment}-${var.service_name}"
   cluster         = var.cluster_id
   task_definition = aws_ecs_task_definition.main.arn
-  desired_count   = 1
+  desired_count   = var.desired_count
   launch_type     = "FARGATE"
 
   network_configuration {
