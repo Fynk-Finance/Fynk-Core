@@ -36,6 +36,17 @@ resource "aws_security_group" "task" {
     }
   }
 
+  dynamic "ingress" {
+    for_each = { for ep in var.extra_ports : tostring(ep.port) => ep if length(ep.security_group_ids) > 0 }
+    content {
+      description     = "Extra port ${ingress.value.port} from allowed security groups"
+      from_port       = ingress.value.port
+      to_port         = ingress.value.port
+      protocol        = "tcp"
+      security_groups = ingress.value.security_group_ids
+    }
+  }
+
   egress {
     description = "Allow all outbound traffic"
     from_port   = 0
@@ -153,13 +164,22 @@ resource "aws_ecs_task_definition" "main" {
       image     = var.image
       essential = true
 
-      portMappings = [
-        {
-          containerPort = var.port
-          hostPort      = var.port
-          protocol      = "tcp"
-        }
-      ]
+      portMappings = concat(
+        [
+          {
+            containerPort = var.port
+            hostPort      = var.port
+            protocol      = "tcp"
+          }
+        ],
+        [
+          for ep in var.extra_ports : {
+            containerPort = ep.port
+            hostPort      = ep.port
+            protocol      = "tcp"
+          }
+        ]
+      )
 
       environment = var.environment_variables
       secrets     = var.secrets

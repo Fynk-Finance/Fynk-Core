@@ -244,7 +244,7 @@ module "ecs_keycloak" {
   environment           = var.environment
 
   service_discovery_registry_arn      = aws_service_discovery_service.keycloak.arn
-  internal_ingress_security_group_ids = [module.ecs_api.security_group_id]
+  internal_ingress_security_group_ids = [module.ecs_api.security_group_id, module.ecs_bank_simulator.security_group_id]
 
   environment_variables = [
     { name = "KC_HOSTNAME", value = "https://auth.${var.domain_name}" },
@@ -259,7 +259,6 @@ module "ecs_keycloak" {
     { name = "FYNK_DEMO_USER_PASSWORD", value = "Demo-staging-1" },
     { name = "BANCO_DEMO_USER_PASSWORD", value = "Banco-staging-1" },
     { name = "BANCO_DEMO_BROKER_SECRET", value = "banco-demo-broker-staging" },
-    { name = "BANK_PORTAL_CLIENT_SECRET", value = "bank-portal-staging" },
     { name = "FYNK_SMTP_HOST", value = "email-smtp.${var.aws_region}.amazonaws.com" },
     { name = "FYNK_SMTP_PORT", value = "587" },
     { name = "FYNK_SMTP_FROM", value = "no-reply@${var.domain_name}" },
@@ -273,9 +272,39 @@ module "ecs_keycloak" {
     { name = "KC_DB_PASSWORD", valueFrom = "${module.rds.master_user_secret_arn}:password::" },
     { name = "FYNK_ADMIN_CLIENT_SECRET", valueFrom = module.secrets.secret_arns["fynk_admin_client_secret"] },
     { name = "FYNK_SMTP_USER", valueFrom = module.secrets.secret_arns["ses_smtp_user"] },
-    { name = "FYNK_SMTP_PASSWORD", valueFrom = module.secrets.secret_arns["ses_smtp_password"] }
+    { name = "FYNK_SMTP_PASSWORD", valueFrom = module.secrets.secret_arns["ses_smtp_password"] },
+    { name = "BANK_PORTAL_CLIENT_SECRET", valueFrom = data.aws_secretsmanager_secret.bank_portal_client_secret.arn }
   ]
   secrets_kms_key_arn = module.kms.data_key_arn
+}
+
+data "aws_secretsmanager_secret" "bank_simulator_tls_cert" {
+  name = "fynk/${var.environment}/bank-simulator-tls-cert"
+}
+
+data "aws_secretsmanager_secret" "bank_simulator_tls_key" {
+  name = "fynk/${var.environment}/bank-simulator-tls-key"
+}
+
+data "aws_secretsmanager_secret" "bank_portal_client_secret" {
+  name = "fynk/${var.environment}/bank-portal-client-secret"
+}
+
+resource "aws_service_discovery_service" "bank_simulator" {
+  name = "bank-simulator"
+
+  dns_config {
+    namespace_id   = aws_service_discovery_private_dns_namespace.internal.id
+    routing_policy = "MULTIVALUE"
+    dns_records {
+      type = "A"
+      ttl  = 10
+    }
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
 }
 
 # 3. ECS Service: bank-simulator (0.25 vCPU, 0.5 GB)
@@ -295,25 +324,46 @@ module "ecs_bank_simulator" {
   desired_count         = var.enable_staging_traffic ? 1 : 0
   environment           = var.environment
 
+  service_discovery_registry_arn = aws_service_discovery_service.bank_simulator.arn
+  extra_ports = [
+    {
+      port               = 9443
+      security_group_ids = [module.caddy_egress.security_group_id]
+    }
+  ]
+
   environment_variables = [
     { name = "BANK_PUBLIC_ADDR", value = ":8080" },
-    { name = "BANK_DEV_MODE", value = "1" }
+    { name = "BANK_INTERNAL_ADDR", value = ":9443" },
+    { name = "BANK_PUBLIC_URL", value = "https://bancodemo.${var.domain_name}" },
+    { name = "BANK_OIDC_ISSUER", value = "https://auth.${var.domain_name}/realms/banco-demo" },
+    { name = "BANK_OIDC_BACKCHANNEL_URL", value = "http://keycloak.fynk-staging.local:8080/realms/banco-demo" },
+    { name = "BANK_OIDC_CLIENT_ID", value = "bank-portal" }
   ]
+
+  secrets = [
+    { name = "BANK_TLS_CERT_PEM", valueFrom = data.aws_secretsmanager_secret.bank_simulator_tls_cert.arn },
+    { name = "BANK_TLS_KEY_PEM", valueFrom = data.aws_secretsmanager_secret.bank_simulator_tls_key.arn },
+    { name = "BANK_CLIENT_CA_PEM", valueFrom = module.secrets.mtls_client_cert_secret_arn },
+    { name = "BANK_OIDC_CLIENT_SECRET", valueFrom = data.aws_secretsmanager_secret.bank_portal_client_secret.arn }
+  ]
+  secrets_kms_key_arn = module.kms.data_key_arn
 }
 
 # Caddy Egress Proxy on EC2 (Public subnet, Elastic IP, SSM only)
 module "caddy_egress" {
   source = "../../modules/caddy-egress"
 
-  vpc_id                = module.network.vpc_id
-  subnet_id             = module.network.primary_public_subnet_id
-  api_security_group_id = module.ecs_api.security_group_id
-  mtls_cert_secret_arn  = module.secrets.mtls_client_cert_secret_arn
-  mtls_key_secret_arn   = module.secrets.mtls_client_key_secret_arn
-  egress_ca_secret_arn  = module.secrets.secret_arns["egress_ca_pem"]
-  kms_key_id            = module.kms.data_key_arn
-  caddyfile_content     = file("${path.module}/../../../../services/caddy/Caddyfile")
-  environment           = var.environment
+  vpc_id                   = module.network.vpc_id
+  subnet_id                = module.network.primary_public_subnet_id
+  api_security_group_id    = module.ecs_api.security_group_id
+  mtls_cert_secret_arn     = module.secrets.mtls_client_cert_secret_arn
+  mtls_key_secret_arn      = module.secrets.mtls_client_key_secret_arn
+  egress_ca_secret_arn     = module.secrets.secret_arns["egress_ca_pem"]
+  banco_demo_ca_secret_arn = data.aws_secretsmanager_secret.bank_simulator_tls_cert.arn
+  kms_key_id               = module.kms.data_key_arn
+  caddyfile_content        = file("${path.module}/../../../../services/caddy/Caddyfile")
+  environment              = var.environment
 }
 
 # Monitoring & Alarms (CloudWatch Alarms, Dashboard, SNS Alerts)

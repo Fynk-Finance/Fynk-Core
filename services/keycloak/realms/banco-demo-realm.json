@@ -207,9 +207,10 @@
       "serviceAccountsEnabled": false,
       "redirectUris": [
         "http://localhost:8082/*",
-        "https://bancodemo.fynk.local/*"
+        "https://bancodemo.fynk.local/*",
+        "https://bancodemo.habenly.site/*"
       ],
-      "webOrigins": ["http://localhost:8082"],
+      "webOrigins": ["http://localhost:8082", "https://bancodemo.habenly.site"],
       "attributes": {
         "pkce.code.challenge.method": "S256"
       },
