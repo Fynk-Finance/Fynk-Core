@@ -67,7 +67,9 @@ async function setup(
       remove: jest.fn(async () => {
         calls.push('remove');
       }),
+      writeOwner: jest.fn(async () => undefined),
     },
+    userId: () => 'user-a',
     vault: {
       wipe: jest.fn(async () => {
         calls.push('wipe');

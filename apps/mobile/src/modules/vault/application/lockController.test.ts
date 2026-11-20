@@ -47,7 +47,10 @@ function setup(
     approvalStart?: ApprovalStart;
     /** What the server answers to the reset. Default `ok`. */
     resetResult?: ResetResult;
-    /** The account the stored key belongs to. Default null: a phone set up before the tag. */
+    /**
+     * The account the stored key belongs to. Default: the signed in account when a key is stored,
+     * else none. Null: a key set up before the tag existed.
+     */
     owner?: string | null;
     /** The signed in account. Default `user-a`. */
     userId?: string | null;
@@ -66,7 +69,9 @@ function setup(
 
   let stored: Uint8Array | null = options.dek === undefined ? DEK : options.dek;
   let copyB: Uint8Array | null = options.copyB ?? null;
-  let owner: string | null = options.owner ?? null;
+  const signedIn = options.userId === undefined ? 'user-a' : options.userId;
+  let owner: string | null =
+    options.owner === undefined ? (stored ? signedIn : null) : options.owner;
   let offerShown = options.offerShown ?? false;
   let opened = false;
   let openError = options.openError;
@@ -138,7 +143,7 @@ function setup(
       if (device === 'offline') throw new Error('network');
       return device;
     }),
-    userId: () => (options.userId === undefined ? 'user-a' : options.userId),
+    userId: () => signedIn,
     onSessionChange: (listener) => {
       sessionListeners.add(listener);
       return () => sessionListeners.delete(listener);
@@ -1382,23 +1387,6 @@ describe('vault owner', () => {
   const NEW_KEY = Uint8Array.from({ length: 32 }, () => 7);
   const other = { owner: 'user-a', userId: 'user-b' } as const;
 
-  it('stays locked when a lock arrives while the owner tag is being written', async () => {
-    const t = setup({ loginAgoMs: MIN });
-    let finishWrite!: () => void;
-    (t.dekStore.writeOwner as jest.Mock).mockImplementationOnce(
-      () =>
-        new Promise<void>((resolve) => {
-          finishWrite = resolve;
-        }),
-    );
-    const opening = t.controller.unlock();
-    await waitUntil(() => finishWrite !== undefined);
-    await t.controller.lock();
-    finishWrite();
-    await opening;
-    expect(t.controller.getState().status).toBe('locked');
-  });
-
   it("never opens A's key for B on a fresh login, and sets B up from zero", async () => {
     const t = setup({ ...other, recoveryKey: 'missing' });
     await t.controller.unlock();
@@ -1457,32 +1445,35 @@ describe('vault owner', () => {
     expect(t.resetBackupState).not.toHaveBeenCalled();
   });
 
-  it('lets the current account adopt an untagged phone', async () => {
-    const t = setup({ owner: null, userId: 'user-b' });
+  it('never opens an untagged key: it is erased and the phone is set up from zero', async () => {
+    const t = setup({ owner: null, userId: 'user-b', recoveryKey: 'missing' });
     await t.controller.unlock();
-    expect(t.vault.open).toHaveBeenCalledWith(OLD_KEY);
-    expect(t.vault.wipe).not.toHaveBeenCalled();
+    expect(t.vault.open).not.toHaveBeenCalledWith(OLD_KEY);
+    expect(t.vault.wipe).toHaveBeenCalled();
+    expect(t.dekStore.write).toHaveBeenCalledWith(NEW_KEY);
     expect(t.owner()).toBe('user-b');
+    expect(t.controller.getState().status).toBe('recoveryCode');
   });
 
-  it('tags the owner after a restore with the code', async () => {
-    const t = setup({ dek: null, recoveryKey: 'exists' });
-    await t.controller.unlock();
-    expect(t.owner()).toBeNull();
-    await t.controller.restoreWithCode('CODE');
-    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
-    expect(t.owner()).toBe('user-a');
+  it('never opens an untagged key through the password or the biometric path', async () => {
+    const password = setup({ owner: null, recoveryKey: 'missing' });
+    await password.controller.unlockWithPassword();
+    expect(password.vault.open).not.toHaveBeenCalledWith(OLD_KEY);
+    expect(password.vault.wipe).toHaveBeenCalled();
+
+    const biometric = setup({ owner: null, copyB: OLD_KEY, recoveryKey: 'missing' });
+    await biometric.controller.unlockWithBiometrics();
+    expect(biometric.dekStore.readBiometric).not.toHaveBeenCalled();
+    expect(biometric.vault.open).not.toHaveBeenCalledWith(OLD_KEY);
+    expect(biometric.vault.wipe).toHaveBeenCalled();
   });
 
-  it('tags the owner after an approval that restores', async () => {
-    const t = setup({
-      dek: null,
-      device: { id: 'd1', status: 'pending' },
-      approvalCheck: 'restored',
-    });
+  it('writes the owner tag after the wipe and before the new key', async () => {
+    const t = setup({ dek: null, recoveryKey: 'missing' });
     await t.controller.unlock();
-    await t.controller.checkApproval('req-1');
-    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+    const order = (fn: unknown) => (fn as jest.Mock).mock.invocationCallOrder[0] ?? Infinity;
+    expect(order(t.vault.wipe)).toBeLessThan(order(t.dekStore.writeOwner));
+    expect(order(t.dekStore.writeOwner)).toBeLessThan(order(t.dekStore.write));
     expect(t.owner()).toBe('user-a');
   });
 
@@ -1493,10 +1484,20 @@ describe('vault owner', () => {
     expect(t.vault.open).not.toHaveBeenCalled();
   });
 
-  it('still unlocks when tagging the owner fails', async () => {
-    const t = setup({ owner: null, writeOwnerError: new Error('keychain') });
+  it('makes no key when the owner tag cannot be written', async () => {
+    const t = setup({ dek: null, recoveryKey: 'missing', writeOwnerError: new Error('keychain') });
     await t.controller.unlock();
-    expect(t.controller.getState()).toEqual({ status: 'unlocked' });
+    expect(t.dekStore.write).not.toHaveBeenCalled();
+    expect(t.vault.open).not.toHaveBeenCalled();
+    expect(t.controller.getState()).toEqual({ status: 'error', error: 'keychain' });
+  });
+
+  it('makes no key when nobody is signed in', async () => {
+    const t = setup({ dek: null, userId: null, recoveryKey: 'missing' });
+    await t.controller.unlock();
+    expect(t.dekStore.write).not.toHaveBeenCalled();
+    expect(t.vault.open).not.toHaveBeenCalled();
+    expect(t.controller.getState()).toEqual({ status: 'error', error: 'keychain' });
   });
 
   it('neither opens nor erases the vault when the session ended meanwhile', async () => {
