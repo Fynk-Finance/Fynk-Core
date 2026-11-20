@@ -35,7 +35,7 @@ const (
 // only secret and is never logged.
 type settings struct {
 	Provider        string // RECOMMENDATIONS_PROVIDER: bedrock (default), gemini or openai
-	ModelID         string // RECOMMENDATIONS_MODEL_ID, default amazon.nova-lite-v1:0, or gemini-4-hydrogen on Gemini
+	ModelID         string // RECOMMENDATIONS_MODEL_ID, default amazon.nova-lite-v1:0, or gemini-3.5-flash-lite on Gemini
 	Region          string // RECOMMENDATIONS_AWS_REGION, default AWS_REGION, default us-east-2
 	BaseURL         string // RECOMMENDATIONS_API_BASE_URL, the Gemini endpoint by default on Gemini
 	APIKey          string // RECOMMENDATIONS_API_KEY, or GEMINI_API_KEY on Gemini. Secret
@@ -65,7 +65,7 @@ func loadSettings(getenv func(string) string) settings {
 			s.APIKey = getenv("GEMINI_API_KEY")
 		}
 		if s.ModelID == "" {
-			s.ModelID = "gemini-4-hydrogen"
+			s.ModelID = "gemini-3.5-flash-lite" // live check 5 of 5 on 19 Nov 2026; gemini-4-hydrogen was overloaded (503)
 		}
 		if s.ReasoningEffort == "" {
 			s.ReasoningEffort = "low" // short answers, well inside the 12 s of an attempt

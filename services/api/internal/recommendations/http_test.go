@@ -143,7 +143,7 @@ func TestGeminiProviderReadsTheKeyFromTheEnvironmentAndBedrockStaysTheDefault(t 
 	}
 	env := map[string]string{"RECOMMENDATIONS_PROVIDER": "gemini", "GEMINI_API_KEY": "test-key"}
 	s = loadSettings(func(k string) string { return env[k] })
-	if s.Provider != providerGemini || s.ModelID != "gemini-4-hydrogen" || s.APIKey != "test-key" ||
+	if s.Provider != providerGemini || s.ModelID != "gemini-3.5-flash-lite" || s.APIKey != "test-key" ||
 		s.BaseURL != "https://generativelanguage.googleapis.com/v1beta/openai" || s.ReasoningEffort != "low" {
 		t.Fatalf("gemini: %+v", s)
 	}
@@ -171,7 +171,7 @@ func TestThinkingProvidersGetALargerTokenBudget(t *testing.T) {
 		t.Fatalf("gemini max tokens = %d, want 4096", got)
 	}
 	cfg := loadSettings(env(map[string]string{"RECOMMENDATIONS_PROVIDER": "gemini", "RECOMMENDATIONS_MAX_TOKENS": "2048"}))
-	if got := advisorConfig(cfg); got.MaxTokens != 2048 || got.ModelID != "gemini-4-hydrogen" {
+	if got := advisorConfig(cfg); got.MaxTokens != 2048 || got.ModelID != "gemini-3.5-flash-lite" {
 		t.Fatalf("configured budget: %+v", got)
 	}
 	if got := loadSettings(env(map[string]string{"RECOMMENDATIONS_MAX_TOKENS": "-3"})).MaxTokens; got != 800 {

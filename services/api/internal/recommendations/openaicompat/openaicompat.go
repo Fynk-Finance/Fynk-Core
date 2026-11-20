@@ -35,7 +35,7 @@ const (
 type Config struct {
 	BaseURL         string // for example GeminiBaseURL
 	APIKey          string // secret, from the environment
-	Model           string // for example gemini-4-hydrogen
+	Model           string // for example gemini-3.5-flash-lite
 	ResponseFormat  string // FormatJSONSchema (default) or FormatJSONObject
 	ReasoningEffort string // optional: none, low, medium or high on models that think
 }
