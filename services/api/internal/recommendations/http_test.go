@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -131,6 +133,57 @@ func TestSettingsDefaults(t *testing.T) {
 	s = loadSettings(func(k string) string { return env[k] })
 	if s.ModelID != "anthropic.claude-haiku-4-5" || s.Region != "us-west-2" || s.DailyLimit != 3 {
 		t.Fatalf("from env: %+v", s)
+	}
+}
+
+func TestGeminiProviderReadsTheKeyFromTheEnvironmentAndBedrockStaysTheDefault(t *testing.T) {
+	s := loadSettings(func(string) string { return "" })
+	if s.Provider != providerBedrock || s.APIKey != "" {
+		t.Fatalf("Bedrock must stay the default: %+v", s)
+	}
+	env := map[string]string{"RECOMMENDATIONS_PROVIDER": "gemini", "GEMINI_API_KEY": "test-key"}
+	s = loadSettings(func(k string) string { return env[k] })
+	if s.Provider != providerGemini || s.ModelID != "gemini-3.5-flash-lite" || s.APIKey != "test-key" ||
+		s.BaseURL != "https://generativelanguage.googleapis.com/v1beta/openai" || s.ReasoningEffort != "low" {
+		t.Fatalf("gemini: %+v", s)
+	}
+	env = map[string]string{
+		"RECOMMENDATIONS_PROVIDER": "openai", "RECOMMENDATIONS_API_BASE_URL": "https://api.groq.com/openai/v1",
+		"RECOMMENDATIONS_API_KEY": "k", "RECOMMENDATIONS_MODEL_ID": "openai/gpt-oss-20b",
+		"RECOMMENDATIONS_RESPONSE_FORMAT": "json_object", "RECOMMENDATIONS_REASONING_EFFORT": "off",
+	}
+	s = loadSettings(func(k string) string { return env[k] })
+	if s.Provider != providerOpenAI || s.ModelID != "openai/gpt-oss-20b" || s.ResponseFormat != "json_object" ||
+		s.ReasoningEffort != "" {
+		t.Fatalf("openai: %+v", s)
+	}
+	if s = loadSettings(func(k string) string { return map[string]string{"RECOMMENDATIONS_PROVIDER": "x"}[k] }); s.Provider != providerBedrock {
+		t.Fatalf("an unknown provider stays on Bedrock: %+v", s)
+	}
+}
+
+func TestThinkingProvidersGetALargerTokenBudget(t *testing.T) {
+	env := func(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
+	if got := advisorConfig(loadSettings(env(nil))).MaxTokens; got != 800 {
+		t.Fatalf("bedrock max tokens = %d, want 800", got)
+	}
+	if got := advisorConfig(loadSettings(env(map[string]string{"RECOMMENDATIONS_PROVIDER": "gemini"}))).MaxTokens; got != 4096 {
+		t.Fatalf("gemini max tokens = %d, want 4096", got)
+	}
+	cfg := loadSettings(env(map[string]string{"RECOMMENDATIONS_PROVIDER": "gemini", "RECOMMENDATIONS_MAX_TOKENS": "2048"}))
+	if got := advisorConfig(cfg); got.MaxTokens != 2048 || got.ModelID != "gemini-3.5-flash-lite" {
+		t.Fatalf("configured budget: %+v", got)
+	}
+	if got := loadSettings(env(map[string]string{"RECOMMENDATIONS_MAX_TOKENS": "-3"})).MaxTokens; got != 800 {
+		t.Fatalf("an invalid value keeps the default, got %d", got)
+	}
+}
+
+func TestAProviderWithoutKeyFallsBackInsteadOfCrashing(t *testing.T) {
+	cfg := loadSettings(func(k string) string { return map[string]string{"RECOMMENDATIONS_PROVIDER": "gemini"}[k] })
+	m := newModel(cfg, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if _, err := m.Generate(context.Background(), advisor.ModelRequest{OutputSchema: advisor.OutputSchema}); err == nil {
+		t.Fatal("a model without key must answer an error, so the service falls back")
 	}
 }
 
