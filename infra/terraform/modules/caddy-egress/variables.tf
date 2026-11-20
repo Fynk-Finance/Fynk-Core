@@ -45,6 +45,12 @@ variable "egress_ca_secret_arn" {
   description = "Secrets Manager ARN where Caddy uploads its generated internal.crt (EGRESS_CA_PEM)"
 }
 
+variable "banco_demo_ca_secret_arn" {
+  type        = string
+  default     = ""
+  description = "Optional Secrets Manager ARN for Banco Demo internal mTLS server CA certificate"
+}
+
 variable "kms_key_id" {
   type        = string
   description = "KMS Key ARN used to encrypt Secrets Manager secrets"
