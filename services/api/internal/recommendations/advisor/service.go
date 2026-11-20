@@ -139,6 +139,12 @@ func (s *Service) Generate(ctx context.Context, userID string, req Request) (Res
 		}
 		resp, err := s.model.Generate(callCtx, mreq)
 		cancel()
+		// The provider's own error (quota, timeout, status), never the model text, which may carry
+		// amounts. Errors of the model adapters never hold the API key.
+		reason := ""
+		if err != nil {
+			reason = err.Error()
+		}
 		latency := time.Since(started)
 		outcome := "ok"
 		var out Output
@@ -158,7 +164,7 @@ func (s *Service) Generate(ctx context.Context, userID string, req Request) (Res
 		s.log.InfoContext(ctx, "recommendations generated",
 			"snapshot_hash", hash, "model_id", resp.ModelID, "attempt", attempt, "outcome", outcome,
 			"input_tokens", resp.InputTokens, "output_tokens", resp.OutputTokens,
-			"latency_ms", latency.Milliseconds())
+			"latency_ms", latency.Milliseconds(), "reason", reason)
 		if err == nil {
 			res := base
 			if resp.ModelID != "" {
