@@ -156,12 +156,17 @@ module "ecs_api" {
     { name = "KEYCLOAK_ISSUER", value = "https://auth.${var.domain_name}/realms/fynk" },
     { name = "KEYCLOAK_URL", value = "https://auth.${var.domain_name}" },
     { name = "KEYCLOAK_AUDIENCE", value = "fynk-api" },
-    { name = "KEYCLOAK_REALM", value = "fynk" }
+    { name = "KEYCLOAK_REALM", value = "fynk" },
+    { name = "EGRESS_URL", value = "https://${module.caddy_egress.private_ip}:8443" },
+    { name = "RECOMMENDATIONS_PROVIDER", value = "gemini" },
+    { name = "RECOMMENDATIONS_VIA_EGRESS", value = "true" }
   ]
 
   secrets = [
     { name = "PGPASSWORD", valueFrom = "${module.rds.master_user_secret_arn}:password::" },
     { name = "FYNK_ADMIN_CLIENT_SECRET", valueFrom = module.secrets.secret_arns["fynk_admin_client_secret"] },
+    { name = "GEMINI_API_KEY", valueFrom = module.secrets.secret_arns["gemini_api_key"] },
+    { name = "EGRESS_CA_PEM", valueFrom = module.secrets.secret_arns["egress_ca_pem"] },
     { name = "BANK_SIGNER_KMS_KEY_ID", valueFrom = module.secrets.secret_arns["bank_signer_kms_key_id"] },
     { name = "BANK_FINGERPRINT_KMS_KEY_ID", valueFrom = module.secrets.secret_arns["bank_fingerprint_kms_key_id"] },
     { name = "BANK_REDIRECT_URI", valueFrom = module.secrets.secret_arns["bank_redirect_uri"] },
@@ -228,14 +233,21 @@ module "ecs_keycloak" {
     { name = "FYNK_DEMO_USER_PASSWORD", value = "Demo-staging-1" },
     { name = "BANCO_DEMO_USER_PASSWORD", value = "Banco-staging-1" },
     { name = "BANCO_DEMO_BROKER_SECRET", value = "banco-demo-broker-staging" },
-    { name = "BANK_PORTAL_CLIENT_SECRET", value = "bank-portal-staging" }
+    { name = "BANK_PORTAL_CLIENT_SECRET", value = "bank-portal-staging" },
+    { name = "FYNK_SMTP_HOST", value = "email-smtp.${var.aws_region}.amazonaws.com" },
+    { name = "FYNK_SMTP_PORT", value = "587" },
+    { name = "FYNK_SMTP_FROM", value = "no-reply@${var.domain_name}" },
+    { name = "FYNK_SMTP_AUTH", value = "true" },
+    { name = "FYNK_SMTP_STARTTLS", value = "true" }
   ]
 
   secrets = [
     { name = "KEYCLOAK_ADMIN_PASSWORD", valueFrom = module.secrets.keycloak_admin_secret_arn },
     { name = "KC_BOOTSTRAP_ADMIN_PASSWORD", valueFrom = module.secrets.keycloak_admin_secret_arn },
     { name = "KC_DB_PASSWORD", valueFrom = "${module.rds.master_user_secret_arn}:password::" },
-    { name = "FYNK_ADMIN_CLIENT_SECRET", valueFrom = module.secrets.secret_arns["fynk_admin_client_secret"] }
+    { name = "FYNK_ADMIN_CLIENT_SECRET", valueFrom = module.secrets.secret_arns["fynk_admin_client_secret"] },
+    { name = "FYNK_SMTP_USER", valueFrom = module.secrets.secret_arns["ses_smtp_user"] },
+    { name = "FYNK_SMTP_PASSWORD", valueFrom = module.secrets.secret_arns["ses_smtp_password"] }
   ]
   secrets_kms_key_arn = module.kms.data_key_arn
 }
@@ -272,6 +284,9 @@ module "caddy_egress" {
   api_security_group_id = module.ecs_api.security_group_id
   mtls_cert_secret_arn  = module.secrets.mtls_client_cert_secret_arn
   mtls_key_secret_arn   = module.secrets.mtls_client_key_secret_arn
+  egress_ca_secret_arn  = module.secrets.secret_arns["egress_ca_pem"]
+  kms_key_id            = module.kms.data_key_arn
+  caddyfile_content     = file("${path.module}/../../../../services/caddy/Caddyfile")
   environment           = var.environment
 }
 

@@ -63,6 +63,13 @@
 		}
 	}
 
+	# Route 4: Google Gemini API (OpenAI-compatible endpoint via /gemini/v1beta/openai)
+	handle_path /gemini/* {
+		reverse_proxy https://generativelanguage.googleapis.com {
+			header_up Host {upstream_hostport}
+		}
+	}
+
 	handle {
 		respond 404
 	}

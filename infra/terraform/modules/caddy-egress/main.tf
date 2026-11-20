@@ -70,7 +70,7 @@ resource "aws_iam_role_policy_attachment" "ssm" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-# Policy allowing Caddy to read mTLS certificates from Secrets Manager
+# Policy allowing Caddy to read mTLS certificates and publish its internal CA cert to Secrets Manager
 resource "aws_iam_role_policy" "secrets" {
   name = "fynk-${var.environment}-caddy-secrets"
   role = aws_iam_role.caddy.id
@@ -87,6 +87,25 @@ resource "aws_iam_role_policy" "secrets" {
           var.mtls_cert_secret_arn,
           var.mtls_key_secret_arn
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:PutSecretValue"
+        ]
+        Resource = [
+          var.egress_ca_secret_arn
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey"
+        ]
+        Resource = [
+          var.kms_key_id
+        ]
       }
     ]
   })
@@ -98,11 +117,12 @@ resource "aws_iam_instance_profile" "caddy" {
 }
 
 resource "aws_instance" "caddy" {
-  ami                    = data.aws_ami.al2023_arm64.id
-  instance_type          = var.instance_type
-  subnet_id              = var.subnet_id
-  vpc_security_group_ids = [aws_security_group.caddy.id]
-  iam_instance_profile   = aws_iam_instance_profile.caddy.name
+  ami                         = data.aws_ami.al2023_arm64.id
+  instance_type               = var.instance_type
+  subnet_id                   = var.subnet_id
+  vpc_security_group_ids      = [aws_security_group.caddy.id]
+  iam_instance_profile        = aws_iam_instance_profile.caddy.name
+  user_data_replace_on_change = true
 
   root_block_device {
     volume_size           = 15
@@ -115,14 +135,35 @@ resource "aws_instance" "caddy" {
               #!/bin/bash
               set -euo pipefail
               dnf update -y
-              dnf install -y docker awscli
+              dnf install -y docker awscli openssl
               systemctl enable --now docker
 
               mkdir -p /etc/caddy /run/secrets
               # Fetch client mTLS certificate and private key from Secrets Manager
-              aws secretsmanager get-secret-value --secret-id "${var.mtls_cert_secret_arn}" --query SecretString --output text > /run/secrets/fynk-client.crt || true
-              aws secretsmanager get-secret-value --secret-id "${var.mtls_key_secret_arn}" --query SecretString --output text > /run/secrets/fynk-client.key || true
+              aws secretsmanager get-secret-value --secret-id "${var.mtls_cert_secret_arn}" --query SecretString --output text --region "${data.aws_region.current.name}" > /run/secrets/fynk-client.crt || true
+              aws secretsmanager get-secret-value --secret-id "${var.mtls_key_secret_arn}" --query SecretString --output text --region "${data.aws_region.current.name}" > /run/secrets/fynk-client.key || true
               chmod 600 /run/secrets/* || true
+
+              # Write Caddyfile and generate internal TLS certificate if missing
+              cat <<'CADDYEOF' > /etc/caddy/Caddyfile
+              ${var.caddyfile_content}
+              CADDYEOF
+
+              TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 60")
+              PRIVATE_IP=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/local-ipv4)
+              if [ ! -f /etc/caddy/internal.crt ]; then
+                openssl req -x509 -newkey rsa:2048 -nodes \
+                  -keyout /etc/caddy/internal.key \
+                  -out /etc/caddy/internal.crt \
+                  -days 365 \
+                  -subj "/CN=caddy.internal" \
+                  -addext "subjectAltName=IP:$PRIVATE_IP,DNS:caddy.internal"
+              fi
+              chmod 644 /etc/caddy/Caddyfile /etc/caddy/internal.crt
+              chmod 600 /etc/caddy/internal.key
+
+              # Publish internal.crt to Secrets Manager so fynk-api can trust Caddy via EGRESS_CA_PEM
+              aws secretsmanager put-secret-value --secret-id "${var.egress_ca_secret_arn}" --secret-string file:///etc/caddy/internal.crt --region "${data.aws_region.current.name}"
 
               # Run Caddy egress container
               docker run -d --name caddy-egress \
