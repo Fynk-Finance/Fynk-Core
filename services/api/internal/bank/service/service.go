@@ -130,6 +130,7 @@ func (s *Service) CreateAuthorization(ctx context.Context, u User, r StartReques
 		State:         r.State,
 		Nonce:         nonce,
 		ConsentID:     consent.ID,
+		Subject:       u.ID,
 		Purpose:       consent.Purpose,
 		TermDays:      consent.TermDays,
 	})
