@@ -104,3 +104,12 @@ variable "internal_ingress_security_group_ids" {
   type        = list(string)
   default     = []
 }
+
+variable "extra_ports" {
+  description = "Additional container ports with optional SG ingress rules (e.g. internal mTLS)"
+  type = list(object({
+    port               = number
+    security_group_ids = optional(list(string), [])
+  }))
+  default = []
+}

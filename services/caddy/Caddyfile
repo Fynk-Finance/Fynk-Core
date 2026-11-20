@@ -28,7 +28,7 @@
 
 	# Route 1: Banco Demo (Simulator internal mTLS listener inside VPC)
 	handle_path /banco-demo/* {
-		reverse_proxy https://bank-simulator.internal:9443 {
+		reverse_proxy https://bank-simulator.fynk-staging.local:9443 {
 			header_up Host {upstream_hostport}
 			transport http {
 				tls_client_auth /run/secrets/fynk-client.crt /run/secrets/fynk-client.key

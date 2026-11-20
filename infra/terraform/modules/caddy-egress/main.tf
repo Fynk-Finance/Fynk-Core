@@ -83,10 +83,11 @@ resource "aws_iam_role_policy" "secrets" {
         Action = [
           "secretsmanager:GetSecretValue"
         ]
-        Resource = [
+        Resource = compact([
           var.mtls_cert_secret_arn,
-          var.mtls_key_secret_arn
-        ]
+          var.mtls_key_secret_arn,
+          var.banco_demo_ca_secret_arn
+        ])
       },
       {
         Effect = "Allow"
@@ -143,6 +144,10 @@ resource "aws_instance" "caddy" {
               aws secretsmanager get-secret-value --secret-id "${var.mtls_cert_secret_arn}" --query SecretString --output text --region "${data.aws_region.current.name}" > /run/secrets/fynk-client.crt || true
               aws secretsmanager get-secret-value --secret-id "${var.mtls_key_secret_arn}" --query SecretString --output text --region "${data.aws_region.current.name}" > /run/secrets/fynk-client.key || true
               chmod 600 /run/secrets/* || true
+              if [ -n "${var.banco_demo_ca_secret_arn}" ]; then
+                aws secretsmanager get-secret-value --secret-id "${var.banco_demo_ca_secret_arn}" --query SecretString --output text --region "${data.aws_region.current.name}" > /etc/caddy/banco-demo-ca.crt
+                chmod 644 /etc/caddy/banco-demo-ca.crt
+              fi
 
               # Write Caddyfile and generate internal TLS certificate if missing
               cat <<'CADDYEOF' > /etc/caddy/Caddyfile
