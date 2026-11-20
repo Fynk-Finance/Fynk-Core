@@ -30,6 +30,7 @@ type PARData struct {
 	ProviderID          string
 	Nonce               string // optional, never logged
 	FynkConsentID       string // optional, never logged
+	FynkSub             string // optional, never logged
 	ExpiresAt           time.Time
 }
 
@@ -214,6 +215,12 @@ func (s *Service) HandlePAR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fynkSub := r.FormValue("fynk_sub")
+	if fynkSub != "" && !demo.ValidCustomerRef(fynkSub) {
+		writeOAuthError(w, http.StatusBadRequest, "invalid_request", "fynk_sub is not a valid customer reference")
+		return
+	}
+
 	requestURI := fmt.Sprintf("urn:ietf:params:oauth:request_uri:%s", randomToken("par"))
 	consentID := randomToken("consent")
 
@@ -230,6 +237,7 @@ func (s *Service) HandlePAR(w http.ResponseWriter, r *http.Request) {
 		ProviderID:          entity,
 		Nonce:               r.FormValue("nonce"),
 		FynkConsentID:       r.FormValue("fynk_consent_id"),
+		FynkSub:             fynkSub,
 		ExpiresAt:           time.Now().Add(5 * time.Minute),
 	}
 	s.parData[requestURI] = par

@@ -59,6 +59,9 @@ type session struct {
 	customerID string
 	csrf       string
 	expires    time.Time
+	// freshFor is the request_uri whose forced login created this session. That
+	// request accepts the session whoever logged in, so it never loops.
+	freshFor string
 }
 
 type login struct {
@@ -66,6 +69,10 @@ type login struct {
 	clientID   string
 	// returnTo is the portal page to go back to; empty means the authorization page.
 	returnTo string
+	// forced asks the realm to authenticate again (prompt=login). fynkSub is the Fynk
+	// user that request was started for (never logged).
+	forced   bool
+	fynkSub  string
 	nonce    string
 	verifier string
 	expires  time.Time
@@ -156,6 +163,14 @@ func (h *Handler) Authorize(w http.ResponseWriter, r *http.Request) {
 		h.startLogin(w, r, par)
 		return
 	}
+	// The browser may hold the session of another person (a shared phone). When Fynk
+	// says who started this request, a session of someone else is dropped and the
+	// person must log in again, unless that login was already forced for this request.
+	if par.FynkSub != "" && sess.customerID != par.FynkSub && sess.freshFor != par.RequestURI {
+		h.dropSession(w, r)
+		h.beginLogin(w, r, &login{requestURI: par.RequestURI, clientID: par.ClientID, forced: true, fynkSub: par.FynkSub})
+		return
+	}
 
 	entity := domain.EntityDisplayName(par.ProviderID)
 	if !hasProducts(h.store.GetCustomer(sess.customerID), par.ProviderID) {
@@ -195,7 +210,24 @@ func (h *Handler) beginLogin(w http.ResponseWriter, r *http.Request, l *login) {
 	h.logins[state] = l
 	h.mu.Unlock()
 	h.setCookie(w, r, loginCookie, state, loginTTL)
-	http.Redirect(w, r, h.oidc.AuthURL(state, nonce, verifier), http.StatusFound)
+	prompt := ""
+	if l.forced {
+		prompt = "login"
+	}
+	http.Redirect(w, r, h.oidc.AuthURLWithPrompt(state, nonce, verifier, prompt), http.StatusFound)
+}
+
+// dropSession ends the browser's session on this side and clears its cookie.
+func (h *Handler) dropSession(w http.ResponseWriter, r *http.Request) {
+	if c, err := r.Cookie(sessionCookie); err == nil {
+		h.mu.Lock()
+		delete(h.sessions, c.Value)
+		h.mu.Unlock()
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name: sessionCookie, Value: "", Path: sessionPath, MaxAge: -1,
+		HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: secure(r),
+	})
 }
 
 // Callback finishes the realm login and returns to the authorization page.
@@ -240,9 +272,21 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, http.StatusBadRequest, "No pudimos identificar tu cuenta del banco simulado.")
 		return
 	}
+	// A forced login must end as the Fynk user who started the request, or as the
+	// seeded demo customer chosen on purpose. Anyone else (a stale Fynk session in a
+	// shared browser) would see that person's bank data.
+	if l.forced && customerID != l.fynkSub && customerID != domain.DemoCustomerID {
+		h.log.Warn("authorize: forced login returned another customer")
+		h.fail(w, http.StatusForbidden, "Ingresaste con una cuenta distinta a la de Fynk. Cierra sesión en el banco, vuelve a Fynk e inténtalo de nuevo.")
+		return
+	}
 	sid, csrf := oidc.RandomString(), oidc.RandomString()
 	h.mu.Lock()
-	h.sessions[sid] = &session{customerID: customerID, csrf: csrf, expires: h.now().Add(sessionTTL)}
+	sess := &session{customerID: customerID, csrf: csrf, expires: h.now().Add(sessionTTL)}
+	if l.forced {
+		sess.freshFor = l.requestURI
+	}
+	h.sessions[sid] = sess
 	h.mu.Unlock()
 	h.setCookieAt(w, r, sessionCookie, sid, sessionPath, sessionTTL)
 	if l.returnTo != "" {

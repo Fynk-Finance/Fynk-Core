@@ -111,12 +111,21 @@ func (e *authzEnv) browser() *http.Client {
 
 func (e *authzEnv) par(entity string) (requestURI, consentID string) {
 	e.t.Helper()
+	return e.parFor(entity, "")
+}
+
+// parFor is par with the Fynk user's id, as the API sends it.
+func (e *authzEnv) parFor(entity, fynkSub string) (requestURI, consentID string) {
+	e.t.Helper()
 	sum := sha256.Sum256([]byte(authzVerifier))
 	form := url.Values{
 		"client_id": {"fynk"}, "redirect_uri": {redirectURI}, "scope": {"accounts transactions"},
 		"code_challenge": {base64.RawURLEncoding.EncodeToString(sum[:])}, "code_challenge_method": {"S256"},
 		"state": {"fynk-state"}, "entity": {entity},
 		"client_assertion_type": {jwtBearerType}, "client_assertion": {fakeJWT("fynk")},
+	}
+	if fynkSub != "" {
+		form.Set("fynk_sub", fynkSub)
 	}
 	resp, err := http.PostForm(e.srv.URL+"/oauth/par", form)
 	if err != nil {
