@@ -6,7 +6,7 @@ module: M16b
 jira: [SCRUM-75]
 branch: fix/simulated-entities-sync
 tool: Claude Code
-pr: none
+pr: "#440"
 status: done
 ---
 
