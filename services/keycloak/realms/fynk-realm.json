@@ -115,7 +115,7 @@
   "authenticationFlows": [
     {
       "alias": "fynk registration",
-      "description": "Registration with email, password and the terms checkbox (HU-001)",
+      "description": "Registration with email, password and the terms checkbox, then the email code that creates the user (HU-001)",
       "providerId": "basic-flow",
       "topLevel": true,
       "builtIn": false,
@@ -127,25 +127,32 @@
           "autheticatorFlow": true,
           "flowAlias": "fynk registration form",
           "userSetupAllowed": false
+        },
+        {
+          "authenticator": "fynk-registration-email-code",
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
         }
       ]
     },
     {
       "alias": "fynk registration form",
-      "description": "Creates the user, checks the password policy and records the terms acceptance",
+      "description": "Checks the profile, the password policy and the terms, and keeps them until the email code creates the user",
       "providerId": "form-flow",
       "topLevel": false,
       "builtIn": false,
       "authenticationExecutions": [
         {
-          "authenticator": "registration-user-creation",
+          "authenticator": "fynk-registration-user-pending",
           "requirement": "REQUIRED",
           "priority": 20,
           "autheticatorFlow": false,
           "userSetupAllowed": false
         },
         {
-          "authenticator": "registration-password-action",
+          "authenticator": "fynk-registration-password-pending",
           "authenticatorConfig": "fynk registration password",
           "requirement": "REQUIRED",
           "priority": 50,
@@ -153,7 +160,7 @@
           "userSetupAllowed": false
         },
         {
-          "authenticator": "registration-terms-and-conditions",
+          "authenticator": "fynk-registration-terms-pending",
           "requirement": "REQUIRED",
           "priority": 70,
           "autheticatorFlow": false,

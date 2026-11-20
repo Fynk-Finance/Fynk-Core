@@ -3,11 +3,14 @@ package co.fynk.keycloak.emailcode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.keycloak.email.EmailException;
 import org.keycloak.email.EmailTemplateProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.SubjectCredentialManager;
 import org.keycloak.models.UserModel;
+import org.keycloak.storage.adapter.AbstractInMemoryUserAdapter;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /** Sends a code by email. It never logs the code or the address. */
@@ -31,9 +34,33 @@ public final class CodeMailer {
     private CodeMailer() {
     }
 
+    /** A user that exists only in memory, to give the email provider an address. */
+    private static final class TransientUser extends AbstractInMemoryUserAdapter {
+        TransientUser(KeycloakSession session, RealmModel realm, String email) {
+            super(session, realm, "transient-" + UUID.randomUUID());
+            setUsername(email);
+            setEmail(email);
+        }
+
+        @Override
+        public SubjectCredentialManager credentialManager() {
+            throw new UnsupportedOperationException("A transient user has no credentials");
+        }
+    }
+
     /** Whole minutes the code lives, rounded up. */
     public static long minutes(long lifespanSeconds) {
         return (lifespanSeconds + 59) / 60;
+    }
+
+    /**
+     * Sends to an address that has no stored user yet (a sign-up waiting for its code). A
+     * transient in-memory user carries the address; nothing is persisted.
+     */
+    public static boolean sendToAddress(KeycloakSession session, RealmModel realm, String email,
+                                        AuthenticationSessionModel authSession, Purpose purpose,
+                                        String code, long lifespanSeconds) {
+        return send(session, realm, new TransientUser(session, realm, email), authSession, purpose, code, lifespanSeconds);
     }
 
     /** @return false when the mail server refused the message (the reason is not logged). */

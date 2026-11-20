@@ -1,6 +1,11 @@
 package config
 
 import (
+	"encoding/pem"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -222,5 +227,46 @@ func TestLoadRejectsABadBancolombiaSandboxFlagAndAPlainHTTPAuthorizePage(t *test
 	base["BANCOLOMBIA_AUTHORIZE_URL"] = "http://bank/authorize"
 	if _, err := Load(env(base)); err == nil || !strings.Contains(err.Error(), "BANCOLOMBIA_AUTHORIZE_URL") {
 		t.Fatalf("want a BANCOLOMBIA_AUTHORIZE_URL error, got %v", err)
+	}
+}
+
+func TestLoadWritesTheEgressCAFromEGRESS_CA_PEM(t *testing.T) {
+	srv := httptest.NewTLSServer(http.NotFoundHandler())
+	defer srv.Close()
+	caPEM := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: srv.Certificate().Raw}))
+	base := map[string]string{"APP_ENV": "staging", "DATABASE_URL": "d", "REDIS_URL": "r", "EGRESS_CA_PEM": caPEM}
+
+	// Secrets Manager values sometimes keep the line breaks as \n: both forms work.
+	for name, value := range map[string]string{"lines": caPEM, "escaped": strings.ReplaceAll(caPEM, "\n", `\n`)} {
+		base["EGRESS_CA_PEM"] = value
+		c, err := Load(env(base))
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		got, err := os.ReadFile(c.EgressCAFile)
+		if err != nil || string(got) != caPEM {
+			t.Fatalf("%s: the file must hold the CA, got %q, %v", name, got, err)
+		}
+		info, _ := os.Stat(c.EgressCAFile)
+		if runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
+			t.Fatalf("%s: the CA file must be private, mode %v", name, info.Mode().Perm())
+		}
+		_ = os.Remove(c.EgressCAFile)
+	}
+}
+
+func TestLoadRejectsABadEgressCAOrBothForms(t *testing.T) {
+	base := map[string]string{"APP_ENV": "staging", "DATABASE_URL": "d", "REDIS_URL": "r"}
+	base["EGRESS_CA_PEM"] = "not a certificate"
+	if _, err := Load(env(base)); err == nil || !strings.Contains(err.Error(), "EGRESS_CA_PEM") {
+		t.Fatalf("not PEM: err = %v", err)
+	}
+	base["EGRESS_CA_PEM"] = "-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----\n"
+	if _, err := Load(env(base)); err == nil {
+		t.Fatal("a broken certificate must be rejected")
+	}
+	base["EGRESS_CA_FILE"] = "/certs/ca.crt"
+	if _, err := Load(env(base)); err == nil || !strings.Contains(err.Error(), "not both") {
+		t.Fatalf("both forms: err = %v", err)
 	}
 }

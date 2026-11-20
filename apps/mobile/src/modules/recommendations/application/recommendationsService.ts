@@ -1,11 +1,18 @@
 // Use cases of Recomendaciones. Numbers and order come from M10; the model only writes text.
 // The model's text is shown only next to the snapshot it was written from, so a text can never
-// contradict the numbers on screen. A new text is asked for at most once per hour.
+// contradict the numbers on screen. A new text is asked for at most once per hour, or after 5
+// minutes when the last answer was the fallback.
 import { isApiError } from '@shared/api';
 import type { AggregateSnapshot, Clock, IsoDate } from '@shared/domain';
 import type { Opportunity } from '@modules/analytics';
 
-import { canRegenerate, snapshotKey, type ModelTexts } from '../domain/steps';
+import {
+  canRegenerate,
+  REGENERATE_AFTER_MS,
+  RETRY_AFTER_FALLBACK_MS,
+  snapshotKey,
+  type ModelTexts,
+} from '../domain/steps';
 import type { AnalyticsReportPort, RecommendationsApiPort, RecommendationsStore } from './ports';
 
 export type Notice = 'none' | 'ai_off' | 'offline' | 'rate_limited';
@@ -38,7 +45,11 @@ export function createRecommendationsService(deps: RecommendationsDeps) {
       deps.store.isAiEnabled(),
     ]);
     const key = snapshotKey(JSON.stringify(snapshot));
-    const matching = aiEnabled && cached && cached.snapshotKey === key ? cached.texts : null;
+    // A fallback answer is not a text: it never blocks asking again for the same numbers.
+    const matching =
+      aiEnabled && cached && cached.snapshotKey === key && !cached.texts.fallback
+        ? cached.texts
+        : null;
     return { snapshot, opportunities, cached, aiEnabled, key, matching };
   };
 
@@ -70,7 +81,8 @@ export function createRecommendationsService(deps: RecommendationsDeps) {
       const r = await read();
       if (!r.aiEnabled) return view(r, null, 'ai_off');
       if (r.matching) return view(r, r.matching, 'none');
-      if (r.cached && !canRegenerate(r.cached.createdAt, deps.clock.now())) {
+      const wait = r.cached?.texts.fallback ? RETRY_AFTER_FALLBACK_MS : REGENERATE_AFTER_MS;
+      if (r.cached && !canRegenerate(r.cached.createdAt, deps.clock.now(), wait)) {
         return view(r, null, 'none');
       }
       try {
