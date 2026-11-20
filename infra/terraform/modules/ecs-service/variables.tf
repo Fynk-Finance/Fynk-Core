@@ -92,3 +92,15 @@ variable "secrets_kms_key_arn" {
   default     = null
   description = "ARN of the KMS key that encrypts the secrets of this service. Null when they use the AWS managed key"
 }
+
+variable "service_discovery_registry_arn" {
+  description = "Cloud Map service the tasks register in, so other tasks reach them by a private DNS name. Null means no registration."
+  type        = string
+  default     = null
+}
+
+variable "internal_ingress_security_group_ids" {
+  description = "Security groups of other tasks that may call this service directly on its port, without the ALB."
+  type        = list(string)
+  default     = []
+}
