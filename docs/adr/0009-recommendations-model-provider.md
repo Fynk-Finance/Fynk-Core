@@ -27,7 +27,7 @@ The model of M11 is chosen by configuration. Bedrock stays the default:
 | Setting | Bedrock (default) | Gemini (demo) | Any OpenAI compatible API |
 | --- | --- | --- | --- |
 | `RECOMMENDATIONS_PROVIDER` | `bedrock` or empty | `gemini` | `openai` |
-| `RECOMMENDATIONS_MODEL_ID` | `amazon.nova-lite-v1:0` | `gemini-4-hydrogen` | required |
+| `RECOMMENDATIONS_MODEL_ID` | `amazon.nova-lite-v1:0` | `gemini-3.5-flash-lite` (see below) | required |
 | `RECOMMENDATIONS_API_BASE_URL` | — | Gemini's OpenAI compatible endpoint | required (Groq, OpenRouter, Ollama…) |
 | `RECOMMENDATIONS_API_KEY` | — (task role) | key of Google AI Studio, or `GEMINI_API_KEY` | required |
 | `RECOMMENDATIONS_REASONING_EFFORT` | — | `low` (`off` leaves it out) | optional |
@@ -41,6 +41,7 @@ The model of M11 is chosen by configuration. Bedrock stays the default:
 * Rule 5 holds: the code calculates and the model only writes. The model receives only the aggregate snapshot, as with Bedrock: no movements, names, emails or account numbers.
 * **Data leaves AWS.** With Gemini the aggregate snapshot goes to Google. On the free tier Google may use what it receives to improve its products; with billing turned on it does not. The snapshot holds no personal data, but the team accepts this explicitly. The table "Where data lives" in CLAUDE.md keeps "Aggregate snapshot for the AI: in transit only, never stored" on our side.
 * **Capacity for the demo.** Each person asks the model at most once per hour (the phone caches the answer and regenerates hourly) and at most 10 times a day (`RECOMMENDATIONS_DAILY_LIMIT`). The free tier of Gemini does **not** cover the demo: on 19 Nov 2026 Google answered `429 RESOURCE_EXHAUSTED` with "generate_content_free_tier_requests, limit: 20" per day for `gemini-4-hydrogen`, and a few requests per minute. With billing turned on the limits go away and 50 people cost about 1 to 5 USD (1,50 USD per million input tokens, 7,50 USD per million output tokens; one answer is about 1.500 tokens in and 300 to 1.000 out). Without billing every answer after the 20th of the day is the phone templates.
+* **Model.** The first choice, `gemini-4-hydrogen`, answered well when it answered (7 of 7), but on 19 Nov 2026 it ran out of the free tier (20 requests a day) and was often `503 UNAVAILABLE` ("high demand"), which billing does not fix. `gemini-3.5-flash-lite` passed the live check 5 of 5, has a larger free quota and less demand, and showed its text in the app on the Android emulator against the local stack. It is the default on Gemini; `RECOMMENDATIONS_MODEL_ID` changes it.
 * **The API key is a secret.** It lives only in the server's environment (Secrets Manager in AWS, an uncommitted `.env` or environment variable locally), never in the repository and never in the phone app. It is never logged.
 * When AWS raises the quotas, `RECOMMENDATIONS_PROVIDER` goes back to `bedrock` and nothing else changes.
 * The local Ollama alternative of #421 is covered by this adapter with `openai` and Ollama's `/v1` endpoint, so #421 is not needed.

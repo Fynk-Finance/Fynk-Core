@@ -39,7 +39,7 @@ import (
 var (
 	liveRuns     = flag.Int("runs", 4, "runs per fixture (5 fixtures × 4 = 20 answers)")
 	liveProvider = flag.String("provider", providerBedrock, "bedrock, gemini or openai")
-	liveModel    = flag.String("model", "", "model id (default amazon.nova-lite-v1:0, or gemini-4-hydrogen on Gemini)")
+	liveModel    = flag.String("model", "", "model id (default amazon.nova-lite-v1:0, or gemini-3.5-flash-lite on Gemini)")
 	liveReport   = flag.String("report", "", "Markdown file for the report (stdout only when empty)")
 	livePause    = flag.Duration("pause", 0, "wait between runs, for the per minute limit of a free tier (for example 5s)")
 )
