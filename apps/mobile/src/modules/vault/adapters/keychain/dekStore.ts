@@ -4,6 +4,8 @@ import * as Keychain from 'react-native-keychain';
 
 import type { BiometricPrompt, BiometricRead, DekStore } from '../../application/ports';
 
+// These are the base names. Each account's entries add `.<slot>` (see createDekStore); the bare
+// names are the legacy single vault, erased once by legacyVault.ts.
 export const DEK_KEYCHAIN_SERVICE = 'co.fynk.app.vault.key';
 export const DEK_BIOMETRIC_KEYCHAIN_SERVICE = 'co.fynk.app.vault.key.biometric';
 // Which account the key belongs to, so another account on this phone never opens it.
@@ -42,17 +44,17 @@ function classify(error: unknown): 'cancelled' | 'invalidated' | 'failed' {
 }
 
 // Readable only while the phone is unlocked, never copied to backups or another device.
-const options: Keychain.SetOptions = {
-  service: DEK_KEYCHAIN_SERVICE,
+const optionsFor = (service: string): Keychain.SetOptions => ({
+  service,
   accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
   cloudSync: false,
-};
+});
 
 // Copy B: needs the current fingerprints or faces (iOS: invalidated when one is added or removed;
 // Android: biometric-bound AES-GCM key, invalidated by a new enrollment). Needs a screen lock,
 // never leaves this device. Built on use so loading the module needs no native constants.
-const biometricSetOptions = (prompt: BiometricPrompt): Keychain.SetOptions => ({
-  service: DEK_BIOMETRIC_KEYCHAIN_SERVICE,
+const biometricSetOptions = (service: string, prompt: BiometricPrompt): Keychain.SetOptions => ({
+  service,
   accessible: Keychain.ACCESSIBLE.WHEN_PASSCODE_SET_THIS_DEVICE_ONLY,
   accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET,
   storage: Keychain.STORAGE_TYPE.AES_GCM,
@@ -60,43 +62,80 @@ const biometricSetOptions = (prompt: BiometricPrompt): Keychain.SetOptions => ({
   authenticationPrompt: prompt,
 });
 
-export function createDekStore(): DekStore {
+/**
+ * One set of entries per account: every service name ends in `.<slot>`. `slot` is read on every
+ * call. With no slot (nobody signed in) reads find nothing and writes throw, so a key can never
+ * be stored or read without an account. Removals use `removalSlot` (default: the same slot), so a
+ * wipe after sign out still erases the account's entries.
+ */
+export function createDekStore(
+  slot: () => string | null,
+  removalSlot: () => string | null = slot,
+): DekStore {
+  const noAccount = () => new Error('no signed in account');
+  const name = (base: string): string | null => {
+    const current = slot();
+    return current === null ? null : `${base}.${current}`;
+  };
+  const need = (base: string): string => {
+    const service = name(base);
+    if (service === null) throw noAccount();
+    return service;
+  };
+  const removeService = async (base: string) => {
+    const current = removalSlot();
+    const service = current === null ? null : `${base}.${current}`;
+    if (service !== null) await Keychain.resetGenericPassword({ service });
+  };
+  const has = async (base: string) => {
+    const service = name(base);
+    return service !== null && Keychain.hasGenericPassword({ service });
+  };
+
   const store: DekStore = {
     async read() {
-      const entry = await Keychain.getGenericPassword({ service: DEK_KEYCHAIN_SERVICE });
+      const service = name(DEK_KEYCHAIN_SERVICE);
+      if (service === null) return null;
+      const entry = await Keychain.getGenericPassword({ service });
       if (!entry) return null;
       return fromEntry(entry.password);
     },
     async write(dek) {
-      const stored = await Keychain.setGenericPassword(ACCOUNT, toBase64(dek), options);
+      const stored = await Keychain.setGenericPassword(
+        ACCOUNT,
+        toBase64(dek),
+        optionsFor(need(DEK_KEYCHAIN_SERVICE)),
+      );
       if (!stored) throw new Error('keychain write failed');
     },
     async remove() {
-      await Keychain.resetGenericPassword({ service: DEK_KEYCHAIN_SERVICE });
+      await removeService(DEK_KEYCHAIN_SERVICE);
     },
     async readOwner() {
-      const entry = await Keychain.getGenericPassword({ service: DEK_OWNER_KEYCHAIN_SERVICE });
+      const service = name(DEK_OWNER_KEYCHAIN_SERVICE);
+      if (service === null) return null;
+      const entry = await Keychain.getGenericPassword({ service });
       return entry ? entry.password : null;
     },
     async writeOwner(userId) {
-      const stored = await Keychain.setGenericPassword(OWNER_ACCOUNT, userId, {
-        ...options,
-        service: DEK_OWNER_KEYCHAIN_SERVICE,
-      });
+      const stored = await Keychain.setGenericPassword(
+        OWNER_ACCOUNT,
+        userId,
+        optionsFor(need(DEK_OWNER_KEYCHAIN_SERVICE)),
+      );
       if (!stored) throw new Error('keychain write failed');
     },
-    async biometricOfferShown() {
-      return Keychain.hasGenericPassword({ service: DEK_BIOMETRIC_OFFER_KEYCHAIN_SERVICE });
-    },
+    biometricOfferShown: () => has(DEK_BIOMETRIC_OFFER_KEYCHAIN_SERVICE),
     async markBiometricOfferShown() {
-      const stored = await Keychain.setGenericPassword(OFFER_ACCOUNT, '1', {
-        ...options,
-        service: DEK_BIOMETRIC_OFFER_KEYCHAIN_SERVICE,
-      });
+      const stored = await Keychain.setGenericPassword(
+        OFFER_ACCOUNT,
+        '1',
+        optionsFor(need(DEK_BIOMETRIC_OFFER_KEYCHAIN_SERVICE)),
+      );
       if (!stored) throw new Error('keychain write failed');
     },
     async removeAll() {
-      // Each removal runs even when an earlier one fails.
+      // Only this account's slot. Each removal runs even when an earlier one fails.
       try {
         await store.remove();
       } finally {
@@ -104,9 +143,9 @@ export function createDekStore(): DekStore {
           await store.removeBiometric();
         } finally {
           try {
-            await Keychain.resetGenericPassword({ service: DEK_OWNER_KEYCHAIN_SERVICE });
+            await removeService(DEK_OWNER_KEYCHAIN_SERVICE);
           } finally {
-            await Keychain.resetGenericPassword({ service: DEK_BIOMETRIC_OFFER_KEYCHAIN_SERVICE });
+            await removeService(DEK_BIOMETRIC_OFFER_KEYCHAIN_SERVICE);
           }
         }
       }
@@ -121,17 +160,18 @@ export function createDekStore(): DekStore {
     async hasBiometric() {
       try {
         // Does not show the prompt: iOS asks with "fail if UI is needed", Android only looks it up.
-        return await Keychain.hasGenericPassword({ service: DEK_BIOMETRIC_KEYCHAIN_SERVICE });
+        return await has(DEK_BIOMETRIC_KEYCHAIN_SERVICE);
       } catch {
         return false;
       }
     },
     async writeBiometric(dek, prompt) {
+      const service = need(DEK_BIOMETRIC_KEYCHAIN_SERVICE);
       try {
         const stored = await Keychain.setGenericPassword(
           ACCOUNT,
           toBase64(dek),
-          biometricSetOptions(prompt),
+          biometricSetOptions(service, prompt),
         );
         if (!stored) throw new Error('keychain write failed');
       } catch (error) {
@@ -141,9 +181,11 @@ export function createDekStore(): DekStore {
       return 'ok';
     },
     async readBiometric(prompt): Promise<BiometricRead> {
+      const service = name(DEK_BIOMETRIC_KEYCHAIN_SERVICE);
+      if (service === null) return { status: 'invalidated' };
       try {
         const entry = await Keychain.getGenericPassword({
-          service: DEK_BIOMETRIC_KEYCHAIN_SERVICE,
+          service,
           accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET,
           authenticationPrompt: prompt,
         });
@@ -156,7 +198,7 @@ export function createDekStore(): DekStore {
       }
     },
     async removeBiometric() {
-      await Keychain.resetGenericPassword({ service: DEK_BIOMETRIC_KEYCHAIN_SERVICE });
+      await removeService(DEK_BIOMETRIC_KEYCHAIN_SERVICE);
     },
   };
   return store;

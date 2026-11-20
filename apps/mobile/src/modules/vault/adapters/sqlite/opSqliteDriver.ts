@@ -8,12 +8,34 @@ import type { DB } from '@op-engineering/op-sqlite';
 
 import type { Row, VaultDriver } from '../../application/ports';
 
-export const VAULT_DB_NAME = 'fynk-vault.db';
+// The phone used to hold a single vault under this name; only the one-time legacy erase uses it.
+export const LEGACY_VAULT_DB_NAME = 'fynk-vault.db';
+
+/** One file per account: `fynk-vault-<slot>.db`. */
+export const vaultDbName = (slot: string) => `fynk-vault-${slot}.db`;
 
 type OpSqlite = typeof import('@op-engineering/op-sqlite');
+type Load = () => Promise<OpSqlite>;
+const defaultLoad: Load = () => import('@op-engineering/op-sqlite');
 
+/** Deletes the legacy single vault file. A missing file counts as deleted. */
+export async function deleteLegacyVaultFile(load: Load = defaultLoad): Promise<void> {
+  try {
+    const { open } = await load();
+    open({ name: LEGACY_VAULT_DB_NAME, failOnCreate: true }).delete();
+  } catch {
+    // No file to delete.
+  }
+}
+
+/**
+ * `slot` is read on every call, so the file follows the signed in account. `deleteFile` uses
+ * `removalSlot`, so a wipe after sign out still deletes the account's file.
+ */
 export function createOpSqliteDriver(
-  load: () => Promise<OpSqlite> = () => import('@op-engineering/op-sqlite'),
+  slot: () => string | null,
+  load: Load = defaultLoad,
+  removalSlot: () => string | null = slot,
 ): VaultDriver {
   let db: DB | null = null;
 
@@ -24,8 +46,10 @@ export function createOpSqliteDriver(
 
   return {
     async open(key) {
+      const current = slot();
+      if (current === null) throw new Error('no signed in account');
       const { open } = await load();
-      db = open({ name: VAULT_DB_NAME, encryptionKey: key });
+      db = open({ name: vaultDbName(current), encryptionKey: key });
       await db.execute('PRAGMA foreign_keys = ON');
     },
     async execute(sql, params) {
@@ -40,6 +64,7 @@ export function createOpSqliteDriver(
     async deleteFile() {
       const current = db;
       db = null;
+      const name = removalSlot();
       try {
         if (current) {
           current.delete();
@@ -47,8 +72,9 @@ export function createOpSqliteDriver(
         }
         // Not open: open a handle only to delete. It never creates the file and needs no key,
         // because SQLCipher reads the key lazily on the first query.
+        if (name === null) return;
         const { open } = await load();
-        open({ name: VAULT_DB_NAME, failOnCreate: true }).delete();
+        open({ name: vaultDbName(name), failOnCreate: true }).delete();
       } catch {
         // No file to delete.
       }

@@ -31,10 +31,11 @@ import { vaultStrings } from '../ui/strings.es-CO';
 import { backupSync, restoreAll } from './defaultBackup';
 import { deviceApprovalsApi } from './defaultApproval';
 import { vault } from './defaultVault';
+import { currentSlot, removalSlot } from './defaultSlot';
 import { createDekStore } from './keychain/dekStore';
 
 const recoveryKeyApi = createRecoveryKeyApi({ deviceId: () => deviceId() });
-const dekStore = createDekStore();
+const dekStore = createDekStore(currentSlot, removalSlot);
 const restoreState = createRestoreState(() => vault.getVaultDb());
 
 export const lockController = createLockController({
