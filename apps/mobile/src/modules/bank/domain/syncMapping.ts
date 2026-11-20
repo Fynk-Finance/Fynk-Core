@@ -10,15 +10,13 @@ import { normalizeMerchant } from '@shared/domain/normalizeMerchant';
 import type { Account, Id, IsoDateTime, ProviderId, Transaction } from '@shared/domain/types';
 
 import { base64Url } from './pkce';
+import { SIMULATOR_ENTITY_IDS } from './provider';
 
 type RemoteAccount = components['schemas']['BankAccount'];
 type RemoteTransaction = components['schemas']['BankTransaction'];
 
-const PROVIDERS: readonly string[] = [
-  'banco-demo',
-  'billetera-demo',
-  'bancolombia',
-] satisfies ProviderId[];
+// The four simulator entities (one list, in ./provider) plus the real sandbox.
+const PROVIDERS: readonly string[] = [...SIMULATOR_ENTITY_IDS, 'bancolombia' satisfies ProviderId];
 
 // Length-prefixed parts, so ("a", "b:c") and ("a:b", "c") never give the same id.
 function stableId(prefix: string, ...parts: string[]): Id {

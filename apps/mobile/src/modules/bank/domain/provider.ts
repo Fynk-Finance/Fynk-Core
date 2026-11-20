@@ -1,4 +1,5 @@
 // Entities the person can connect (M5's GET /providers). Pure: no React, no I/O.
+import type { ProviderId } from '@shared/domain/types';
 
 export type ProviderKind = 'bank' | 'wallet';
 
@@ -21,7 +22,7 @@ export const SIMULATOR_ENTITY_IDS: readonly string[] = [
   'billetera-demo',
   'banco-digital-demo',
   'cooperativa-demo',
-];
+] satisfies readonly ProviderId[];
 
 /**
  * The entities to offer: every real provider, plus the simulated entities where the person has

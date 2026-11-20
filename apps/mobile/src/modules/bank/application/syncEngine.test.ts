@@ -312,6 +312,34 @@ it('does nothing and reports locked while the vault is locked', async () => {
   expect((await engine.syncAll()).status).toBe('done');
 });
 
+// Banco Digital Demo and Cooperativa Demo are offered like the first two entities: their accounts
+// and movements must sync, not mark the link failed.
+it.each(['banco-digital-demo', 'cooperativa-demo'] as const)(
+  'syncs the accounts and movements of a %s link',
+  async (provider) => {
+    await store.saveLink(
+      { id: 'link-x', provider, consentId: 'c-x', createdAt: '2026-10-29T14:10:00Z' },
+      { accessToken: 'at-x', refreshToken: 'rt-x', accessExpiresAt: '2026-10-29T16:00:00Z' },
+    );
+    const { engine, accounts, transactions } = setup();
+
+    const report = await engine.syncAll();
+
+    expect(report.links.find((l) => l.linkId === 'link-x')).toEqual({
+      linkId: 'link-x',
+      provider,
+      kind: 'synced',
+    });
+    const id = accountIdOf(provider, 'acc-1');
+    expect(accounts.upsertFromSync).toHaveBeenCalledWith([
+      expect.objectContaining({ id, provider, linkId: 'link-x' }),
+    ]);
+    expect(transactions.upsertFromSync).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: id }),
+    );
+  },
+);
+
 // HU-058: several simulated links sync together, the 60 s minimum applies to each one, and a
 // revoked entity does not stop the others.
 it('syncs several simulated links, keeps the 60 s minimum, and one revoked entity leaves the others working', async () => {

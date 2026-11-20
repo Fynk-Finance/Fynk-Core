@@ -128,3 +128,14 @@ it('leaves the merchant empty when the bank sent none', () => {
   );
   expect(tx).toMatchObject({ merchantRaw: null, merchantKey: null, status: 'pending' });
 });
+
+it.each(['banco-demo', 'billetera-demo', 'banco-digital-demo', 'cooperativa-demo', 'bancolombia'])(
+  'maps an account of %s',
+  (provider) => {
+    expect(toAccount(remoteSavings, { ...context, provider }).provider).toBe(provider);
+  },
+);
+
+it('rejects an unknown provider', () => {
+  expect(() => toAccount(remoteSavings, { ...context, provider: 'nope' })).toThrow(RangeError);
+});
