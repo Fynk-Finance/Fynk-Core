@@ -6,7 +6,7 @@ module: M2
 jira: [SCRUM-96]
 branch: fix/vault-adopts-untagged-key
 tool: Claude Code
-pr: none
+pr: "#431"
 status: done
 ---
 
@@ -42,4 +42,4 @@ On a physical phone against staging, Daniel signed in with a newly created accou
 
 ## Next step
 
-Open the pull request. After M14's network fix, check on the phone that the old vault is erased and that the new account goes through onboarding.
+Review #431. After M14's network fix, check on the phone that the old vault is erased and that the new account goes through onboarding.
