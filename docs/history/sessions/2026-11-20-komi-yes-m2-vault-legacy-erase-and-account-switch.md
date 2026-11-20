@@ -6,7 +6,7 @@ module: M2
 jira: [SCRUM-96]
 branch: fix/vault-legacy-erase-and-account-switch
 tool: Claude Code
-pr: none
+pr: "#443"
 status: done
 ---
 
