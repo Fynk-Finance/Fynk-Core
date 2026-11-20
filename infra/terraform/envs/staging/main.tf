@@ -166,6 +166,7 @@ module "ecs_api" {
     { name = "PGPASSWORD", valueFrom = "${module.rds.master_user_secret_arn}:password::" },
     { name = "FYNK_ADMIN_CLIENT_SECRET", valueFrom = module.secrets.secret_arns["fynk_admin_client_secret"] },
     { name = "GEMINI_API_KEY", valueFrom = module.secrets.secret_arns["gemini_api_key"] },
+    { name = "EGRESS_CA_PEM", valueFrom = module.secrets.secret_arns["egress_ca_pem"] },
     { name = "BANK_SIGNER_KMS_KEY_ID", valueFrom = module.secrets.secret_arns["bank_signer_kms_key_id"] },
     { name = "BANK_FINGERPRINT_KMS_KEY_ID", valueFrom = module.secrets.secret_arns["bank_fingerprint_kms_key_id"] },
     { name = "BANK_REDIRECT_URI", valueFrom = module.secrets.secret_arns["bank_redirect_uri"] },
@@ -283,6 +284,8 @@ module "caddy_egress" {
   api_security_group_id = module.ecs_api.security_group_id
   mtls_cert_secret_arn  = module.secrets.mtls_client_cert_secret_arn
   mtls_key_secret_arn   = module.secrets.mtls_client_key_secret_arn
+  egress_ca_secret_arn  = module.secrets.secret_arns["egress_ca_pem"]
+  kms_key_id            = module.kms.data_key_arn
   caddyfile_content     = file("${path.module}/../../../../services/caddy/Caddyfile")
   environment           = var.environment
 }

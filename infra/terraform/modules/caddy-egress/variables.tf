@@ -39,3 +39,13 @@ variable "caddyfile_content" {
   type        = string
   description = "Contents of Caddyfile to write to /etc/caddy/Caddyfile"
 }
+
+variable "egress_ca_secret_arn" {
+  type        = string
+  description = "Secrets Manager ARN where Caddy uploads its generated internal.crt (EGRESS_CA_PEM)"
+}
+
+variable "kms_key_id" {
+  type        = string
+  description = "KMS Key ARN used to encrypt Secrets Manager secrets"
+}
