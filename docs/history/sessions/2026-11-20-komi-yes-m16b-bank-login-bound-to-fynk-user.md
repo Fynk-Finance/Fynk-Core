@@ -6,7 +6,7 @@ module: M16b
 jira: [SCRUM-74]
 branch: fix/bank-login-bound-to-fynk-user
 tool: Claude Code
-pr: none
+pr: "#441"
 status: partial
 ---
 
