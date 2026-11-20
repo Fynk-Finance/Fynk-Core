@@ -2,8 +2,11 @@
 package config
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -36,7 +39,8 @@ type Config struct {
 	// https. Empty means no outside provider can be reached, and those calls fail closed.
 	EgressURL string
 	// EgressCAFile is the PEM file of the CA that signed the egress's own TLS certificate.
-	// Empty means the system roots.
+	// Empty means the system roots. In AWS (Fargate cannot mount a secret as a file) the CA comes
+	// as text in EGRESS_CA_PEM, and Load writes it to a private temporary file (egressCAFromPEM).
 	EgressCAFile string
 	// KeycloakAdminClientSecret is the client secret of the Keycloak client fynk-admin (client
 	// credentials) that M1 uses for the admin API. Optional: when empty, the features that need
@@ -156,6 +160,15 @@ func Load(getenv func(string) string) (Config, error) {
 	if c.RedisURL == "" {
 		errs = append(errs, errors.New("REDIS_URL is required"))
 	}
+	if caPEM := getenv("EGRESS_CA_PEM"); caPEM != "" {
+		if c.EgressCAFile != "" {
+			errs = append(errs, errors.New("set EGRESS_CA_FILE or EGRESS_CA_PEM, not both"))
+		} else if path, err := egressCAFromPEM(caPEM); err != nil {
+			errs = append(errs, err)
+		} else {
+			c.EgressCAFile = path
+		}
+	}
 	// TLS on every hop (CLAUDE.md, Security rules): the egress is never reached in clear.
 	if c.EgressURL != "" && !strings.HasPrefix(c.EgressURL, "https://") {
 		errs = append(errs, errors.New("EGRESS_URL must start with https://"))
@@ -175,4 +188,41 @@ func Load(getenv func(string) string) (Config, error) {
 		errs = append(errs, errors.New("BANCOLOMBIA_SANDBOX_OWNER_* is only allowed with BANCOLOMBIA_SANDBOX=true"))
 	}
 	return c, errors.Join(errs...)
+}
+
+// egressCAFromPEM checks that pemText holds at least one certificate and writes it to a new
+// temporary file only this process can read. The modules that call the egress read the CA from
+// that file, as they do with EGRESS_CA_FILE.
+func egressCAFromPEM(pemText string) (string, error) {
+	rest := []byte(strings.ReplaceAll(pemText, `\n`, "\n"))
+	found := 0
+	for {
+		var block *pem.Block
+		block, rest = pem.Decode(rest)
+		if block == nil {
+			break
+		}
+		if block.Type != "CERTIFICATE" {
+			continue
+		}
+		if _, err := x509.ParseCertificate(block.Bytes); err != nil {
+			return "", fmt.Errorf("EGRESS_CA_PEM: %w", err)
+		}
+		found++
+	}
+	if found == 0 {
+		return "", errors.New("EGRESS_CA_PEM holds no PEM certificate")
+	}
+	f, err := os.CreateTemp("", "fynk-egress-ca-*.pem")
+	if err != nil {
+		return "", fmt.Errorf("EGRESS_CA_PEM: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+	if err := f.Chmod(0o600); err != nil {
+		return "", fmt.Errorf("EGRESS_CA_PEM: %w", err)
+	}
+	if _, err := f.WriteString(strings.ReplaceAll(pemText, `\n`, "\n")); err != nil {
+		return "", fmt.Errorf("EGRESS_CA_PEM: %w", err)
+	}
+	return f.Name(), nil
 }
