@@ -41,6 +41,7 @@ export type StepIcon =
   | 'bolt'
   | 'home'
   | 'tv'
+  | 'play'
   | 'piggy'
   | 'chartLine';
 
@@ -91,6 +92,13 @@ const CATEGORY_ICONS: Partial<Record<CategoryId, StepIcon>> = {
   rent: 'home',
   subscriptions: 'tv',
 };
+
+/** Recomendaciones.html: a play triangle for subscriptions, a piggy for the contribution. */
+function stepIcon(o: Opportunity): StepIcon {
+  if (o.kind === 'subscriptions') return 'play';
+  if (o.kind === 'payday_contribution') return 'piggy';
+  return CATEGORY_ICONS[o.categoryId ?? 'other'] ?? 'chartLine';
+}
 
 export function tagOf(o: Opportunity): StepTag {
   if (o.kind === 'category_increase') return 'expenses';
@@ -166,10 +174,7 @@ export function buildSteps(
     return {
       number: i + 1,
       factKey: o.factKey,
-      icon:
-        o.kind === 'payday_contribution'
-          ? 'piggy'
-          : (CATEGORY_ICONS[o.categoryId ?? 'other'] ?? 'chartLine'),
+      icon: stepIcon(o),
       title: model?.title.trim() || template.title,
       tag: tagOf(o),
       text: model?.text.trim() || template.text,
