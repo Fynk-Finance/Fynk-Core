@@ -14,6 +14,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -45,6 +46,9 @@ type config struct {
 	CertFile     string // server certificate of the internal listener
 	KeyFile      string
 	ClientCAFile string // CA that signs the accepted client certificates
+	CertPEM      string // inline PEM alternative to CertFile (ECS secrets)
+	KeyPEM       string
+	ClientCAPEM  string
 
 	// ProvisionClientID is Fynk's client id at the bank. Only this client may
 	// get the demo:provision scope.
@@ -79,6 +83,9 @@ func loadConfig(getenv func(string) string) config {
 		CertFile:     getenv("BANK_TLS_CERT"),
 		KeyFile:      getenv("BANK_TLS_KEY"),
 		ClientCAFile: getenv("BANK_CLIENT_CA"),
+		CertPEM:      getenv("BANK_TLS_CERT_PEM"),
+		KeyPEM:       getenv("BANK_TLS_KEY_PEM"),
+		ClientCAPEM:  getenv("BANK_CLIENT_CA_PEM"),
 
 		ProvisionClientID: or("BANK_PROVISION_CLIENT_ID", defaultProvisionClientID),
 
@@ -90,7 +97,76 @@ func loadConfig(getenv func(string) string) config {
 	}
 }
 
+// pemToFile writes a PEM given as text (an ECS secret) to a private temporary
+// file and returns its path. The simulator keeps working with file paths.
+func pemToFile(name, pem string) (string, error) {
+	f, err := os.CreateTemp("", "bank-"+name+"-*.pem")
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", name, err)
+	}
+	path := f.Name()
+	if err := f.Chmod(0o600); err != nil {
+		_ = f.Close()
+		_ = os.Remove(path)
+		return "", fmt.Errorf("%s: %w", name, err)
+	}
+	if _, err := f.WriteString(pem); err != nil {
+		_ = f.Close()
+		_ = os.Remove(path)
+		return "", fmt.Errorf("%s: %w", name, err)
+	}
+	if err := f.Close(); err != nil {
+		_ = os.Remove(path)
+		return "", fmt.Errorf("%s: %w", name, err)
+	}
+	return path, nil
+}
+
+// resolveTLSFiles materializes any *_PEM fields into private temporary files
+// so ListenAndServeTLS and os.ReadFile work identically in ECS and locally.
+func resolveTLSFiles(cfg *config) (func(), error) {
+	var tempPaths []string
+	cleanup := func() {
+		for _, p := range tempPaths {
+			_ = os.Remove(p)
+		}
+	}
+
+	pairs := []struct {
+		envName string
+		path    *string
+		pem     string
+	}{
+		{"BANK_TLS_CERT", &cfg.CertFile, cfg.CertPEM},
+		{"BANK_TLS_KEY", &cfg.KeyFile, cfg.KeyPEM},
+		{"BANK_CLIENT_CA", &cfg.ClientCAFile, cfg.ClientCAPEM},
+	}
+
+	for _, p := range pairs {
+		if *p.path != "" && p.pem != "" {
+			cleanup()
+			return func() {}, fmt.Errorf("set %s or %s_PEM, not both", p.envName, p.envName)
+		}
+		if *p.path == "" && p.pem != "" {
+			written, err := pemToFile(p.envName, p.pem)
+			if err != nil {
+				cleanup()
+				return func() {}, err
+			}
+			tempPaths = append(tempPaths, written)
+			*p.path = written
+		}
+	}
+	return cleanup, nil
+}
+
 func run(ctx context.Context, cfg config, logger *slog.Logger) error {
+	cleanupTLS, err := resolveTLSFiles(&cfg)
+	if err != nil {
+		return err
+	}
+	defer cleanupTLS()
+
 	var tlsCfg *tls.Config
 	if cfg.CertFile == "" || cfg.KeyFile == "" || cfg.ClientCAFile == "" {
 		if os.Getenv("BANK_DEV_MODE") != "1" {
