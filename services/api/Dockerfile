@@ -24,4 +24,5 @@ COPY --from=build /out/api /out/migrate /
 USER nonroot:nonroot
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=4s --start-period=5s --retries=6 CMD ["/api", "healthcheck"]
-ENTRYPOINT ["/api"]
+ENTRYPOINT []
+CMD ["/api"]

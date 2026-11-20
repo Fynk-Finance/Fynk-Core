@@ -12,6 +12,8 @@ locals {
     "banco_demo_issuer"           = "fynk/${var.environment}/banco-demo-issuer"
     "banco_demo_authorize_url"    = "fynk/${var.environment}/banco-demo-authorize-url"
     "gemini_api_key"              = "fynk/${var.environment}/gemini-api-key"
+    "ses_smtp_user"               = "fynk/${var.environment}/ses-smtp-user"
+    "ses_smtp_password"           = "fynk/${var.environment}/ses-smtp-password"
   }
 }
 

@@ -232,14 +232,21 @@ module "ecs_keycloak" {
     { name = "FYNK_DEMO_USER_PASSWORD", value = "Demo-staging-1" },
     { name = "BANCO_DEMO_USER_PASSWORD", value = "Banco-staging-1" },
     { name = "BANCO_DEMO_BROKER_SECRET", value = "banco-demo-broker-staging" },
-    { name = "BANK_PORTAL_CLIENT_SECRET", value = "bank-portal-staging" }
+    { name = "BANK_PORTAL_CLIENT_SECRET", value = "bank-portal-staging" },
+    { name = "FYNK_SMTP_HOST", value = "email-smtp.${var.aws_region}.amazonaws.com" },
+    { name = "FYNK_SMTP_PORT", value = "587" },
+    { name = "FYNK_SMTP_FROM", value = "no-reply@${var.domain_name}" },
+    { name = "FYNK_SMTP_AUTH", value = "true" },
+    { name = "FYNK_SMTP_STARTTLS", value = "true" }
   ]
 
   secrets = [
     { name = "KEYCLOAK_ADMIN_PASSWORD", valueFrom = module.secrets.keycloak_admin_secret_arn },
     { name = "KC_BOOTSTRAP_ADMIN_PASSWORD", valueFrom = module.secrets.keycloak_admin_secret_arn },
     { name = "KC_DB_PASSWORD", valueFrom = "${module.rds.master_user_secret_arn}:password::" },
-    { name = "FYNK_ADMIN_CLIENT_SECRET", valueFrom = module.secrets.secret_arns["fynk_admin_client_secret"] }
+    { name = "FYNK_ADMIN_CLIENT_SECRET", valueFrom = module.secrets.secret_arns["fynk_admin_client_secret"] },
+    { name = "FYNK_SMTP_USER", valueFrom = module.secrets.secret_arns["ses_smtp_user"] },
+    { name = "FYNK_SMTP_PASSWORD", valueFrom = module.secrets.secret_arns["ses_smtp_password"] }
   ]
   secrets_kms_key_arn = module.kms.data_key_arn
 }
