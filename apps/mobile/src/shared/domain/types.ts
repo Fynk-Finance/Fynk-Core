@@ -6,7 +6,8 @@ export type IsoDate = string; // '2026-10-25'
 export type IsoDateTime = string; // '2026-10-25T14:03:00Z'
 export type MoneyMinor = number; // integer COP centavos
 
-export type ProviderId = 'banco-demo' | 'billetera-demo' | 'bancolombia';
+export type ProviderId =
+  'banco-demo' | 'billetera-demo' | 'banco-digital-demo' | 'cooperativa-demo' | 'bancolombia';
 export type AccountKind = 'savings' | 'checking' | 'wallet' | 'credit_card' | 'cdt' | 'cash';
 
 export interface Account {
