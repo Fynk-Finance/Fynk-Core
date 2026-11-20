@@ -276,6 +276,7 @@ module "caddy_egress" {
   api_security_group_id = module.ecs_api.security_group_id
   mtls_cert_secret_arn  = module.secrets.mtls_client_cert_secret_arn
   mtls_key_secret_arn   = module.secrets.mtls_client_key_secret_arn
+  caddyfile_content     = file("${path.module}/../../../../services/caddy/Caddyfile")
   environment           = var.environment
 }
 

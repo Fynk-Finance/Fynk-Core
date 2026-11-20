@@ -34,3 +34,8 @@ variable "instance_type" {
   default     = "t4g.micro"
   description = "EC2 instance type (ARM64 Graviton, free-tier eligible)"
 }
+
+variable "caddyfile_content" {
+  type        = string
+  description = "Contents of Caddyfile to write to /etc/caddy/Caddyfile"
+}

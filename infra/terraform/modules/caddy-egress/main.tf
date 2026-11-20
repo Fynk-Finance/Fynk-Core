@@ -115,7 +115,7 @@ resource "aws_instance" "caddy" {
               #!/bin/bash
               set -euo pipefail
               dnf update -y
-              dnf install -y docker awscli
+              dnf install -y docker awscli openssl
               systemctl enable --now docker
 
               mkdir -p /etc/caddy /run/secrets
@@ -123,6 +123,25 @@ resource "aws_instance" "caddy" {
               aws secretsmanager get-secret-value --secret-id "${var.mtls_cert_secret_arn}" --query SecretString --output text > /run/secrets/fynk-client.crt || true
               aws secretsmanager get-secret-value --secret-id "${var.mtls_key_secret_arn}" --query SecretString --output text > /run/secrets/fynk-client.key || true
               chmod 600 /run/secrets/* || true
+
+              # Write Caddyfile and generate internal TLS certificate if missing
+              cat <<'CADDYEOF' > /etc/caddy/Caddyfile
+              ${var.caddyfile_content}
+              CADDYEOF
+
+              TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 60")
+              PRIVATE_IP=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/local-ipv4)
+              if [ ! -f /etc/caddy/internal.crt ]; then
+                openssl req -x509 -newkey rsa:2048 -nodes \
+                  -keyout /etc/caddy/internal.key \
+                  -out /etc/caddy/internal.crt \
+                  -days 365 \
+                  -subj "/CN=caddy.internal" \
+                  -addext "subjectAltName=IP:$PRIVATE_IP,DNS:caddy.internal"
+                cp /etc/caddy/internal.crt /etc/caddy/banco-demo-ca.crt
+              fi
+              chmod 644 /etc/caddy/Caddyfile /etc/caddy/internal.crt /etc/caddy/banco-demo-ca.crt
+              chmod 600 /etc/caddy/internal.key
 
               # Run Caddy egress container
               docker run -d --name caddy-egress \
