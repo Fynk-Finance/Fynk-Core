@@ -13,6 +13,11 @@ output "auth_token_secret_arn" {
   description = "Secrets Manager ARN storing the Redis AUTH token"
 }
 
+output "redis_url_secret_arn" {
+  value       = aws_secretsmanager_secret.redis_url.arn
+  description = "Secrets Manager ARN storing the authenticated Redis URL"
+}
+
 output "security_group_id" {
   value       = aws_security_group.redis.id
   description = "The Redis security group ID"
