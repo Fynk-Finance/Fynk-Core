@@ -55,8 +55,10 @@ const device: DeviceService | null = useDevAuth
       info: createExpoDeviceInfo(),
       // This phone was removed from the account: end the session, then erase the local data.
       onRemoved: async () => {
+        // The id first: after sign out there is no account to tell whose vault to erase.
+        const id = session.userId();
         await session.signOut();
-        await wipe();
+        await wipe(id);
       },
     });
 

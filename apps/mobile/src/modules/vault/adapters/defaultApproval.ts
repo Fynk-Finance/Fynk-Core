@@ -15,6 +15,7 @@ import { vaultStrings } from '../ui/strings.es-CO';
 import { createDeviceApprovalsApi } from './api/deviceApprovalsApi';
 import { createConfirmOwner } from './confirmOwner';
 import { createKeyAgreement } from './crypto/x25519KeyAgreement';
+import { currentSlot, removalSlot } from './defaultSlot';
 import { createDekStore } from './keychain/dekStore';
 
 export const deviceApprovalsApi = createDeviceApprovalsApi(() => deviceId());
@@ -24,7 +25,7 @@ export const approveDevice = createApproveDeviceService({
   randomBytes: getRandomBytes,
   keys: createKeyAgreement(),
   confirmOwner: createConfirmOwner({
-    dekStore: createDekStore(),
+    dekStore: createDekStore(currentSlot, removalSlot),
     reauthenticate: () => reauthenticate(),
     biometricPrompt: vaultStrings.approve.prompt,
   }),

@@ -22,7 +22,7 @@ export interface Vault {
   getVaultDb(): VaultDb;
   /** Same contract as RegisterVaultMigrations. Applied right away when the vault is open. */
   registerVaultMigrations(module: ModuleName, migrations: VaultMigration[]): void;
-  /** Closes, deletes the file and both DEK copies. Safe when the vault was never opened. */
+  /** Closes, deletes the signed in account's file and both DEK copies (its slot only). Safe when never opened. */
   wipe(): Promise<void>;
 }
 

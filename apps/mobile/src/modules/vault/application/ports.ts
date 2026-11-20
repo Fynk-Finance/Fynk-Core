@@ -38,7 +38,7 @@ export interface DekStore {
   write(dek: Uint8Array): Promise<void>;
   /** Removes copy A only. */
   remove(): Promise<void>;
-  /** Removes copy A, copy B, the owner tag and the biometrics offer mark. */
+  /** Removes copy A, copy B, the owner tag and the biometrics offer mark of this account's slot. */
   removeAll(): Promise<void>;
   /** The account (Keycloak `sub`) the key belongs to. Null when the key is not tagged. */
   readOwner(): Promise<string | null>;

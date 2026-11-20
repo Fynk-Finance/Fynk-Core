@@ -12,9 +12,10 @@ import { deriveBackupKey } from '../domain/crypto';
 import { createBackupRecordsApi } from './api/backupRecordsApi';
 import { watchBackgrounded } from './appStateBackup';
 import { vault } from './defaultVault';
+import { currentSlot, removalSlot } from './defaultSlot';
 import { createDekStore } from './keychain/dekStore';
 
-const dekStore = createDekStore();
+const dekStore = createDekStore(currentSlot, removalSlot);
 
 export const backupRegistry = createBackupRegistry({
   getVaultDb: () => vault.getVaultDb(),

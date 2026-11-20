@@ -8,6 +8,7 @@ import { signOut, useSession } from '@modules/identity';
 import { watchAppState } from './adapters/appStateLock';
 import { approveDevice, startApprovalNotifier } from './adapters/defaultApproval';
 import { backupRegistry, backupSync } from './adapters/defaultBackup';
+import { rememberAccount } from './adapters/defaultSlot';
 import { lockController, recoveryCodeStatus } from './adapters/defaultLock';
 import { copyText } from './adapters/clipboard';
 import { vault } from './adapters/defaultVault';
@@ -87,8 +88,11 @@ export const exportAll = () => backupSync.exportAll();
 /**
  * Erases the vault: closes it, deletes the file and both copies of the key.
  * M1 calls it when this device was removed from the account. Safe when nothing was ever created.
+ * `userId`: the account that was signed in, when the session already ended (its slot is erased).
  */
-export const wipe = async (): Promise<void> => {
+export const wipe = async (userId?: string | null): Promise<void> => {
+  // Signed out already (device removed): the id says whose slot to erase.
+  if (userId) rememberAccount(userId);
   try {
     // First, so no upload starts while the vault is being erased.
     backupSync.reset();
