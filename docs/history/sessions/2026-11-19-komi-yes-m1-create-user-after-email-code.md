@@ -6,7 +6,7 @@ module: M1
 jira: [SCRUM-5]
 branch: feature/create-user-after-email-code
 tool: Claude Code
-pr: none
+pr: "#429 (stack #427 → #428 → #429)"
 status: done
 ---
 
@@ -43,7 +43,7 @@ While testing the app against the staging deployment (`habenly.site`), the code 
 ## Result
 
 * JUnit: 49 tests, 0 failures. Go static realm tests pass. `make test-keycloak` passes against Keycloak 26.8.1. golangci-lint, with and without the `integration` tag, reports 0 issues. `go vet` and `gofmt` are clean.
-* Pull requests: a stack of three, (1) pending form steps, (2) code step, (3) realm wiring, tests and docs.
+* Pull requests: stack #427 (pending form steps) → #428 (code step) → #429 (realm wiring, tests and docs).
 * Accounts left unverified by the old flow still get the code at login through `VerifyEmailWithCode`.
 
 ## Decisions and problems
