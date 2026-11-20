@@ -159,7 +159,7 @@ module "ecs_api" {
     { name = "KEYCLOAK_REALM", value = "fynk" },
     { name = "EGRESS_URL", value = "https://${module.caddy_egress.private_ip}:8443" },
     { name = "RECOMMENDATIONS_PROVIDER", value = "gemini" },
-    { name = "RECOMMENDATIONS_API_BASE_URL", value = "https://${module.caddy_egress.private_ip}:8443/gemini/v1beta/openai" }
+    { name = "RECOMMENDATIONS_VIA_EGRESS", value = "true" }
   ]
 
   secrets = [
