@@ -6,7 +6,7 @@ module: M11
 jira: [SCRUM-39]
 branch: fix/recommendations-design-match
 tool: Claude Code
-pr: none
+pr: #438
 status: done
 ---
 
@@ -38,7 +38,7 @@ error." M11 belongs to Julián, who reviews the pull request.
 
 * Tests: 30 of 30 pass in `src/modules/recommendations` (4 new). The 4 new tests fail on the old code.
   `tsc`, ESLint and Prettier clean.
-* Pull request: not opened yet.
+* Pull request: #438, screenshots in both themes still to add.
 * Not checked on a device: the visual result still needs a look in Claro and Oscuro next to the PNGs.
 
 ## Decisions and problems
