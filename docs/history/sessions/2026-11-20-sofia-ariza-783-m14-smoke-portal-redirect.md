@@ -6,7 +6,7 @@ module: M14
 jira: [SCRUM-46]
 branch: fix/smoke-portal-redirect
 tool: Claude Code
-pr: none
+pr: "#439"
 status: done
 ---
 
@@ -37,7 +37,7 @@ solution is, then: "create the new branch, fix the problem and open the new pr t
 * Negative checks: the helper reports FAILED for a 200 (`/healthz`) and for a 302 to the wrong realm (`fynk`); an
   unreachable host now shows `got 000`.
 * `make test-scripts`: 28 pass, 0 fail.
-* Pull request: not opened yet.
+* Pull request: #439.
 
 ## Decisions and problems
 
