@@ -152,7 +152,6 @@ module "ecs_api" {
     { name = "APP_ENV", value = var.environment },
     { name = "PORT", value = "8080" },
     { name = "DATABASE_URL", value = "postgres://fynk_master@${module.rds.endpoint}/fynk?sslmode=require" },
-    { name = "REDIS_URL", value = "rediss://${module.redis.primary_endpoint_address}:6379/0" },
     { name = "KEYCLOAK_ISSUER", value = "https://auth.${var.domain_name}/realms/fynk" },
     { name = "KEYCLOAK_URL", value = "http://keycloak.${aws_service_discovery_private_dns_namespace.internal.name}:8080" },
     { name = "KEYCLOAK_AUDIENCE", value = "fynk-api" },
@@ -164,6 +163,7 @@ module "ecs_api" {
 
   secrets = [
     { name = "PGPASSWORD", valueFrom = "${module.rds.master_user_secret_arn}:password::" },
+    { name = "REDIS_URL", valueFrom = module.redis.redis_url_secret_arn },
     { name = "FYNK_ADMIN_CLIENT_SECRET", valueFrom = module.secrets.secret_arns["fynk_admin_client_secret"] },
     { name = "GEMINI_API_KEY", valueFrom = module.secrets.secret_arns["gemini_api_key"] },
     { name = "EGRESS_CA_PEM", valueFrom = module.secrets.secret_arns["egress_ca_pem"] },
