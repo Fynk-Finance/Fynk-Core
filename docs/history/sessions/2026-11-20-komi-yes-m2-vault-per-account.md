@@ -6,7 +6,7 @@ module: M2
 jira: [SCRUM-96]
 branch: fix/vault-one-per-account
 tool: Claude Code
-pr: none
+pr: "#442"
 status: done
 ---
 
