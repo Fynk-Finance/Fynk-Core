@@ -68,6 +68,25 @@ resource "aws_secretsmanager_secret_version" "redis_auth" {
   secret_string = random_password.redis_auth.result
 }
 
+resource "aws_secretsmanager_secret" "redis_url" {
+  name                    = "fynk/${var.environment}/redis-url"
+  description             = "Redis connection URL with AUTH token"
+  kms_key_id              = var.kms_key_id
+  recovery_window_in_days = 0
+
+  tags = {
+    Name    = "fynk-${var.environment}-redis-url"
+    module  = "redis"
+    project = "fynk"
+    env     = var.environment
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "redis_url" {
+  secret_id     = aws_secretsmanager_secret.redis_url.id
+  secret_string = "rediss://:${urlencode(random_password.redis_auth.result)}@${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379/0"
+}
+
 resource "aws_elasticache_replication_group" "redis" {
   replication_group_id = "fynk-${var.environment}-redis"
   description          = "Fynk ${var.environment} Redis 7 cluster"
