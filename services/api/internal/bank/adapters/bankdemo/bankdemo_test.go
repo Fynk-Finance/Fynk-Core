@@ -339,12 +339,16 @@ func TestPushAuthorizationSendsPARWithPKCEAndAClientAssertion(t *testing.T) {
 	res, err := a.PushAuthorization(context.Background(), ports.PARRequest{
 		RedirectURI: "fynk://bank/callback", CodeChallenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
 		State: "state-1", Nonce: "nonce-1", ConsentID: "0192f0a0-0000-7000-8000-000000000001",
-		Scopes: []ports.Scope{ports.ScopeBalances, ports.ScopeTransactions, ports.ScopeAccountDetails},
+		Subject: "fynk-user-sub",
+		Scopes:  []ports.Scope{ports.ScopeBalances, ports.ScopeTransactions, ports.ScopeAccountDetails},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	f := fb.forms["/oauth/par"]
+	if f.Get("fynk_sub") != "fynk-user-sub" {
+		t.Errorf("PAR fynk_sub = %q", f.Get("fynk_sub"))
+	}
 	want := map[string]string{
 		"client_id": "fynk", "redirect_uri": "fynk://bank/callback", "response_type": "code",
 		"code_challenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", "code_challenge_method": "S256",

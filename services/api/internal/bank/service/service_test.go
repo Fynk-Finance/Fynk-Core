@@ -202,7 +202,8 @@ func TestThePARCarriesExactlyWhatTheUserAccepted(t *testing.T) {
 	par := f.bank.par[0]
 	if par.ConsentID != "c-1" || par.Purpose != "Mostrarte tus finanzas y recomendaciones dentro de Fynk." ||
 		par.TermDays != 365 || len(par.Scopes) != 3 || par.RedirectURI != "fynk://bank/callback" ||
-		par.CodeChallenge != start.CodeChallenge || par.State != "state-1234" || par.Nonce == "" {
+		par.CodeChallenge != start.CodeChallenge || par.State != "state-1234" || par.Nonce == "" ||
+		par.Subject != userA {
 		t.Fatalf("PAR = %+v", par)
 	}
 }
