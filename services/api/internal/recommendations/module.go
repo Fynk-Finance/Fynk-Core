@@ -41,6 +41,7 @@ type settings struct {
 	APIKey          string // RECOMMENDATIONS_API_KEY, or GEMINI_API_KEY on Gemini. Secret
 	ResponseFormat  string // RECOMMENDATIONS_RESPONSE_FORMAT: json_schema (default) or json_object
 	ReasoningEffort string // RECOMMENDATIONS_REASONING_EFFORT: low by default on Gemini; off leaves it out
+	ViaEgress       bool   // RECOMMENDATIONS_VIA_EGRESS=true: call the provider through the Caddy egress (AWS, egress.go)
 	MaxTokens       int32  // RECOMMENDATIONS_MAX_TOKENS: 800 on Bedrock, 4096 on the others (thinking models spend tokens before they answer)
 	DailyLimit      int64  // RECOMMENDATIONS_DAILY_LIMIT, default 10
 }
@@ -54,6 +55,7 @@ func loadSettings(getenv func(string) string) settings {
 		APIKey:          getenv("RECOMMENDATIONS_API_KEY"),
 		ResponseFormat:  getenv("RECOMMENDATIONS_RESPONSE_FORMAT"),
 		ReasoningEffort: getenv("RECOMMENDATIONS_REASONING_EFFORT"),
+		ViaEgress:       getenv("RECOMMENDATIONS_VIA_EGRESS") == "true",
 		DailyLimit:      10,
 	}
 	switch s.Provider {
@@ -109,13 +111,18 @@ func advisorConfig(cfg settings) advisor.Config {
 
 // newModel picks the model of cfg.Provider. Every provider gets the same prompt, post checks and
 // fallback; only who writes the text changes.
-func newModel(cfg settings, log *slog.Logger) advisor.Model {
+// A nil client uses a plain one (direct internet access).
+func newModel(cfg settings, client *http.Client, log *slog.Logger) advisor.Model {
 	if cfg.Provider != providerBedrock {
 		if cfg.APIKey == "" || cfg.BaseURL == "" {
 			log.Warn("recommendations: the model provider has no API key or base URL, answers will use the phone templates",
 				"provider", cfg.Provider)
 		} else {
-			log.Info("recommendations: using an OpenAI compatible model", "provider", cfg.Provider, "model", cfg.ModelID)
+			log.Info("recommendations: using an OpenAI compatible model", "provider", cfg.Provider, "model", cfg.ModelID,
+				"via_egress", cfg.ViaEgress)
+		}
+		if client == nil {
+			client = &http.Client{}
 		}
 		return openaicompat.New(openaicompat.Config{
 			BaseURL:         cfg.BaseURL,
@@ -123,7 +130,7 @@ func newModel(cfg settings, log *slog.Logger) advisor.Model {
 			Model:           cfg.ModelID,
 			ResponseFormat:  cfg.ResponseFormat,
 			ReasoningEffort: cfg.ReasoningEffort,
-		}, &http.Client{})
+		}, client)
 	}
 	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(), awsconfig.WithRegion(cfg.Region))
 	if err != nil {
@@ -148,7 +155,16 @@ func New(d module.Deps) module.Module {
 	}
 	cfg := loadSettings(os.Getenv)
 
-	model := newModel(cfg, log)
+	var client *http.Client
+	if cfg.ViaEgress && cfg.Provider != providerBedrock {
+		c, err := viaEgress(&cfg, d.Config.EgressURL, d.Config.EgressCAFile)
+		if err != nil {
+			log.Warn("recommendations: the egress is not usable, answers will use the phone templates", "error", err)
+			cfg.BaseURL = "" // fail closed instead of trying the internet directly
+		}
+		client = c
+	}
+	model := newModel(cfg, client, log)
 
 	var limiter advisor.RateLimiter
 	if d.Redis != nil {

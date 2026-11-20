@@ -103,7 +103,7 @@ func TestLiveBedrock(t *testing.T) {
 	}
 
 	quiet := slog.New(slog.NewTextHandler(io.Discard, nil))
-	rec := &recorder{model: newModel(cfg, quiet)}
+	rec := &recorder{model: newModel(cfg, nil, quiet)}
 	svc := advisor.NewService(rec, nil, advisor.Prompt{Version: prompt.Version(), System: prompt.SystemES()},
 		advisorConfig(cfg), time.Now, quiet)
 

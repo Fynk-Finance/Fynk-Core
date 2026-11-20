@@ -181,7 +181,7 @@ func TestThinkingProvidersGetALargerTokenBudget(t *testing.T) {
 
 func TestAProviderWithoutKeyFallsBackInsteadOfCrashing(t *testing.T) {
 	cfg := loadSettings(func(k string) string { return map[string]string{"RECOMMENDATIONS_PROVIDER": "gemini"}[k] })
-	m := newModel(cfg, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	m := newModel(cfg, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if _, err := m.Generate(context.Background(), advisor.ModelRequest{OutputSchema: advisor.OutputSchema}); err == nil {
 		t.Fatal("a model without key must answer an error, so the service falls back")
 	}
