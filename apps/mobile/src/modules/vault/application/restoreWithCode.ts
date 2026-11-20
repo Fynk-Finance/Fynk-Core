@@ -36,7 +36,9 @@ export type RestoreFailure = Exclude<RestoreResult, 'restored' | 'partial'>;
 export interface RestoreWithCodeDeps {
   recoveryKey: Pick<RecoveryKeyApi, 'get' | 'activate'>;
   kdf: RecoveryKdf;
-  dekStore: Pick<DekStore, 'write' | 'remove'>;
+  dekStore: Pick<DekStore, 'write' | 'remove' | 'writeOwner'>;
+  /** The signed in account, which owns the restored key (completeRestore). */
+  userId: () => string | null;
   vault: Pick<Vault, 'open' | 'close' | 'wipe'>;
   restoreState: RestoreState;
   /** Downloads and imports the whole backup (BackupSync.restoreAll). */

@@ -8,7 +8,9 @@ import type { Vault } from './vault';
 export type CompleteRestoreResult = 'restored' | 'partial' | 'failed';
 
 export interface CompleteRestoreDeps {
-  dekStore: Pick<DekStore, 'write' | 'remove'>;
+  dekStore: Pick<DekStore, 'write' | 'remove' | 'writeOwner'>;
+  /** The signed in account (Keycloak `sub`), which owns the restored key. Null when nobody is. */
+  userId: () => string | null;
   vault: Pick<Vault, 'open' | 'close' | 'wipe'>;
   restoreState: RestoreState;
   /** Downloads and imports the whole backup (BackupSync.restoreAll). */
@@ -32,9 +34,14 @@ export function createCompleteRestore(deps: CompleteRestoreDeps): CompleteRestor
   }
 
   return async function completeRestore(dek) {
-    // A left-over file cannot be read with this key, so it goes first.
+    // Nobody to own the key: a session that ended meanwhile never gets a key on this phone.
+    const owner = deps.userId();
+    if (owner === null) return 'failed';
+    // A left-over file cannot be read with this key, so it goes first. The wipe also drops the
+    // owner tag, so the tag is written before the key: a key without its owner is never opened.
     try {
       await vault.wipe();
+      await deps.dekStore.writeOwner(owner);
       await deps.dekStore.write(dek);
       await vault.open(dek);
       await restoreState.mark();

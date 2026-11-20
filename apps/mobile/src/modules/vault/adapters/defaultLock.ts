@@ -65,6 +65,7 @@ export const lockController = createLockController({
     recoveryKey: recoveryKeyApi,
     kdf: argon2Kdf,
     dekStore,
+    userId: () => userId(),
     vault,
     restoreState,
     restoreAll,
@@ -75,7 +76,13 @@ export const lockController = createLockController({
     randomBytes: (n) => getRandomBytes(n),
     devicePublicKey: () => devicePublicKey(),
     deviceSharedSecret: (peer) => deviceSharedSecret(peer),
-    completeRestore: createCompleteRestore({ dekStore, vault, restoreState, restoreAll }),
+    completeRestore: createCompleteRestore({
+      dekStore,
+      userId: () => userId(),
+      vault,
+      restoreState,
+      restoreAll,
+    }),
   }),
   // No other phone and no code: the server deletes the backup after an email code reset.
   resetBackup: createResetBackup({ api: createBackupResetApi({ deviceId: () => deviceId() }) }),

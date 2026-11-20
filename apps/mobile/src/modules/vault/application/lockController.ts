@@ -238,12 +238,13 @@ export function createLockController(deps: LockControllerDeps): LockController {
     }
   }
 
-  // Whose key is this? A phone without a tag (set up before the tag) is adopted by the current
-  // account. A failed read throws: never open on a failed read. No account throws too: a session
-  // that ended meanwhile says nothing about who signed in, so it must never erase the vault.
+  // Whose key is this? Only a key tagged with the signed in account is opened. A key without a
+  // tag (set up before the tag existed) cannot prove whose data it holds, so it counts as another
+  // account's and is erased: one account never reads another account's vault on a shared phone.
+  // A failed read throws: never open on a failed read. No account throws too: a session that ended
+  // meanwhile says nothing about who signed in, so it must never erase the vault.
   async function keyOwner(): Promise<'mine' | 'other'> {
     const owner = await dekStore.readOwner();
-    if (owner === null) return 'mine';
     const current = identity.userId();
     if (current === null) throw new Error('no signed in account');
     return owner === current ? 'mine' : 'other';
@@ -264,18 +265,6 @@ export function createLockController(deps: LockControllerDeps): LockController {
     }
   }
 
-  // Best effort: a missing tag only means the next account adopts the key, and it must never
-  // stop the person from getting in.
-  async function tagOwner(): Promise<void> {
-    try {
-      const id = identity.userId();
-      if (id === null || (await dekStore.readOwner()) === id) return;
-      await dekStore.writeOwner(id);
-    } catch {
-      // Ignored on purpose.
-    }
-  }
-
   // Once per phone, and only where it can work: without biometrics the offer is not spent, so it
   // comes when the person enrolls one. The mark goes first, so a failure never repeats the question.
   async function takeBiometricOffer(): Promise<boolean> {
@@ -292,9 +281,6 @@ export function createLockController(deps: LockControllerDeps): LockController {
   async function openWith(dek: Uint8Array, canOffer = false): Promise<void> {
     const mine = generation;
     if (!(await openVault(dek))) return;
-    await tagOwner();
-    // Locked while the tag was written: lock() already closed the vault.
-    if (mine !== generation) return;
     const offer = canOffer && (await takeBiometricOffer());
     if (mine !== generation) return;
     // The person is in at once; the server check never delays or blocks an offline open.
@@ -342,12 +328,15 @@ export function createLockController(deps: LockControllerDeps): LockController {
     }
     let fresh: Uint8Array;
     try {
-      // A left-over file cannot be read without its key.
+      // Nobody signed in: no key is made, because a key without its owner is never opened.
+      const id = identity.userId();
+      if (id === null) throw new Error('no signed in account');
+      // A left-over file cannot be read without its key. The wipe also drops the owner tag, so
+      // the tag is written before the key: a key on this phone always says whose it is.
       await vault.wipe();
+      await dekStore.writeOwner(id);
       fresh = deps.newDek();
       await dekStore.write(fresh);
-      const id = identity.userId();
-      if (id !== null) await dekStore.writeOwner(id);
     } catch {
       set(keychainError);
       return;
@@ -502,10 +491,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
       if (state.status !== 'recoveryCode' || !shown) return 'failed';
       const result = await confirmRecoveryCode(shown, lastGroup);
       // A lock while the upload ran already dropped the code; the upload itself stands.
-      if (result === 'ok' && pendingCode === shown) {
-        await tagOwner();
-        if (pendingCode === shown) set({ status: 'unlocked' });
-      }
+      if (result === 'ok' && pendingCode === shown) set({ status: 'unlocked' });
       return result;
     },
     async restoreWithCode(typed) {
@@ -515,7 +501,6 @@ export function createLockController(deps: LockControllerDeps): LockController {
       set({ status: 'restoring' });
       const result = await deps.restoreWithCode.restore(typed);
       const opened = result === 'restored' || result === 'partial';
-      if (opened) await tagOwner();
       if (mine !== generation) {
         // Locked or reset while restoring: the vault opened behind that, so close it again.
         if (opened) await vault.close();
@@ -549,7 +534,6 @@ export function createLockController(deps: LockControllerDeps): LockController {
         set({ status: 'restoring' });
       });
       const opened = result === 'restored' || result === 'partial';
-      if (opened) await tagOwner();
       if (mine !== generation) {
         // Locked or reset while restoring: the vault opened behind that, so close it again.
         if (opened) await vault.close();
