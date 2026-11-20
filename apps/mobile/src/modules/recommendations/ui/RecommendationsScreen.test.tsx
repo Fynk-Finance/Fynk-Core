@@ -143,6 +143,40 @@ it('keeps numbers and the disclaimer offline, in dark', async () => {
   expect(screen.getByTestId('recommendations.disclaimer')).toBeOnTheScreen();
 });
 
+// Recomendaciones.html: Gastos steps have a green number and tag, Ahorro and Suscripciones a blue
+// one (#e4f5fc and #1f93c2 in light, #1a3444 and #62c8f0 in dark).
+describe('design colors of the steps', () => {
+  // Values from docs/design/sources/{light,dark}/Recomendaciones.html.
+  it.each([
+    ['light', { number: '#A8E03A', tag: '#F1FADF', blue: '#E4F5FC' }],
+    ['dark', { number: '#A8E03A', tag: '#223318', blue: '#1A3444' }],
+  ] as const)('colors the number and the tag by type, in %s', async (preference, design) => {
+    await install();
+    await renderScreens({ screens, initial: 'Recomendaciones', preference });
+    const green = 'category_increase.restaurants';
+    expect(await screen.findByTestId(`recommendations.step.${green}.number`)).toHaveStyle({
+      backgroundColor: design.number,
+    });
+    expect(screen.getByTestId(`recommendations.step.${green}.tag`)).toHaveStyle({
+      backgroundColor: design.tag,
+    });
+    for (const blue of ['subscriptions.low_use', 'payday_contribution']) {
+      expect(screen.getByTestId(`recommendations.step.${blue}.number`)).toHaveStyle({
+        backgroundColor: design.blue,
+      });
+      expect(screen.getByTestId(`recommendations.step.${blue}.tag`)).toHaveStyle({
+        backgroundColor: design.blue,
+      });
+    }
+  });
+
+  it('draws the decorative squares on "Mayor impacto"', async () => {
+    await install();
+    await renderScreens({ screens, initial: 'Recomendaciones' });
+    expect(await screen.findByTestId('recommendations.highlight.shapes')).toBeOnTheScreen();
+  });
+});
+
 it('shows the disclaimer even before the module is configured', async () => {
   await renderScreens({ screens, initial: 'Recomendaciones' });
   expect(await screen.findByText(s.empty)).toBeOnTheScreen();

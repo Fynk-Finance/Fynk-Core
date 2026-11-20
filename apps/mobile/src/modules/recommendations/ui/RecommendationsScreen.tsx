@@ -4,6 +4,7 @@
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import Svg, { Rect } from 'react-native-svg';
 
 import { categoryLabel, formatCop } from '@shared/domain';
 import { useTabHeader } from '@shared/navigation';
@@ -16,6 +17,7 @@ import {
   ErrorState,
   Icon,
   Screen,
+  Shine,
   Skeleton,
   fonts,
   radius,
@@ -121,6 +123,19 @@ export function createRecommendationsScreen(
           testID="recommendations.highlight"
           style={({ pressed }) => [styles.highlight, pressed ? styles.pressed : null]}
         >
+          {/* Recomendaciones.html: three rounded squares and the light that sweeps the card. */}
+          <View
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+            testID="recommendations.highlight.shapes"
+          >
+            <Svg width={350} height={112}>
+              <Rect x={236} y={-60} width={130} height={130} rx={30} fill={colors.cardShapeLight} />
+              <Rect x={282} y={-24} width={72} height={72} rx={18} fill={colors.cardShapeLighter} />
+              <Rect x={-30} y={78} width={80} height={80} rx={20} fill={colors.headerShapeB} />
+            </Svg>
+            <Shine distance={520} height={200} width={40} />
+          </View>
           <View style={styles.highlightBody}>
             <View style={styles.badge}>
               <AppText style={styles.badgeText} color="onPrimary">
@@ -138,7 +153,7 @@ export function createRecommendationsScreen(
             </View>
           </View>
           <View style={styles.go}>
-            <Icon name="chevronRight" size={20} strokeWidth={2.4} color={colors.primaryDark} />
+            <Icon name="chevronRight" size={16} strokeWidth={2.8} color={colors.primaryDark} />
           </View>
         </Pressable>
       ) : null,
@@ -250,6 +265,7 @@ function Body({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.chipsBleed}
         contentContainerStyle={styles.chips}
         accessibilityLabel={s.filters.label}
       >
@@ -321,11 +337,16 @@ function StepRow({
 }) {
   const styles = useThemedStyles(createStyles);
   const { colors } = useTheme();
+  // Recomendaciones.html: Gastos steps are green, Ahorro and Suscripciones blue.
+  const green = step.tag === 'expenses';
   return (
     <View style={styles.step} testID={`recommendations.step.${step.factKey}`}>
       <View style={styles.rail}>
-        <View style={styles.number}>
-          <AppText style={styles.numberText} color="onPrimary">
+        <View
+          style={[styles.number, green ? null : styles.numberBlue]}
+          testID={`recommendations.step.${step.factKey}.number`}
+        >
+          <AppText style={styles.numberText} color={green ? 'onPrimary' : 'primaryDark'}>
             {String(step.number)}
           </AppText>
         </View>
@@ -333,10 +354,15 @@ function StepRow({
       </View>
       <View style={styles.stepBody}>
         <View style={styles.stepTitle}>
-          <Icon name={step.icon as IconName} size={20} color={colors.primaryDark} />
-          <AppText variant="bodyStrong">{step.title}</AppText>
-          <View style={styles.tag}>
-            <AppText style={styles.tagText} color="link">
+          <Icon name={step.icon as IconName} size={16} color={colors.primaryDark} />
+          <AppText variant="bodyStrong" style={styles.stepTitleText}>
+            {step.title}
+          </AppText>
+          <View
+            style={[styles.tag, green ? null : styles.tagBlue]}
+            testID={`recommendations.step.${step.factKey}.tag`}
+          >
+            <AppText style={styles.tagText} color={green ? 'link' : 'primaryDark'}>
               {s.tags[step.tag]}
             </AppText>
           </View>
@@ -358,7 +384,7 @@ function StepRow({
             <AppText style={styles.applyText} color="onPrimary">
               {ACTION_LABEL[step.action.kind]}
             </AppText>
-            <Icon name="arrowRight" size={16} strokeWidth={2.4} color={colors.onPrimary} />
+            <Icon name="chevronRight" size={16} strokeWidth={2.8} color={colors.onPrimary} />
           </Pressable>
         </View>
       </View>
@@ -418,7 +444,9 @@ function createStyles({ colors, shadow }: Theme) {
     legend: { flex: 1, gap: 8 },
     legendRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     legendDot: { width: 10, height: 10, borderRadius: 4 },
-    chips: { gap: 8 },
+    // The chips scroll to the screen edges (design: margin 0 -16px, padding 0 16px).
+    chipsBleed: { marginHorizontal: -16, flexGrow: 0 },
+    chips: { gap: 8, paddingHorizontal: 16 },
     section: { gap: 8 },
     sectionHeader: {
       flexDirection: 'row',
@@ -435,10 +463,12 @@ function createStyles({ colors, shadow }: Theme) {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    numberBlue: { backgroundColor: colors.surfaceBlue },
     numberText: { fontFamily: fonts.heading.bold, fontSize: 14, lineHeight: 18 },
     line: { flex: 1, width: 2, minHeight: 16, backgroundColor: colors.borderBlue },
     stepBody: { flex: 1, gap: 8, paddingTop: 8, paddingBottom: 16 },
     stepTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    stepTitleText: { fontFamily: fonts.body.bold },
     tag: {
       marginLeft: 'auto',
       paddingVertical: 2,
@@ -446,6 +476,7 @@ function createStyles({ colors, shadow }: Theme) {
       borderRadius: radius.pill,
       backgroundColor: colors.accentTint,
     },
+    tagBlue: { backgroundColor: colors.surfaceBlue },
     tagText: { fontFamily: fonts.body.bold, fontSize: 10, lineHeight: 13 },
     stepFooter: {
       flexDirection: 'row',

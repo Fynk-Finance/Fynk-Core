@@ -99,6 +99,11 @@ describe('buildSteps (HU-025)', () => {
     );
   });
 
+  it('uses the icons of the design: play for subscriptions, piggy for the contribution', () => {
+    const steps = buildSteps(opportunities, null, stepCopy);
+    expect(steps.map((s) => s.icon)).toEqual(['play', 'food', 'piggy']);
+  });
+
   it('never shows a transport plan or "Ver plan"', () => {
     const json = JSON.stringify(buildSteps(opportunities, null, stepCopy));
     expect(json).not.toMatch(/Ver plan|plan mensual|Transporte/);
