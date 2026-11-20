@@ -291,16 +291,26 @@ func TestEmailCodesExpireIn10Minutes(t *testing.T) {
 func TestTermsAreRequiredOnTheRegistrationForm(t *testing.T) {
 	r, _ := loadRealm(t)
 	top := flowByAlias(t, r, r.RegistrationFlow)
-	if !top.TopLevel || len(top.AuthenticationExecutions) != 1 || top.AuthenticationExecutions[0].FlowAlias == "" {
-		t.Fatalf("registration flow %q must hold one form subflow", r.RegistrationFlow)
+	if !top.TopLevel || len(top.AuthenticationExecutions) != 2 || top.AuthenticationExecutions[0].FlowAlias == "" {
+		t.Fatalf("registration flow %q must hold the form subflow and the email code", r.RegistrationFlow)
+	}
+	// The user is created by the code step, after the form, never by the form.
+	code := top.AuthenticationExecutions[1]
+	if code.Authenticator != "fynk-registration-email-code" || code.Requirement != "REQUIRED" ||
+		code.Priority <= top.AuthenticationExecutions[0].Priority {
+		t.Fatalf("registration flow must end with a REQUIRED fynk-registration-email-code, got %+v", code)
 	}
 	form := flowByAlias(t, r, top.AuthenticationExecutions[0].FlowAlias)
 	want := map[string]bool{
-		"registration-user-creation":        false,
-		"registration-password-action":      false,
-		"registration-terms-and-conditions": false,
+		"fynk-registration-user-pending":     false,
+		"fynk-registration-password-pending": false,
+		"fynk-registration-terms-pending":    false,
 	}
 	for _, e := range form.AuthenticationExecutions {
+		switch e.Authenticator {
+		case "registration-user-creation", "registration-password-action", "registration-terms-and-conditions":
+			t.Fatalf("%s creates the user or stores the plain password before the code", e.Authenticator)
+		}
 		if _, ok := want[e.Authenticator]; ok && e.Requirement == "REQUIRED" {
 			want[e.Authenticator] = true
 		}
@@ -362,7 +372,7 @@ func TestRegistrationAsksForThePasswordBeforeTheCode(t *testing.T) {
 	top := flowByAlias(t, r, r.RegistrationFlow)
 	form := flowByAlias(t, r, top.AuthenticationExecutions[0].FlowAlias)
 	for _, e := range form.AuthenticationExecutions {
-		if e.Authenticator != "registration-password-action" {
+		if e.Authenticator != "fynk-registration-password-pending" {
 			continue
 		}
 		for _, c := range r.AuthenticatorConfig {
@@ -370,9 +380,9 @@ func TestRegistrationAsksForThePasswordBeforeTheCode(t *testing.T) {
 				return
 			}
 		}
-		t.Fatalf("registration-password-action config %q must set always_set_password_on_register_form to true", e.AuthenticatorConfig)
+		t.Fatalf("fynk-registration-password-pending config %q must set always_set_password_on_register_form to true", e.AuthenticatorConfig)
 	}
-	t.Fatal("registration-password-action is missing from the registration form")
+	t.Fatal("fynk-registration-password-pending is missing from the registration form")
 }
 
 // Password recovery uses the 6-digit code (extension fynk-email-code), never Keycloak's link.

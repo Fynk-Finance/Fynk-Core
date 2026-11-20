@@ -331,13 +331,25 @@ func TestIntegrationRegistrationAsksForThePasswordThenTheCode(t *testing.T) {
 		t.Fatal("registration must wait for the email code")
 	}
 	assertCodePage(t, page)
+	if findUser(t, email) != nil {
+		t.Fatal("the user exists before the right code")
+	}
+
+	code, _ = b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {waitForCode(t, email)}, "verify": {""}})
+	if code == "" {
+		t.Fatal("after the password and the code the sign-up should reach the app")
+	}
+	tok := exchange(t, code, p)
+	if _, claims := decodeJWT(t, tok.AccessToken); claims["email_verified"] != true {
+		t.Fatal("email_verified should be true in the access token")
+	}
 	found := findUser(t, email)
 	if found == nil {
-		t.Fatal("the user was not created")
+		t.Fatal("the user was not created by the right code")
 	}
 	var u kcUser
 	adminJSON(t, http.MethodGet, "/admin/realms/fynk/users/"+found.ID, nil, &u)
-	if u.CreatedTimestamp == 0 || u.EmailVerified {
+	if u.CreatedTimestamp == 0 || !u.EmailVerified {
 		t.Fatalf("createdTimestamp = %d, emailVerified = %v", u.CreatedTimestamp, u.EmailVerified)
 	}
 	if len(u.Attributes["terms_and_conditions"]) != 1 {
@@ -348,18 +360,219 @@ func TestIntegrationRegistrationAsksForThePasswordThenTheCode(t *testing.T) {
 			t.Fatalf("the cédula was stored as %q", k)
 		}
 	}
-
-	code, _ = b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {waitForCode(t, email)}, "verify": {""}})
-	if code == "" {
-		t.Fatal("after the password and the code the sign-up should reach the app")
-	}
-	exchange(t, code, p)
-	adminJSON(t, http.MethodGet, "/admin/realms/fynk/users/"+found.ID, nil, &u)
-	if !u.EmailVerified {
-		t.Fatal("the email should be verified after the code")
-	}
 	if again := login(t, newBrowser(t), email, goodPassword); again.AccessToken == "" {
 		t.Fatal("the new account cannot sign in")
+	}
+}
+
+// signUpToCodePage fills the registration form and returns the email code page. No user exists yet.
+func signUpToCodePage(t *testing.T, b *browser, p pkce, email string) string {
+	t.Helper()
+	page := b.loginPage(p, url.Values{"prompt": {"create"}})
+	form := url.Values{
+		"email": {email}, "password": {goodPassword}, "password-confirm": {goodPassword}, "termsAccepted": {"on"},
+	}
+	code, page := b.submit(formAction(t, page, "register.ftl"), form)
+	if code != "" {
+		t.Fatal("registration reached the app before the email code")
+	}
+	assertCodePage(t, page)
+	return page
+}
+
+// A sign-up that is never finished leaves nothing behind: the same address registers again.
+func TestIntegrationAbandonedSignUpLeavesNoUser(t *testing.T) {
+	email := newEmail("abandoned")
+	signUpToCodePage(t, newBrowser(t), newPKCE(), email)
+	if findUser(t, email) != nil {
+		t.Fatal("an abandoned sign-up left a user")
+	}
+	first := waitForCode(t, email)
+
+	// Another browser registers the same address. The 60 second wait between codes is per
+	// address, so its page asks for patience, and a new code comes after the wait.
+	b := newBrowser(t)
+	p := newPKCE()
+	page := signUpToCodePage(t, b, p, email)
+	if findUser(t, email) != nil {
+		t.Fatal("the second sign-up created a user before the code")
+	}
+	if !strings.Contains(messageSummary(t, page), "Espera") {
+		t.Fatal("the second sign-up shows no wait notice")
+	}
+	time.Sleep(61 * time.Second)
+	code, page := b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"resend": {""}})
+	if code != "" {
+		t.Fatal("resend gave an authorization code")
+	}
+	assertCodePage(t, page)
+	var second string
+	for deadline := time.Now().Add(20 * time.Second); time.Now().Before(deadline); time.Sleep(500 * time.Millisecond) {
+		if second = waitForCode(t, email); second != first {
+			break
+		}
+	}
+	if second == first {
+		t.Fatal("no new code arrived for the second sign-up")
+	}
+	code, _ = b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {second}, "verify": {""}})
+	if code == "" {
+		t.Fatal("the second sign-up did not finish with its code")
+	}
+	if findUser(t, email) == nil {
+		t.Fatal("the second sign-up did not create the user")
+	}
+}
+
+// Wrong and malformed codes never create the user, and 5 wrong ones kill the code.
+func TestIntegrationWrongCodesDoNotCreateTheUser(t *testing.T) {
+	email := newEmail("wrongreg")
+	b := newBrowser(t)
+	page := signUpToCodePage(t, b, newPKCE(), email)
+	mailed := waitForCode(t, email)
+
+	code, page := b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {"12ab"}, "verify": {""}})
+	if code != "" || findUser(t, email) != nil {
+		t.Fatal("a malformed code was accepted or created the user")
+	}
+	assertCodePage(t, page)
+	for i := 1; i <= 5; i++ {
+		code, page = b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {wrongVariant(mailed)}, "verify": {""}})
+		if code != "" || findUser(t, email) != nil {
+			t.Fatalf("wrong code %d gave a session or created the user", i)
+		}
+		assertCodePage(t, page)
+	}
+	code, page = b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {mailed}, "verify": {""}})
+	if code != "" || findUser(t, email) != nil {
+		t.Fatal("the right code worked after 5 wrong ones")
+	}
+	if !strings.Contains(messageSummary(t, page), "Pide uno nuevo") {
+		t.Fatal("the page does not ask for a new code")
+	}
+}
+
+// Someone else takes the address between the form and the code: nothing is created.
+func TestIntegrationEmailTakenBetweenTheFormAndTheCode(t *testing.T) {
+	email := newEmail("race")
+	b := newBrowser(t)
+	page := signUpToCodePage(t, b, newPKCE(), email)
+	mailed := waitForCode(t, email)
+	other := createUser(t, email, "other-Pass1!", true)
+	if other.status != http.StatusCreated {
+		t.Fatalf("admin create status %d", other.status)
+	}
+
+	code, page := b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {mailed}, "verify": {""}})
+	if code != "" {
+		t.Fatal("the sign-up reached the app with a taken address")
+	}
+	if pageID(t, page) != "error.ftl" {
+		t.Fatalf("expected the error page, got %s", pageID(t, page))
+	}
+	var users []kcUser
+	adminJSON(t, http.MethodGet, "/admin/realms/fynk/users?exact=true&email="+url.QueryEscape(email), nil, &users)
+	if len(users) != 1 || users[0].ID != other.id {
+		t.Fatalf("expected only the admin-created user, got %d users", len(users))
+	}
+	if tok := login(t, newBrowser(t), email, "other-Pass1!"); tok.AccessToken == "" {
+		t.Fatal("the existing account lost its password")
+	}
+}
+
+// A code is good only for the address it was mailed to. Going back to the form and sending
+// another address in the same browser must not let the first address's code verify it.
+func TestIntegrationCodeOfOneAddressDoesNotVerifyAnother(t *testing.T) {
+	a, bAddr := newEmail("codeA"), newEmail("codeB")
+	b := newBrowser(t)
+	p := newPKCE()
+	regPage := b.loginPage(p, url.Values{"prompt": {"create"}})
+	regAction := formAction(t, regPage, "register.ftl")
+	form := func(email string) url.Values {
+		return url.Values{
+			"email": {email}, "password": {goodPassword}, "password-confirm": {goodPassword}, "termsAccepted": {"on"},
+		}
+	}
+	code, page := b.submit(regAction, form(a))
+	if code != "" {
+		t.Fatal("registration reached the app before the email code")
+	}
+	assertCodePage(t, page)
+	codeOfA := waitForCode(t, a)
+	codePageAction := formAction(t, page, "fynk-email-code.ftl")
+
+	// Back to the form, same browser session, another address.
+	// Keycloak 26.8.1 answers a stale form action with login-page-expired, so this post is refused
+	// today. If a later version accepts it, the code binding in the extension is what keeps A's
+	// code from verifying B.
+	code, page2 := b.submit(regAction, form(bAddr))
+	if code != "" {
+		t.Fatal("the second form post reached the app")
+	}
+	action := codePageAction
+	if pageID(t, page2) == "fynk-email-code.ftl" {
+		action = formAction(t, page2, "fynk-email-code.ftl")
+	}
+
+	code, page3 := b.submit(action, url.Values{"code": {codeOfA}, "verify": {""}})
+	if code != "" {
+		t.Fatal("the code of address A gave a session")
+	}
+	if findUser(t, bAddr) != nil {
+		t.Fatal("the code of address A created a user for address B")
+	}
+	if findUser(t, a) != nil {
+		t.Fatal("the code of address A created a user after the form was re-posted with B")
+	}
+	if pageID(t, page2) != "fynk-email-code.ftl" {
+		return // Keycloak refused the second post: nothing more to finish
+	}
+	assertCodePage(t, page3)
+	codeOfB := waitForCode(t, bAddr)
+	if codeOfB == codeOfA {
+		t.Skip("the two codes are equal by chance")
+	}
+	code, _ = b.submit(formAction(t, page3, "fynk-email-code.ftl"), url.Values{"code": {codeOfB}, "verify": {""}})
+	if code == "" {
+		t.Fatal("the code mailed to B did not finish the sign-up")
+	}
+	if findUser(t, bAddr) == nil || findUser(t, a) != nil {
+		t.Fatal("expected a user for B only")
+	}
+}
+
+// The code, the password and the address never reach the stored events of the sign-up.
+func TestIntegrationSignUpEventsHoldNoSecrets(t *testing.T) {
+	email := newEmail("regevents")
+	b := newBrowser(t)
+	page := signUpToCodePage(t, b, newPKCE(), email)
+	mailed := waitForCode(t, email)
+	if code, _ := b.submit(formAction(t, page, "fynk-email-code.ftl"), url.Values{"code": {mailed}, "verify": {""}}); code == "" {
+		t.Fatal("the sign-up did not finish")
+	}
+	id := findUser(t, email).ID
+	var registered []map[string]any
+	adminJSON(t, http.MethodGet, "/admin/realms/fynk/events?type=REGISTER&user="+id, nil, &registered)
+	if len(registered) != 1 {
+		t.Fatalf("want exactly one REGISTER event for the new user, got %d", len(registered))
+	}
+	for _, typ := range []string{"SEND_VERIFY_EMAIL", "VERIFY_EMAIL", "REGISTER", "LOGIN"} {
+		var events []map[string]any
+		adminJSON(t, http.MethodGet, "/admin/realms/fynk/events?client="+clientID+"&type="+typ+"&max=1000", nil, &events)
+		if len(events) == 0 {
+			t.Fatalf("no %s event stored", typ)
+		}
+		raw := strings.ToLower(string(mustJSON(t, events)))
+		secrets := []string{mailed, goodPassword, strings.ToLower(email)}
+		if typ == "LOGIN" {
+			// Keycloak's own LOGIN event carries the user name of every login, as it did before.
+			secrets = secrets[:2]
+		}
+		for _, secret := range secrets {
+			if strings.Contains(raw, secret) {
+				t.Fatalf("a %s event holds a secret", typ)
+			}
+		}
 	}
 }
 
