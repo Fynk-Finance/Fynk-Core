@@ -59,6 +59,8 @@ function setup(
     /** The one-time biometrics offer was already shown on this phone. */
     offerShown?: boolean;
     markOfferError?: Error;
+    /** The one-time erase of the legacy single vault fails. */
+    legacyError?: Error;
   } = {},
 ) {
   const clock = createFixedClock(START);
@@ -69,10 +71,40 @@ function setup(
 
   let stored: Uint8Array | null = options.dek === undefined ? DEK : options.dek;
   let copyB: Uint8Array | null = options.copyB ?? null;
-  const signedIn = options.userId === undefined ? 'user-a' : options.userId;
+  let signedIn = options.userId === undefined ? 'user-a' : options.userId;
   let owner: string | null =
     options.owner === undefined ? (stored ? signedIn : null) : options.owner;
   let offerShown = options.offerShown ?? false;
+  // One slot per account, like the real stores: signing in as someone else swaps what is stored.
+  const slots = new Map<
+    string,
+    {
+      stored: Uint8Array | null;
+      copyB: Uint8Array | null;
+      owner: string | null;
+      offerShown: boolean;
+    }
+  >();
+  const saveSlot = () => {
+    if (signedIn !== null) slots.set(signedIn, { stored, copyB, owner, offerShown });
+  };
+  const signIn = (id: string | null) => {
+    saveSlot();
+    signedIn = id;
+    ({ stored, copyB, owner, offerShown } = (id !== null && slots.get(id)) || {
+      stored: null,
+      copyB: null,
+      owner: null,
+      offerShown: false,
+    });
+  };
+  const slotOf = (id: string) => {
+    saveSlot();
+    return slots.get(id);
+  };
+  const eraseLegacy = jest.fn(async () => {
+    if (options.legacyError) throw options.legacyError;
+  });
   let opened = false;
   let openError = options.openError;
   const dekStore: DekStore = {
@@ -226,10 +258,14 @@ function setup(
     restoreWithApproval: { start: approvalStart, check: approvalCheck },
     resetBackup: { reset },
     resetBackupState,
+    eraseLegacy,
   });
   return {
     controller,
     resetBackupState,
+    eraseLegacy,
+    signIn,
+    slotOf,
     owner: () => owner,
     recoveryGet,
     restore,
@@ -1382,12 +1418,14 @@ describe('one-time biometrics offer', () => {
   });
 });
 
-describe('vault owner', () => {
+// Each account has its own slot, so the owner tag is only a defense check: a slot whose tag says
+// another account is corrupt, and only that slot is erased.
+describe('owner tag inside a slot', () => {
   const OLD_KEY = DEK;
   const NEW_KEY = Uint8Array.from({ length: 32 }, () => 7);
   const other = { owner: 'user-a', userId: 'user-b' } as const;
 
-  it("never opens A's key for B on a fresh login, and sets B up from zero", async () => {
+  it('never opens a key tagged for another account, erases the slot and sets up from zero', async () => {
     const t = setup({ ...other, recoveryKey: 'missing' });
     await t.controller.unlock();
     expect(t.vault.open).not.toHaveBeenCalledWith(OLD_KEY);
@@ -1399,7 +1437,7 @@ describe('vault owner', () => {
     expect(t.controller.getState().status).toBe('recoveryCode');
   });
 
-  it('wipes, then asks for the recovery code when the new account already has a backup', async () => {
+  it('erases a mismatched slot, then asks for the recovery code when the account has a backup', async () => {
     const t = setup({ ...other, recoveryKey: 'exists' });
     await t.controller.unlock();
     expect(t.vault.wipe).toHaveBeenCalledTimes(1);
@@ -1407,7 +1445,7 @@ describe('vault owner', () => {
     expect(t.controller.getState()).toEqual({ status: 'pendingDevice', deviceStatus: 'active' });
   });
 
-  it('wipes instead of showing the lock screen when the login is not fresh', async () => {
+  it('erases a mismatched slot instead of showing the lock screen when the login is not fresh', async () => {
     const t = setup({ ...other, loginAgoMs: 60 * MIN, copyB: OLD_KEY, recoveryKey: 'missing' });
     await t.controller.unlock();
     expect(t.vault.wipe).toHaveBeenCalled();
@@ -1416,7 +1454,7 @@ describe('vault owner', () => {
     expect(t.controller.getState().status).toBe('recoveryCode');
   });
 
-  it("never prompts for A's biometric copy while B is signed in", async () => {
+  it('never prompts for the biometric copy of a mismatched slot', async () => {
     const t = setup({ ...other, copyB: OLD_KEY, recoveryKey: 'missing' });
     await t.controller.unlockWithBiometrics();
     expect(t.dekStore.readBiometric).not.toHaveBeenCalled();
@@ -1429,7 +1467,7 @@ describe('vault owner', () => {
     expect(auto.vault.open).not.toHaveBeenCalledWith(OLD_KEY);
   });
 
-  it("never opens A's key through the password path", async () => {
+  it('never opens a mismatched key through the password path', async () => {
     const t = setup({ ...other, recoveryKey: 'missing' });
     await t.controller.unlockWithPassword();
     expect(t.vault.open).not.toHaveBeenCalledWith(OLD_KEY);
@@ -1445,7 +1483,7 @@ describe('vault owner', () => {
     expect(t.resetBackupState).not.toHaveBeenCalled();
   });
 
-  it('never opens an untagged key: it is erased and the phone is set up from zero', async () => {
+  it('never opens an untagged key: its slot is erased and set up from zero', async () => {
     const t = setup({ owner: null, userId: 'user-b', recoveryKey: 'missing' });
     await t.controller.unlock();
     expect(t.vault.open).not.toHaveBeenCalledWith(OLD_KEY);
@@ -1509,5 +1547,119 @@ describe('vault owner', () => {
     expect(t.dekStore.write).not.toHaveBeenCalled();
     expect(t.owner()).toBe('user-a');
     expect(t.controller.getState()).toEqual({ status: 'error', error: 'keychain' });
+  });
+});
+
+describe('one vault per account', () => {
+  const KEY_B = Uint8Array.from({ length: 32 }, () => 7);
+
+  it('keeps A untouched while B sets up, and A unlocks again with its own key', async () => {
+    const t = setup({ owner: 'user-a', userId: 'user-a', loginAgoMs: 0 });
+    await t.controller.unlock();
+    expect(t.vault.open).toHaveBeenLastCalledWith(DEK);
+    await t.controller.lock();
+
+    // B signs in on the same phone and sets up its own vault.
+    t.setRecoveryKey('missing');
+    t.signIn('user-b');
+    await t.controller.unlock();
+    expect(t.vault.wipe).toHaveBeenCalledTimes(1);
+    expect(t.owner()).toBe('user-b');
+    expect(t.storedDek()).toEqual(KEY_B);
+    expect(t.slotOf('user-a')).toMatchObject({ stored: DEK, owner: 'user-a' });
+    await t.controller.lock();
+
+    // A comes back: its key is read from its own slot, no setup, no erase.
+    t.setRecoveryKey('exists');
+    t.signIn('user-a');
+    t.vault.wipe.mockClear();
+    t.newDek.mockClear();
+    await t.controller.unlock();
+    expect(t.vault.wipe).not.toHaveBeenCalled();
+    expect(t.newDek).not.toHaveBeenCalled();
+    expect(t.vault.open).toHaveBeenLastCalledWith(DEK);
+    expect(t.controller.getState().status).toBe('unlocked');
+    expect(t.slotOf('user-b')).toMatchObject({ stored: KEY_B, owner: 'user-b' });
+  });
+
+  it('never gives B the key of A', async () => {
+    const t = setup({ owner: 'user-a', userId: 'user-a', recoveryKey: 'missing' });
+    t.signIn('user-b');
+    await t.controller.unlock();
+    const reads = (t.dekStore.read as jest.Mock).mock.results;
+    for (const read of reads) expect(await read.value).not.toEqual(DEK);
+    expect(t.vault.open).not.toHaveBeenCalledWith(DEK);
+    expect(t.slotOf('user-a')).toMatchObject({ stored: DEK });
+  });
+
+  it('a mismatched tag erases only that slot', async () => {
+    const t = setup({ owner: 'user-a', userId: 'user-b', recoveryKey: 'missing' });
+    // user-a has its own healthy slot besides the corrupt one of user-b.
+    t.signIn('user-a');
+    await t.dekStore.writeOwner('user-a');
+    await t.dekStore.write(DEK);
+    t.signIn('user-b');
+    await t.controller.unlock();
+    expect(t.vault.wipe).toHaveBeenCalled();
+    expect(t.owner()).toBe('user-b');
+    expect(t.slotOf('user-a')).toMatchObject({ stored: DEK, owner: 'user-a' });
+  });
+
+  it('erases the legacy single vault before anything else, and only once', async () => {
+    const t = setup({ owner: 'user-a', userId: 'user-a' });
+    await t.controller.unlock();
+    expect(t.eraseLegacy).toHaveBeenCalledTimes(1);
+    expect((t.eraseLegacy as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
+      (t.dekStore.read as jest.Mock).mock.invocationCallOrder[0] ?? Infinity,
+    );
+    await t.controller.lock();
+    await t.controller.unlock();
+    expect(t.eraseLegacy).toHaveBeenCalledTimes(1);
+    expect(t.vault.wipe).not.toHaveBeenCalled();
+  });
+
+  it('fails closed and retries the legacy erase when it fails', async () => {
+    const t = setup({ legacyError: new Error('keystore busy') });
+    await t.controller.unlock();
+    expect(t.controller.getState()).toEqual({ status: 'error', error: 'keychain' });
+    expect(t.vault.open).not.toHaveBeenCalled();
+    expect(t.dekStore.read).not.toHaveBeenCalled();
+  });
+
+  it('reads no key when nobody is signed in', async () => {
+    const t = setup({ userId: null });
+    await t.controller.unlock();
+    expect(t.dekStore.read).not.toHaveBeenCalled();
+    expect(t.vault.open).not.toHaveBeenCalled();
+    expect(t.vault.wipe).not.toHaveBeenCalled();
+    expect(t.controller.getState()).toEqual({ status: 'error', error: 'keychain' });
+  });
+
+  it('sign out only closes the vault', async () => {
+    const t = setup({ owner: 'user-a', userId: 'user-a' });
+    t.controller.start();
+    await t.controller.unlock();
+    t.emitSession('signedOut');
+    await waitUntil(() => t.controller.getState().status === 'locked');
+    expect(t.vault.wipe).not.toHaveBeenCalled();
+    expect(t.storedDek()).toEqual(DEK);
+  });
+
+  it('resets the backup state once on an account switch, not on the same account', async () => {
+    const t = setup({ owner: 'user-a', userId: 'user-a' });
+    await t.controller.unlock();
+    expect(t.resetBackupState).not.toHaveBeenCalled();
+    await t.controller.lock();
+    t.signIn('user-b');
+    await t.controller.unlock();
+    expect(t.resetBackupState).toHaveBeenCalledTimes(1);
+    await t.controller.lock();
+    t.signIn('user-b');
+    await t.controller.unlock();
+    expect(t.resetBackupState).toHaveBeenCalledTimes(1);
+    await t.controller.lock();
+    t.signIn('user-a');
+    await t.controller.unlock();
+    expect(t.resetBackupState).toHaveBeenCalledTimes(2);
   });
 });
