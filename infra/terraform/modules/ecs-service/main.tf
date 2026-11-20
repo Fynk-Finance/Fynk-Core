@@ -25,6 +25,17 @@ resource "aws_security_group" "task" {
     security_groups = [var.alb_security_group_id]
   }
 
+  dynamic "ingress" {
+    for_each = var.internal_ingress_security_group_ids
+    content {
+      description     = "Allow direct calls from another task"
+      from_port       = var.port
+      to_port         = var.port
+      protocol        = "tcp"
+      security_groups = [ingress.value]
+    }
+  }
+
   egress {
     description = "Allow all outbound traffic"
     from_port   = 0
@@ -189,6 +200,13 @@ resource "aws_ecs_service" "main" {
     target_group_arn = var.target_group_arn
     container_name   = var.service_name
     container_port   = var.port
+  }
+
+  dynamic "service_registries" {
+    for_each = var.service_discovery_registry_arn == null ? [] : [1]
+    content {
+      registry_arn = var.service_discovery_registry_arn
+    }
   }
 
   deployment_circuit_breaker {

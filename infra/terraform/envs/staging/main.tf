@@ -154,7 +154,7 @@ module "ecs_api" {
     { name = "DATABASE_URL", value = "postgres://fynk_master@${module.rds.endpoint}/fynk?sslmode=require" },
     { name = "REDIS_URL", value = "rediss://${module.redis.primary_endpoint_address}:6379/0" },
     { name = "KEYCLOAK_ISSUER", value = "https://auth.${var.domain_name}/realms/fynk" },
-    { name = "KEYCLOAK_URL", value = "https://auth.${var.domain_name}" },
+    { name = "KEYCLOAK_URL", value = "http://keycloak.${aws_service_discovery_private_dns_namespace.internal.name}:8080" },
     { name = "KEYCLOAK_AUDIENCE", value = "fynk-api" },
     { name = "KEYCLOAK_REALM", value = "fynk" },
     { name = "EGRESS_URL", value = "https://${module.caddy_egress.private_ip}:8443" },
@@ -203,6 +203,29 @@ module "ecs_api" {
   ]
 }
 
+resource "aws_service_discovery_private_dns_namespace" "internal" {
+  name        = "fynk-${var.environment}.local"
+  description = "Private DNS for calls between staging tasks"
+  vpc         = module.network.vpc_id
+}
+
+resource "aws_service_discovery_service" "keycloak" {
+  name = "keycloak"
+
+  dns_config {
+    namespace_id   = aws_service_discovery_private_dns_namespace.internal.id
+    routing_policy = "MULTIVALUE"
+    dns_records {
+      type = "A"
+      ttl  = 10
+    }
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
+}
+
 # 2. ECS Service: keycloak (1 vCPU, 2 GB)
 module "ecs_keycloak" {
   source = "../../modules/ecs-service"
@@ -220,10 +243,13 @@ module "ecs_keycloak" {
   desired_count         = var.enable_staging_traffic ? 1 : 0
   environment           = var.environment
 
+  service_discovery_registry_arn      = aws_service_discovery_service.keycloak.arn
+  internal_ingress_security_group_ids = [module.ecs_api.security_group_id]
+
   environment_variables = [
     { name = "KC_HOSTNAME", value = "https://auth.${var.domain_name}" },
     { name = "FYNK_AUTH_URL", value = "https://auth.${var.domain_name}" },
-    { name = "FYNK_BACKCHANNEL_AUTH_URL", value = "https://auth.${var.domain_name}" },
+    { name = "FYNK_BACKCHANNEL_AUTH_URL", value = "http://localhost:8080" },
     { name = "KC_HTTP_ENABLED", value = "true" },
     { name = "KC_PROXY_HEADERS", value = "xforwarded" },
     { name = "KC_DB", value = "postgres" },
