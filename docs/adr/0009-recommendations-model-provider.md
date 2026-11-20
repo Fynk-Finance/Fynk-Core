@@ -31,6 +31,7 @@ The model of M11 is chosen by configuration. Bedrock stays the default:
 | `RECOMMENDATIONS_API_BASE_URL` | — | Gemini's OpenAI compatible endpoint | required (Groq, OpenRouter, Ollama…) |
 | `RECOMMENDATIONS_API_KEY` | — (task role) | key of Google AI Studio, or `GEMINI_API_KEY` | required |
 | `RECOMMENDATIONS_REASONING_EFFORT` | — | `low` (`off` leaves it out) | optional |
+| `RECOMMENDATIONS_VIA_EGRESS` | — | `true` in AWS: the API has no NAT, so it calls `<EGRESS_URL>/gemini/v1beta/openai` and trusts `EGRESS_CA_FILE`. Caddy needs the route `/gemini/*` → `https://generativelanguage.googleapis.com` (M14) | — |
 | `RECOMMENDATIONS_MAX_TOKENS` | 800 | 4096: `gemini-4-hydrogen` thinks before it answers and spent the 800 tokens in the first live check | 4096 |
 | `RECOMMENDATIONS_RESPONSE_FORMAT` | — | `json_schema` (`json_object` if the provider rejects the schema) | same |
 
