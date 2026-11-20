@@ -45,6 +45,15 @@ Julián's first live run with `-provider=gemini` passed the checks in 2 of 20 an
 * `503 UNAVAILABLE`, high demand at Google: a lighter model has less demand.
 * The report was not written because `docs/qa` did not exist. Fix: the test creates the folder.
 
+## End to end in the app
+
+Daniel asked to see the AI text in the app, not only in the tests. Julián ran the local stack with Gemini and the app on the Android emulator (Windows needed a short folder and ninja 1.12 for the native build, because of the 260 character path limit).
+
+* The app called `POST /v1/recommendations` and the API called Gemini, but `gemini-4-hydrogen` answered `429` (20 requests a day on the free tier) and then `503 UNAVAILABLE`, high demand.
+* The API log now names the reason of a failed model call (never the key or the model text), which is how the 503 was found.
+* `gemini-3.5-flash-lite` passed the live check 5 of 5 and the app showed "Texto redactado con IA a partir de tus cifras." It is now the default model on Gemini.
+* Found on the way: the phone kept a fallback answer and never asked again for the same numbers (fixed in #423), and the "Recomendaciones con IA" switch of Privacidad y datos (M13) does not save its value (reported to M13).
+
 ## Next step
 
 Julián runs the live check with `-provider=gemini` and reviews the 20 answers. Then the key is set where the demo backend runs.
