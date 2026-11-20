@@ -25,7 +25,7 @@ export type LockError = 'notEncrypted' | 'keychain' | 'offline' | 'unknown';
 
 /**
  * Messages for the lock screen. `biometricsOff`: the phone's biometrics changed, copy B was
- * deleted. `otherAccount`: the password login was for an account other than this phone's.
+ * deleted. `otherAccount`: the password login was for an account other than the one that signed out.
  */
 export type LockNotice = 'biometricsOff' | 'biometricFailed' | 'otherAccount';
 
@@ -93,8 +93,13 @@ export interface LockControllerDeps {
   resetBackup: ResetBackup;
   /** False in the dev session: no registered device and no API, so no backup to protect. */
   backupEnabled: () => boolean;
-  /** Drops the timers, cached key and marks of the previous owner before the vault is wiped. */
+  /** Drops the timers, cached key and marks of the account whose slot is about to be erased. */
   resetBackupState: () => void;
+  /**
+   * Erases the legacy single vault (one file and unslotted Keychain entries, from before each
+   * account had its own slot). Idempotent and never touches a slot. Throws when it cannot.
+   */
+  eraseLegacy: () => Promise<void>;
 }
 
 export interface LockController {
@@ -238,20 +243,21 @@ export function createLockController(deps: LockControllerDeps): LockController {
     }
   }
 
-  // Whose key is this? Only a key tagged with the signed in account is opened. A key without a
-  // tag (set up before the tag existed) cannot prove whose data it holds, so it counts as another
-  // account's and is erased: one account never reads another account's vault on a shared phone.
-  // A failed read throws: never open on a failed read. No account throws too: a session that ended
-  // meanwhile says nothing about who signed in, so it must never erase the vault.
-  async function keyOwner(): Promise<'mine' | 'other'> {
-    const owner = await dekStore.readOwner();
+  // Each account has its own slot (database file and Keychain entries), so an account only ever
+  // reads its own key. The owner tag inside the slot is a second check: a key whose tag is missing
+  // or names another account cannot be trusted, so the slot counts as corrupt.
+  // A failed read throws: never open on a failed read. No account throws too, before anything is
+  // read: a session that ended meanwhile says nothing about who signed in, so it must never erase.
+  async function keyOwner(): Promise<'mine' | 'corrupt'> {
     const current = identity.userId();
     if (current === null) throw new Error('no signed in account');
-    return owner === current ? 'mine' : 'other';
+    const owner = await dekStore.readOwner();
+    return owner === current ? 'mine' : 'corrupt';
   }
 
-  // Another account signed in: nothing of the previous owner stays on the phone.
-  async function eraseOtherOwner(): Promise<boolean> {
+  // A corrupt slot of the signed in account: only that slot is erased (the other accounts' vaults
+  // stay on the phone), then the account is set up again.
+  async function eraseCorruptSlot(): Promise<boolean> {
     try {
       // First, so no upload starts while the vault is being erased.
       deps.resetBackupState();
@@ -331,8 +337,8 @@ export function createLockController(deps: LockControllerDeps): LockController {
       // Nobody signed in: no key is made, because a key without its owner is never opened.
       const id = identity.userId();
       if (id === null) throw new Error('no signed in account');
-      // A left-over file cannot be read without its key. The wipe also drops the owner tag, so
-      // the tag is written before the key: a key on this phone always says whose it is.
+      // A left-over file of this slot cannot be read without its key. The wipe also drops the
+      // owner tag, so the tag is written before the key: a key in a slot always says whose it is.
       await vault.wipe();
       await dekStore.writeOwner(id);
       fresh = deps.newDek();
@@ -357,8 +363,35 @@ export function createLockController(deps: LockControllerDeps): LockController {
     }
   }
 
+  // Once per phone. A failure is retried on the next open, and nothing is read meanwhile.
+  let legacyErased = false;
+  async function ensureLegacyErased(): Promise<boolean> {
+    if (legacyErased) return true;
+    try {
+      await deps.eraseLegacy();
+      legacyErased = true;
+      return true;
+    } catch {
+      set(keychainError);
+      return false;
+    }
+  }
+
+  let lastRunUser: string | null = null;
+
   async function run(): Promise<void> {
     set({ status: 'unlocking' });
+    if (!(await ensureLegacyErased())) return;
+    // Nobody signed in: no key is read and nothing is erased.
+    const current = identity.userId();
+    if (current === null) {
+      set(keychainError);
+      return;
+    }
+    // Another account than the last open: the timers, cached key and marks in memory are the
+    // previous account's, and must never flush into this account's vault.
+    if (lastRunUser !== null && lastRunUser !== current) deps.resetBackupState();
+    lastRunUser = current;
     let dek: Uint8Array | null;
     try {
       dek = await dekStore.read();
@@ -368,8 +401,8 @@ export function createLockController(deps: LockControllerDeps): LockController {
     }
     if (!dek) return setUpFirstPhone();
     try {
-      if ((await keyOwner()) === 'other') {
-        if (!(await eraseOtherOwner())) return;
+      if ((await keyOwner()) === 'corrupt') {
+        if (!(await eraseCorruptSlot())) return;
         return setUpFirstPhone();
       }
     } catch {
@@ -423,7 +456,7 @@ export function createLockController(deps: LockControllerDeps): LockController {
       // No key: this phone is not set up yet, so the normal flow decides what to do.
       if (!dek) return controller.unlock();
       try {
-        if ((await keyOwner()) === 'other') return controller.unlock();
+        if ((await keyOwner()) === 'corrupt') return controller.unlock();
       } catch {
         set(keychainError);
         return;
@@ -433,9 +466,9 @@ export function createLockController(deps: LockControllerDeps): LockController {
     async unlockWithBiometrics() {
       if (isOpenOrOpening()) return;
       set({ status: 'unlocking' });
-      // Another account's key: no system prompt for it. The normal flow wipes it.
+      // A corrupt slot: no system prompt for its key. The normal flow erases that slot.
       try {
-        if ((await keyOwner()) === 'other') return controller.unlock();
+        if ((await keyOwner()) === 'corrupt') return controller.unlock();
       } catch {
         set(keychainError);
         return;

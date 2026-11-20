@@ -77,6 +77,7 @@ async function renderSetting(
     restoreWithApproval: { start: jest.fn(), check: jest.fn() },
     resetBackup: { reset: jest.fn() },
     resetBackupState: jest.fn(),
+    eraseLegacy: jest.fn(async () => undefined),
   });
   const UnlockSetting = createUnlockSetting(controller);
   await render(

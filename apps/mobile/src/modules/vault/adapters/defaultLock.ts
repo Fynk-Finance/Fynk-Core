@@ -33,6 +33,7 @@ import { deviceApprovalsApi } from './defaultApproval';
 import { vault } from './defaultVault';
 import { currentSlot, removalSlot } from './defaultSlot';
 import { createDekStore } from './keychain/dekStore';
+import { createLegacyVaultEraser } from './legacyVault';
 
 const recoveryKeyApi = createRecoveryKeyApi({ deviceId: () => deviceId() });
 const dekStore = createDekStore(currentSlot, removalSlot);
@@ -54,6 +55,7 @@ export const lockController = createLockController({
   biometricPrompt: vaultStrings.biometric.prompt,
   backupEnabled: () => backupEnabled(),
   resetBackupState: () => backupSync.reset(),
+  eraseLegacy: createLegacyVaultEraser(),
   recoveryKey: recoveryKeyApi,
   // The code and the key made from it never leave this process; only the wrapped DEK is sent.
   recoveryCode: createRecoveryCodeService({
