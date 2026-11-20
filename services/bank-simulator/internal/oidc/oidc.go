@@ -88,6 +88,12 @@ func RandomString() string {
 
 // AuthURL builds the code flow URL with PKCE S256.
 func (c *Client) AuthURL(state, nonce, verifier string) string {
+	return c.AuthURLWithPrompt(state, nonce, verifier, "")
+}
+
+// AuthURLWithPrompt is AuthURL with an OIDC prompt ("login" forces the person to
+// authenticate again, ignoring any realm SSO session). An empty prompt adds nothing.
+func (c *Client) AuthURLWithPrompt(state, nonce, verifier, prompt string) string {
 	sum := sha256.Sum256([]byte(verifier))
 	q := url.Values{
 		"response_type":         {"code"},
@@ -98,6 +104,9 @@ func (c *Client) AuthURL(state, nonce, verifier string) string {
 		"nonce":                 {nonce},
 		"code_challenge":        {base64.RawURLEncoding.EncodeToString(sum[:])},
 		"code_challenge_method": {"S256"},
+	}
+	if prompt != "" {
+		q.Set("prompt", prompt)
 	}
 	return c.cfg.Issuer + authPath + "?" + q.Encode()
 }
