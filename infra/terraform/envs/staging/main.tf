@@ -156,12 +156,16 @@ module "ecs_api" {
     { name = "KEYCLOAK_ISSUER", value = "https://auth.${var.domain_name}/realms/fynk" },
     { name = "KEYCLOAK_URL", value = "https://auth.${var.domain_name}" },
     { name = "KEYCLOAK_AUDIENCE", value = "fynk-api" },
-    { name = "KEYCLOAK_REALM", value = "fynk" }
+    { name = "KEYCLOAK_REALM", value = "fynk" },
+    { name = "EGRESS_URL", value = "https://${module.caddy_egress.private_ip}:8443" },
+    { name = "RECOMMENDATIONS_PROVIDER", value = "gemini" },
+    { name = "RECOMMENDATIONS_API_BASE_URL", value = "https://${module.caddy_egress.private_ip}:8443/gemini/v1beta/openai" }
   ]
 
   secrets = [
     { name = "PGPASSWORD", valueFrom = "${module.rds.master_user_secret_arn}:password::" },
     { name = "FYNK_ADMIN_CLIENT_SECRET", valueFrom = module.secrets.secret_arns["fynk_admin_client_secret"] },
+    { name = "GEMINI_API_KEY", valueFrom = module.secrets.secret_arns["gemini_api_key"] },
     { name = "BANK_SIGNER_KMS_KEY_ID", valueFrom = module.secrets.secret_arns["bank_signer_kms_key_id"] },
     { name = "BANK_FINGERPRINT_KMS_KEY_ID", valueFrom = module.secrets.secret_arns["bank_fingerprint_kms_key_id"] },
     { name = "BANK_REDIRECT_URI", valueFrom = module.secrets.secret_arns["bank_redirect_uri"] },
