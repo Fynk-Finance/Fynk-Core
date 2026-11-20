@@ -142,8 +142,8 @@ module "ecs_api" {
   alb_security_group_id = module.alb.security_group_id
   target_group_arn      = module.alb.target_group_api_arn
   image                 = "${aws_ecr_repository.services["fynk-api"].repository_url}:latest"
-  cpu                   = 512
-  memory                = 1024
+  cpu                   = 256
+  memory                = 512
   port                  = 8080
   desired_count         = var.enable_staging_traffic ? 1 : 0
   environment           = var.environment
@@ -237,7 +237,7 @@ module "ecs_keycloak" {
   alb_security_group_id = module.alb.security_group_id
   target_group_arn      = module.alb.target_group_keycloak_arn
   image                 = "${aws_ecr_repository.services["fynk-keycloak"].repository_url}:latest"
-  cpu                   = 1024
+  cpu                   = 512
   memory                = 2048
   port                  = 8080
   desired_count         = var.enable_staging_traffic ? 1 : 0
