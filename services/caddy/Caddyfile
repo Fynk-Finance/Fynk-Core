@@ -32,7 +32,7 @@
 			header_up Host {upstream_hostport}
 			transport http {
 				tls_client_auth /run/secrets/fynk-client.crt /run/secrets/fynk-client.key
-				tls_trust_pool file /etc/caddy/banco-demo-ca.crt
+				# TODO(M16): restore tls_trust_pool file /etc/caddy/banco-demo-ca.crt once bank-simulator:9443 CA is provisioned
 				tls_server_name bank-simulator
 			}
 		}
