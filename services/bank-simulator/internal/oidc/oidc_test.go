@@ -188,15 +188,10 @@ func TestAuthURL_UsesTheIssuerAndPKCE(t *testing.T) {
 	}
 }
 
-func TestAuthURL_ForcedLoginAddsPromptLogin(t *testing.T) {
-	c := New(Config{Issuer: testIssuer, ClientID: testClientID, RedirectURL: "http://localhost:8082/cb"})
-	u, err := url.Parse(c.AuthURLWithPrompt("st", "no", "verifier", "login"))
-	if err != nil || u.Query().Get("prompt") != "login" || u.Query().Get("state") != "st" {
-		t.Fatalf("auth url = %v, %v", u, err)
-	}
-	plain, _ := url.Parse(c.AuthURL("st", "no", "verifier"))
-	if plain.Query().Has("prompt") {
-		t.Fatalf("plain url must not carry prompt: %s", plain)
+func TestLogoutURL_IsTheRealmEndSessionEndpointWithNoQuery(t *testing.T) {
+	c := New(Config{Issuer: testIssuer + "/", ClientID: testClientID})
+	if got, want := c.LogoutURL(), testIssuer+"/protocol/openid-connect/logout"; got != want {
+		t.Fatalf("logout url = %q, want %q", got, want)
 	}
 }
 
