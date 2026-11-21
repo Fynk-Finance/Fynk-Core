@@ -30,7 +30,7 @@ The first `make dev` downloads the images and builds the API: about 5 minutes on
 2. Creates `.env` from `.env.example` when it is missing. Only fake local values are used.
 3. Creates the local certificates and the API's bank keys in `certs/` when any of them is missing (`make certs`).
 4. Generates the Go handlers from the contract (`make generate-go`).
-5. Starts Postgres, Redis, Keycloak and Mailpit, and waits until they are healthy.
+5. Builds the Keycloak image (its theme and the email code extension), starts Postgres, Redis, Keycloak and Mailpit, and waits until they are healthy.
 6. Runs the migrations of every backend module (`make migrate`).
 7. Builds and starts the API, the Banco Demo and Caddy, and waits until they are healthy.
 
@@ -138,4 +138,5 @@ make dev                    # recreates the databases, the realms and the schema
 | Conectar banco says "Este teléfono no está registrado en tu cuenta. Inicia sesión de nuevo." (`device_required`, 422) | The app runs with `EXPO_PUBLIC_DEV_AUTH=dev-token`. That session skips Keycloak and registers no device, and linking a bank or creating its consent needs a registered device (`X-Device-Id`). Leave `EXPO_PUBLIC_DEV_AUTH` empty in `apps/mobile/.env`, restart Metro with the cache cleared so the new value is bundled (`npx expo start --dev-client --clear` in `apps/mobile`), and sign in with a real account (section 4). The device registers on that sign in |
 | `The generated handlers are missing` while building the API | Run `make generate-go`. `make dev` does it for you |
 | A realm change does not show | Keycloak imports a realm only once. Reset (section 7) |
+| Sign up shows "Algo salió mal. No pudimos completar lo que pediste." and the Keycloak log says `Unable to find factory for AuthenticatorFactory: fynk-registration-email-code` | The Keycloak image is older than the realm and lacks the email code extension it uses. Run `make dev` again, which rebuilds the image, or `docker compose up -d --build --wait keycloak` |
 | `go test -coverprofile=…` or a tool started with `go run` hangs without output (Windows) | Antivirus behavior checks (for example Avast CyberCapture) can hold a freshly built, unsigned Go tool such as `covdata`. Plain `make test` does not use coverage. CI on Linux measures coverage. To run it locally, exclude your Go build cache (`go env GOCACHE`) from the scan |
