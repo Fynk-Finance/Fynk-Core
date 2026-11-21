@@ -6,7 +6,7 @@ module: M1
 jira: [SCRUM-5]
 branch: fix/registration-password-fields
 tool: Claude Code
-pr: none
+pr: "#447"
 status: done
 ---
 
@@ -27,14 +27,14 @@ The developer reported from staging: "now the register page just lets the user p
 ## Result
 
 * Tests: `mvn -B verify` in `services/keycloak/extensions/email-code`: 54 pass, 0 fail. The 5 new tests failed before the change (4 of them) and pass after.
-* Pull request: not opened yet.
+* Pull request: #447.
 * After merge and Deploy Staging, the new Keycloak image shows the password fields on staging without any manual realm edit.
 
 ## Decisions and problems
 
 * The step ignores the config instead of asking for a manual realm fix: the hidden-password mode is against account pre-hijacking, which cannot happen here because no user exists until the right email code. A hand-edited realm can no longer hide the password.
 * While the bug was live, a staging sign-up could finish without a password. Those accounts (if any) cannot log in; not checked in this session.
-* The "No pudimos abrir tu bóveda" screen is not an app bug. The RDS-managed master secret rotated automatically at 03:12 UTC on 21 Nov. The API task started before that kept the old password, so every database call failed with `28P01` and `POST /v1/devices` returned 500, which the lock screen shows as the unknown error. Keycloak reads the same secret. Reported to the M14 owner: redeploy the API and Keycloak services, and decide how rotation is handled.
+* The "No pudimos abrir tu bóveda" screen is not an app bug. The RDS-managed master secret rotated automatically at 03:12 UTC on 21 Nov. The API task started before that kept the old password, so every database call failed with `28P01` and `POST /v1/devices` returned 500, which the lock screen shows as the unknown error. Keycloak reads the same secret. Handed to the M14 owner through the developer: redeploy the API and Keycloak services, and decide how rotation is handled.
 
 ## Next step
 
