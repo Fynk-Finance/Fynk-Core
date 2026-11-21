@@ -52,6 +52,20 @@ export function presetOf(filter: TransactionFilter, now: Date): DatePreset | nul
   return null;
 }
 
+/** Days of Ingresos and Gastos on the Dashboard card, today included. */
+export const RECENT_DAYS = 30;
+
+/**
+ * The last RECENT_DAYS Bogotá days, today included, optionally only money in or out. The
+ * Dashboard card sums it and opens Movimientos with it, so both show the same movements.
+ */
+export function recentFilter(now: Date, kind?: 'income' | 'expense'): TransactionFilter {
+  const today = bogotaDay(now);
+  const filter: TransactionFilter = { from: addDays(today, -(RECENT_DAYS - 1)), to: today };
+  if (kind) filter.kind = kind;
+  return filter;
+}
+
 export type FilterProblem = 'dates' | 'amounts';
 
 /** What stops a filter from being applied: a range that ends before it starts, or bad amounts. */

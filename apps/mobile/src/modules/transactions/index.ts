@@ -60,6 +60,9 @@ export type { AllTransactionsParams } from './ui/AllTransactionsScreen';
 export type { TransactionListProps } from './ui/TransactionList';
 export { InvalidSyncedTransactionError } from './domain/syncedTransactions';
 export { InvalidCategoryError } from './domain/categoryChange';
+export type { TransactionSummary } from './domain/query';
+/** The last 30 Bogotá days of Ingresos or Gastos, for the Dashboard card (M6). */
+export { RECENT_DAYS, recentFilter } from './domain/filter';
 
 registerVaultMigrations('transactions', transactionsMigrations);
 
@@ -188,6 +191,13 @@ export const getTransactionsBetween = (from: IsoDate, to: IsoDate): Promise<Tran
  */
 export const searchTransactions = (text: string): Promise<Transaction[]> =>
   service.searchTransactions(text);
+
+/**
+ * Count and money in and out of a filter, cached and refreshed when the movements change: the
+ * same numbers as the line above Movimientos. M6 shows Ingresos and Gastos with it.
+ */
+export const useTransactionSummary = (filter: TransactionFilter) =>
+  hooks.useTransactionSummary(filter);
 
 /** One movement, or null. */
 export const getTransaction = (id: Id): Promise<Transaction | null> => service.getTransaction(id);
