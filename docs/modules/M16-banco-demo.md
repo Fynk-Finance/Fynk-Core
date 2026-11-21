@@ -5,7 +5,7 @@
 | Phase | 0 (API and data), 1 (OAuth with consent), 2 (portal) |
 | Stories | HU-047 SCRUM-64 (8), HU-048 SCRUM-65 (5) |
 | Points | 13 |
-| Owner | Juan Pablo Contreras |
+| Owner | Juan Pablo Contreras (`@juancontrerasp`) |
 | Owns | `services/bank-simulator/`, `contracts/bank-simulator.yaml`, `fixtures/demo-user.json`, the `banco-demo` realm and theme inside `services/keycloak/` (coordinate the shared Keycloak image with M1) |
 | Depends on | M0, M14 (hosting and mTLS listener) |
 | Used by | M5 (main client), M15 (CDT products), every module's tests (fixture) |
@@ -27,6 +27,7 @@ You are building module M16 of Fynk: a simulated bank, "Banco Demo", that behave
 **HU-047 Servicio simulado (SCRUM-64)**
 * Mismo flujo que el adaptador de Bancolombia: consentimiento, OAuth 2.0 con PKCE y PAR, private_key_jwt y mTLS.
 * Las cuentas se crean cuando el usuario otorga el consentimiento, nunca al registrarse en Fynk.
+  * Nota: reemplazado el 6 Nov 2026 por SCRUM-73 (HU-056), ver `M16b-simulated-banks.md` y el ADR 0008.
 * Al primer consentimiento genera 12 meses de historial: salario, arriendo, 4 suscripciones, servicios públicos y gastos diarios.
 * Cuenta de ahorros, billetera digital, tarjeta de crédito y CDT.
 * Nombres ficticios ("Banco Demo", "Billetera Demo") y datos marcados como simulados.

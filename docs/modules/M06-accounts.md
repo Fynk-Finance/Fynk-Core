@@ -5,7 +5,7 @@
 | Phase | 2 |
 | Stories | HU-012 SCRUM-26 (3), HU-013 SCRUM-27 (3), HU-014 SCRUM-28 (5), HU-019 SCRUM-33 (3), HU-020 SCRUM-34 (3), HU-054 SCRUM-71 (2) |
 | Points | 19 |
-| Owner | Sofia Nicolle Ariza |
+| Owner | Sofia Nicolle Ariza (`@sofia-ariza-783`) |
 | Owns | `apps/mobile/src/modules/accounts/` |
 | Depends on | M2 (vault), M5 (accounts written by sync), M7 (movement list component for account detail) |
 | Used by | M3, M10, M15, Dashboard |
@@ -19,7 +19,7 @@ You are building module M6 of Fynk: the account model on the phone, balances, co
 ## Read first
 
 1. `CLAUDE.md`, `docs/modules/00-shared-contracts.md` sections 2, 3.1, 3.2 and 7.
-2. Design PNGs `05-dashboard.png`, `06-dashboard-detalle-cuentas.png`, `07-mi-cuenta.png` and `07-mi-cuenta-2.png`, `09-billetera.png` and `09-billetera-2.png`, `15-config-cuentas.png`. Read the code of the same screens in `docs/design/source/` first (file map in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs are for checking the result.
+2. Design screens `Dashboard`, `DashboardDetalles` (an in-place expansion of the Dashboard header: tap or drag the tab, not a route), `CuentaDetalle` (account detail as a modal: swipe or page dots to change account, swipe down or chevron to close), `Billetera`, `DetalleCuentas` and `OnbCuentas`. Read the code of these screens in `docs/design/sources/light/` and `docs/design/sources/dark/` first (inventory, gestures and transitions in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` are for checking the result. Every screen works in light and dark (colors only from `useTheme()`), and uses the default transition and back gesture of its kind unless the inventory says otherwise.
 3. Jira SCRUM-26, SCRUM-27, SCRUM-28, SCRUM-33, SCRUM-34, SCRUM-71.
 
 ## Stories and criteria
@@ -37,6 +37,7 @@ You are building module M6 of Fynk: the account model on the phone, balances, co
 * **"N cuentas conectadas"** counts active bank accounts and wallets, without cash and CDTs.
 * Duplicates: one row per `(provider, providerAccountId)`. Cash is a single account with `provider='manual'`, `kind='cash'`.
 * **Ingresos and Gastos** on the Dashboard card come from M10 `getMonthSummary()` (current calendar month). Until M10 lands, compute them with a temporary function marked `TODO(M10)`.
+* **Manual movements change balances** (team decision, 5 Nov 2026). M7 calls `applyManualMovement({ before, after })` for every add, edit and delete. A Gasto subtracts and an Ingreso adds on cash and on disconnected bank accounts (link revoked or closed, never CDTs). A card's debt goes up on a Gasto. Connected accounts keep their bank's balance. Cash never goes below $0: `InsufficientCashError` and nothing is written. Disconnected accounts are offered in `useAccounts().data.disconnectedAccounts`, out of the total and the count. Restores and syncs never apply movements again.
 * Every amount through the shared `formatCop`. Card and account numbers as `•• 4821`.
 * Accounts from simulated providers show the "Simulado" badge.
 

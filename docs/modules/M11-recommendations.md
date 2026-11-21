@@ -5,7 +5,7 @@
 | Phase | 4 |
 | Stories | HU-024 SCRUM-38 (8), HU-025 SCRUM-39 (5), HU-026 SCRUM-40 (1) |
 | Points | 14 |
-| Owner | Julián Castiblanco |
+| Owner | Julián Castiblanco (`@JulCR34l`) |
 | Owns | `services/api/internal/recommendations/`, `contracts/modules/recommendations.yaml`, `apps/mobile/src/modules/recommendations/` |
 | Depends on | M10 (`buildSnapshot`, `getOpportunities`), M8, M9, M10 actions, M12, M14 (Bedrock access) |
 | Used by | Recomendaciones tab |
@@ -20,7 +20,7 @@ You are building module M11 of Fynk: a one shot financial summary and recommenda
 
 1. `CLAUDE.md` (Architecture rule 5, Regulatory guardrails), `docs/modules/00-shared-contracts.md` section 3.5.
 2. `docs/modules/M10-analytics.md` (where every number comes from).
-3. Design PNG `10-recomendaciones.png` and `10-recomendaciones-2.png` (lower part) and the change notes. Read the code of the same screens in `docs/design/source/` first (file map in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs are for checking the result.
+3. Design screens `Recomendaciones` (lower part) and `CfgPrivacidad` (the "Recomendaciones con IA" switch stops sending the snapshot), and the change notes. Read the code of these screens in `docs/design/sources/light/` and `docs/design/sources/dark/` first (inventory, gestures and transitions in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` are for checking the result. Every screen works in light and dark (colors only from `useTheme()`), and uses the default transition and back gesture of its kind unless the inventory says otherwise.
 4. Jira SCRUM-38, SCRUM-39, SCRUM-40.
 
 ## Stories and criteria

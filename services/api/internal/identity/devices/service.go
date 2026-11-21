@@ -1,0 +1,377 @@
+package devices
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+
+	audit "github.com/Fynk-Finance/Fynk-Core/services/api/internal/audit/ports"
+	bankports "github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/auth"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/clock"
+)
+
+// Reader reads devices.
+type Reader interface {
+	// Get returns ErrNotFound when the device does not exist or belongs to another user.
+	Get(ctx context.Context, userID, id string) (Device, error)
+	// List returns the user's devices that are not removed, newest last_seen_at first.
+	List(ctx context.Context, userID string) ([]Device, error)
+}
+
+// Tx is a repository transaction. Its reads lock the rows they return.
+type Tx interface {
+	Reader
+	ByIdempotencyKey(ctx context.Context, userID, key string) (Device, bool, error)
+	ByPublicKey(ctx context.Context, userID string, key []byte) (Device, bool, error)
+	HasActive(ctx context.Context, userID string) (bool, error)
+	// Insert returns ErrDuplicate when a unique constraint is hit. A blank key stores no key.
+	Insert(ctx context.Context, d Device, idempotencyKey string) error
+	Update(ctx context.Context, d Device) error
+}
+
+// Repo stores devices.
+type Repo interface {
+	Reader
+	// InTx runs fn in one transaction, after taking the user's advisory lock
+	// (pg_advisory_xact_lock(hashtext('identity.devices:' || user_id))) so the same
+	// user's writes serialize. fn's error rolls back.
+	InTx(ctx context.Context, userID string, fn func(Tx) error) error
+	// Activate moves a pending device to active. Active stays active. ErrRemoved, ErrNotFound.
+	Activate(ctx context.Context, id string) error
+}
+
+// Service holds the device rules.
+type Service struct {
+	repo  Repo
+	clock clock.Clock
+	audit audit.Recorder
+	newID func() string
+	log   *slog.Logger
+}
+
+// demoProvisionTimeout is how long sign-up waits for the bank simulator (demo only, ADR 0008).
+const demoProvisionTimeout = 2 * time.Second
+
+// NewService returns a service. newID may be nil: random UUID v4.
+func NewService(repo Repo, clk clock.Clock, rec audit.Recorder, newID func() string) *Service {
+	if newID == nil {
+		newID = uuid.NewString
+	}
+	return &Service{repo: repo, clock: clk, audit: rec, newID: newID, log: slog.Default()}
+}
+
+// WithLog sets the logger (the redacting logger of M0) and returns the service.
+func (s *Service) WithLog(l *slog.Logger) *Service {
+	if l != nil {
+		s.log = l
+	}
+	return s
+}
+
+// provisionDemoAccounts asks the bank simulator to create the demo accounts of the user, who
+// has just registered the first device (HU-058, ADR 0008, demo only). The only data sent is
+// the Keycloak sub. Registration never fails because of it: the app asks again through
+// GET /bank/simulated-entities. A disabled simulator is skipped silently, and a failure is
+// logged with a code only, never the sub.
+func (s *Service) provisionDemoAccounts(ctx context.Context, sub string) {
+	ctx, cancel := context.WithTimeout(ctx, demoProvisionTimeout)
+	defer cancel()
+	_, err := bankports.InstalledDemoProvisioner().Provision(ctx, sub)
+	switch {
+	case err == nil, errors.Is(err, bankports.ErrDemoProvisioningDisabled):
+	case errors.Is(err, context.DeadlineExceeded):
+		s.log.WarnContext(ctx, "demo accounts not created at sign-up", "reason", "timeout")
+	case errors.Is(err, bankports.ErrProviderUnavailable):
+		s.log.WarnContext(ctx, "demo accounts not created at sign-up", "reason", bankports.ErrProviderUnavailable.Code)
+	default:
+		s.log.WarnContext(ctx, "demo accounts not created at sign-up", "reason", "error")
+	}
+}
+
+// Register adds the user's device. created is false when an earlier call already did.
+func (s *Service) Register(ctx context.Context, user auth.User, in RegisterInput, idempotencyKey string) (Device, bool, error) {
+	in, err := in.Validate()
+	if err != nil {
+		return Device{}, false, err
+	}
+	var (
+		dev     Device
+		created bool
+	)
+	for attempt := 0; ; attempt++ {
+		dev, created, err = s.registerOnce(ctx, user, in, idempotencyKey)
+		// A race on a unique constraint is settled by reading the winner on the second pass.
+		if errors.Is(err, ErrDuplicate) && attempt == 0 {
+			continue
+		}
+		break
+	}
+	if err != nil {
+		return Device{}, false, err
+	}
+	if created {
+		err = s.audit.Record(ctx, audit.Event{
+			Type: audit.DeviceRegistered, UserID: dev.UserID, DeviceID: dev.ID, At: dev.CreatedAt,
+			Meta: map[string]string{"platform": string(dev.Platform), "status": string(dev.Status)},
+		})
+		if err != nil {
+			return Device{}, false, fmt.Errorf("audit device.registered: %w", err)
+		}
+		// Only the user's first device: later ones are pending and the accounts already exist.
+		if dev.Status == StatusActive {
+			s.provisionDemoAccounts(ctx, user.ID)
+		}
+	}
+	return dev, created, nil
+}
+
+func (s *Service) registerOnce(ctx context.Context, user auth.User, in RegisterInput, key string) (Device, bool, error) {
+	var (
+		dev     Device
+		created bool
+	)
+	err := s.repo.InTx(ctx, user.ID, func(tx Tx) error {
+		created = false
+		if key != "" {
+			d, ok, err := tx.ByIdempotencyKey(ctx, user.ID, key)
+			if err != nil {
+				return err
+			}
+			if ok {
+				dev = d
+				return nil
+			}
+		}
+		d, ok, err := tx.ByPublicKey(ctx, user.ID, in.PublicKey)
+		if err != nil {
+			return err
+		}
+		if ok {
+			if d.Status == StatusRemoved {
+				return ErrKeyRemoved
+			}
+			dev = d
+			return nil
+		}
+		hasActive, err := tx.HasActive(ctx, user.ID)
+		if err != nil {
+			return err
+		}
+		status := StatusPending
+		if !hasActive {
+			status = StatusActive
+		}
+		now := s.clock.Now()
+		d = Device{
+			ID: s.newID(), UserID: user.ID, Name: in.Name, Platform: in.Platform,
+			PublicKey: append([]byte(nil), in.PublicKey...), Status: status,
+			SessionID: user.SessionID, CreatedAt: now, LastSeenAt: now,
+		}
+		if err := tx.Insert(ctx, d, key); err != nil {
+			return err
+		}
+		dev, created = d, true
+		return nil
+	})
+	return dev, created, err
+}
+
+// List returns the user's active and pending devices, newest last seen first.
+func (s *Service) List(ctx context.Context, userID string) ([]Device, error) {
+	return s.repo.List(ctx, userID)
+}
+
+// Current records that the device is in use and returns it.
+func (s *Service) Current(ctx context.Context, user auth.User, deviceID string) (Device, error) {
+	var dev Device
+	err := s.repo.InTx(ctx, user.ID, func(tx Tx) error {
+		d, err := tx.Get(ctx, user.ID, deviceID)
+		if err != nil {
+			return err
+		}
+		if d.Status == StatusRemoved {
+			return ErrRemoved
+		}
+		d.LastSeenAt = s.clock.Now()
+		if user.SessionID != "" {
+			d.SessionID = user.SessionID
+		}
+		if err := tx.Update(ctx, d); err != nil {
+			return err
+		}
+		dev = d
+		return nil
+	})
+	return dev, err
+}
+
+// activeCaller checks, inside tx, that the caller device is active. A missing, foreign,
+// removed or pending caller (or a blank id: no trusted device) gets ErrNotActive.
+func activeCaller(ctx context.Context, tx Tx, userID, callerID string) error {
+	if callerID == "" {
+		return ErrNotActive
+	}
+	c, err := tx.Get(ctx, userID, callerID)
+	if errors.Is(err, ErrNotFound) {
+		return ErrNotActive
+	}
+	if err != nil {
+		return err
+	}
+	if c.Status != StatusActive {
+		return ErrNotActive
+	}
+	return nil
+}
+
+// Remove removes the device deviceID on behalf of callerDeviceID and returns its Keycloak
+// session id for the caller to revoke (also next to an audit error, when the device is already
+// removed). A device may always remove itself. Removing another
+// device needs an active caller (ErrNotActive otherwise, also for a blank caller id); the
+// check runs in the same transaction as the removal.
+// Removing a removed device is not an error: it returns an empty session id and audits nothing.
+func (s *Service) Remove(ctx context.Context, userID, callerDeviceID, deviceID string) (string, error) {
+	var (
+		sid     string
+		removed bool
+	)
+	self := callerDeviceID != "" && strings.EqualFold(callerDeviceID, deviceID)
+	err := s.repo.InTx(ctx, userID, func(tx Tx) error {
+		sid, removed = "", false
+		if !self {
+			if err := activeCaller(ctx, tx, userID, callerDeviceID); err != nil {
+				return err
+			}
+		}
+		d, err := tx.Get(ctx, userID, deviceID)
+		if err != nil {
+			return err
+		}
+		if d.Status == StatusRemoved {
+			return nil
+		}
+		d.Status = StatusRemoved
+		if err := tx.Update(ctx, d); err != nil {
+			return err
+		}
+		sid, removed = d.SessionID, true
+		return nil
+	})
+	if err != nil || !removed {
+		return "", err
+	}
+	// The device is already removed: its session id goes back even when the audit fails, so
+	// the caller can still end the session. A retry would find the device removed and get none.
+	if err := s.auditRemoved(ctx, userID, deviceID, "user"); err != nil {
+		return sid, err
+	}
+	return sid, nil
+}
+
+// RemoveOthers removes every device of the user except currentDeviceID, which must be
+// active (ErrNotActive when pending or blank). It returns the Keycloak session ids of the
+// removed devices (blank ones left out).
+func (s *Service) RemoveOthers(ctx context.Context, userID, currentDeviceID string) ([]string, error) {
+	return s.removeOthers(ctx, userID, currentDeviceID, true)
+}
+
+// RemoveOthersTrusted is RemoveOthers without the active check, for M2 after its own
+// checks. The kept device must still exist and not be removed.
+func (s *Service) RemoveOthersTrusted(ctx context.Context, userID, keepDeviceID string) ([]string, error) {
+	return s.removeOthers(ctx, userID, keepDeviceID, false)
+}
+
+func (s *Service) removeOthers(ctx context.Context, userID, currentDeviceID string, needActive bool) ([]string, error) {
+	var sids, ids []string
+	err := s.repo.InTx(ctx, userID, func(tx Tx) error {
+		sids, ids = nil, nil
+		if needActive && currentDeviceID == "" {
+			return ErrNotActive
+		}
+		cur, err := tx.Get(ctx, userID, currentDeviceID)
+		if err != nil {
+			return err
+		}
+		if cur.Status == StatusRemoved {
+			return ErrRemoved
+		}
+		if needActive && cur.Status != StatusActive {
+			return ErrNotActive
+		}
+		all, err := tx.List(ctx, userID)
+		if err != nil {
+			return err
+		}
+		for _, d := range all {
+			if d.ID == currentDeviceID {
+				continue
+			}
+			d.Status = StatusRemoved
+			if err := tx.Update(ctx, d); err != nil {
+				return err
+			}
+			ids = append(ids, d.ID)
+			if d.SessionID != "" {
+				sids = append(sids, d.SessionID)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, id := range ids {
+		// As in Remove: the devices are already removed, so the session ids go back with the error.
+		if err := s.auditRemoved(ctx, userID, id, "others"); err != nil {
+			return sids, err
+		}
+	}
+	return sids, nil
+}
+
+// Get returns the user's device (see ports.Devices). ErrRemoved for a removed one.
+func (s *Service) Get(ctx context.Context, userID, deviceID string) (Device, error) {
+	d, err := s.repo.Get(ctx, userID, deviceID)
+	if err != nil {
+		return Device{}, err
+	}
+	if d.Status == StatusRemoved {
+		return Device{}, ErrRemoved
+	}
+	return d, nil
+}
+
+// Usable reports whether the device exists, belongs to the user and is not removed.
+// A pending device is usable. It satisfies token.DeviceChecker.
+func (s *Service) Usable(ctx context.Context, userID, deviceID string) (bool, error) {
+	d, err := s.repo.Get(ctx, userID, deviceID)
+	if errors.Is(err, ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return d.Status != StatusRemoved, nil
+}
+
+// Activate moves a pending device to active (see ports.Activator).
+func (s *Service) Activate(ctx context.Context, deviceID string) error {
+	return s.repo.Activate(ctx, deviceID)
+}
+
+func (s *Service) auditRemoved(ctx context.Context, userID, deviceID, reason string) error {
+	err := s.audit.Record(ctx, audit.Event{
+		Type: audit.DeviceRemoved, UserID: userID, DeviceID: deviceID, At: s.clock.Now(),
+		Meta: map[string]string{"reason": reason},
+	})
+	if err != nil {
+		return fmt.Errorf("audit device.removed: %w", err)
+	}
+	return nil
+}

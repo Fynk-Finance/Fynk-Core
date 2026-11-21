@@ -1,0 +1,96 @@
+// User facing copy of the accounts module (Spanish, Colombia).
+import type { AccountKind } from '@shared/domain/types';
+
+const kinds: Record<AccountKind, string> = {
+  savings: 'Cuenta de ahorros',
+  checking: 'Cuenta corriente',
+  wallet: 'Billetera digital',
+  credit_card: 'Tarjeta de crédito',
+  cdt: 'CDT',
+  cash: 'Efectivo',
+};
+
+export const accountsStrings = {
+  cash: {
+    // OnbCuentas, section Efectivo.
+    label: '¿Cuánto tienes en efectivo?',
+    placeholder: '0',
+  },
+  kinds,
+  dashboard: {
+    // Shown until M3 keeps the name the person typed in onboarding.
+    guest: 'Invitado',
+    // The FAB of the Dashboard (M7 opens the sheet).
+    newMovement: 'Registrar gasto o ingreso',
+    // Its menu (QA review 2026-11-07, F5): new copy, needs design review.
+    fabMenu: {
+      income: 'Ingreso',
+      expense: 'Gasto',
+      incomeLabel: 'Registrar ingreso',
+      expenseLabel: 'Registrar gasto',
+      close: 'Cerrar menú',
+    },
+    balanceTotal: 'Balance total',
+    connected: (n: number) => `COP · ${n} ${n === 1 ? 'cuenta conectada' : 'cuentas conectadas'}`,
+    income: 'Ingresos',
+    spending: 'Gastos',
+    // The pills open Movimientos (new behavior, needs design review).
+    incomeLabel: (amount: string | null) =>
+      amount ? `Ingresos de los últimos 30 días: ${amount}` : 'Ingresos de los últimos 30 días',
+    spendingLabel: (amount: string | null) =>
+      amount ? `Gastos de los últimos 30 días: ${amount}` : 'Gastos de los últimos 30 días',
+    pillHint: 'Abre tus movimientos de los últimos 30 días',
+    howTitle: 'Cómo se calcula',
+    howMessage:
+      'Sumamos el saldo de tus cuentas, billeteras y efectivo, y restamos lo que debes en tus ' +
+      'tarjetas de crédito. Los CDT no se suman: los ves en Inversión.',
+    ok: 'Entendido',
+    showDetails: 'Ver detalle de cuentas',
+    hideDetails: 'Ocultar detalle de cuentas',
+    cashDetail: 'Registrado manualmente',
+    noAccounts: 'Aún no tienes cuentas conectadas.',
+    // Detalle de cuentas with no account and no cash: new copy, needs design review.
+    noAccountsOrCash: 'Aún no tienes cuentas conectadas ni efectivo registrado.',
+    loadError: 'No pudimos cargar tus cuentas.',
+    // Pull to sync (QA review 2026-11-07, F3), also an accessibility action.
+    sync: 'Actualizar',
+    syncing: 'Actualizando',
+  },
+  detail: {
+    // CuentaDetalle
+    title: 'Mis cuentas',
+    close: 'Cerrar detalle de cuenta',
+    show: (entity: string) => `Ver ${entity}`,
+    available: 'Saldo disponible',
+    creditAvailable: 'Cupo disponible',
+    creditLimit: 'Cupo total',
+    paymentDue: (day: string) => `Pago el ${day}`,
+    months: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+    updatedNow: 'Actualizado hace un momento',
+    updatedMinutes: (n: number) => `Actualizado hace ${n} min`,
+    updatedHours: (n: number) => `Actualizado hace ${n} h`,
+    updatedOn: (day: string) => `Actualizado el ${day}`,
+    gone: 'Esta cuenta ya no está conectada.',
+    remove: 'Eliminar cuenta',
+    removeNotFound: 'No encontramos la conexión de esta cuenta. Actualiza e intenta de nuevo.',
+  },
+  misCuentas: {
+    // Billetera and Mi cuenta
+    title: 'Mis cuentas',
+    connect: '+ Conectar',
+    // Ghost card while no bank account is connected: new copy, needs design review.
+    connectShort: 'Conectar',
+    view: (entity: string) => `Ver cuenta ${entity}`,
+    active: 'Activa',
+    creditLine: (limit: string, day: string | null) =>
+      day ? `Cupo total ${limit} · Pago el ${day}` : `Cupo total ${limit}`,
+    short: {
+      savings: 'Ahorros',
+      checking: 'Corriente',
+      wallet: 'Digital',
+      credit_card: 'Crédito',
+      cdt: 'CDT',
+      cash: 'Manual',
+    } satisfies Record<AccountKind, string>,
+  },
+} as const;

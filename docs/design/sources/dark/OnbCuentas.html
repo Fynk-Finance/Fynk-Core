@@ -1,0 +1,95 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390"><title>App azul y verde · Oscuro · Configuración · 3 Cuentas</title></head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;background:#13212d;color:#e8f1f6}
+a{color:#62c8f0}
+.field{transition:border-color .2s ease,background-color .2s ease}
+.field:focus-within{border-color:#2fa8d8 !important;background-color:#13212d !important}
+.field input{border:none;outline:none;background:transparent;font-family:inherit;font-size:15px;color:#e8f1f6;flex-grow:1;min-width:0;height:100%}
+.field input::placeholder{color:#71889a}
+.vscroll{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;overflow-x:hidden;overflow-y:auto}
+.vscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.btn{cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.cta{cursor:pointer;transition:background-color .2s ease}
+.cta:hover{background-color:#279dcc !important}
+.cta:hover .cta-arrow{transform:translateX(4px)}
+.cta-arrow{transition:transform .25s ease}
+.btn:focus-visible,.cta:focus-visible,.link:focus-visible,.chip:focus-visible{outline:3px solid #b5e5f7;outline-offset:2px}
+.chip{cursor:pointer;transition:background-color .2s ease}
+.row{transition:background-color .15s ease}
+@keyframes ob-shine{0%,62%{transform:translateX(0)}86%,100%{transform:translateX(620px)}}
+.shine{animation:ob-shine 8s ease-in-out infinite 1.5s}
+@keyframes ob-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.rise{animation:ob-rise .5s ease-out both .05s}
+@media (prefers-reduced-motion:reduce){.shine,.rise{animation:none}}
+@keyframes pb-fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.pb-fill{transform-origin:left center;animation:pb-fill .6s cubic-bezier(.65,0,.35,1) both .15s}
+@keyframes pb-pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(0)}18%{opacity:1}65%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(var(--sc)) rotate(var(--r))}}
+.pb-p{position:absolute;top:0;width:var(--s);height:var(--s);display:block;overflow:visible;animation:pb-pop var(--du) cubic-bezier(.15,.7,.3,1) both var(--d)}
+@media (prefers-reduced-motion:reduce){.pb-fill{animation:none}.pb-p{display:none}}
+
+</style>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: #0b1620; position: relative; overflow: hidden">
+<div style="position: absolute; left: 0; top: 0; width: 390px; height: 206px; background-color: #2fa8d8; border-radius: 0 0 24px 24px; overflow: hidden; z-index: 0">
+<svg width="390" height="206" viewBox="0 0 390 206" aria-hidden="true" style="position: absolute; top: 0; left: 0">
+<rect x="250" y="-80" width="210" height="210" rx="48" fill="#3ab3e3"></rect>
+<rect x="312" y="-28" width="104" height="104" rx="26" fill="#47b6e2"></rect>
+<rect x="-60" y="116" width="150" height="150" rx="36" fill="#279dcc"></rect>
+<g class="shine"><rect x="-140" y="-40" width="50" height="286" fill="#ffffff" fill-opacity=".12" transform="skewX(-18)"></rect></g>
+</svg>
+<div style="position: relative; padding: 16px 16px 0; display: flex; flex-direction: column; color: #ffffff">
+<header style="display: flex; align-items: center; justify-content: space-between; height: 48px">
+<a class="btn" href="OnbNombre.html" aria-label="Volver al paso anterior" style="width: 48px; height: 48px; box-sizing: border-box; border-radius: 14px; background-color: rgba(255, 255, 255, 0.2); color: #ffffff; display: flex; align-items: center; justify-content: center; text-decoration: none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></a>
+<span style="font-size: 13px; line-height: 18px; font-weight: 700; letter-spacing: 0.02em">Paso 3 de 5</span>
+<a class="link" href="OnbOmitir.html" style="min-width: 48px; height: 48px; display: flex; align-items: center; justify-content: flex-end; font-size: 14px; font-weight: 700; color: #ffffff; text-decoration: none">Omitir</a>
+</header>
+<div role="progressbar" aria-label="Progreso de la configuración" aria-valuemin="1" aria-valuemax="5" aria-valuenow="3" style="display: flex; gap: 8px; margin-top: 16px"><span style="flex: 1; height: 6px; border-radius: 999px; background-color: #a8e03a"></span><span style="flex: 1; height: 6px; border-radius: 999px; background-color: #a8e03a"></span><span style="flex: 1; height: 6px; border-radius: 999px; background-color: rgba(255, 255, 255, 0.32); position: relative"><span class="pb-fill" style="position: absolute; inset: 0; border-radius: 999px; background-color: #a8e03a"></span><span aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 4px; height: 0"><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 34%; --dx: 15px; --dy: -20px; --s: 8px; --d: 0.39s; --du: 0.95s; --r: 150deg; --sc: 1.1"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#a8e03a"></path></svg><span class="pb-p" style="left: 79%; --dx: -31px; --dy: -35px; --s: 7px; --d: 0.64s; --du: 0.79s; --r: -2deg; --sc: 0.91; border-radius: 2px; background-color: #13212d"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 91%; --dx: 31px; --dy: 23px; --s: 9px; --d: 0.76s; --du: 0.91s; --r: -49deg; --sc: 0.99"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#ffffff"></path></svg><span class="pb-p" style="left: 80%; --dx: -29px; --dy: 20px; --s: 12px; --d: 0.72s; --du: 0.92s; --r: 144deg; --sc: 0.89; border-radius: 4px; background-color: #a8e03a"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 96%; --dx: 2px; --dy: -34px; --s: 9px; --d: 0.75s; --du: 0.94s; --r: -144deg; --sc: 0.79"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#a8e03a"></path></svg><span class="pb-p" style="left: 36%; --dx: -22px; --dy: -39px; --s: 14px; --d: 0.48s; --du: 1.09s; --r: 82deg; --sc: 0.74; border-radius: 4px; background-color: #13212d"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 6%; --dx: 19px; --dy: -42px; --s: 12px; --d: 0.27s; --du: 0.98s; --r: 176deg; --sc: 0.76"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#ffffff"></path></svg><span class="pb-p" style="left: 22%; --dx: 22px; --dy: 20px; --s: 12px; --d: 0.41s; --du: 1.04s; --r: -57deg; --sc: 0.77; border-radius: 4px; background-color: #13212d"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 71%; --dx: 28px; --dy: -42px; --s: 12px; --d: 0.58s; --du: 1.01s; --r: -69deg; --sc: 1.12"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#ffffff"></path></svg><span class="pb-p" style="left: 91%; --dx: -16px; --dy: -43px; --s: 8px; --d: 0.7s; --du: 0.85s; --r: -160deg; --sc: 0.76; border-radius: 2px; background-color: #13212d"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 91%; --dx: -28px; --dy: -34px; --s: 7px; --d: 0.79s; --du: 1.03s; --r: 104deg; --sc: 0.93"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#a8e03a"></path></svg><span class="pb-p" style="left: 40%; --dx: -8px; --dy: -24px; --s: 8px; --d: 0.41s; --du: 0.77s; --r: -136deg; --sc: 0.93; border-radius: 2px; background-color: #a8e03a"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 8%; --dx: -22px; --dy: -20px; --s: 10px; --d: 0.22s; --du: 0.92s; --r: -6deg; --sc: 1.12"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#ffffff"></path></svg><span class="pb-p" style="left: 57%; --dx: -9px; --dy: -24px; --s: 12px; --d: 0.6s; --du: 0.88s; --r: -152deg; --sc: 1.12; border-radius: 4px; background-color: #d4f294"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 36%; --dx: 9px; --dy: -33px; --s: 10px; --d: 0.49s; --du: 1.06s; --r: 112deg; --sc: 0.74"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#ffffff"></path></svg><span class="pb-p" style="left: 97%; --dx: -34px; --dy: 35px; --s: 12px; --d: 0.74s; --du: 0.76s; --r: 31deg; --sc: 0.81; border-radius: 4px; background-color: #13212d"></span><svg class="pb-p" viewBox="-12 -12 24 24" style="left: 67%; --dx: -27px; --dy: -30px; --s: 14px; --d: 0.52s; --du: 0.97s; --r: -42deg; --sc: 1.14"><path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" fill="#ffffff"></path></svg><span class="pb-p" style="left: 57%; --dx: -27px; --dy: 17px; --s: 8px; --d: 0.56s; --du: 1.02s; --r: -54deg; --sc: 0.85; border-radius: 2px; background-color: #13212d"></span></span></span><span style="flex: 1; height: 6px; border-radius: 999px; background-color: rgba(255, 255, 255, 0.32)"></span><span style="flex: 1; height: 6px; border-radius: 999px; background-color: rgba(255, 255, 255, 0.32)"></span></div>
+<h1 style="margin: 24px 0 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px; line-height: 34px; letter-spacing: -0.01em">Agrega tus cuentas</h1>
+<p style="margin: 8px 0 0; font-size: 14px; line-height: 20px; font-weight: 500; opacity: 0.92">Conecta tus bancos y registra tu efectivo.</p>
+</div>
+</div>
+
+<div class="vscroll rise" style="position: absolute; left: 0; top: 206px; width: 390px; height: 538px; box-sizing: border-box; padding: 24px 16px 16px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between"><h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; line-height: 24px">Cuentas bancarias</h2><span style="font-size: 12px; line-height: 16px; font-weight: 600; color: #97abb8">2 conectadas</span></div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 16px; background-color: #13212d; border: 1px solid #223746; box-shadow: 0 6px 16px -12px rgba(0, 0, 0, 0.2)">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #50c1eb; color: #ffffff; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px; flex-shrink: 0">BC</span>
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex-grow: 1"><span style="font-size: 15px; line-height: 20px; font-weight: 600">Bancolombia</span><span style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; line-height: 16px; color: #97abb8">Ahorros · <span style="color: #b6e45a; font-weight: 700; display: inline-flex; align-items: center; gap: 2px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6a9e12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M20 6 9 17l-5-5"></path></svg>Conectada</span></span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap">$3.200.000</span>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 16px; background-color: #13212d; border: 1px solid #223746; box-shadow: 0 6px 16px -12px rgba(0, 0, 0, 0.2)">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #50c1eb; color: #ffffff; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px; flex-shrink: 0">DP</span>
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex-grow: 1"><span style="font-size: 15px; line-height: 20px; font-weight: 600">Daviplata</span><span style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; line-height: 16px; color: #97abb8">Billetera digital · <span style="color: #b6e45a; font-weight: 700; display: inline-flex; align-items: center; gap: 2px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6a9e12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M20 6 9 17l-5-5"></path></svg>Conectada</span></span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; white-space: nowrap">$4.600.000</span>
+</div>
+<a class="btn" href="ConectarBanco.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px; box-sizing: border-box; border-radius: 16px; border: 1.5px dashed #2fa8d8; background-color: #182a37; color: #62c8f0; font-size: 15px; font-weight: 700; text-decoration: none; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M12 5v14M5 12h14"></path></svg>Agregar otra cuenta</a>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; justify-content: space-between"><h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; line-height: 24px">Efectivo</h2></div>
+<div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+<label for="ob-efectivo" style="font-size: 14px; line-height: 20px; font-weight: 600">¿Cuánto tienes en efectivo?</label>
+<div class="field" style="display: flex; align-items: center; gap: 8px; height: 56px; box-sizing: border-box; padding: 0 16px; border-radius: 14px; border: 1.5px solid #223746; background-color: #182a37">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#62c8f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M2 6h20v12H2zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 12h.01M18 12h.01"></path></svg><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600; color: #97abb8">$</span>
+<input id="ob-efectivo" type="text" placeholder="0" value="600.000" inputmode="numeric">
+</div>
+</div>
+
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 16px; border-radius: 16px; background-color: #1a3444; flex-shrink: 0">
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; line-height: 18px; font-weight: 600">Total registrado</span><span style="font-size: 12px; line-height: 16px; color: #97abb8">2 cuentas + efectivo</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 17px; line-height: 22px; font-weight: 600; color: #62c8f0; white-space: nowrap">$8.400.000</span>
+</div>
+</div>
+
+<div style="position: absolute; left: 0; bottom: 0; width: 390px; height: 104px; box-sizing: border-box; padding: 16px 16px 32px; background-color: #13212d; border-top: 1px solid #22313d">
+<a class="cta" href="OnbMetas.html" style="box-sizing: border-box; text-decoration: none; height: 56px; width: 100%; border-radius: 16px; background-color: #2fa8d8; color: #ffffff; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px">
+<span>Continuar</span>
+<svg class="cta-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+</a>
+</div>
+</div>
+</body></html>

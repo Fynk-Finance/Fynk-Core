@@ -1,0 +1,299 @@
+{
+  "realm": "banco-demo",
+  "displayName": "Banco Demo (Simulado)",
+  "enabled": true,
+  "loginWithEmailAllowed": true,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": false,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "bruteForceProtected": true,
+  "defaultSignatureAlgorithm": "PS256",
+  "accessTokenLifespan": 300,
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-reply@bancodemo.local",
+    "fromDisplayName": "Banco Demo (simulado)"
+  },
+  "roles": {
+    "realm": [
+      {
+        "name": "customer",
+        "description": "Standard Banco Demo banking customer"
+      },
+      {
+        "name": "demo-admin",
+        "description": "Banco Demo simulator administrator"
+      }
+    ]
+  },
+  "clientScopes": [
+    {
+      "name": "accounts",
+      "description": "Consultar saldos y datos de cuentas",
+      "protocol": "openid-connect"
+    },
+    {
+      "name": "transactions",
+      "description": "Consultar movimientos de los ultimos 12 meses",
+      "protocol": "openid-connect"
+    }
+  ],
+  "components": {
+    "org.keycloak.keys.KeyProvider": [
+      {
+        "name": "bank-ps256",
+        "providerId": "rsa-generated",
+        "subComponents": {},
+        "config": {
+          "priority": ["200"],
+          "algorithm": ["PS256"],
+          "keySize": ["2048"],
+          "active": ["true"],
+          "enabled": ["true"]
+        }
+      },
+      {
+        "name": "bank-rsa-oaep",
+        "providerId": "rsa-enc-generated",
+        "subComponents": {},
+        "config": { "priority": ["100"], "algorithm": ["RSA-OAEP"], "keySize": ["2048"] }
+      },
+      {
+        "name": "bank-hs512",
+        "providerId": "hmac-generated",
+        "subComponents": {},
+        "config": { "priority": ["100"], "algorithm": ["HS512"] }
+      },
+      {
+        "name": "bank-aes",
+        "providerId": "aes-generated",
+        "subComponents": {},
+        "config": { "priority": ["100"] }
+      }
+    ],
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"unmanagedAttributePolicy\":\"ADMIN_VIEW\",\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false}],\"groups\":[]}"
+          ]
+        }
+      }
+    ]
+  },
+
+  "authenticationFlows": [
+    {
+      "alias": "fynk first broker login",
+      "description": "First login with Fynk: creates the user from the Fynk id alone. No review-profile form, because Fynk sends no email or name.",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "idp-create-user-if-unique",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "idp-auto-link",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "userSetupAllowed": false
+        }
+      ]
+    }
+  ],
+
+  "identityProviders": [
+    {
+      "alias": "fynk",
+      "displayName": "Ingresar con Fynk",
+      "providerId": "oidc",
+      "enabled": true,
+      "trustEmail": false,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "fynk first broker login",
+      "config": {
+        "authorizationUrl": "${FYNK_AUTH_URL:http://localhost:8081}/realms/fynk/protocol/openid-connect/auth",
+        "tokenUrl": "${FYNK_BACKCHANNEL_AUTH_URL:http://keycloak:8080}/realms/fynk/protocol/openid-connect/token",
+        "jwksUrl": "${FYNK_BACKCHANNEL_AUTH_URL:http://keycloak:8080}/realms/fynk/protocol/openid-connect/certs",
+        "issuer": "${FYNK_AUTH_URL:http://localhost:8081}/realms/fynk",
+        "clientId": "banco-demo-broker",
+        "clientSecret": "${BANCO_DEMO_BROKER_SECRET}",
+        "clientAuthMethod": "client_secret_post",
+        "defaultScope": "openid",
+        "pkceEnabled": "true",
+        "pkceMethod": "S256",
+        "validateSignature": "true",
+        "useJwksUrl": "true",
+        "disableUserInfo": "true",
+        "syncMode": "IMPORT",
+        "backchannelSupported": "false",
+        "logoutUrl": "${FYNK_AUTH_URL:http://localhost:8081}/realms/fynk/protocol/openid-connect/logout",
+        "sendIdTokenOnLogout": "true",
+        "sendClientIdOnLogout": "true",
+        "hideOnLoginPage": "false"
+      }
+    }
+  ],
+
+  "identityProviderMappers": [
+    {
+      "name": "fynk-sub-to-fynk_sub",
+      "identityProviderAlias": "fynk",
+      "identityProviderMapper": "oidc-user-attribute-idp-mapper",
+      "config": {
+        "syncMode": "IMPORT",
+        "claim": "fynk_sub",
+        "user.attribute": "fynk_sub"
+      }
+    },
+    {
+      "name": "fynk-username",
+      "identityProviderAlias": "fynk",
+      "identityProviderMapper": "oidc-username-idp-mapper",
+      "config": {
+        "syncMode": "IMPORT",
+        "template": "${ALIAS}.${CLAIM.fynk_sub}",
+        "target": "LOCAL"
+      }
+    }
+  ],
+
+  "clients": [
+    {
+      "clientId": "fynk",
+      "name": "Fynk app",
+      "description": "Fynk Open Finance client application",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-jwt",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "consentRequired": true,
+      "redirectUris": [
+        "fynk://bank/callback",
+        "https://localhost:8443/*",
+        "http://localhost:8080/*"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "require.pushed.authorization.requests": "true",
+        "token.endpoint.auth.signing.alg": "PS256"
+      },
+      "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "email"],
+      "optionalClientScopes": ["accounts", "transactions"]
+    },
+    {
+      "clientId": "bank-portal",
+      "name": "Banco Demo Web Portal",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${BANK_PORTAL_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8082/*",
+        "https://bancodemo.fynk.local/*",
+        "https://bancodemo.habenly.site/*"
+      ],
+      "webOrigins": ["http://localhost:8082", "https://bancodemo.habenly.site"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+"
+      },
+      "defaultClientScopes": [],
+      "optionalClientScopes": [],
+      "protocolMappers": [
+        {
+          "name": "sub",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-sub-mapper",
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "false",
+            "introspection.token.claim": "false"
+          }
+        },
+        {
+          "name": "preferred_username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "config": {
+            "user.attribute": "username",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "false",
+            "userinfo.token.claim": "false",
+            "introspection.token.claim": "false"
+          }
+        },
+        {
+          "name": "fynk_sub",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "fynk_sub",
+            "claim.name": "fynk_sub",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "false",
+            "userinfo.token.claim": "false",
+            "introspection.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "cliente.demo@bancodemo.local",
+      "email": "cliente.demo@bancodemo.local",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Cliente",
+      "lastName": "Demo",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${BANCO_DEMO_USER_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["customer"]
+    },
+    {
+      "username": "admin.demo@bancodemo.local",
+      "email": "admin.demo@bancodemo.local",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Admin",
+      "lastName": "Demo",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${BANCO_DEMO_ADMIN_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["demo-admin", "customer"]
+    }
+  ]
+}

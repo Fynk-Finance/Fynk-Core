@@ -1,0 +1,30 @@
+export { createPlaceholderScreen, type PlaceholderOptions } from './PlaceholderScreen';
+export { Slot, registerSlot, type SlotName } from './slots';
+
+/** Mi cuenta › Apariencia, a screen of the app shell (M0). M1 opens it from the "Apariencia" row. */
+export const APPEARANCE_ROUTE = 'app.Appearance';
+export type { BackGesture, ModuleRoutes, ModuleScreen, ScreenTransition, TabName } from './types';
+/**
+ * Default transition and back gesture of each kind of screen. Shared so a module's own nested
+ * stack (the onboarding flow) moves exactly like the root stack.
+ */
+export { flowOptions, screenOptionsFor, type MotionSettings } from './screenOptions';
+/** The tabs' shared blue header (QA review 2026-11-07, G2). */
+export {
+  TabHeaderProvider,
+  useSyncTabHeader,
+  useTabHeader,
+  useTabHeaderBridge,
+  type TabHeaderBridge,
+  type TabHeaderEntry,
+  type TabHeaderOptions,
+} from './tabHeader';
+/** How the tabs' shared blue header changes between tabs. */
+export {
+  blend,
+  fillUnknown,
+  flickTarget,
+  layerOpacity,
+  nearestTab,
+  UNKNOWN,
+} from './tabHeaderBlend';

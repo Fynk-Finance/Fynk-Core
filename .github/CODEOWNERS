@@ -1,6 +1,6 @@
-# Fynk code owners. Replace each placeholder with that person's GitHub username:
-# @owner-daniel (Daniel Palacios), @sofia-ariza-783 (Sofia Nicolle Ariza, done), @owner-juan-carlos (Juan Carlos Leal),
-# @owner-juan-pablo (Juan Pablo Contreras), @owner-karol (Karol), @owner-julian (Julián Castiblanco)
+# Fynk code owners, one GitHub user per person (CLAUDE.md, Team):
+# @Komi-yes (Daniel Palacios), @sofia-ariza-783 (Sofia Nicolle Ariza), @JuanLeal05 (Juan Carlos Leal),
+# @juancontrerasp (Juan Pablo Contreras), @Karol2905 (Karol), @JulCR34l (Julián Castiblanco)
 # The last matching line wins, so specific paths go after general ones.
 
 *                                          @sofia-ariza-783
@@ -21,28 +21,28 @@
 /.github/                                  @sofia-ariza-783
 
 # M1 Identity
-/apps/mobile/src/modules/identity/         @owner-daniel
-/services/api/internal/identity/           @owner-daniel
-/contracts/modules/identity.yaml           @owner-daniel
-/services/keycloak/                        @owner-daniel
+/apps/mobile/src/modules/identity/         @Komi-yes
+/services/api/internal/identity/           @Komi-yes
+/contracts/modules/identity.yaml           @Komi-yes
+/services/keycloak/                        @Komi-yes
 
 # M2 Vault and backup
-/apps/mobile/src/modules/vault/            @owner-daniel
-/services/api/internal/backup/             @owner-daniel
-/contracts/modules/backup.yaml             @owner-daniel
+/apps/mobile/src/modules/vault/            @Komi-yes
+/services/api/internal/backup/             @Komi-yes
+/contracts/modules/backup.yaml             @Komi-yes
 
 # M3 Onboarding
 /apps/mobile/src/modules/onboarding/       @sofia-ariza-783
 
 # M4 Consents
-/apps/mobile/src/modules/consents/         @owner-juan-carlos
-/services/api/internal/consents/           @owner-juan-carlos
-/contracts/modules/consents.yaml           @owner-juan-carlos
+/apps/mobile/src/modules/consents/         @JuanLeal05
+/services/api/internal/consents/           @JuanLeal05
+/contracts/modules/consents.yaml           @JuanLeal05
 
 # M5 Bank and sync
-/apps/mobile/src/modules/bank/             @owner-juan-carlos
-/services/api/internal/bank/               @owner-juan-carlos
-/contracts/modules/bank.yaml               @owner-juan-carlos
+/apps/mobile/src/modules/bank/             @JuanLeal05
+/services/api/internal/bank/               @JuanLeal05
+/contracts/modules/bank.yaml               @JuanLeal05
 
 # M6 Accounts
 /apps/mobile/src/modules/accounts/         @sofia-ariza-783
@@ -51,44 +51,44 @@
 /apps/mobile/src/modules/transactions/     @sofia-ariza-783
 
 # M8 Savings goals
-/apps/mobile/src/modules/savings/          @owner-karol
+/apps/mobile/src/modules/savings/          @Karol2905
 
 # M9 Recurring and subscriptions
-/apps/mobile/src/modules/recurring/        @owner-karol
-/services/api/internal/catalog/            @owner-karol
-/contracts/modules/catalog.yaml            @owner-karol
+/apps/mobile/src/modules/recurring/        @Karol2905
+/services/api/internal/catalog/            @Karol2905
+/contracts/modules/catalog.yaml            @Karol2905
 
 # M10 Analytics and caps
-/apps/mobile/src/modules/analytics/        @owner-julian
+/apps/mobile/src/modules/analytics/        @JulCR34l
 
 # M11 AI recommendations
-/apps/mobile/src/modules/recommendations/  @owner-julian
-/services/api/internal/recommendations/    @owner-julian
-/contracts/modules/recommendations.yaml    @owner-julian
+/apps/mobile/src/modules/recommendations/  @JulCR34l
+/services/api/internal/recommendations/    @JulCR34l
+/contracts/modules/recommendations.yaml    @JulCR34l
 
 # M12 Notifications
-/apps/mobile/src/modules/notifications/    @owner-karol
+/apps/mobile/src/modules/notifications/    @Karol2905
 
 # M13 Compliance and audit
-/apps/mobile/src/modules/compliance/       @owner-juan-pablo
-/services/api/internal/privacy/            @owner-juan-pablo
-/services/api/internal/audit/              @owner-juan-pablo
-/contracts/modules/privacy.yaml            @owner-juan-pablo
+/apps/mobile/src/modules/compliance/       @juancontrerasp
+/services/api/internal/privacy/            @juancontrerasp
+/services/api/internal/audit/              @juancontrerasp
+/contracts/modules/privacy.yaml            @juancontrerasp
 
 # M14 Infrastructure
-/infra/                                    @owner-juan-pablo
-/services/caddy/                           @owner-juan-pablo
-/.github/workflows/deploy-staging.yml      @owner-juan-pablo
-/.github/workflows/terraform-plan.yml      @owner-juan-pablo
-/docs/runbooks/                            @owner-juan-pablo
+/infra/                                    @juancontrerasp
+/services/caddy/                           @juancontrerasp
+/.github/workflows/deploy-staging.yml      @juancontrerasp
+/.github/workflows/terraform-plan.yml      @juancontrerasp
+/docs/runbooks/                            @juancontrerasp
 
 # M15 Investment
-/apps/mobile/src/modules/investment/       @owner-julian
-/services/api/internal/market/             @owner-julian
-/contracts/modules/market.yaml             @owner-julian
+/apps/mobile/src/modules/investment/       @JulCR34l
+/services/api/internal/market/             @JulCR34l
+/contracts/modules/market.yaml             @JulCR34l
 
 # M16 Banco Demo
-/services/bank-simulator/                  @owner-juan-pablo
-/contracts/bank-simulator.yaml             @owner-juan-pablo
-/fixtures/                                 @owner-juan-pablo
-/services/keycloak/realms/banco-demo-realm.json  @owner-juan-pablo
+/services/bank-simulator/                  @juancontrerasp
+/contracts/bank-simulator.yaml             @juancontrerasp
+/fixtures/                                 @juancontrerasp
+/services/keycloak/realms/banco-demo-realm.json  @juancontrerasp

@@ -1,0 +1,645 @@
+// Lock states of the vault: who may open it and when. No React here; the UI subscribes.
+// Opening needs the DEK (Keychain copy A) AND a fresh Keycloak login, or the password again.
+// Never log the DEK or anything about it.
+import type { Clock } from '@shared/domain/types';
+
+import { isFreshLogin, shouldLock } from '../domain/lockPolicy';
+import {
+  VaultNotEncryptedError,
+  type BiometricPrompt,
+  type DekStore,
+  type RecoveryKeyApi,
+} from './ports';
+import {
+  confirmRecoveryCode,
+  type ConfirmResult,
+  type PreparedRecoveryCode,
+  type RecoveryCodeService,
+} from './recoveryCode';
+import type { ApprovalCheck, ApprovalStart, RestoreWithApproval } from './restoreWithApproval';
+import type { ResetBackup, ResetResult } from './resetBackup';
+import type { RestoreFailure, RestoreResult, RestoreWithCode } from './restoreWithCode';
+import type { Vault } from './vault';
+
+export type LockError = 'notEncrypted' | 'keychain' | 'offline' | 'unknown';
+
+/**
+ * Messages for the lock screen. `biometricsOff`: the phone's biometrics changed, copy B was
+ * deleted. `otherAccount`: the password login was for an account other than the one that signed out.
+ */
+export type LockNotice = 'biometricsOff' | 'biometricFailed' | 'otherAccount';
+
+export interface LockState {
+  status:
+    | 'locked'
+    | 'unlocking'
+    | 'unlocked'
+    | 'pendingDevice'
+    | 'restoring'
+    | 'recoveryCode'
+    /** Open, with the one-time "use biometrics?" question on top. */
+    | 'biometricOffer'
+    | 'error';
+  error?: LockError;
+  /**
+   * Pending device only: `pending` can ask the old phone for approval; `active` (the server
+   * already activated this phone) can only use the recovery code.
+   */
+  deviceStatus?: 'pending' | 'active';
+  /** Pending device only: why the last try with the recovery code did not work. */
+  restoreError?: RestoreFailure;
+  /** Recovery code only: the groups to show once. The code lives in memory while it is shown. */
+  recovery?: { groups: string[] };
+  /** Locked only: copy B exists and the phone has biometrics, so the button may show. */
+  biometric?: boolean;
+  notice?: LockNotice;
+}
+
+export type EnableBiometricsResult = 'enabled' | 'cancelled' | 'failed';
+
+/** A new recovery code for "Generar un código nuevo". Nothing is uploaded until it is confirmed. */
+export type NewRecoveryCode =
+  { status: 'ready'; prepared: PreparedRecoveryCode } | { status: 'cancelled' | 'failed' };
+
+/** What the controller needs from identity (M1). The wiring passes lazy calls. */
+export interface LockIdentity {
+  lastLoginAt(): Date | null;
+  reauthenticate(): Promise<'ok' | 'cancelled' | 'failed' | 'otherAccount'>;
+  currentDevice(): Promise<{ id: string; status: 'active' | 'pending' } | null>;
+  /** The signed in account (Keycloak `sub`), or null when nobody is. */
+  userId(): string | null;
+  /** Calls the listener on every session change. Returns the unsubscribe. */
+  onSessionChange(listener: (state: { status: string }) => void): () => void;
+}
+
+export interface LockControllerDeps {
+  vault: Pick<Vault, 'open' | 'close' | 'wipe'>;
+  dekStore: DekStore;
+  newDek: () => Uint8Array;
+  identity: LockIdentity;
+  clock: Clock;
+  /** Milliseconds, for the background timer. */
+  nowMs: () => number;
+  /** Texts of the system biometric prompt. */
+  biometricPrompt: BiometricPrompt;
+  /** Asks the server whether this account already has a recovery key. */
+  recoveryKey: Pick<RecoveryKeyApi, 'get'>;
+  recoveryCode: RecoveryCodeService;
+  /** The restore on a new phone, and the retry of one that was cut short. */
+  restoreWithCode: RestoreWithCode;
+  /** The restore with the old phone's approval. */
+  restoreWithApproval: RestoreWithApproval;
+  /** "No tengo ninguno de los dos": the server deletes the backup after an email code reset. */
+  resetBackup: ResetBackup;
+  /** False in the dev session: no registered device and no API, so no backup to protect. */
+  backupEnabled: () => boolean;
+  /** Drops the timers, cached key and marks of the account whose slot is about to be erased. */
+  resetBackupState: () => void;
+  /**
+   * Erases the legacy single vault (one file and unslotted Keychain entries, from before each
+   * account had its own slot). Idempotent and never touches a slot. Throws when it cannot.
+   */
+  eraseLegacy: () => Promise<void>;
+}
+
+export interface LockController {
+  getState(): LockState;
+  subscribe(listener: () => void): () => void;
+  /** Opens the vault when the key and a fresh login allow it, or sets up the first phone. */
+  unlock(): Promise<void>;
+  /** Asks Keycloak for the password again, then opens. */
+  unlockWithPassword(): Promise<void>;
+  lock(): Promise<void>;
+  /** Opens with copy B behind the system prompt. Cancel keeps it locked without an error. */
+  unlockWithBiometrics(): Promise<void>;
+  /** Opens the prompt once per lock, when copy B exists. The lock screen calls it on show. */
+  autoPromptBiometric(): Promise<void>;
+  /** The phone has biometrics and copy B exists. Never prompts. */
+  biometricStatus(): Promise<{ supported: boolean; enabled: boolean }>;
+  /** Turns biometrics on: needs a login of the last 5 minutes, else the password again first. */
+  enableBiometrics(): Promise<EnableBiometricsResult>;
+  /** Turns biometrics off by deleting copy B. */
+  disableBiometrics(): Promise<void>;
+  /** Leaves the one-time biometrics question and goes on to the app. */
+  finishBiometricOffer(): void;
+  /**
+   * Step 2 of the recovery code screen: the typed last group must match, then the wrapped DEK is
+   * uploaded and the vault is unlocked. `mismatch` and `offline` can be retried on the same code.
+   */
+  confirmRecoveryCode(lastGroup: string): Promise<ConfirmResult>;
+  /**
+   * New phone (pending device): restores with the recovery code the person typed. Shows
+   * `restoring` while it works. On success the vault is unlocked; on any other result it goes
+   * back to `pendingDevice` with `restoreError`, so the person can try again.
+   */
+  restoreWithCode(typed: string): Promise<RestoreResult>;
+  /**
+   * New phone (pending device): asks the old phone for approval. The caller polls
+   * `checkApproval`. A phone the server already activated is told `alreadyActive`.
+   */
+  startApproval(): Promise<ApprovalStart>;
+  /**
+   * One poll of the request. `restoring` is shown while a granted restore runs and the vault is
+   * unlocked at the end. After `grantLost` or `failed` the phone is active and only the recovery
+   * code is left.
+   */
+  checkApproval(id: string): Promise<ApprovalCheck>;
+  /**
+   * New phone (pending device) with neither the old phone nor the code: asks the server to delete
+   * the backup. The server allows it only after a password reset with the email code. On `ok`
+   * this phone is active with no recovery key, so the first phone path runs: a new DEK and a new
+   * recovery code. Any other result leaves the screen as it was.
+   */
+  resetBackup(): Promise<ResetResult>;
+  /**
+   * A new code that replaces the current one once confirmed. Needs a login of the last 5
+   * minutes, else asks for the password first. The vault must be unlocked.
+   */
+  prepareNewRecoveryCode(): Promise<NewRecoveryCode>;
+  /** Locks on sign out. Returns the unsubscribe. */
+  start(): () => void;
+  /** AppState wiring: the app left the foreground. */
+  appBackgrounded(): void;
+  /** AppState wiring: the app is active again. Locks after more than 5 minutes away. */
+  appForegrounded(): Promise<void>;
+  /** Back to locked without touching the vault (after wipe). */
+  reset(): void;
+}
+
+const LOCKED: LockState = { status: 'locked' };
+const keychainError: LockState = { status: 'error', error: 'keychain' };
+
+export function createLockController(deps: LockControllerDeps): LockController {
+  const { vault, dekStore, identity, clock } = deps;
+  let state: LockState = LOCKED;
+  let backgroundSince: number | null = null;
+  // Bumped by lock and reset, so an open that finishes afterwards is closed again.
+  let generation = 0;
+  let inFlight: Promise<void> | null = null;
+  // The code on screen. Only in memory, only while shown; every way out of the state drops it.
+  let pendingCode: PreparedRecoveryCode | null = null;
+  // The biometric prompt opens by itself once per lock, never in a loop.
+  let autoPrompted = false;
+  const listeners = new Set<() => void>();
+
+  const set = (next: LockState) => {
+    if (next.status !== 'recoveryCode') pendingCode = null;
+    state = next;
+    listeners.forEach((l) => l());
+  };
+
+  async function biometricReady(): Promise<boolean> {
+    try {
+      return (await dekStore.biometricsAvailable()) && (await dekStore.hasBiometric());
+    } catch {
+      return false;
+    }
+  }
+
+  async function locked(notice?: LockNotice): Promise<LockState> {
+    const biometric = await biometricReady();
+    return { status: 'locked', ...(biometric && { biometric }), ...(notice && { notice }) };
+  }
+
+  /** Opens the vault. On success the state stays `unlocking`; the caller decides what follows. */
+  async function openVault(dek: Uint8Array): Promise<boolean> {
+    const mine = generation;
+    set({ status: 'unlocking' });
+    try {
+      await vault.open(dek);
+    } catch (error) {
+      // A wrong key or a corrupt file is reported as unknown. Neither is retried automatically.
+      set({
+        status: 'error',
+        error: error instanceof VaultNotEncryptedError ? 'notEncrypted' : 'unknown',
+      });
+      return false;
+    }
+    if (mine !== generation) {
+      await vault.close();
+      return false;
+    }
+    return true;
+  }
+
+  function showRecoveryCode(prepared: PreparedRecoveryCode) {
+    set({ status: 'recoveryCode', recovery: { groups: prepared.groups } });
+    pendingCode = prepared;
+  }
+
+  // The app died before "Ya lo guardé", or the backup was reset: the server has no recovery key
+  // for this account. It needs the network, so an offline phone stays unlocked and the next open
+  // asks again. It runs only after an open, never on a plain return to the foreground.
+  async function offerMissingRecoveryCode(dek: Uint8Array, mine: number): Promise<void> {
+    if (!deps.backupEnabled()) return;
+    try {
+      const device = await identity.currentDevice();
+      if (device?.status !== 'active') return;
+      if (await deps.recoveryKey.get()) return;
+      const prepared = await deps.recoveryCode.prepare(dek);
+      if (mine === generation && state.status === 'unlocked') showRecoveryCode(prepared);
+    } catch {
+      // Offline or the API failed. Nothing is lost: the check repeats on the next unlock.
+    }
+  }
+
+  // Each account has its own slot (database file and Keychain entries), so an account only ever
+  // reads its own key. The owner tag inside the slot is a second check: a key whose tag is missing
+  // or names another account cannot be trusted, so the slot counts as corrupt.
+  // A failed read throws: never open on a failed read. No account throws too, before anything is
+  // read: a session that ended meanwhile says nothing about who signed in, so it must never erase.
+  async function keyOwner(): Promise<'mine' | 'corrupt'> {
+    const current = identity.userId();
+    if (current === null) throw new Error('no signed in account');
+    const owner = await dekStore.readOwner();
+    return owner === current ? 'mine' : 'corrupt';
+  }
+
+  // A corrupt slot of the signed in account: only that slot is erased (the other accounts' vaults
+  // stay on the phone), then the account is set up again.
+  async function eraseCorruptSlot(): Promise<boolean> {
+    try {
+      // First, so no upload starts while the vault is being erased.
+      deps.resetBackupState();
+      await vault.wipe();
+      return true;
+    } catch {
+      set(keychainError);
+      return false;
+    } finally {
+      deps.resetBackupState();
+    }
+  }
+
+  // Once per phone, and only where it can work: without biometrics the offer is not spent, so it
+  // comes when the person enrolls one. The mark goes first, so a failure never repeats the question.
+  async function takeBiometricOffer(): Promise<boolean> {
+    try {
+      if (await dekStore.biometricOfferShown()) return false;
+      if (!(await dekStore.biometricsAvailable())) return false;
+      await dekStore.markBiometricOfferShown();
+      return !(await dekStore.hasBiometric());
+    } catch {
+      return false;
+    }
+  }
+
+  async function openWith(dek: Uint8Array, canOffer = false): Promise<void> {
+    const mine = generation;
+    if (!(await openVault(dek))) return;
+    const offer = canOffer && (await takeBiometricOffer());
+    if (mine !== generation) return;
+    // The person is in at once; the server check never delays or blocks an offline open.
+    set({ status: offer ? 'biometricOffer' : 'unlocked' });
+    // A restore that was cut short (offline) continues in the background.
+    if (deps.backupEnabled()) void deps.restoreWithCode.resumePending();
+    // Behind the offer nothing can show it; the check repeats on the next unlock.
+    if (!offer) await offerMissingRecoveryCode(dek, mine);
+  }
+
+  async function setUpFirstPhone(): Promise<void> {
+    const mine = generation;
+    let device: Awaited<ReturnType<LockIdentity['currentDevice']>>;
+    try {
+      device = await identity.currentDevice();
+    } catch {
+      set({ status: 'error', error: 'offline' });
+      return;
+    }
+    if (device?.status === 'pending') {
+      set({ status: 'pendingDevice', deviceStatus: 'pending' });
+      return;
+    }
+    if (device?.status !== 'active') {
+      // Not registered, unknown to the API or just removed: never make a key for it.
+      set({ status: 'error', error: 'unknown' });
+      return;
+    }
+    // A recovery key on the server means this account already has a backup, and a new DEK here
+    // would orphan it. Without an answer we cannot know, so we make no key.
+    const backup = deps.backupEnabled();
+    if (backup) {
+      let existing: Awaited<ReturnType<RecoveryKeyApi['get']>>;
+      try {
+        existing = await deps.recoveryKey.get();
+      } catch {
+        set({ status: 'error', error: 'offline' });
+        return;
+      }
+      if (existing) {
+        // Active, so the person restores with the recovery code (restoreWithCode).
+        set({ status: 'pendingDevice', deviceStatus: 'active' });
+        return;
+      }
+    }
+    let fresh: Uint8Array;
+    try {
+      // Nobody signed in: no key is made, because a key without its owner is never opened.
+      const id = identity.userId();
+      if (id === null) throw new Error('no signed in account');
+      // A left-over file of this slot cannot be read without its key. The wipe also drops the
+      // owner tag, so the tag is written before the key: a key in a slot always says whose it is.
+      await vault.wipe();
+      await dekStore.writeOwner(id);
+      fresh = deps.newDek();
+      await dekStore.write(fresh);
+    } catch {
+      set(keychainError);
+      return;
+    }
+    if (!(await openVault(fresh))) return;
+    if (!backup) {
+      // Dev session: no recovery code to show.
+      if (mine === generation) set({ status: 'unlocked' });
+      return;
+    }
+    try {
+      const prepared = await deps.recoveryCode.prepare(fresh);
+      if (mine === generation) showRecoveryCode(prepared);
+    } catch {
+      // The vault is open and the key is saved. The next unlock finds no recovery key and
+      // offers the code again.
+      if (mine === generation) set({ status: 'unlocked' });
+    }
+  }
+
+  // Once per phone. A failure is retried on the next open, and nothing is read meanwhile.
+  let legacyErased = false;
+  async function ensureLegacyErased(): Promise<boolean> {
+    if (legacyErased) return true;
+    try {
+      await deps.eraseLegacy();
+      legacyErased = true;
+      return true;
+    } catch {
+      set(keychainError);
+      return false;
+    }
+  }
+
+  let lastRunUser: string | null = null;
+
+  async function run(): Promise<void> {
+    set({ status: 'unlocking' });
+    if (!(await ensureLegacyErased())) return;
+    // Nobody signed in: no key is read and nothing is erased.
+    const current = identity.userId();
+    if (current === null) {
+      set(keychainError);
+      return;
+    }
+    // Another account than the last open: the timers, cached key and marks in memory are the
+    // previous account's, and must never flush into this account's vault.
+    if (lastRunUser !== null && lastRunUser !== current) deps.resetBackupState();
+    lastRunUser = current;
+    let dek: Uint8Array | null;
+    try {
+      dek = await dekStore.read();
+    } catch {
+      set(keychainError);
+      return;
+    }
+    if (!dek) return setUpFirstPhone();
+    try {
+      if ((await keyOwner()) === 'corrupt') {
+        if (!(await eraseCorruptSlot())) return;
+        return setUpFirstPhone();
+      }
+    } catch {
+      set(keychainError);
+      return;
+    }
+    if (isFreshLogin(identity.lastLoginAt(), clock.now())) return openWith(dek);
+    set(await locked());
+  }
+
+  const isOpenOrOpening = () =>
+    state.status === 'unlocking' ||
+    state.status === 'unlocked' ||
+    state.status === 'restoring' ||
+    state.status === 'recoveryCode' ||
+    state.status === 'biometricOffer';
+
+  const controller: LockController = {
+    getState: () => state,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    unlock() {
+      if (isOpenOrOpening() && state.status !== 'unlocking') return Promise.resolve();
+      if (state.status === 'error' && state.error === 'notEncrypted') return Promise.resolve();
+      inFlight ??= run().finally(() => {
+        inFlight = null;
+      });
+      return inFlight;
+    },
+    async unlockWithPassword() {
+      if (isOpenOrOpening()) return;
+      const result = await identity.reauthenticate();
+      if (result === 'cancelled') return;
+      if (result === 'otherAccount') {
+        set({ status: 'locked', notice: 'otherAccount', biometric: state.biometric });
+        return;
+      }
+      if (result === 'failed') {
+        set({ status: 'locked', error: 'unknown', biometric: state.biometric });
+        return;
+      }
+      let dek: Uint8Array | null;
+      try {
+        dek = await dekStore.read();
+      } catch {
+        set(keychainError);
+        return;
+      }
+      // No key: this phone is not set up yet, so the normal flow decides what to do.
+      if (!dek) return controller.unlock();
+      try {
+        if ((await keyOwner()) === 'corrupt') return controller.unlock();
+      } catch {
+        set(keychainError);
+        return;
+      }
+      await openWith(dek, true);
+    },
+    async unlockWithBiometrics() {
+      if (isOpenOrOpening()) return;
+      set({ status: 'unlocking' });
+      // A corrupt slot: no system prompt for its key. The normal flow erases that slot.
+      try {
+        if ((await keyOwner()) === 'corrupt') return controller.unlock();
+      } catch {
+        set(keychainError);
+        return;
+      }
+      const result = await dekStore.readBiometric(deps.biometricPrompt);
+      if (result.status === 'ok') return openWith(result.dek);
+      if (result.status === 'invalidated') {
+        // Never readable again: delete it so the setting reads off and the password is needed.
+        try {
+          await dekStore.removeBiometric();
+        } catch {
+          // The next read reports the same and tries again.
+        }
+        set(await locked('biometricsOff'));
+        return;
+      }
+      set(await locked(result.status === 'failed' ? 'biometricFailed' : undefined));
+    },
+    async autoPromptBiometric() {
+      if (inFlight) await inFlight;
+      if (autoPrompted || state.status !== 'locked' || !state.biometric) return;
+      autoPrompted = true;
+      await controller.unlockWithBiometrics();
+    },
+    async biometricStatus() {
+      const supported = await dekStore.biometricsAvailable().catch(() => false);
+      const enabled = supported && (await dekStore.hasBiometric().catch(() => false));
+      return { supported, enabled };
+    },
+    async enableBiometrics() {
+      if (!(await dekStore.biometricsAvailable().catch(() => false))) return 'failed';
+      if (!isFreshLogin(identity.lastLoginAt(), clock.now())) {
+        const result = await identity.reauthenticate();
+        if (result !== 'ok') return result === 'cancelled' ? 'cancelled' : 'failed';
+      }
+      try {
+        const dek = await dekStore.read();
+        if (!dek) return 'failed';
+        const written = await dekStore.writeBiometric(dek, deps.biometricPrompt);
+        return written === 'ok' ? 'enabled' : 'cancelled';
+      } catch {
+        return 'failed';
+      }
+    },
+    async disableBiometrics() {
+      await dekStore.removeBiometric();
+    },
+    finishBiometricOffer() {
+      if (state.status === 'biometricOffer') set({ status: 'unlocked' });
+    },
+    async confirmRecoveryCode(lastGroup) {
+      const shown = pendingCode;
+      if (state.status !== 'recoveryCode' || !shown) return 'failed';
+      const result = await confirmRecoveryCode(shown, lastGroup);
+      // A lock while the upload ran already dropped the code; the upload itself stands.
+      if (result === 'ok' && pendingCode === shown) set({ status: 'unlocked' });
+      return result;
+    },
+    async restoreWithCode(typed) {
+      if (state.status !== 'pendingDevice') return 'failed';
+      const mine = generation;
+      const before = state;
+      set({ status: 'restoring' });
+      const result = await deps.restoreWithCode.restore(typed);
+      const opened = result === 'restored' || result === 'partial';
+      if (mine !== generation) {
+        // Locked or reset while restoring: the vault opened behind that, so close it again.
+        if (opened) await vault.close();
+        return result;
+      }
+      set(
+        opened
+          ? { status: 'unlocked' }
+          : { status: 'pendingDevice', deviceStatus: before.deviceStatus, restoreError: result },
+      );
+      return result;
+    },
+    async startApproval() {
+      if (state.status !== 'pendingDevice') return { status: 'failed' };
+      // The server refuses an approval for an active phone, so there is nothing to ask.
+      if (state.deviceStatus !== 'pending') return { status: 'alreadyActive' };
+      const result = await deps.restoreWithApproval.start();
+      if (result.status === 'alreadyActive' && state.status === 'pendingDevice') {
+        set({ status: 'pendingDevice', deviceStatus: 'active' });
+      }
+      return result;
+    },
+    async checkApproval(id) {
+      // A poll that overlaps a restore changes nothing.
+      if (state.status === 'restoring') return 'waiting';
+      if (state.status !== 'pendingDevice') return 'failed';
+      const mine = generation;
+      let spent = false;
+      const result = await deps.restoreWithApproval.check(id, () => {
+        spent = true;
+        set({ status: 'restoring' });
+      });
+      const opened = result === 'restored' || result === 'partial';
+      if (mine !== generation) {
+        // Locked or reset while restoring: the vault opened behind that, so close it again.
+        if (opened) await vault.close();
+        return result;
+      }
+      if (opened) {
+        set({ status: 'unlocked' });
+      } else if (spent || result === 'grantLost') {
+        // The server read the grant out: this phone is active and has no key.
+        set({ status: 'pendingDevice', deviceStatus: 'active' });
+      }
+      return result;
+    },
+    async resetBackup() {
+      if (state.status !== 'pendingDevice') return 'failed';
+      const mine = generation;
+      const result = await deps.resetBackup.reset();
+      // Locked or signed out meanwhile: the next open finds the phone active and sets it up.
+      if (result === 'ok' && mine === generation) await controller.unlock();
+      return result;
+    },
+    async prepareNewRecoveryCode() {
+      if (!deps.backupEnabled()) return { status: 'failed' };
+      if (!isFreshLogin(identity.lastLoginAt(), clock.now())) {
+        const result = await identity.reauthenticate();
+        if (result !== 'ok') return { status: result === 'cancelled' ? 'cancelled' : 'failed' };
+      }
+      try {
+        const dek = await dekStore.read();
+        if (!dek) return { status: 'failed' };
+        return { status: 'ready', prepared: await deps.recoveryCode.prepare(dek) };
+      } catch {
+        return { status: 'failed' };
+      }
+    },
+    async lock() {
+      generation += 1;
+      const mine = generation;
+      autoPrompted = false;
+      await vault.close();
+      // Locked at once; the button is added when the copy B lookup answers.
+      set(LOCKED);
+      const next = await locked();
+      if (next.biometric && state === LOCKED && mine === generation) set(next);
+    },
+    start() {
+      return identity.onSessionChange((session) => {
+        if (session.status === 'signedOut') void controller.lock();
+      });
+    },
+    appBackgrounded() {
+      backgroundSince ??= deps.nowMs();
+    },
+    async appForegrounded() {
+      const since = backgroundSince;
+      backgroundSince = null;
+      // The recovery code screen locks too: the code must not stay readable on a phone left
+      // alone. It was not confirmed, so nothing is lost and the next unlock offers a new one.
+      // A restore in progress is left alone, it shows no secret and needs the vault open.
+      const open =
+        state.status === 'unlocked' ||
+        state.status === 'biometricOffer' ||
+        state.status === 'recoveryCode';
+      if (since !== null && open && shouldLock(since, deps.nowMs())) {
+        await controller.lock();
+      }
+    },
+    reset() {
+      generation += 1;
+      autoPrompted = false;
+      backgroundSince = null;
+      set(LOCKED);
+    },
+  };
+  return controller;
+}

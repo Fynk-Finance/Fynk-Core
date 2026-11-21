@@ -1,0 +1,84 @@
+// Vault tables of the savings module (M8 prompt, Technical design). Registered with
+// registerVaultMigrations('savings', ...). Never edit a released migration: add a new one.
+// Contributions are created by SCRUM-52; the table is here so the saved amount of every goal
+// is the sum of its contributions from the start. The reminders table comes with SCRUM-53.
+import type { VaultMigration } from '@shared/ports';
+
+export const savingsMigrations: VaultMigration[] = [
+  {
+    version: 1,
+    up: `
+      CREATE TABLE savings_goals (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL
+          CHECK (category IN ('travel', 'emergency', 'education', 'home', 'vehicle', 'other')),
+        target_minor INTEGER NOT NULL CHECK (target_minor > 0),
+        deadline_month TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        archived_at TEXT
+      );
+      CREATE TABLE savings_contributions (
+        id TEXT PRIMARY KEY,
+        goal_id TEXT NOT NULL REFERENCES savings_goals (id),
+        amount_minor INTEGER NOT NULL CHECK (amount_minor > 0),
+        contributed_on TEXT NOT NULL,
+        source TEXT NOT NULL CHECK (source IN ('manual', 'movement')),
+        transaction_id TEXT,
+        note TEXT,
+        deleted_at TEXT
+      );
+      CREATE INDEX savings_contributions_goal ON savings_contributions (goal_id);
+      -- A movement counts for one goal at most (M8 prompt: linking it twice is rejected).
+      CREATE UNIQUE INDEX savings_contributions_transaction
+        ON savings_contributions (transaction_id)
+        WHERE transaction_id IS NOT NULL AND deleted_at IS NULL;
+    `,
+  },
+  {
+    // SCRUM-53: the milestones (50, 75, 100) each goal already reached, so each one is noticed
+    // once, and a big contribution that jumps two of them gives a single notice.
+    version: 2,
+    up: `
+      CREATE TABLE savings_milestones (
+        goal_id TEXT NOT NULL REFERENCES savings_goals (id),
+        milestone INTEGER NOT NULL CHECK (milestone IN (50, 75, 100)),
+        reached_at TEXT NOT NULL,
+        PRIMARY KEY (goal_id, milestone)
+      );
+    `,
+  },
+  {
+    // HU-045: the encrypted backup of M2. Every write bumps `version` (the highest one wins on a
+    // restore), and deleting a goal leaves a tombstone instead of erasing it, so the deletion
+    // reaches the other phone. The rows that exist before this version have never been backed
+    // up: `savings_backup_pending` keeps them until the vault opens and they are marked dirty.
+    version: 3,
+    up: `
+      ALTER TABLE savings_goals ADD COLUMN version INTEGER NOT NULL DEFAULT 1;
+      ALTER TABLE savings_goals ADD COLUMN deleted_at TEXT;
+      ALTER TABLE savings_contributions ADD COLUMN version INTEGER NOT NULL DEFAULT 1;
+      CREATE TABLE savings_backup_pending (
+        collection TEXT NOT NULL,
+        record_id TEXT NOT NULL,
+        PRIMARY KEY (collection, record_id)
+      );
+      INSERT INTO savings_backup_pending (collection, record_id)
+        SELECT 'savings.goals', id FROM savings_goals;
+      INSERT INTO savings_backup_pending (collection, record_id)
+        SELECT 'savings.contributions', id FROM savings_contributions;
+    `,
+  },
+  {
+    // M8 prompt: the payday reminder of a goal ("Programar" in Recomendaciones). One per goal.
+    version: 4,
+    up: `
+      CREATE TABLE savings_payday_reminders (
+        goal_id TEXT PRIMARY KEY REFERENCES savings_goals (id),
+        amount_minor INTEGER NOT NULL CHECK (amount_minor > 0),
+        day INTEGER NOT NULL CHECK (day BETWEEN 1 AND 31),
+        updated_at TEXT NOT NULL
+      );
+    `,
+  },
+];

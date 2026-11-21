@@ -1,0 +1,11 @@
+# oapi-codegen config of the privacy module. `make generate` writes api.gen.go here (gitignored)
+# from contracts/dist/openapi.json, keeping only the operations tagged "privacy".
+package: httpapi
+output: api.gen.go
+generate:
+  models: true
+  chi-server: true
+  strict-server: true
+output-options:
+  include-tags:
+    - privacy

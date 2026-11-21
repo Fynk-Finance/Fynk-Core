@@ -5,7 +5,7 @@
 | Phase | 2 |
 | Stories | HU-015 SCRUM-29 (3), HU-016 SCRUM-30 (3), HU-017 SCRUM-31 (2), HU-018 SCRUM-32 (5) |
 | Points | 13 |
-| Owner | Sofia Nicolle Ariza |
+| Owner | Sofia Nicolle Ariza (`@sofia-ariza-783`) |
 | Owns | `apps/mobile/src/modules/transactions/` |
 | Depends on | M2 (vault, FTS5), M5 (movements written by sync), M9 (merchant catalog categories, optional at first) |
 | Used by | M6, M8, M9, M10 |
@@ -19,7 +19,7 @@ You are building module M7 Transactions of Fynk: the movement list, filters, sea
 ## Read first
 
 1. `CLAUDE.md`, `docs/modules/00-shared-contracts.md` sections 2, 3.1 to 3.3.
-2. Design PNGs `05-dashboard.png` (Movimientos preview) and `10-recomendaciones.png` and `10-recomendaciones-2.png` (chips used for filters). Read the code of the same screens in `docs/design/source/` first (file map in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs are for checking the result.
+2. Design screens `Dashboard` (Movimientos preview and the FAB "Registrar gasto o ingreso" with its sheet), `Movimientos` (full list with search, the "Filtros" sheet and "Cargar 20 más") and `CuentaDetalle` (movements of one account). Read the code of these screens in `docs/design/sources/light/` and `docs/design/sources/dark/` first (inventory, gestures and transitions in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` are for checking the result. Every screen works in light and dark (colors only from `useTheme()`), and uses the default transition and back gesture of its kind unless the inventory says otherwise.
 3. Jira SCRUM-29 to SCRUM-32.
 
 ## Stories and criteria
@@ -35,6 +35,7 @@ You are building module M7 Transactions of Fynk: the movement list, filters, sea
 * **Todos los movimientos** (new, from "Ver todo"): search bar at the top, chips for quick filters (Todos, Ingresos, Gastos, and the top 4 categories), a filter sheet (date range presets "Este mes", "Mes anterior", "Últimos 3 meses" or custom, amount min and max, accounts, categories), list grouped by day with sticky day headers ("Hoy", "Ayer", "Lunes 20 sep"), infinite scroll of 50 rows, pull to refresh calls M5 `syncNow()`.
 * **Detalle de movimiento** (new): amount, date and time, account, description, merchant, category with "Cambiar categoría", history of category changes ("Cambiaste de Otros a Restaurantes el 21 sep"), and for manual movements edit and delete.
 * **Nuevo movimiento manual** (new, button "+" on the list): amount, ingreso or gasto, account (including Efectivo), date, description, category.
+* **Manual movements and balances** (team decision, 5 Nov 2026): every add, edit and delete first calls M6 `applyManualMovement({ before, after })`. In Efectivo or a disconnected account (offered in the sheet as "· Desconectada") the balance changes: Gasto subtracts, Ingreso adds. A connected account keeps its bank's balance. A Gasto bigger than the cash saves nothing and shows "Tu efectivo es $X" under Monto. If the save fails after M6 applied the change, it is given back. Restores and syncs never touch balances. The note under the form says which balance the movement changes.
 
 ## Technical design
 

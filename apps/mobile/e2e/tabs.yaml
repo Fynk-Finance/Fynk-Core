@@ -1,0 +1,26 @@
+# Gate A: the app opens on the Dashboard with the four tabs of the design, and the tabs switch.
+# Run with `make e2e` on a device or emulator that has the development build installed.
+# That build needs EXPO_PUBLIC_DEV_AUTH=dev-token (apps/mobile/.env.example) to open past the
+# sign-in. The sign-in flows with the real Keycloak are in e2e/identity/ and run on their own.
+appId: com.fynkfinance.app
+---
+- launchApp
+# A fresh install opens M3's guided setup first: skip it (onboarding-complete.yaml walks it).
+- runFlow:
+    when:
+      visible: 'Configuremos tu cuenta'
+    commands:
+      - tapOn: 'Omitir por ahora'
+      - tapOn: 'Omitir de todos modos'
+- extendedWaitUntil:
+    visible: 'Dashboard'
+    timeout: 20000
+- assertVisible: 'Dashboard'
+- assertVisible: 'Billetera'
+- assertVisible: 'Recomendaciones'
+- assertVisible: 'Inversión'
+- assertVisible: 'La construye el módulo M6 · Cuentas.'
+- tapOn: 'Billetera'
+- assertVisible: 'La construye el módulo M9 · Gastos recurrentes y suscripciones.'
+- tapOn: 'Inversión'
+- assertVisible: 'La construye el módulo M15 · Inversión.'

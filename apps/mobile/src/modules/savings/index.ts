@@ -1,2 +1,227 @@
 // Public API of the savings module. Other modules import only from this file.
-export {};
+import { randomUUID } from 'expo-crypto';
+
+import type { Clock, MoneyMinor } from '@shared/domain/types';
+import { appEvents } from '@shared/events/appEvents';
+import type { ModuleRoutes } from '@shared/navigation';
+
+import {
+  getMonthSummary,
+  getRecurringIncome,
+  type GoalSummary as AnalyticsGoal,
+  type PaydayContribution,
+} from '@modules/analytics';
+import { notificationsPort, onNotificationSettingsChanged } from '@modules/notifications';
+import { getTransactionsBetween, setTransactionGoal } from '@modules/transactions';
+import {
+  getVaultDb,
+  markDirty,
+  registerBackupCollection,
+  registerVaultMigrations,
+} from '@modules/vault';
+// M10's income sources, for the salary day of the payday reminder.
+import { getRecurringIncome as getIncomeSources } from '@modules/analytics';
+
+import { createSavingsBackup } from './adapters/backup/savingsBackup';
+import { savingsMigrations } from './adapters/vault/migrations';
+import { createVaultContributionStore } from './adapters/vault/vaultContributionStore';
+import { createVaultGoalStore } from './adapters/vault/vaultGoalStore';
+import { createContributionService } from './application/contributionService';
+import { bogotaToday, createGoalService } from './application/goalService';
+import { createMilestoneNotifier } from './application/milestoneNotifier';
+import { createVaultMilestoneStore } from './adapters/vault/vaultMilestoneStore';
+import { createVaultPaydayStore } from './adapters/vault/vaultPaydayStore';
+import { createPaydayService } from './application/paydayService';
+import { salaryDay } from './domain/payday';
+import { goalForAnalytics, paydayContribution } from './domain/analytics';
+import { monthlyIncome, previousMonth } from './domain/income';
+import type { GoalSummary } from './domain/goal';
+import { createGoalFormScreen, GOAL_FORM_ROUTE } from './ui/GoalFormScreen';
+import { createPaydayReminderScreen, PAYDAY_REMINDER_ROUTE } from './ui/PaydayReminderScreen';
+import { createGoalsCarousel, GoalCardCompact } from './ui/GoalsCarousel';
+import { createGoalsSetup } from './ui/GoalsSetup';
+import { createLinkMovementScreen, LINK_MOVEMENT_ROUTE } from './ui/LinkMovementScreen';
+import { createMetasScreen, METAS_ROUTE } from './ui/MetasScreen';
+
+export type { GoalSummary };
+/** Create a goal; with { id } it edits one. Onboarding step 4 (M3) and Metas push it. */
+export { GOAL_FORM_ROUTE };
+/** Metas de ahorro. The Dashboard's "Ver todos" opens it. */
+export { METAS_ROUTE };
+
+registerVaultMigrations('savings', savingsMigrations);
+
+const clock: Clock = { now: () => new Date() };
+
+const service = createGoalService({
+  store: () => createVaultGoalStore(getVaultDb(), markDirty),
+  clock,
+  newId: randomUUID,
+  // Deleting a goal frees the movements linked to it and drops its payday reminder first.
+  beforeRemove: async (goalId) => {
+    await contributions.unlinkGoal(goalId);
+    await payday.remove(goalId);
+  },
+});
+
+// SCRUM-52: manual aportes, and movements of M7 linked as aportes ("Vincular un movimiento").
+const contributions = createContributionService({
+  store: () => createVaultContributionStore(getVaultDb(), markDirty),
+  goals: () => createVaultGoalStore(getVaultDb(), markDirty),
+  clock,
+  newId: randomUUID,
+  movements: { setTransactionGoal },
+  listMovements: getTransactionsBetween,
+  onChange: () => service.notifyChanged(),
+});
+
+// SCRUM-53: notices at 50 %, 75 % and 100 %, with the app open only: when the vault opens and
+// after every change of the goals or their contributions.
+const milestones = createMilestoneNotifier({
+  goals: () => service.list(),
+  store: () => createVaultMilestoneStore(getVaultDb()),
+  notifications: notificationsPort,
+  clock,
+});
+// One check at a time. The first check after a restore is quiet: a restored goal that is
+// already at 50 % or more passed those milestones on another phone, so they are recorded
+// without a notice (the list of noticed milestones is not in the backup).
+let milestoneWork: Promise<void> = Promise.resolve();
+let restored = false;
+const checkMilestones = () => {
+  const quiet = restored;
+  restored = false;
+  milestoneWork = milestoneWork
+    .then(() => (quiet ? milestones.catchUp() : milestones.check()))
+    .catch(() => undefined);
+};
+appEvents.on('vault.unlocked', checkMilestones);
+service.subscribe(checkMilestones);
+
+// The payday reminder (M8 prompt, Recomendaciones "Programar"). M12 notifications fire once, so
+// the next month is scheduled again whenever the vault opens.
+const payday = createPaydayService({
+  store: () => createVaultPaydayStore(getVaultDb()),
+  goals: () => service.list(),
+  notifications: notificationsPort,
+  clock,
+});
+const refreshPayday = () => {
+  void payday.refresh().catch(() => undefined);
+};
+appEvents.on('vault.unlocked', refreshPayday);
+// M12 drops the pending reminders of a kind that is turned off. When it is turned on again
+// they are scheduled again here, without waiting for the next time the vault opens.
+onNotificationSettingsChanged(refreshPayday);
+
+export { PAYDAY_REMINDER_ROUTE };
+
+/** "Programar" in Recomendaciones (M11): opens the payday reminder of the goal with the amount. */
+export const openPaydayReminder = (
+  nav: { navigate: (route: string, params: object) => void },
+  goalId: string,
+  amountMinor: MoneyMinor,
+) => nav.navigate(PAYDAY_REMINDER_ROUTE, { goalId, amountMinor });
+
+// HU-045: goals before contributions, which reference them.
+const backup = createSavingsBackup({
+  db: getVaultDb,
+  markDirty,
+  onImported: () => {
+    restored = true;
+    service.notifyChanged();
+  },
+});
+registerBackupCollection(backup.goals);
+registerBackupCollection(backup.contributions);
+appEvents.on('vault.unlocked', () => {
+  void backup.flushPending().catch(() => undefined);
+});
+
+/** Goals with saved amount, percent and suggested monthly, nearest deadline first. */
+export const getGoals = (): Promise<GoalSummary[]> => service.list();
+
+/** "2 metas $840.000/mes": suggested monthly amounts of the goals not reached yet (M3). */
+export const getGoalsMonthlyTotal = (): Promise<MoneyMinor> => service.monthlyTotal();
+
+/**
+ * M10's `AnalyticsSources.getGoalSummaries`: the goals not reached yet, with the fields of the
+ * snapshot (shared contracts 3.5). `name` is for the screen and never goes in the snapshot.
+ */
+export const getGoalsForSnapshot = async (): Promise<AnalyticsGoal[]> =>
+  (await service.list()).filter((g) => !g.done).map(goalForAnalytics);
+
+/**
+ * M10's `AnalyticsSources.getPaydayContribution`: "Programa $300.000 para Viaje a Cartagena el
+ * día de tu salario · Meta 2 meses antes" in Recomendaciones, or null when no goal gains from it.
+ */
+export const getPaydayContribution = async (): Promise<PaydayContribution | null> =>
+  paydayContribution(await service.list());
+
+/**
+ * "23 % de tus ingresos" (design Metas): M10's recurring income, or the income of the last full
+ * month. Null while M10 is not configured or there is no income, and Metas then hides the share.
+ */
+const incomeForMetas = async () => {
+  const [sources, lastMonth] = await Promise.all([
+    getRecurringIncome().catch(() => []),
+    getMonthSummary(previousMonth(bogotaToday(clock.now())))
+      .then((m) => m.incomeMinor)
+      .catch(() => null),
+  ]);
+  return monthlyIncome(
+    sources.map((s) => s.estimatedMonthlyMinor),
+    lastMonth,
+  );
+};
+
+export const routes: ModuleRoutes = {
+  module: 'savings',
+  screens: [
+    {
+      name: METAS_ROUTE,
+      component: createMetasScreen({
+        service,
+        monthlyIncome: incomeForMetas,
+        contributions,
+        canLink: true,
+      }),
+      path: 'metas',
+    },
+    {
+      name: GOAL_FORM_ROUTE,
+      component: createGoalFormScreen({ service }),
+      path: 'metas/nueva',
+    },
+    {
+      name: LINK_MOVEMENT_ROUTE,
+      component: createLinkMovementScreen({ goals: service, contributions }),
+      path: 'metas/:goalId/vincular',
+    },
+    {
+      // "Programar" in Recomendaciones; Metas opens it from M11's params.
+      name: PAYDAY_REMINDER_ROUTE,
+      component: createPaydayReminderScreen({
+        goals: service,
+        payday,
+        salaryDay: async () => salaryDay(await getIncomeSources()),
+        homeRoute: METAS_ROUTE,
+      }),
+      path: 'metas/:goalId/dia-de-pago',
+    },
+  ],
+};
+
+/**
+ * "Planes de ahorro" for the Dashboard (M6 places it): title, "Ver todos" (opens Metas) and the
+ * carousel of goals not reached yet. Render `<GoalsCarousel />` inside a navigator.
+ */
+export const GoalsCarousel = createGoalsCarousel({ service });
+export { GoalCardCompact };
+
+/**
+ * Onboarding step 4, "Crea tus metas" (design OnbMetas): the collapsible goal cards with the goal
+ * fields and "Agregar otra meta". M3 renders `<GoalsSetup />` inside its step frame, above
+ * "Continuar".
+ */
+export const GoalsSetup = createGoalsSetup({ service });

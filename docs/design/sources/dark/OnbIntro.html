@@ -1,0 +1,123 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390"><title>App azul y verde · Oscuro · Configuración · Aviso</title></head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;background:#13212d;color:#e8f1f6}
+a{color:#62c8f0}
+.field{transition:border-color .2s ease,background-color .2s ease}
+.field:focus-within{border-color:#2fa8d8 !important;background-color:#13212d !important}
+.field input{border:none;outline:none;background:transparent;font-family:inherit;font-size:15px;color:#e8f1f6;flex-grow:1;min-width:0;height:100%}
+.field input::placeholder{color:#71889a}
+.vscroll{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;overflow-x:hidden;overflow-y:auto}
+.vscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.btn{cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.cta{cursor:pointer;transition:background-color .2s ease}
+.cta:hover{background-color:#182a37 !important}
+.cta:hover .cta-arrow{transform:translateX(4px)}
+.cta-arrow{transition:transform .25s ease}
+.btn:focus-visible,.cta:focus-visible,.link:focus-visible,.chip:focus-visible{outline:3px solid #13212d;outline-offset:3px}
+.chip{cursor:pointer;transition:background-color .2s ease}
+.row{transition:background-color .15s ease}
+@keyframes ob-shine{0%,62%{transform:translateX(0)}86%,100%{transform:translateX(620px)}}
+.shine{animation:ob-shine 8s ease-in-out infinite 1.5s}
+@keyframes ob-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.rise{animation:ob-rise .5s ease-out both .05s}
+@keyframes ob-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes ob-float2{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+@keyframes ob-twinkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.8)}}
+.fl1{animation:ob-float 5s ease-in-out infinite}
+.fl2{animation:ob-float2 6s ease-in-out infinite .6s}
+.fl3{animation:ob-float 4.4s ease-in-out infinite 1.2s}
+.tw{transform-box:fill-box;transform-origin:center;animation:ob-twinkle 2.6s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.shine,.rise,.fl1,.fl2,.fl3,.tw{animation:none}}
+.ob-panel{transition:height .7s cubic-bezier(.76,0,.24,1),border-radius .7s cubic-bezier(.76,0,.24,1)}
+.ob-out{transition:opacity .32s ease-in,transform .4s cubic-bezier(.5,0,.75,0)}
+.ob-deco-a,.ob-deco-b{transition:opacity .45s ease}
+.ob-deco-b{opacity:0}
+.leaving .ob-panel{height:206px !important;border-radius:0 0 24px 24px !important}
+.leaving .ob-out{animation:none;opacity:0;transform:translateY(-36px)}
+.leaving .ob-deco-a{opacity:0}
+.leaving .ob-deco-b{opacity:1}
+</style>
+
+<div class="ob-root" style="width: 390px; height: 844px; box-sizing: border-box; background-color: #0b1620; position: relative; overflow: hidden">
+<a class="ob-next" href="OnbCorreo.html" tabindex="-1" aria-hidden="true" style="display: none"></a>
+<div class="ob-panel" style="position: absolute; left: 0; top: 0; width: 390px; height: 844px; background-color: #2fa8d8; border-radius: 0; overflow: hidden">
+<svg width="390" height="206" viewBox="0 0 390 206" aria-hidden="true" class="ob-deco-b" style="position: absolute; top: 0; left: 0">
+<rect x="250" y="-80" width="210" height="210" rx="48" fill="#3ab3e3"></rect>
+<rect x="312" y="-28" width="104" height="104" rx="26" fill="#47b6e2"></rect>
+<rect x="-60" y="116" width="150" height="150" rx="36" fill="#279dcc"></rect>
+</svg>
+<svg class="ob-deco-a" width="390" height="844" viewBox="0 0 390 844" aria-hidden="true" style="position: absolute; top: 0; left: 0">
+<rect x="250" y="-90" width="220" height="220" rx="52" fill="#3ab3e3"></rect>
+<rect x="-80" y="380" width="150" height="150" rx="36" fill="#279dcc"></rect>
+<rect x="300" y="700" width="170" height="170" rx="40" fill="#279dcc"></rect>
+<rect x="-60" y="760" width="110" height="110" rx="28" fill="#3ab3e3"></rect>
+<g class="shine"><rect x="-140" y="-40" width="56" height="920" fill="#ffffff" fill-opacity=".12" transform="skewX(-18)"></rect></g>
+</svg>
+</div>
+<div class="ob-out" style="position: relative; padding: 48px 24px 0; color: #ffffff">
+<div role="img" aria-label="Fynk" style="display: flex; align-items: center; gap: 8px"><svg width="28" height="35" viewBox="80 20 510 640" aria-hidden="true" style="flex-shrink: 0; display: block"><g transform="matrix(1,-0.16,0,1,0,0)" fill="#ffffff"><path d="M130,126 H540 Q570,126 570,156 V230 Q570,252 548,252 H262 Q240,252 240,274 V383 Q240,405 262,405 H548 Q570,405 570,427 V531 Q570,561 540,561 H130 Q100,561 100,531 V156 Q100,126 130,126 Z"></path><rect x="262" y="268" width="120" height="120" rx="38"></rect><path d="M152,588 H345 V680 Q345,696 330,689 Z"></path></g></svg><span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; line-height: 28px">Fynk</span></div>
+</div>
+<div class="ob-out" style="position: absolute; left: 8px; top: 74px; transition-delay: .03s">
+<svg width="366" height="420" viewBox="0 0 342 392" role="img" aria-label="Ilustración: lista de pasos de configuración con tarjeta, meta y monedas" style="display: block">
+<rect x="36" y="44" width="270" height="270" rx="64" fill="rgba(255, 255, 255, 0.2)"></rect>
+<rect opacity="0.4" x="88" y="96" width="166" height="166" rx="40" fill="#47b6e2"></rect>
+<g class="fl1">
+<rect x="104" y="128" width="200" height="246" rx="28" fill="#1b8cba" fill-opacity=".35" transform="translate(-33 -62)"></rect>
+<g transform="translate(71 56)">
+<rect width="200" height="246" rx="28" fill="#ffffff"></rect>
+<rect x="20" y="22" width="92" height="10" rx="5" fill="#0f2233" fill-opacity=".85"></rect>
+<rect x="148" y="18" width="32" height="18" rx="9" fill="#1a3444"></rect><rect x="155" y="25" width="18" height="4" rx="2" fill="#2fa8d8"></rect>
+<rect x="20" y="52" width="22" height="22" rx="8" fill="#a8e03a"></rect><path d="M25.5 63l4 4 7-7.5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path><rect x="52" y="55" width="86" height="7" rx="3.5" fill="#c9d6de"></rect><rect x="52" y="66" width="58" height="5" rx="2.5" fill="#22313d"></rect><rect x="20" y="88" width="22" height="22" rx="8" fill="#a8e03a"></rect><path d="M25.5 99l4 4 7-7.5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path><rect x="52" y="91" width="70" height="7" rx="3.5" fill="#c9d6de"></rect><rect x="52" y="102" width="92" height="5" rx="2.5" fill="#22313d"></rect><rect x="21.5" y="125.5" width="19" height="19" rx="7" fill="#ffffff" stroke="#2fa8d8" stroke-width="3"></rect><rect x="27" y="131" width="8" height="8" rx="3" fill="#2fa8d8"></rect><rect x="52" y="127" width="96" height="7" rx="3.5" fill="#0f2233" fill-opacity=".85"></rect><rect x="52" y="138" width="64" height="5" rx="2.5" fill="#22313d"></rect><rect x="20" y="160" width="22" height="22" rx="8" fill="#22313d"></rect><rect x="52" y="163" width="78" height="7" rx="3.5" fill="#dfe8ee"></rect><rect x="52" y="174" width="50" height="5" rx="2.5" fill="#22313d"></rect><rect x="20" y="196" width="22" height="22" rx="8" fill="#22313d"></rect><rect x="52" y="199" width="90" height="7" rx="3.5" fill="#dfe8ee"></rect><rect x="52" y="210" width="60" height="5" rx="2.5" fill="#22313d"></rect>
+<rect x="20" y="226" width="160" height="7" rx="3.5" fill="#22313d"></rect><rect x="20" y="226" width="96" height="7" rx="3.5" fill="#a8e03a"></rect>
+</g>
+</g>
+<g class="fl2">
+<g transform="translate(62 282) scale(.72) translate(-112 -115)">
+<g transform="rotate(-12 110 112)">
+<clipPath id="ob-card"><rect x="20" y="58" width="184" height="114" rx="20"></rect></clipPath>
+<rect x="20" y="58" width="184" height="114" rx="20" fill="#1f8fbd"></rect>
+<g clip-path="url(#ob-card)"><rect x="140" y="20" width="96" height="96" rx="24" fill="#2a9bc9"></rect><rect x="168" y="40" width="54" height="54" rx="14" fill="#36a6d3"></rect><rect x="0" y="140" width="64" height="64" rx="16" fill="#177fa9"></rect></g>
+<rect x="38" y="78" width="48" height="7" rx="3.5" fill="#ffffff" fill-opacity=".85"></rect>
+<rect x="38" y="94" width="104" height="14" rx="7" fill="#ffffff"></rect>
+<rect x="38" y="140" width="34" height="18" rx="7" fill="#ffffff" fill-opacity=".3"></rect><rect x="78" y="140" width="34" height="18" rx="7" fill="#ffffff" fill-opacity=".3"></rect>
+</g>
+</g>
+</g>
+<g class="fl3">
+<g transform="translate(274 66) scale(.9) translate(-282 -74)">
+<g transform="rotate(12 282 74)">
+<rect x="248" y="40" width="68" height="68" rx="20" fill="#a8e03a"></rect>
+<circle cx="282" cy="74" r="20" fill="none" stroke="#ffffff" stroke-width="4"></circle><circle cx="282" cy="74" r="11" fill="none" stroke="#ffffff" stroke-width="4"></circle><circle cx="282" cy="74" r="3.5" fill="#ffffff"></circle>
+</g>
+</g>
+</g>
+<g class="fl3"><g transform="translate(-6 -44)">
+<rect x="210" y="336" width="122" height="38" rx="19" fill="#ffffff"></rect>
+<rect x="218" y="343" width="24" height="24" rx="8" fill="#a8e03a"></rect><path d="M225 357l5-5 4 3 5-6" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+<text x="250" y="360" font-family="'IBM Plex Mono', monospace" font-size="13" font-weight="600" fill="#6a9e12">+$625.000</text>
+</g></g>
+<path class="tw" d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" transform="translate(318 214)" fill="#ffffff"></path>
+<path class="tw" d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" transform="translate(34 150) scale(.6)" fill="#ffffff" style="animation-delay:.9s"></path>
+<path class="tw" d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" transform="translate(232 28) scale(.45)" fill="#ffffff" fill-opacity=".85" style="animation-delay:1.6s"></path>
+</svg>
+</div>
+
+<div class="rise ob-out" style="position: absolute; left: 0; bottom: 0; width: 390px; box-sizing: border-box; padding: 0 24px 32px; display: flex; flex-direction: column; color: #ffffff">
+<div style="display: flex; gap: 8px">
+<span style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px; font-weight: 700; padding: 8px 8px; border-radius: 999px; background-color: rgba(255, 255, 255, 0.2); color: #ffffff">5 pasos</span>
+<span style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px; font-weight: 700; padding: 8px 8px; border-radius: 999px; background-color: #a8e03a; color: #ffffff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2"></path></svg>3 minutos</span>
+</div>
+<h1 style="margin: 16px 0 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 34px; line-height: 40px; letter-spacing: -0.02em">Configuremos tu cuenta</h1>
+<p style="margin: 8px 0 0; font-size: 16px; line-height: 24px; font-weight: 500; opacity: 0.92">Te guiaremos paso a paso para dejar Fynk listo para ti.</p>
+<a class="cta" href="OnbCorreo.html" onClick="" style="margin-top: 24px; box-sizing: border-box; text-decoration: none; height: 56px; width: 100%; border-radius: 18px; background-color: #13212d; color: #62c8f0; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; box-shadow: 0 12px 24px -14px rgba(0, 0, 0, 0.45)">
+<span>Comenzar configuración</span>
+<svg class="cta-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+</a>
+<a class="link" href="OnbOmitir.html" style="margin-top: 16px; align-self: center; font-size: 15px; line-height: 20px; font-weight: 700; text-decoration: none; color: #ffffff; opacity: 0.88">Omitir por ahora</a>
+</div>
+</div>
+</body></html>

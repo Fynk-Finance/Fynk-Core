@@ -1,0 +1,215 @@
+/* Fields, buttons and messages of the Fynk login pages (Login.html and Registro.html). */
+.fk-form {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.fk-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.fk-group--tight {
+  margin-bottom: 8px;
+}
+.fk-group--last {
+  margin-bottom: 32px;
+}
+
+.fk-label {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.fk-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--fk-border-blue);
+  background-color: var(--fk-surface-blue-soft);
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+.fk-field--toggle {
+  padding-right: 8px;
+}
+.fk-field:focus-within {
+  border-color: var(--fk-primary);
+  background-color: var(--fk-background);
+}
+.fk-field[data-invalid='true'] {
+  border-color: var(--fk-danger);
+}
+.fk-field-icon {
+  flex-shrink: 0;
+  color: var(--fk-primary-dark);
+}
+.fk-input {
+  flex-grow: 1;
+  min-width: 0;
+  height: 54px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--fk-text-primary);
+}
+.fk-input::placeholder {
+  color: var(--fk-text-placeholder);
+}
+
+.fk-eye {
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--fk-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+.fk-eye:hover {
+  background-color: var(--fk-surface-blue);
+}
+
+.fk-hint {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--fk-text-secondary);
+}
+.fk-error {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--fk-danger);
+}
+
+.fk-alert {
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--fk-border-blue);
+  background-color: var(--fk-surface-blue-soft);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--fk-text-primary);
+}
+.fk-alert--error {
+  border-color: var(--fk-danger-border);
+  background-color: var(--fk-danger-surface);
+  color: var(--fk-danger);
+}
+
+/* Links get a 44 px touch target; the negative margin keeps the text where the design has it. */
+.fk-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
+  margin: -12px -4px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.fk-link--forgot {
+  align-self: flex-end;
+  margin: -9px 0 -13px;
+  padding-right: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--fk-primary-deep);
+}
+.fk-link--forgot:hover {
+  color: var(--fk-primary-deep);
+}
+
+.fk-cta {
+  cursor: pointer;
+  height: 56px;
+  width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 16px;
+  background-color: var(--fk-primary);
+  color: var(--fk-on-primary);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+.fk-cta:hover {
+  background-color: var(--fk-accent-pressed);
+}
+.fk-cta:hover .fk-cta-arrow {
+  transform: translateX(4px);
+}
+.fk-cta-arrow {
+  transition: transform 0.25s ease;
+}
+.fk-cta--spaced {
+  margin-bottom: 16px;
+}
+
+.fk-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 44px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--fk-text-secondary);
+}
+.fk-terms input {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--fk-primary);
+  /* The design draws the native checkbox with a white box in both themes. */
+  color-scheme: light;
+  cursor: pointer;
+}
+.fk-terms strong {
+  color: var(--fk-primary-deep);
+}
+.fk-terms-error {
+  margin: 0 0 16px;
+}
+
+.fk-eye:focus-visible,
+.fk-cta:focus-visible,
+.fk-link:focus-visible,
+.fk-terms input:focus-visible {
+  outline: 3px solid var(--fk-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fk-cta,
+  .fk-cta-arrow,
+  .fk-field {
+    transition: none;
+  }
+}

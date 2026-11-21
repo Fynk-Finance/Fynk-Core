@@ -47,17 +47,124 @@
 | @types/jest | 30.0.0 | Jest types (TypeScript 6 no longer loads them automatically, so `tsconfig.json` lists them) |
 | @testing-library/react-native | 14.1.0 | Component tests. v14 makes `render` async: tests use `await render(...)` |
 | prettier (workspace root) | 3.9.10 | Code formatting |
+| sql.js | 1.15.1 | In-memory SQLite (WebAssembly) behind the `VaultDb` test stub in `src/shared/testing`, so module SQL runs in Jest without native code. 1.15.2 was published the same day and is held back by pnpm's minimum release age policy |
+| @types/sql.js | 1.4.11 | Types for sql.js |
+| @react-navigation/native | 7.5.1 | Navigation (decided: React Navigation v7). Root stack, tabs and `fynk://` deep links |
+| @react-navigation/native-stack | 7.21.0 | Native stack for pushed screens and full-screen flows |
+| @react-navigation/material-top-tabs | 7.8.1 | The four main tabs placed at the bottom, so they switch by tap and by horizontal swipe (decided 27 Oct 2026). Keeps the custom `TabBar`. It replaced `@react-navigation/bottom-tabs` 7.21.0, which had no swipe |
+| react-native-tab-view | 4.3.4 | Peer of material top tabs: the swipeable pages |
+| react-native-pager-view | 9.0.7 | Native pager under react-native-tab-view. Nested horizontal carousels scroll first and hand the swipe to the pager at their edge |
+| react-native-gesture-handler | 3.3.0 | Native gestures inside screens (Dashboard pull tab, account carousel, bottom sheet drag), animated with Reanimated. The root is wrapped in `GestureHandlerRootView`; Jest loads its `jestSetup.js` |
+| @react-native-async-storage/async-storage | 2.2.0 | Plain app storage for the theme preference (Sistema, Claro, Oscuro). It is read before the vault unlocks and holds no personal data. Jest uses the library's own mock |
+| react-native-screens | 4.30.0 | Native screen containers required by React Navigation |
+| react-native-safe-area-context | 5.10.1 | Safe area insets for headers and the tab bar |
+| react-native-svg | 15.16.0 | Icons, logo, illustrations and charts copied from the design SVG |
+| react-native-reanimated | 4.7.1 | Design animations (shine, step fill, skeleton pulse) on the UI thread, turned off with reduced motion |
+| react-native-worklets | 0.13.0 | Required by Reanimated 4. Jest uses Reanimated's own resolver (`jest.config.js`) |
+| react-native-gifted-charts | 1.4.81 | Line chart (decided library). The donut is drawn with react-native-svg because gifted-charts cannot draw the design's rounded, separated arcs |
+| expo-linear-gradient | 58.0.3 | Gradient peer that react-native-gifted-charts needs |
+| expo-font | 58.0.10 | Loads the design fonts before the first screen |
+| @expo-google-fonts/plus-jakarta-sans | 0.4.2 | Body font, weights 400 to 700, imported per weight so only those files are bundled |
+| @expo-google-fonts/space-grotesk | 0.4.1 | Heading font, weights 500 and 700 |
+| @expo-google-fonts/ibm-plex-mono | 0.4.1 | Money font, weights 500 and 600 |
+| expo-system-ui | 58.0.6 | Applies `userInterfaceStyle: automatic` on Android and paints the window behind the screens with the theme's canvas color |
+| expo-navigation-bar | 58.0.4 | Android only. Its config plugin turns off the contrast layer Android 15 paints over the three-button navigation bar of an edge-to-edge app, and `NavigationBar` sets the button color from the theme at runtime |
+| @tanstack/react-query | 5.104.5 | Async server state (decided). No background refetch, see `src/app/queryClient.ts`. 5.105.0 was a few hours old and is held back by the release age policy |
+| openapi-fetch | 0.17.0 | Typed fetch client built on the generated `paths` types. Small, no runtime codegen, lets the client add headers and retry once after a token refresh |
+| openapi-typescript | 7.13.0 | Generates `src/shared/api/schema.gen.ts` from the bundled contract. It declares TypeScript 5 as its peer. It generates correctly with TypeScript 6, so `pnpm-workspace.yaml` allows it (`peerDependencyRules`) |
+| react-native-app-auth | 9.0.0 | Added for M1. OpenID Connect with Authorization Code and PKCE S256 in the system browser (ASWebAuthenticationSession on iOS, Custom Tabs on Android), never a webview. Its Expo config plugin in `app.json` registers the redirect scheme `co.fynk.app` on both platforms. 9.0.0 needs React Native 0.86 or newer; it was out for 8 days when added |
+| react-native-keychain | 10.0.0 | Added for M1. Keeps the Keycloak tokens in the iOS Keychain and the Android Keystore with `WHEN_UNLOCKED_THIS_DEVICE_ONLY`, so they never reach AsyncStorage, backups or another phone. M2 reuses it for the vault key |
+| expo-crypto | 58.0.7 | Added for M1. `getRandomBytes` from the phone's secure random source, for the device's X25519 private key and the registration Idempotency-Key. M2 reuses it. The version `npx expo install` picks for SDK 58 |
+| expo-device | 58.0.5 | Added for M1. The phone's model name for the linked devices list ("iPhone 15"), never a hardware id. The version `npx expo install` picks for SDK 58 |
+| @noble/curves | 2.4.0 | Added for M1. X25519 public key of the device key pair, sent with `POST /devices` and used by M2's device approval. Audited pure JavaScript, no native code, runs on Hermes. It ships only ES modules, so `jest.config.js` adds `@noble` to jest-expo's transform list |
+| expo-notifications | 58.1.6 | Added for M12. Local notifications scheduled on the phone (payment and renewal reminders, goal milestones) that fire with the app closed. Never used for push: no push token is ever requested (architecture rule 4). The version in Expo SDK 58's `bundledNativeModules.json`; 58.1.7 was a few hours old and is held back by the release age policy |
+| @op-engineering/op-sqlite | 18.2.5 | Added for M2. The SQLCipher vault: SQLite encrypted with AES-256, opened with the random vault key. The `"op-sqlite": { "sqlcipher": true, "fts5": true }` block is in both `apps/mobile/package.json` and the root `package.json`. Gradle reads the app's file, but the podspec searches upwards from the hoisted `node_modules` and finds the root one first. Without the root copy, iOS would build without SQLCipher. SQLCipher replaces the system SQLite, and FTS5 is for movement search. The vault also refuses to open when `PRAGMA cipher_version` is empty, so a build without SQLCipher fails at runtime too. Native code through JSI, so it needs a development build, not Expo Go. 19.0.2 is the newest, but 18.2.5 has the same peers (React Native any version) and a longer track record, so M2 stays on 18 until the team decides to move |
+| react-native-argon2 | 4.0.0 | Added for M2. Argon2id turns the recovery code into the key that wraps the vault key for the cloud, in native code (the pure JavaScript Argon2 in @noble/hashes is too slow on Hermes). A legacy bridge module with no Expo config plugin: React Native 0.88 loads it through the New Architecture interop layer. M2 wraps it in a port and tests it on a real device before Gate B |
+| @noble/ciphers | 2.4.0 | Added for M2. AES-256-GCM for the encrypted backup records and the device approval payload. Audited pure JavaScript, same author as @noble/curves. ES modules only, covered by the `@noble` entry of `jest.config.js` |
+| @noble/hashes | 2.4.0 | Added for M2. HKDF-SHA256 and SHA-256 for key derivation and fingerprints, plus an Argon2id reference used in Jest, where the native module is not available |
+| expo-clipboard | 58.0.4 | Added for M2. The "Copiar" button of the recovery code screen writes the code to the clipboard once, on tap. The app never reads the clipboard. The version in Expo SDK 58's `bundledNativeModules.json` |
 
 The aliases `@shared/*` and `@modules/*` are declared once in `tsconfig.json`. Metro reads them from there (Expo's built-in tsconfig paths support), and Jest maps them in `jest.config.js`. No Babel alias plugin is needed.
 
-Two packages ship prebuilt native binaries and their install scripts are denied in `pnpm-workspace.yaml` (`allowBuilds`): `@parcel/watcher` and `unrs-resolver`.
+Install scripts denied in `pnpm-workspace.yaml` (`allowBuilds`): `@parcel/watcher` and `unrs-resolver` (they ship prebuilt binaries), and `@scarf/scarf` (an install-time telemetry ping pulled in by a tooling dependency).
+
+## Contract tooling (workspace root)
+
+| Library | Version | Why |
+| --- | --- | --- |
+| @redocly/cli | 2.71.0 | Lints (`redocly.yaml`) and bundles the contract into `contracts/dist/openapi.json`. 2.71.1 was published the same day and is held back by the minimum release age policy. Its `join` command was tried and not used: it drops the root `servers` and `security` |
+| @stoplight/prism-cli | 5.16.0 | `make mock-api`: serves the contract on port 4010 with its examples, so mobile modules work before the backend exists |
+| yaml | 2.9.1 | Parser used by `scripts/contract-root.mjs`, which builds the root that references every module file |
 
 ## Backend (`services/api`)
 
 | Library | Version | Why |
 | --- | --- | --- |
 | github.com/go-chi/chi/v5 | v5.5.0 | Small `net/http` compatible router, works with oapi-codegen's strict server |
+| github.com/jackc/pgx/v5 | v5.11.0 | Postgres driver and pool (`pgxpool`), the most used native Go driver, supported by sqlc |
+| github.com/redis/go-redis/v9 | v9.23.0 | Official Redis client: nonces, rate limits, caches |
+| github.com/oapi-codegen/oapi-codegen/v2 (Go `tool` directive) | v2.8.1 | Strict chi server per module, filtered by tag (`internal/<module>/http/oapi-codegen.yaml`). Run with `go tool oapi-codegen` |
+| github.com/oapi-codegen/runtime | v1.8.0 | Runtime helpers the generated servers import |
 | golangci-lint (run with `go run …@v2.15.0`) | v2.15.0 | Linters, including `depguard`, which blocks `internal/<a>` from importing `internal/<b>` except `internal/<b>/ports` |
+| github.com/golang-migrate/migrate/v4 | v4.20.1 | Per-module Postgres migrations (decided). `internal/platform/migrate` runs each module in its own schema with its own `<schema>_migrations` table, through the `pgx/v5` driver and the `iofs` source, so modules embed their SQL |
+| github.com/jackc/pgx/v5/stdlib | v5.11.0 (part of pgx) | `database/sql` adapter that golang-migrate needs. The API itself keeps using `pgxpool` |
+| github.com/golang-jwt/jwt/v5 | v5.3.1 | Added for M1. Parses and checks Keycloak access tokens: `WithValidMethods(["PS256"])` rejects every other algorithm before a key is looked up, plus issuer, audience, expiry and leeway checks. The JWKS cache is M1's own code. Marked `// indirect` until M1's verifier imports it |
+| github.com/testcontainers/testcontainers-go | v0.44.0 | Added for M1. Starts real containers (Keycloak, later Postgres and Redis) from Go integration tests (`-tags integration`), the same way on Windows with Docker Desktop and in CI. Test-only. Marked `// indirect` until M1's tests import it |
+
+The bank simulator placeholder (`services/bank-simulator`, M16) uses only the Go standard library.
+
+## Local stack (`docker-compose.yml`)
+
+Images are pinned to exact versions. A version is taken only once it has been out for a few days, like the pnpm release age rule.
+
+| Image | Version | Why |
+| --- | --- | --- |
+| postgres | 16.15-alpine | Postgres 16, as in the M0 prompt and RDS. One database `fynk` (one schema per module) plus `keycloak` |
+| redis | 7.4.11-alpine | Redis 7 (nonces, rate limits, caches). 7.4.12 was released the same day and is held back |
+| quay.io/keycloak/keycloak | 26.8.1 | Login (decided). `start-dev --import-realm` imports `services/keycloak/realms/*.json`. Compose builds M1's image `services/keycloak/Dockerfile` from this same version |
+| axllent/mailpit | v1.31.6 | Catches the emails Keycloak sends locally (named in the M1 prompt). v1.32.0 was 4 days old |
+| caddy | 2.11.7-alpine | mTLS egress towards the banks (decided, M14). Uses `tls_trust_pool`, the current syntax |
+| smallstep/step-cli | 0.31.0 | `make certs`: creates the local CA and certificates inside Docker, so nobody installs mkcert or step |
+| golang | 1.27.3-bookworm | Build stage of the API and bank simulator images, same Go as `go.mod` |
+| gcr.io/distroless/static-debian12 | nonroot, pinned by digest | Runtime image: no shell, no package manager, non-root user. The tag moves, so the digest is pinned |
+
+## Keycloak theme (`services/keycloak/theme`)
+
+The theme is its own pnpm project, outside the root workspace (`pnpm-workspace.yaml` only lists `apps/*`), with its own `pnpm-lock.yaml`. Install it with `pnpm install --ignore-workspace` from that folder. It builds a Keycloak theme JAR with `keycloakify build`, which needs a JDK and Maven (Keycloakify runs `mvn package`). Versions were taken once they had been out for at least 14 days.
+
+| Library | Version | Why |
+| --- | --- | --- |
+| keycloakify | 11.16.1 | Builds the `fynk` login theme as a Keycloak JAR (`keycloakVersionTargets` covers Keycloak 26.8.1 only). 11.16.2 to 11.16.4 were less than 14 days old |
+| react | 19.3.0 | Theme pages are React components, rendered by Keycloak with the context Keycloakify injects |
+| react-dom | 19.3.0 | React renderer, same version as react |
+| @types/react | 19.3.0 | React types matching React 19.3 |
+| @types/react-dom | 19.3.0 | React DOM types |
+| @types/node | 22.20.5 | Node types for the theme's build script (`postBuild.ts` edits the generated pages). Same major as the Node the image builds with |
+| vite | 8.3.4 | Bundler Keycloakify's plugin runs on. 8.3.5 was too new |
+| @vitejs/plugin-react | 6.1.2 | React support for Vite 8 |
+| typescript | 6.0.3 | Same as the mobile app. TypeScript 7 has not been tried with Keycloakify |
+| prettier | 3.9.10 | Same as the workspace root, with the same `.prettierrc` values |
+| @fontsource/plus-jakarta-sans | 5.3.0 | Body font, served from the JAR. No Google Fonts or any CDN at runtime |
+| @fontsource/space-grotesk | 5.3.0 | Heading font, served from the JAR |
+| @fontsource/ibm-plex-mono | 5.3.0 | Money font, served from the JAR |
+
+The email theme is not built yet. Keycloakify 11 needs a separate email builder for it, which a later pull request adds.
+
+## CI (`.github/workflows/ci.yml`)
+
+Actions are pinned by full commit SHA, because a tag can be moved to other code. Only GitHub's own actions are used. A version is taken once it has been out for at least 7 days. Path filters come from `scripts/ci-changes.mjs` (plain Node, tested), not from a third-party action.
+
+| Action or runner | Version | SHA or note |
+| --- | --- | --- |
+| Runner | `ubuntu-24.04` | Fixed image, not `ubuntu-latest`, so an image change is a deliberate edit |
+| Node.js | 22.20.0 | Same as the minimum in `package.json`. pnpm comes from corepack, as on the developer machines |
+| actions/checkout | v7.0.1 | `3d3c42e5aac5ba805825da76410c181273ba90b1` |
+| actions/setup-node | v7.1.0 | `949feb2413d6458794dcd2491c4babbbce0c15c1` |
+| actions/setup-go | v7.0.0 | `b7ad1dad31e06c5925ef5d2fc7ad053ef454303e` (Go from `services/api/go.mod`) |
+| actions/cache | v6.1.0 | `55cc8345863c7cc4c66a329aec7e433d2d1c52a9` |
+| actions/upload-artifact | v7.0.2 | `cf430e030ddbb5b0abf93d22962f4752f3646cd9` |
+
+Coverage reports stay on GitHub: they are saved as run artifacts and the totals go in the job summary. No outside coverage service and no secret.
 
 ## Added in later M0 steps
 
@@ -65,12 +172,9 @@ These are already decided (M0 prompt). Their exact versions are recorded here wh
 
 | Library | Step | Purpose |
 | --- | --- | --- |
-| sql.js | 2 | In-memory SQLite for the `VaultDb` test stub. WebAssembly, so there is no native build on Windows or CI |
-| pgx v5, go-redis v9 | 2 | Postgres and Redis clients |
-| Redocly CLI, openapi-typescript, openapi-fetch, Prism, oapi-codegen | 3 | Contract bundle, generated clients and servers, mock API |
-| React Navigation v7, TanStack Query, Zustand, react-native-svg, react-native-gifted-charts, react-native-reanimated, expo-font with `@expo-google-fonts/*` | 4 | App shell and design system |
-| sqlc, golang-migrate, aws-sdk-go-v2 | 2 to 5 | Queries, per-module migrations, AWS clients |
-| Maestro | 4 or later | End to end flows in `apps/mobile/e2e/` |
+| Zustand | when a module first needs small UI state | Decided for small UI state. Not added yet because nothing in the shell needs it |
+| sqlc, aws-sdk-go-v2 | the module that first needs them | Queries, AWS clients |
+| Maestro | installed on the developer machine | `make e2e` runs `apps/mobile/e2e/*.yaml`. It is a CLI, not a package dependency |
 
 ## Consequences
 

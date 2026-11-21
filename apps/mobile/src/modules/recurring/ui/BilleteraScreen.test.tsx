@@ -1,0 +1,400 @@
+// Billetera (SCRUM-54 "En Billetera"): "Gastos fijos de este mes", the recurring cards of the
+// design with their schedule and next charge, "+ Agregar", editing a card, empty state, themes.
+// SCRUM-56: "Otros gastos" with the subscriptions, "Poco uso" and the savings banner.
+// QA review 2026-11-07, F4: the savings goals section of M8.
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import type { ReactNode } from 'react';
+import { Text } from 'react-native';
+
+import type { Account } from '@shared/domain/types';
+import { createFixedClock, createInMemoryVault, type InMemoryVault } from '@shared/testing';
+import { ThemeProvider, uiStrings, type ThemePreference } from '@shared/ui';
+
+import { recurringMigrations } from '../adapters/vault/migrations';
+import { createVaultRecurringStore } from '../adapters/vault/vaultRecurringStore';
+import { createRecurringService, type RecurringService } from '../application/recurringService';
+import type { RecurringInput } from '../domain/item';
+import { MON_TO_FRI, WEEKDAY } from '../domain/types';
+import { bogotaToday, createBilleteraScreen } from './BilleteraScreen';
+import { RECURRING_FORM_ROUTE } from './RecurringFormScreen';
+import { SUBSCRIPTION_DETAIL_ROUTE } from './SubscriptionDetailScreen';
+
+const noStore = { load: async () => 'system' as const, save: async () => undefined };
+const Stack = createNativeStackNavigator();
+// Saturday 24 Oct 2026, 10:00 in Bogotá.
+const clock = createFixedClock('2026-10-24T15:00:00Z');
+
+const pesos = (n: number) => n * 100;
+const monthly = (name: string, amount: number, day: number, over: Partial<RecurringInput> = {}) =>
+  ({
+    kind: 'fixed',
+    name,
+    amountMinor: pesos(amount),
+    schedule: { periodicity: 'monthly', anchorDay: day },
+    categoryId: 'rent',
+    ...over,
+  }) as RecurringInput;
+
+const billetera: RecurringInput[] = [
+  monthly('Arriendo', 1_400_000, 1),
+  monthly('Servicios públicos', 186_000, 26, { categoryId: 'utilities' }),
+  {
+    ...monthly('Gimnasio', 22_250, 1, { categoryId: 'gym' }),
+    schedule: { periodicity: 'weekly', weekdaysMask: WEEKDAY.mon },
+  },
+  {
+    ...monthly('Transporte', 6_500, 1, { categoryId: 'transport' }),
+    schedule: { periodicity: 'daily', weekdaysMask: MON_TO_FRI },
+  },
+  ...[
+    ['Streaming de video', 38_900, 28],
+    ['Streaming de series', 32_900, 2],
+    ['Música', 16_900, 7],
+    ['Almacenamiento', 23_900, 15],
+  ].map(([n, a, d]) =>
+    monthly(n as string, a as number, d as number, {
+      kind: 'subscription',
+      categoryId: 'subscriptions',
+    }),
+  ),
+];
+
+let vault: InMemoryVault;
+let service: RecurringService;
+let accountsDep: (() => Promise<Account[]>) | undefined;
+let refreshDep: (() => Promise<unknown>) | undefined;
+let goalsDep: (() => ReactNode) | undefined;
+
+beforeEach(async () => {
+  vault = await createInMemoryVault();
+  vault.registerMigrations('recurring', recurringMigrations);
+  await vault.migrate();
+  let n = 0;
+  service = createRecurringService({
+    store: () => createVaultRecurringStore(vault.db),
+    clock,
+    newId: () => `r${++n}`,
+  });
+});
+
+afterEach(() => {
+  vault.close();
+  accountsDep = undefined;
+  refreshDep = undefined;
+  goalsDep = undefined;
+});
+
+function Target({ route }: { route: { name: string; params?: { id?: string } } }) {
+  return <Text>{`arrived:${route.name}:${route.params?.id ?? ''}`}</Text>;
+}
+
+async function renderBilletera(
+  preference: ThemePreference = 'light',
+  unread = 0,
+  params?: { filter?: 'low_use' },
+  displayName?: string | null,
+) {
+  const Billetera = createBilleteraScreen({
+    service,
+    clock,
+    useUnreadCount: () => unread,
+    useDisplayName: () => displayName ?? null,
+    accountRoute: 'identity.Account',
+    notificationsRoute: 'notifications.Inbox',
+    statisticsRoute: 'analytics.Spending',
+    recommendationsRoute: 'Recomendaciones',
+    accounts: accountsDep,
+    refresh: refreshDep,
+    renderGoals: goalsDep,
+  });
+  await render(
+    <ThemeProvider initialPreference={preference} store={noStore}>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Billetera" component={Billetera} initialParams={params} />
+          <Stack.Screen name={RECURRING_FORM_ROUTE} component={Target} />
+          <Stack.Screen name="notifications.Inbox" component={Target} />
+          <Stack.Screen name="identity.Account" component={Target} />
+          <Stack.Screen name="Recomendaciones" component={Target} />
+          <Stack.Screen name="analytics.Spending" component={Target} />
+          <Stack.Screen name={SUBSCRIPTION_DETAIL_ROUTE} component={Target} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ThemeProvider>,
+  );
+}
+
+async function addAll() {
+  for (const item of billetera) await service.create(item);
+}
+
+/** Streaming de series (r6) and Almacenamiento (r8) marked "Casi nunca", as in the design. */
+async function markLowUse() {
+  for (const [id, i] of [
+    ['r6', 5],
+    ['r8', 7],
+  ] as const)
+    await service.update(id, { ...billetera[i]!, usage: 'low' });
+}
+
+describe('Billetera', () => {
+  it('greets the person by the name typed in onboarding', async () => {
+    await renderBilletera('light', 0, undefined, 'Laura Gómez');
+    expect(await screen.findByText(/Laura Gómez/)).toBeOnTheScreen();
+    expect(screen.queryByText(/Invitado/)).toBeNull();
+  });
+
+  it('says Invitado while there is no name', async () => {
+    await renderBilletera('light', 0, undefined, null);
+    expect(await screen.findByText(/Invitado/)).toBeOnTheScreen();
+  });
+
+  it('pull to refresh calls M5 syncNow and reloads the items (HU-011)', async () => {
+    let calls = 0;
+    // A sync that brings a new fixed expense, written to the vault without notifying Billetera.
+    refreshDep = async () => {
+      calls++;
+      await createVaultRecurringStore(vault.db).save({
+        id: 'synced',
+        kind: 'fixed',
+        name: 'Arriendo',
+        categoryId: 'rent',
+        merchantKey: null,
+        amountMinor: 120_000_000,
+        schedule: { periodicity: 'monthly', anchorDay: 5 },
+        accountId: null,
+        status: 'active',
+        usage: null,
+        reminderEnabled: true,
+        source: 'manual',
+        createdAt: '2026-10-28T15:00:00.000Z',
+      });
+    };
+    await renderBilletera();
+    const scroll = await screen.findByTestId('recurring.billetera.scroll');
+    expect(screen.queryByText('Arriendo')).toBeNull();
+    await act(async () => {
+      await scroll.props.refreshControl.props.onRefresh();
+    });
+    expect(calls).toBe(1);
+    expect(await screen.findByText('Arriendo')).toBeTruthy();
+    expect(
+      screen.getByTestId('recurring.billetera.scroll').props.refreshControl.props.refreshing,
+    ).toBe(false);
+  });
+
+  it('a failed sync still ends the refresh and keeps Billetera', async () => {
+    refreshDep = async () => {
+      throw new Error('cooldown');
+    };
+    await renderBilletera();
+    const scroll = await screen.findByTestId('recurring.billetera.scroll');
+    await act(async () => {
+      await scroll.props.refreshControl.props.onRefresh();
+    });
+    expect(
+      screen.getByTestId('recurring.billetera.scroll').props.refreshControl.props.refreshing,
+    ).toBe(false);
+    expect(screen.getByTestId('recurring.billetera')).toBeTruthy();
+  });
+
+  it('has no pull to refresh when M5 is not wired', async () => {
+    await renderBilletera();
+    const scroll = await screen.findByTestId('recurring.billetera.scroll');
+    expect(scroll.props.refreshControl).toBeUndefined();
+  });
+
+  it('Recomendaciones "Revisar" shows only the low use subscriptions, until the chip is tapped', async () => {
+    await addAll();
+    await markLowUse();
+    await renderBilletera('light', 0, { filter: 'low_use' });
+    const section = await screen.findByTestId('recurring.billetera.subscriptions');
+    expect(section).toHaveTextContent(/Solo poco uso/);
+    expect(screen.getByTestId('recurring.subscription.r6')).toBeTruthy();
+    expect(screen.getByTestId('recurring.subscription.r8')).toBeTruthy();
+    expect(screen.queryByTestId('recurring.subscription.r5')).toBeNull();
+    await fireEvent.press(screen.getByTestId('recurring.billetera.lowUseFilter'));
+    expect(await screen.findByTestId('recurring.subscription.r5')).toBeTruthy();
+    expect(screen.queryByTestId('recurring.billetera.lowUseFilter')).toBeNull();
+  });
+
+  it('shows "Gastos fijos de este mes $1.930.600", as in the design', async () => {
+    await addAll();
+    await renderBilletera();
+    expect(await screen.findByTestId('recurring.billetera.total')).toHaveTextContent('$1.930.600');
+    expect(screen.getByText('Gastos fijos de este mes')).toBeTruthy();
+  });
+
+  it('shows each card with its amount, periodicity, schedule and next charge', async () => {
+    await addAll();
+    await renderBilletera();
+    await screen.findByTestId('recurring.billetera.grid');
+    expect(screen.getByTestId('recurring.card.r1')).toHaveTextContent(
+      /Arriendo.*\$1\.400\.000.*Mensual.*Día 1.*Pagado/,
+    );
+    expect(screen.getByTestId('recurring.card.r2')).toHaveTextContent(
+      /Servicios públicos.*\$186\.000.*Mensual.*Día 26.*En 2 días/,
+    );
+    expect(screen.getByTestId('recurring.card.r3')).toHaveTextContent(
+      /Gimnasio.*\$22\.250.*Semanal.*Cada lunes.*En 2 días/,
+    );
+    expect(screen.getByTestId('recurring.card.r4')).toHaveTextContent(
+      /Transporte.*\$6\.500.*Diario.*Lun a vie.*En 2 días/,
+    );
+  });
+
+  it('the cards are the fixed expenses; the subscriptions go to "Otros gastos"', async () => {
+    await addAll();
+    await renderBilletera();
+    const grid = await screen.findByTestId('recurring.billetera.grid');
+    expect(grid).not.toHaveTextContent(/Streaming/);
+    expect(screen.getByTestId('recurring.billetera.subscriptions')).toHaveTextContent(
+      /Otros gastos.*4 activas · \$112\.600\/mes/,
+    );
+    expect(screen.getByTestId('recurring.subscription.r5')).toHaveTextContent(
+      /Streaming de video.*Renueva 28 oct.*\$38\.900/,
+    );
+    expect(screen.getByTestId('recurring.subscription.r6')).toHaveTextContent(/Renueva 2 nov/);
+  });
+
+  it('a subscription row names the card it is charged to (M6)', async () => {
+    accountsDep = async () => [{ id: 'acc-card', kind: 'credit_card', last4: '4821' } as Account];
+    const id = await service.create({
+      kind: 'subscription',
+      name: 'Streaming de video',
+      amountMinor: 3_890_000,
+      schedule: { periodicity: 'monthly', anchorDay: 28 },
+      categoryId: 'subscriptions',
+      accountId: 'acc-card',
+    });
+    await renderBilletera();
+    const row = await screen.findByTestId(`recurring.subscription.${id}`);
+    await waitFor(() => expect(row).toHaveTextContent(/Tarjeta de crédito · renueva 28 oct/));
+    expect(row).not.toHaveTextContent(/4821/);
+  });
+
+  it('no savings banner until a subscription is marked "Casi nunca"', async () => {
+    await addAll();
+    await renderBilletera();
+    await screen.findByTestId('recurring.billetera.subscriptions');
+    expect(screen.queryByTestId('recurring.billetera.savings')).toBeNull();
+    expect(screen.queryByText('Poco uso')).toBeNull();
+  });
+
+  it('shows "Ahorra $56.800 al mes" and "Poco uso", as in the design (SCRUM-56)', async () => {
+    await addAll();
+    await markLowUse();
+    await renderBilletera();
+    expect(await screen.findByTestId('recurring.billetera.savings')).toHaveTextContent(
+      /Oportunidad de ahorro.*Ahorra \$56\.800 al mes.*2 suscripciones que casi no usas/,
+    );
+    expect(screen.getByTestId('recurring.subscription.r6')).toHaveTextContent(/Poco uso/);
+    expect(screen.getByTestId('recurring.subscription.r5')).not.toHaveTextContent(/Poco uso/);
+  });
+
+  it('the savings banner opens Recomendaciones', async () => {
+    await addAll();
+    await markLowUse();
+    await renderBilletera();
+    await fireEvent.press(await screen.findByTestId('recurring.billetera.savings'));
+    expect(await screen.findByText('arrived:Recomendaciones:')).toBeTruthy();
+  });
+
+  it('tapping a subscription opens its detail', async () => {
+    await addAll();
+    await renderBilletera();
+    await fireEvent.press(await screen.findByTestId('recurring.subscription.r7'));
+    expect(await screen.findByText(`arrived:${SUBSCRIPTION_DETAIL_ROUTE}:r7`)).toBeTruthy();
+  });
+
+  it('"+ Agregar" opens the form', async () => {
+    await addAll();
+    await renderBilletera();
+    await fireEvent.press(await screen.findByText('+ Agregar'));
+    expect(await screen.findByText(`arrived:${RECURRING_FORM_ROUTE}:`)).toBeTruthy();
+  });
+
+  it('tapping a card opens the form to edit it', async () => {
+    await addAll();
+    await renderBilletera();
+    await fireEvent.press(await screen.findByTestId('recurring.card.r2'));
+    expect(await screen.findByText(`arrived:${RECURRING_FORM_ROUTE}:r2`)).toBeTruthy();
+  });
+
+  it('shows a new item as soon as it is added', async () => {
+    await renderBilletera();
+    expect(await screen.findByTestId('recurring.billetera.ghost')).toBeTruthy();
+    await service.create(billetera[0]!);
+    await waitFor(() => expect(screen.getByTestId('recurring.card.r1')).toBeTruthy());
+  });
+
+  // QA review 2026-11-07, V6: an empty card in the place of the fixed expenses, as in V2 and V5.
+  it('without fixed expenses shows the empty card, whose button opens the form', async () => {
+    await renderBilletera();
+    const ghost = await screen.findByTestId('recurring.billetera.ghost');
+    expect(screen.queryByTestId('recurring.billetera.grid')).toBeNull();
+    await fireEvent.press(within(ghost).getByRole('button', { name: 'Agregar gasto' }));
+    expect(await screen.findByText(`arrived:${RECURRING_FORM_ROUTE}:`)).toBeTruthy();
+  });
+
+  it('with only subscriptions shows the empty card above "Otros gastos"', async () => {
+    await service.create(billetera.find((item) => item.kind === 'subscription')!);
+    await renderBilletera();
+    expect(await screen.findByTestId('recurring.billetera.ghost')).toBeOnTheScreen();
+    expect(screen.getByTestId('recurring.billetera.subscriptions')).toBeOnTheScreen();
+  });
+
+  // QA review 2026-11-07, V9: the chart button is on every tab, like the bell.
+  it('the chart button opens Estadísticas', async () => {
+    await renderBilletera();
+    await fireEvent.press(await screen.findByRole('button', { name: uiStrings.statistics }));
+    expect(await screen.findByText('arrived:analytics.Spending:')).toBeOnTheScreen();
+  });
+
+  it('the bell shows unread notifications and opens them', async () => {
+    await renderBilletera('light', 2);
+    expect(await screen.findByTestId('header-unread-dot')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('header-bell'));
+    expect(await screen.findByText('arrived:notifications.Inbox:')).toBeTruthy();
+  });
+
+  // QA review 2026-11-07, F4: M8's goals not reached yet, with "Ver todos" and the empty card.
+  it('shows the savings goals under "Mis cuentas", above the recurring expenses', async () => {
+    await addAll();
+    goalsDep = () => <Text testID="savings.carousel">Planes de ahorro</Text>;
+    await renderBilletera();
+    await screen.findByTestId('recurring.billetera.grid');
+    const tree = JSON.stringify(screen.toJSON());
+    expect(tree.indexOf('Planes de ahorro')).toBeGreaterThan(-1);
+    expect(tree.indexOf('Planes de ahorro')).toBeLessThan(tree.indexOf('Gastos recurrentes'));
+  });
+
+  it('shows the savings goals also without recurring expenses', async () => {
+    goalsDep = () => <Text testID="savings.carousel">Planes de ahorro</Text>;
+    await renderBilletera();
+    expect(await screen.findByTestId('recurring.billetera.ghost')).toBeOnTheScreen();
+    expect(screen.getByTestId('savings.carousel')).toBeOnTheScreen();
+  });
+
+  it('has no savings goals section when M8 is not wired', async () => {
+    await renderBilletera();
+    await screen.findByTestId('recurring.billetera.ghost');
+    expect(screen.queryByTestId('savings.carousel')).toBeNull();
+  });
+
+  it('renders in the dark theme', async () => {
+    await addAll();
+    await markLowUse();
+    await renderBilletera('dark');
+    expect(await screen.findByTestId('recurring.billetera.savings')).toBeTruthy();
+    expect(await screen.findByTestId('recurring.billetera.total')).toHaveTextContent('$1.930.600');
+  });
+});
+
+describe('bogotaToday', () => {
+  it('is still the previous day at 02:00 UTC', () => {
+    expect(bogotaToday(new Date('2026-10-25T02:00:00Z'))).toBe('2026-10-24');
+  });
+});

@@ -5,7 +5,7 @@
 | Phase | 0 (base), then continuous |
 | Stories | HU-032 SCRUM-46 (3), HU-033 SCRUM-47 (5), HU-034 SCRUM-48 (2) |
 | Points | 10 |
-| Owner | Juan Pablo Contreras |
+| Owner | Juan Pablo Contreras (`@juancontrerasp`) |
 | Owns | `infra/terraform/`, `services/caddy/`, `.github/workflows/deploy-*.yml`, `docs/runbooks/` |
 | Depends on | M0 (Dockerfiles and CI) |
 | Used by | every backend service, M5 (egress, KMS, certificates), M11 (Bedrock) |

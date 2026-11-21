@@ -1,0 +1,217 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390"><title>App azul y verde · Detalle de cuenta</title></head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;background:#ffffff;color:#0f2233}
+a{color:#177fa9}
+.vscroll{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;overflow-x:hidden;overflow-y:auto}
+.vscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.btn{cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn:focus-visible,.acc:focus-visible,.dbtn:focus-visible,.dot:focus-visible{outline:3px solid #b5e5f7;outline-offset:2px}
+.hero{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.hero:active{cursor:grabbing}
+.acc{cursor:pointer}
+.row{transition:background-color .15s ease}
+.row:hover{background-color:#f4fbfe !important}
+.dbtn{cursor:pointer;transition:background-color .2s ease}
+.dbtn-sec:hover{background-color:#e4f5fc !important}
+.dbtn-red:hover{background-color:#a93226 !important}
+.trash:hover{background-color:#fbd6d6 !important}
+@keyframes cd-skel{0%,100%{opacity:.55}50%{opacity:1}}
+.skel{background-color:rgba(255,255,255,.28);animation:cd-skel 1.6s ease-in-out infinite}
+.skel-b{background-color:#edf1f4;animation:cd-skel 1.6s ease-in-out infinite}
+.add-card{cursor:pointer}
+.add-card .add-plus{transition:transform .2s ease}
+.add-card:hover .add-plus{transform:scale(1.08)}
+.add-card:focus-visible{outline:3px solid #b5e5f7;outline-offset:3px}
+.dot{cursor:pointer;transition:width .25s ease,background-color .25s ease}
+.chev{transition:transform .25s ease}
+@keyframes cd-shine{0%,62%{transform:translateX(0)}86%,100%{transform:translateX(640px)}}
+.shine{animation:cd-shine 7s ease-in-out infinite 1.2s}
+@keyframes cd-r-0{from{opacity:0;transform:translateX(70px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes cd-r-1{from{opacity:0;transform:translateX(70px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes cd-l-0{from{opacity:0;transform:translateX(-70px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes cd-l-1{from{opacity:0;transform:translateX(-70px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes cd-up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.list-in{animation:cd-up .3s ease-out both}
+@keyframes cd-scrim{from{opacity:0}to{opacity:1}}
+@keyframes cd-dlg{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+.scrim{animation:cd-scrim .2s ease-out both}
+.dlg{animation:cd-dlg .28s cubic-bezier(.22,1,.36,1) both}
+@media (prefers-reduced-motion:reduce){.shine,.list-in,.scrim,.dlg,.card-main,.skel,.skel-b{animation:none !important}}
+</style>
+
+<div class="cd-root" style="width: 390px; height: 844px; box-sizing: border-box; background-color: #ffffff; position: relative; overflow: hidden">
+<a class="cd-back" href="Billetera.html" tabindex="-1" aria-hidden="true" style="display: none"></a>
+
+<div class="hero" onPointerDown="" onPointerUp="" onPointerCancel="" style="position: absolute; left: 0; top: 0; width: 390px; height: 300px; background-color: #2fa8d8; border-radius: 0 0 28px 28px; overflow: hidden; z-index: 1">
+<svg width="390" height="300" viewBox="0 0 390 300" aria-hidden="true" style="position: absolute; top: 0; left: 0">
+<rect x="262" y="-90" width="210" height="210" rx="48" fill="#3ab3e3"></rect>
+<rect x="-70" y="190" width="150" height="150" rx="36" fill="#279dcc"></rect>
+<path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" transform="translate(34 92) scale(.5)" fill="#d4f294"></path>
+<path d="M0 -11C.6 -4 4 -.6 11 0 4 .6 .6 4 0 11 -.6 4 -4 .6 -11 0 -4 -.6 -.6 -4 0 -11Z" transform="translate(360 250) scale(.4)" fill="#ffffff"></path>
+<rect x="352" y="84" width="7" height="7" rx="2" fill="#ffffff" fill-opacity=".8" transform="rotate(18 355 87)"></rect>
+</svg>
+
+<div style="position: absolute; left: 16px; right: 16px; top: 16px; display: flex; align-items: center; justify-content: space-between; color: #ffffff">
+<a class="btn" href="Billetera.html" aria-label="Volver a Billetera" style="width: 48px; height: 48px; box-sizing: border-box; border-radius: 14px; background-color: rgba(255, 255, 255, 0.2); color: #ffffff; display: flex; align-items: center; justify-content: center; text-decoration: none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg></a>
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; line-height: 22px">Mis cuentas</span>
+<span style="min-width: 48px; text-align: right; font-size: 13px; line-height: 18px; font-weight: 600; opacity: .9; color: #FFFFFF00">1 de 4</span>
+</div>
+
+
+
+<div aria-hidden="true" style="position: absolute; left: 372px; top: 88px; width: 300px; height: 176px; border-radius: 22px; background-color: #50c1eb; opacity: .55; transform: scale(.9); transform-origin: left center"></div>
+
+
+
+<article class="card-main" aria-live="polite" aria-label="Bancolombia · Cuenta de ahorros · saldo $3.200.000" style="position: absolute; left: 45px; top: 80px; width: 300px; height: 184px; box-sizing: border-box; padding: 16px; border-radius: 22px; background-color: #50c1eb; color: #ffffff; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 22px 36px -20px rgba(15, 34, 51, 0.55); animation: none">
+<svg width="300" height="184" viewBox="0 0 300 184" aria-hidden="true" style="position: absolute; top: 0; left: 0">
+<rect x="178" y="-80" width="176" height="176" rx="44" fill="#6bccef"></rect>
+<rect x="234" y="-36" width="100" height="100" rx="26" fill="#86d6f3"></rect>
+<rect x="-48" y="132" width="110" height="110" rx="28" fill="#47b6e2"></rect>
+<g class="shine"><rect x="-140" y="-40" width="50" height="280" fill="#ffffff" fill-opacity=".16" transform="skewX(-18)"></rect></g>
+</svg>
+<div style="position: relative; display: flex; align-items: center; gap: 8px">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #ffffff; color: #2fa8d8; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; flex-shrink: 0">BC</span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 16px; line-height: 20px; font-weight: 700">Bancolombia</span>
+<span style="font-size: 12px; line-height: 16px; opacity: .92">Cuenta de ahorros</span>
+</span>
+</div>
+<div style="position: relative; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 12px; line-height: 16px; font-weight: 600; opacity: .92">Saldo disponible</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 30px; line-height: 36px; letter-spacing: -0.02em">$3.200.000</span>
+</div>
+<div style="position: relative; display: flex; align-items: center; justify-content: space-between; font-size: 12px; line-height: 16px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; letter-spacing: .06em">•••• 4821</span>
+<span style="opacity: .9">Hoy, 8:30 a. m.</span>
+</div>
+</article>
+
+
+
+<div style="position: absolute; left: 0; right: 0; top: 274px; display: flex; justify-content: center; gap: 8px">
+
+<button class="dot" type="button" aria-label="Ver Bancolombia" aria-current="true" onClick="" style="width: 22px; height: 7px; padding: 0; border: none; border-radius: 999px; background-color: #ffffff"></button>
+
+<button class="dot" type="button" aria-label="Ver Daviplata" aria-current="false" onClick="" style="width: 7px; height: 7px; padding: 0; border: none; border-radius: 999px; background-color: rgba(255, 255, 255, 0.5)"></button>
+
+<button class="dot" type="button" aria-label="Ver Nu Bank" aria-current="false" onClick="" style="width: 7px; height: 7px; padding: 0; border: none; border-radius: 999px; background-color: rgba(255, 255, 255, 0.5)"></button>
+
+<button class="dot" type="button" aria-label="Ver Efectivo" aria-current="false" onClick="" style="width: 7px; height: 7px; padding: 0; border: none; border-radius: 999px; background-color: rgba(255, 255, 255, 0.5)"></button>
+
+<button class="dot" type="button" aria-label="Ver Conectar cuenta" aria-current="false" onClick="" style="width: 7px; height: 7px; padding: 0; border: none; border-radius: 999px; background-color: rgba(255, 255, 255, 0.5)"></button>
+
+</div>
+</div>
+
+<div class="vscroll cd-scroll" style="position: absolute; left: 0px; top: 301px; width: 390px; height: 544px; box-sizing: border-box; padding: 16px 16px 32px; display: flex; flex-direction: column; gap: 16px">
+
+
+<section style="border-radius: 18px; background-color: #ffffff; flex-shrink: 0; overflow: hidden">
+<button class="acc" type="button" aria-expanded="true" aria-controls="cd-mov" onClick="" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 16px 16px; border: none; background-color: #ffffff; font-family: inherit; color: #0f2233; text-align: left; padding-right: 0px; padding-left: 0px">
+<span style="flex-grow: 1; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; line-height: 24px">Movimientos</span>
+<span style="font-size: 11px; line-height: 14px; font-weight: 700; padding: 4px 8px; border-radius: 999px; background-color: #e4f5fc; color: #1f93c2">6</span>
+<svg class="chev" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5e7482" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate(180deg)"><path d="m6 9 6 6 6-6"></path></svg>
+</button>
+
+<div id="cd-mov" class="list-in" style="padding: 8px 8px 8px; padding-right: 0px; padding-left: 0px">
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 12px">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #f2fadf; color: #4f7a0b; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 14px; line-height: 19px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Nómina</span>
+<span style="font-size: 12px; line-height: 16px; color: #5e7482">25 oct · Ingreso</span>
+</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; line-height: 19px; font-weight: 600; white-space: nowrap; color: #4f7a0b">+$4.200.000</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 12px">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11h11.2L21 7H6.2M9 20h.01M18 20h.01"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 14px; line-height: 19px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Supermercado</span>
+<span style="font-size: 12px; line-height: 16px; color: #5e7482">24 oct · Mercado</span>
+</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; line-height: 19px; font-weight: 600; white-space: nowrap; color: #0f2233">−$286.400</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 12px">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 14px; line-height: 19px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Servicios públicos</span>
+<span style="font-size: 12px; line-height: 16px; color: #5e7482">22 oct · Hogar</span>
+</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; line-height: 19px; font-weight: 600; white-space: nowrap; color: #0f2233">−$186.000</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 12px">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 14px; line-height: 19px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Transferencia a Nequi</span>
+<span style="font-size: 12px; line-height: 16px; color: #5e7482">20 oct · Transferencia</span>
+</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; line-height: 19px; font-weight: 600; white-space: nowrap; color: #0f2233">−$150.000</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 12px">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 9h1.5a2.5 2.5 0 0 1 0 5H17M7 2v3M11 2v3"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 14px; line-height: 19px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Café</span>
+<span style="font-size: 12px; line-height: 16px; color: #5e7482">19 oct · Comida</span>
+</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; line-height: 19px; font-weight: 600; white-space: nowrap; color: #0f2233">−$12.800</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 12px">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 14px; line-height: 19px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Arriendo</span>
+<span style="font-size: 12px; line-height: 16px; color: #5e7482">1 oct · Hogar</span>
+</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; line-height: 19px; font-weight: 600; white-space: nowrap; color: #0f2233">−$1.400.000</span>
+</div>
+
+</div>
+
+</section>
+
+<section aria-labelledby="cd-cards" style="display: flex; flex-direction: column; gap: 8px; flex-shrink: 0">
+<h2 id="cd-cards" style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; line-height: 24px">Tarjetas asociadas</h2>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 16px; background-color: #ffffff; border: 1px solid #e4f5fc; box-shadow: 0 6px 16px -12px rgba(15, 34, 51, 0.2)">
+<span aria-hidden="true" style="position: relative; width: 56px; height: 32px; border-radius: 8px; background-color: #2fa8d8; flex-shrink: 0; overflow: hidden"><span style="position: absolute; left: 8px; top: 8px; width: 11px; height: 8px; border-radius: 2px; background-color: #ffffff; opacity: .85"></span><span style="position: absolute; right: -8px; top: -8px; width: 32px; height: 32px; border-radius: 8px; background-color: #ffffff; opacity: .2"></span></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 14px; line-height: 19px; font-weight: 600">Débito Mastercard</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 16px; color: #5e7482">•••• 4821</span>
+</span>
+<span style="font-size: 11px; line-height: 14px; font-weight: 700; padding: 4px 8px; border-radius: 999px; background-color: #f2fadf; color: #4f7a0b">Activa</span>
+</div>
+
+<div class="row" style="display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 16px; background-color: #ffffff; border: 1px solid #e4f5fc; box-shadow: 0 6px 16px -12px rgba(15, 34, 51, 0.2)">
+<span aria-hidden="true" style="position: relative; width: 56px; height: 32px; border-radius: 8px; background-color: #0f2233; flex-shrink: 0; overflow: hidden"><span style="position: absolute; left: 8px; top: 8px; width: 11px; height: 8px; border-radius: 2px; background-color: #ffffff; opacity: .85"></span><span style="position: absolute; right: -8px; top: -8px; width: 32px; height: 32px; border-radius: 8px; background-color: #ffffff; opacity: .2"></span></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 14px; line-height: 19px; font-weight: 600">Crédito Visa</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 16px; color: #5e7482">•••• 1093</span>
+</span>
+<span style="font-size: 11px; line-height: 14px; font-weight: 700; padding: 4px 8px; border-radius: 999px; background-color: #f2fadf; color: #4f7a0b">Activa</span>
+</div>
+
+
+</section>
+
+<div style="flex-shrink: 0; display: flex; align-items: center; gap: 16px; margin-top: 4px">
+<button class="dbtn trash" type="button" onClick="" aria-label="Eliminar cuenta" style="flex-shrink: 0; width: 56px; height: 56px; box-sizing: border-box; padding: 0; border: 1.5px solid #c0392b; border-radius: 16px; background-color: #fdeaea; color: #c0392b; display: flex; align-items: center; justify-content: center">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"></path></svg>
+</button>
+<span aria-hidden="true" style="font-size: 15px; line-height: 20px; font-weight: 700; color: #c0392b">Eliminar cuenta</span>
+</div>
+
+
+</div>
+
+
+</div>
+</body></html>

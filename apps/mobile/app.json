@@ -5,9 +5,13 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fynkfinance.app",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Fynk usa Face ID para desbloquear tu bóveda en este teléfono."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -16,11 +20,18 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": true,
+      "package": "com.fynkfinance.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "fynk"
+    "scheme": "fynk",
+    "plugins": [
+      "expo-font",
+      ["expo-navigation-bar", { "enforceContrast": false }],
+      ["react-native-app-auth", { "redirectUrls": ["co.fynk.app://oauth/callback"] }],
+      "./plugins/withAppAuthSceneLifecycle"
+    ]
   }
 }

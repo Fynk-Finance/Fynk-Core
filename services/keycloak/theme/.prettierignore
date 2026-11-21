@@ -1,0 +1,7 @@
+node_modules/
+pnpm-lock.yaml
+dist/
+dist_keycloak/
+build_keycloak/
+src/kc.gen.tsx
+public/keycloakify-dev-resources/

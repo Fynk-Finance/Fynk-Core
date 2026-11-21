@@ -1,0 +1,510 @@
+// Recomendaciones (tab, Recomendaciones.html): "Mayor impacto", the donut of possible savings,
+// filters, the numbered next steps and the disclaimer, always visible (HU-024, HU-025, HU-026).
+// No transport plan and no "Ver plan". Every number comes from M10's opportunities.
+import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
+import { useMemo, useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import Svg, { Rect } from 'react-native-svg';
+
+import { categoryLabel, formatCop } from '@shared/domain';
+import { useTabHeader } from '@shared/navigation';
+import {
+  AmountText,
+  AppText,
+  Chip,
+  Donut,
+  EmptyState,
+  ErrorState,
+  Icon,
+  Screen,
+  Shine,
+  Skeleton,
+  fonts,
+  radius,
+  spacing,
+  useTheme,
+  useThemedStyles,
+  type ColorToken,
+  type IconName,
+  type Theme,
+} from '@shared/ui';
+import { savingOpportunities, totalMonthlySaving, useOpenCapForm } from '@modules/analytics';
+
+import { useRecommendations } from '../application/hooks';
+import type { RecommendationsView } from '../application/recommendationsService';
+import {
+  buildSteps,
+  filterSteps,
+  highlight,
+  shortDate,
+  summaryText,
+  type StepAction,
+  type StepFilter,
+  type ViewStep,
+} from '../domain/steps';
+import { recommendationsStrings as s, stepCopy } from './strings.es-CO';
+
+/**
+ * Where "Programar" and "Revisar" go (M8 and M9 own those screens), and the header: the name,
+ * the unread count of the bell (M12) and the screens of the avatar, chart and bell.
+ */
+export interface RecommendationsNavigation {
+  openPaydayReminder: (
+    nav: NavigationProp<ParamListBase>,
+    goalId: string,
+    amountMinor: number,
+  ) => void;
+  openLowUseSubscriptions: (nav: NavigationProp<ParamListBase>) => void;
+  useDisplayName: () => string;
+  useUnreadCount: () => number;
+  accountRoute: string;
+  notificationsRoute: string;
+  statisticsRoute: string;
+}
+
+export const defaultNavigation: RecommendationsNavigation = {
+  // Until M8 exports openPaydayReminder: its goals screen with the goal and amount as params.
+  openPaydayReminder: (nav, goalId, amountMinor) =>
+    nav.navigate('savings.Goals', { goalId, paydayAmountMinor: amountMinor }),
+  // Billetera (M9) with the low use filter.
+  openLowUseSubscriptions: (nav) => nav.navigate('Billetera', { filter: 'low_use' }),
+  useDisplayName: () => s.guestName,
+  useUnreadCount: () => 0,
+  accountRoute: 'identity.Account',
+  notificationsRoute: 'notifications.Inbox',
+  statisticsRoute: 'analytics.Spending',
+};
+
+// Donut and legend colors in the order of the design: #50c1eb, #a8e03a, #1f93c2.
+const LEGEND: readonly ColorToken[] = [
+  'primaryLight',
+  'accent',
+  'primaryDark',
+  'primaryDeep',
+  'accentStroke',
+];
+
+export function createRecommendationsScreen(
+  navigationTargets: RecommendationsNavigation = defaultNavigation,
+) {
+  return function RecommendationsScreen() {
+    const navigation = useNavigation<NavigationProp<ParamListBase>>();
+    const styles = useThemedStyles(createStyles);
+    const { colors } = useTheme();
+    const openCapForm = useOpenCapForm();
+    const name = navigationTargets.useDisplayName();
+    const unread = navigationTargets.useUnreadCount();
+    const { query, refresh, unavailable } = useRecommendations();
+    const [filter, setFilter] = useState<StepFilter>('all');
+    const view = query.data;
+
+    const run = (action: StepAction) => {
+      if (action.kind === 'cap') openCapForm(action.categoryId, action.suggestedMinor);
+      else if (action.kind === 'payday')
+        navigationTargets.openPaydayReminder(navigation, action.goalId, action.amountMinor);
+      else navigationTargets.openLowUseSubscriptions(navigation);
+    };
+
+    const top = view ? highlight(view.opportunities, stepCopy) : null;
+
+    // The tabs' shared blue header (QA review 2026-11-07, G2); a plain HeaderBlue outside the tabs.
+    const header = useTabHeader({
+      name,
+      hasUnread: unread > 0,
+      onPressAccount: () => navigation.navigate(navigationTargets.accountRoute),
+      onPressNotifications: () => navigation.navigate(navigationTargets.notificationsRoute),
+      onPressStatistics: () => navigation.navigate(navigationTargets.statisticsRoute),
+      title: s.title,
+      children: top ? (
+        <Pressable
+          onPress={() => run(top.action)}
+          accessibilityRole="button"
+          accessibilityLabel={s.highlightLabel(top.title, formatCop(top.amountMinor))}
+          testID="recommendations.highlight"
+          style={({ pressed }) => [styles.highlight, pressed ? styles.pressed : null]}
+        >
+          {/* Recomendaciones.html: three rounded squares and the light that sweeps the card. */}
+          <View
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+            testID="recommendations.highlight.shapes"
+          >
+            <Svg width={350} height={112}>
+              <Rect x={236} y={-60} width={130} height={130} rx={30} fill={colors.cardShapeLight} />
+              <Rect x={282} y={-24} width={72} height={72} rx={18} fill={colors.cardShapeLighter} />
+              <Rect x={-30} y={78} width={80} height={80} rx={20} fill={colors.headerShapeB} />
+            </Svg>
+            <Shine distance={520} height={200} width={40} />
+          </View>
+          <View style={styles.highlightBody}>
+            <View style={styles.badge}>
+              <AppText style={styles.badgeText} color="onPrimary">
+                {s.highlightBadge}
+              </AppText>
+            </View>
+            <AppText variant="cardTitle" color="onPrimary">
+              {top.title}
+            </AppText>
+            <View style={styles.amountRow}>
+              <AmountText amountMinor={top.amountMinor} size={18} color="onPrimary" />
+              <AppText variant="captionStrong" color="onPrimary">
+                {s.perMonth}
+              </AppText>
+            </View>
+          </View>
+          <View style={styles.go}>
+            <Icon name="chevronRight" size={16} strokeWidth={2.8} color={colors.primaryDark} />
+          </View>
+        </Pressable>
+      ) : null,
+    });
+
+    return (
+      <Screen withTabBar padded={false} gap={0} testID="recommendations.screen" header={header}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl
+              refreshing={refresh.isPending}
+              onRefresh={() => refresh.mutate()}
+              tintColor={colors.primary}
+            />
+          }
+          testID="recommendations.scroll"
+        >
+          {unavailable || (view && view.opportunities.length === 0) ? (
+            <EmptyState icon="chartLine" title={s.empty} message={s.emptyHint} />
+          ) : query.isError ? (
+            <ErrorState message={s.error} onRetry={() => void query.refetch()} />
+          ) : !view ? (
+            <Skeleton height={180} />
+          ) : (
+            <Body view={view} filter={filter} onFilter={setFilter} onAction={run} />
+          )}
+          {/* HU-026: next to the result, in every render path. */}
+          <View style={styles.disclaimer} testID="recommendations.disclaimer">
+            <Icon name="shield" size={18} color={colors.primaryDark} />
+            <AppText variant="small" color="textBody" style={styles.flex}>
+              {s.disclaimer}
+            </AppText>
+          </View>
+        </ScrollView>
+      </Screen>
+    );
+  };
+}
+
+function Body({
+  view,
+  filter,
+  onFilter,
+  onAction,
+}: {
+  view: RecommendationsView;
+  filter: StepFilter;
+  onFilter: (f: StepFilter) => void;
+  onAction: (a: StepAction) => void;
+}) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
+  const savings = savingOpportunities(view.opportunities);
+  const total = totalMonthlySaving(view.opportunities);
+  const steps = useMemo(() => buildSteps(view.opportunities, view.texts, stepCopy), [view]);
+  const shown = filterSteps(steps, filter);
+  const summary = summaryText(view.texts, total, savings.length, stepCopy);
+  const filters: [StepFilter, string][] = [
+    ['all', s.filters.all],
+    ['expenses', s.filters.expenses],
+    ['savings', s.filters.savings],
+    ['subscriptions', s.filters.subscriptions],
+  ];
+
+  return (
+    <>
+      {savings.length > 0 ? (
+        <View
+          style={styles.potential}
+          accessibilityLabel={s.donutLabel(formatCop(total), savings.length)}
+        >
+          <Donut
+            size={140}
+            radius={54}
+            segments={savings.map((o, i) => ({
+              value: o.monthlyMinor,
+              color: LEGEND[i % LEGEND.length] ?? 'primary',
+            }))}
+            accessibilityLabel={s.donutLabel(formatCop(total), savings.length)}
+          >
+            <AmountText amountMinor={total} size={18} testID="recommendations.total" />
+            <AppText variant="caption" color="textSecondary">
+              {s.perMonth}
+            </AppText>
+          </Donut>
+          <View style={styles.legend}>
+            <AppText variant="smallStrong">{s.fronts(savings.length)}</AppText>
+            {savings.map((o, i) => (
+              <View key={o.factKey} style={styles.legendRow}>
+                <View
+                  style={[
+                    styles.legendDot,
+                    { backgroundColor: colors[LEGEND[i % LEGEND.length] ?? 'primary'] },
+                  ]}
+                />
+                <AppText variant="caption" color="textSecondary" style={styles.flex}>
+                  {o.kind === 'subscriptions'
+                    ? stepCopy.titles.subscriptions
+                    : categoryLabel(o.categoryId ?? 'other')}
+                </AppText>
+                <AmountText amountMinor={o.monthlyMinor} size={12} />
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipsBleed}
+        contentContainerStyle={styles.chips}
+        accessibilityLabel={s.filters.label}
+      >
+        {filters.map(([value, label]) => (
+          <Chip
+            key={value}
+            label={label}
+            selected={filter === value}
+            onPress={() => onFilter(value)}
+            testID={`recommendations.filter.${value}`}
+          />
+        ))}
+      </ScrollView>
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <AppText variant="section" accessibilityRole="header">
+            {s.nextSteps}
+          </AppText>
+          <AppText variant="captionStrong" color="textSecondary">
+            {s.suggestions(shown.length)}
+          </AppText>
+        </View>
+        <AppText variant="body" color="textBody" testID="recommendations.summary">
+          {summary.text}
+        </AppText>
+        <AppText variant="caption" color="textSecondary" testID="recommendations.basedOn">
+          {s.basedOn(shortDate(view.dataRange.from), shortDate(view.dataRange.to))}
+          {summary.fromModel ? ` ${s.writtenBy}` : ''}
+        </AppText>
+        {view.notice !== 'none' ? (
+          <AppText variant="caption" color="textSecondary" testID="recommendations.notice">
+            {view.notice === 'ai_off'
+              ? s.aiOff
+              : view.notice === 'rate_limited'
+                ? s.rateLimited
+                : s.offline}
+          </AppText>
+        ) : null}
+        <View>
+          {shown.map((step, i) => (
+            <StepRow
+              key={step.factKey}
+              step={step}
+              last={i === shown.length - 1}
+              onAction={onAction}
+            />
+          ))}
+        </View>
+      </View>
+    </>
+  );
+}
+
+const ACTION_LABEL: Record<StepAction['kind'], string> = {
+  cap: s.actions.cap,
+  payday: s.actions.payday,
+  subscriptions: s.actions.subscriptions,
+};
+
+function StepRow({
+  step,
+  last,
+  onAction,
+}: {
+  step: ViewStep;
+  last: boolean;
+  onAction: (a: StepAction) => void;
+}) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
+  // Recomendaciones.html: Gastos steps are green, Ahorro and Suscripciones blue.
+  const green = step.tag === 'expenses';
+  return (
+    <View style={styles.step} testID={`recommendations.step.${step.factKey}`}>
+      <View style={styles.rail}>
+        <View
+          style={[styles.number, green ? null : styles.numberBlue]}
+          testID={`recommendations.step.${step.factKey}.number`}
+        >
+          <AppText style={styles.numberText} color={green ? 'onPrimary' : 'primaryDark'}>
+            {String(step.number)}
+          </AppText>
+        </View>
+        {last ? null : <View style={styles.line} />}
+      </View>
+      <View style={styles.stepBody}>
+        <View style={styles.stepTitle}>
+          <Icon name={step.icon as IconName} size={16} color={colors.primaryDark} />
+          <AppText variant="bodyStrong" style={styles.stepTitleText}>
+            {step.title}
+          </AppText>
+          <View
+            style={[styles.tag, green ? null : styles.tagBlue]}
+            testID={`recommendations.step.${step.factKey}.tag`}
+          >
+            <AppText style={styles.tagText} color={green ? 'link' : 'primaryDark'}>
+              {s.tags[step.tag]}
+            </AppText>
+          </View>
+        </View>
+        <AppText variant="small" color="textSecondary">
+          {step.text}
+        </AppText>
+        <View style={styles.stepFooter}>
+          <AppText variant="smallStrong" color="link" style={styles.flex}>
+            {step.saving}
+          </AppText>
+          <Pressable
+            onPress={() => onAction(step.action)}
+            accessibilityRole="button"
+            accessibilityLabel={`${ACTION_LABEL[step.action.kind]}: ${step.title}`}
+            testID={`recommendations.action.${step.factKey}`}
+            style={({ pressed }) => [styles.apply, pressed ? styles.applyPressed : null]}
+          >
+            <AppText style={styles.applyText} color="onPrimary">
+              {ACTION_LABEL[step.action.kind]}
+            </AppText>
+            <Icon name="chevronRight" size={16} strokeWidth={2.8} color={colors.onPrimary} />
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function createStyles({ colors, shadow }: Theme) {
+  return StyleSheet.create({
+    content: { padding: 16, paddingTop: 24, paddingBottom: spacing.tabBarClearance, gap: 16 },
+    highlight: {
+      marginTop: 2,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      minHeight: 137,
+      padding: 16,
+      borderRadius: radius.cardLg,
+      backgroundColor: colors.primaryLight,
+      overflow: 'hidden',
+      ...shadow.card,
+    },
+    highlightBody: { flex: 1, gap: 4 },
+    badge: {
+      alignSelf: 'flex-start',
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: radius.pill,
+      backgroundColor: colors.onPrimaryBadge,
+    },
+    badgeText: {
+      fontFamily: fonts.body.bold,
+      fontSize: 10,
+      lineHeight: 13,
+      letterSpacing: 0.4,
+      textTransform: 'uppercase',
+    },
+    amountRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+    go: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.pill,
+      backgroundColor: colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    potential: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+      padding: 16,
+      borderRadius: radius.sheetSm,
+      backgroundColor: colors.surfaceBlueSoft,
+      borderWidth: 1,
+      borderColor: colors.borderBlue,
+    },
+    legend: { flex: 1, gap: 8 },
+    legendRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    legendDot: { width: 10, height: 10, borderRadius: 4 },
+    // The chips scroll to the screen edges (design: margin 0 -16px, padding 0 16px).
+    chipsBleed: { marginHorizontal: -16, flexGrow: 0 },
+    chips: { gap: 8, paddingHorizontal: 16 },
+    section: { gap: 8 },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+    },
+    step: { flexDirection: 'row', gap: 8 },
+    rail: { width: 32, alignItems: 'center' },
+    number: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.pill,
+      backgroundColor: colors.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    numberBlue: { backgroundColor: colors.surfaceBlue },
+    numberText: { fontFamily: fonts.heading.bold, fontSize: 14, lineHeight: 18 },
+    line: { flex: 1, width: 2, minHeight: 16, backgroundColor: colors.borderBlue },
+    stepBody: { flex: 1, gap: 8, paddingTop: 8, paddingBottom: 16 },
+    stepTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    stepTitleText: { fontFamily: fonts.body.bold },
+    tag: {
+      marginLeft: 'auto',
+      paddingVertical: 2,
+      paddingHorizontal: 8,
+      borderRadius: radius.pill,
+      backgroundColor: colors.accentTint,
+    },
+    tagBlue: { backgroundColor: colors.surfaceBlue },
+    tagText: { fontFamily: fonts.body.bold, fontSize: 10, lineHeight: 13 },
+    stepFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    apply: {
+      height: 40,
+      paddingHorizontal: 16,
+      borderRadius: radius.tile,
+      backgroundColor: colors.accent,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    applyPressed: { backgroundColor: colors.accentPressed },
+    applyText: { fontFamily: fonts.body.bold, fontSize: 13, lineHeight: 18 },
+    disclaimer: {
+      flexDirection: 'row',
+      gap: 8,
+      padding: 14,
+      borderRadius: radius.card,
+      backgroundColor: colors.surfaceBlueSoft,
+      borderWidth: 1,
+      borderColor: colors.borderBlue,
+    },
+    flex: { flex: 1 },
+    pressed: { opacity: 0.9 },
+  });
+}

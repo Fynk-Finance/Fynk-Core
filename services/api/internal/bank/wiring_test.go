@@ -1,0 +1,283 @@
+package bank
+
+import (
+	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
+	"io"
+	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/keys"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/bank/ports"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/clock"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/config"
+	"github.com/Fynk-Finance/Fynk-Core/services/api/internal/platform/module"
+)
+
+func linkSettings(t *testing.T) config.Config {
+	t.Helper()
+	dir := t.TempDir()
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	signer := filepath.Join(dir, "signer.pem")
+	pemKey := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
+	if err := os.WriteFile(signer, pemKey, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	fp := filepath.Join(dir, "fp.key")
+	if err := os.WriteFile(fp, make([]byte, 32), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return config.Config{
+		EgressURL: "https://caddy:8443", BankSignerKeyFile: signer, BankFingerprintKeyFile: fp,
+		BankRedirectURI: "fynk://bank/callback", BancoDemoClientID: "fynk",
+		BancoDemoIssuer: "https://bank.example", BancoDemoAuthorizeURL: "https://bank.example/authorize",
+	}
+}
+
+func deps(c config.Config) module.Deps {
+	return module.Deps{
+		Config: c, Clock: clock.NewFixed(time.Date(2026, 10, 29, 15, 0, 0, 0, time.UTC)),
+		Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+}
+
+func TestWithEverySettingEverySimulatedEntityIsBuiltAndTheRevokerAndProvisionerAreInstalled(t *testing.T) {
+	t.Cleanup(func() { ports.InstallRevoker(nil); ports.InstallDemoProvisioner(nil) })
+	providers, fingerprints, err := bankProviders(deps(linkSettings(t)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := providers.Provider("banco-demo"); !ok {
+		t.Fatal("no Banco Demo")
+	}
+	for _, id := range []string{"billetera-demo", "banco-digital-demo", "cooperativa-demo"} {
+		if _, ok := providers.Provider(id); !ok {
+			t.Fatalf("no adapter for %s", id)
+		}
+	}
+	if _, err := ports.InstalledDemoProvisioner().Provision(context.Background(), "sub"); errors.Is(err, ports.ErrDemoProvisioningDisabled) {
+		t.Fatal("the demo provisioner is not installed")
+	}
+	if _, ok := providers.Provider("bancolombia"); ok {
+		t.Fatal("Bancolombia must stay out until its spike")
+	}
+	if fingerprints == nil {
+		t.Fatal("no fingerprinter")
+	}
+	if _, ok := ports.InstalledRevoker().(revoker); !ok {
+		t.Fatal("the real revoker is not installed for M4")
+	}
+}
+
+func TestAMissingSettingDisablesTheLinkAndKeepsTheUnavailableRevoker(t *testing.T) {
+	ports.InstallRevoker(nil)
+	ports.InstallDemoProvisioner(nil)
+	full := linkSettings(t)
+	for name, drop := range map[string]func(*config.Config){
+		"egress":       func(c *config.Config) { c.EgressURL = "" },
+		"signer":       func(c *config.Config) { c.BankSignerKeyFile = "" },
+		"fingerprint":  func(c *config.Config) { c.BankFingerprintKeyFile = "" },
+		"client id":    func(c *config.Config) { c.BancoDemoClientID = "" },
+		"issuer":       func(c *config.Config) { c.BancoDemoIssuer = "" },
+		"authorize":    func(c *config.Config) { c.BancoDemoAuthorizeURL = "" },
+		"missing file": func(c *config.Config) { c.BankSignerKeyFile = "/nope/signer.pem" },
+	} {
+		c := full
+		drop(&c)
+		if p, _, err := bankProviders(deps(c)); err == nil || p != nil {
+			t.Errorf("%s: want the link disabled, got %v %v", name, p, err)
+		}
+	}
+	if err := ports.InstalledRevoker().RevokeConsent(context.Background(), "banco-demo", "x"); !errors.Is(err, ports.ErrProviderUnavailable) {
+		t.Fatalf("revoker: got %v, want provider_unavailable", err)
+	}
+	if _, err := ports.InstalledDemoProvisioner().Provision(context.Background(), "sub"); !errors.Is(err, ports.ErrDemoProvisioningDisabled) {
+		t.Fatalf("provisioner: got %v, want disabled", err)
+	}
+}
+
+// stubKMS stands in for AWS KMS in the wiring tests; it is never called to sign here.
+type stubKMS struct{}
+
+func (stubKMS) SignDigest(context.Context, string, []byte) ([]byte, error)  { return nil, nil }
+func (stubKMS) GenerateMac(context.Context, string, []byte) ([]byte, error) { return nil, nil }
+
+func useKMS(t *testing.T, load func(context.Context) (keys.KMS, error)) *int {
+	t.Helper()
+	calls := 0
+	old := loadKMS
+	loadKMS = func(ctx context.Context) (keys.KMS, error) {
+		calls++
+		return load(ctx)
+	}
+	t.Cleanup(func() { loadKMS = old; ports.InstallRevoker(nil) })
+	return &calls
+}
+
+func TestTheKMSKeysReplaceTheFilesInAWS(t *testing.T) {
+	calls := useKMS(t, func(context.Context) (keys.KMS, error) { return stubKMS{}, nil })
+	c := linkSettings(t)
+	c.BankSignerKeyFile, c.BankFingerprintKeyFile = "", ""
+	c.BankSignerKMSKeyID, c.BankFingerprintKMSKeyID = "alias/signer", "alias/fingerprint"
+	providers, fingerprints, err := bankProviders(deps(c))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := providers.Provider("banco-demo"); !ok {
+		t.Fatal("no Banco Demo")
+	}
+	if _, ok := fingerprints.(*keys.KMSFingerprinter); !ok {
+		t.Fatalf("fingerprints = %T, want the KMS fingerprinter", fingerprints)
+	}
+	if *calls != 1 {
+		t.Fatalf("KMS client built %d times, want once", *calls)
+	}
+}
+
+func TestLocalKeyFilesNeverLoadAWS(t *testing.T) {
+	calls := useKMS(t, func(context.Context) (keys.KMS, error) { return stubKMS{}, nil })
+	_, fingerprints, err := bankProviders(deps(linkSettings(t)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := fingerprints.(*keys.LocalHMAC); !ok || *calls != 0 {
+		t.Fatalf("fingerprints = %T, KMS calls = %d: want the local key and no AWS", fingerprints, *calls)
+	}
+}
+
+func TestAKMSClientThatCannotLoadKeepsTheLinkOff(t *testing.T) {
+	useKMS(t, func(context.Context) (keys.KMS, error) { return nil, errors.New("no region") })
+	c := linkSettings(t)
+	c.BankSignerKMSKeyID = "alias/signer"
+	if p, _, err := bankProviders(deps(c)); err == nil || p != nil {
+		t.Fatalf("want the link disabled, got %v %v", p, err)
+	}
+	if err := ports.InstalledRevoker().RevokeConsent(context.Background(), "banco-demo", "x"); !errors.Is(err, ports.ErrProviderUnavailable) {
+		t.Fatalf("revoker: got %v, want provider_unavailable", err)
+	}
+	if _, err := ports.InstalledDemoProvisioner().Provision(context.Background(), "sub"); !errors.Is(err, ports.ErrDemoProvisioningDisabled) {
+		t.Fatalf("provisioner: got %v, want disabled", err)
+	}
+}
+
+// M15's CDT catalog (ports.ProductsOf) reads Banco Demo through the egress. It needs only the
+// egress settings: no keys, no client id, no user token.
+func TestTheCDTCatalogIsInstalledWithOnlyTheEgress(t *testing.T) {
+	t.Cleanup(func() { ports.InstallProductCatalog(nil) })
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/banco-demo/open-finance/v1/products/cdt" || r.Header.Get("Authorization") != "" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write([]byte(`{"data":[{"id":"cdt-90","name":"CDT 90 días","termDays":90,"rateEaBps":1050,"minAmountMinor":50000000,"risk":"bajo"}]}`))
+	}))
+	t.Cleanup(srv.Close)
+	ca := filepath.Join(t.TempDir(), "ca.crt")
+	if err := os.WriteFile(ca, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: srv.Certificate().Raw}), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := installProductCatalog(config.Config{EgressURL: srv.URL, EgressCAFile: ca}); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := ports.ProductsOf("banco-demo").Products(context.Background())
+	if err != nil || len(got) != 1 || got[0].ID != "cdt-90" || got[0].RateEaBps != 1050 || got[0].MinAmountMinor != 50000000 {
+		t.Fatalf("Products = %+v, %v", got, err)
+	}
+	for _, other := range []string{"billetera-demo", "bancolombia"} {
+		if _, err := ports.ProductsOf(other).Products(context.Background()); !errors.Is(err, ports.ErrProviderUnavailable) {
+			t.Fatalf("%s: got %v, want provider_unavailable", other, err)
+		}
+	}
+}
+
+func TestWithoutTheEgressTheCDTCatalogStaysUnavailable(t *testing.T) {
+	ports.InstallProductCatalog(nil)
+	if err := installProductCatalog(config.Config{}); !errors.Is(err, errNotConfigured) {
+		t.Fatalf("got %v, want errNotConfigured", err)
+	}
+	if _, err := ports.ProductsOf("banco-demo").Products(context.Background()); !errors.Is(err, ports.ErrProviderUnavailable) {
+		t.Fatalf("got %v, want provider_unavailable", err)
+	}
+}
+
+// bancolombiaSandbox adds the sandbox settings of Bancolombia (ADR 0003) to c.
+func bancolombiaSandbox(c config.Config) config.Config {
+	c.BancolombiaClientID, c.BancolombiaClientSecret = "fynk-sandbox", "market-secret"
+	c.BancolombiaIssuer = "https://auth1-api-open-finance-sandbox.example"
+	c.BancolombiaAuthorizeURL = "https://auth1-api-open-finance-sandbox.example/authorize"
+	c.BancolombiaSandbox = true
+	c.BancolombiaSandboxOwnerIDType, c.BancolombiaSandboxOwnerID = "CC", "78965432"
+	return c
+}
+
+func TestBancolombiasSandboxIsBuiltAndOfferedNextToBancoDemo(t *testing.T) {
+	t.Cleanup(func() { ports.InstallRevoker(nil); ports.Offer() })
+	providers, _, err := bankProviders(deps(bancolombiaSandbox(linkSettings(t))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"banco-demo", "billetera-demo", "bancolombia"} {
+		if _, ok := providers.Provider(id); !ok {
+			t.Fatalf("no %s", id)
+		}
+	}
+	p, ok := ports.Lookup("bancolombia")
+	if !ok || !p.IsSimulated || p.Kind != ports.KindBank || len(p.Scopes) != 3 {
+		t.Fatalf("offered %+v, %v", p, ok)
+	}
+	// M4 reaches Bancolombia through the same revoker, which says it cannot revoke there.
+	if err := ports.InstalledRevoker().RevokeConsent(context.Background(), "bancolombia", "c"); !errors.Is(err, ports.ErrRevocationNotSupported) {
+		t.Fatalf("revoker: %v", err)
+	}
+}
+
+func TestBancolombiaAloneIsEnough(t *testing.T) {
+	t.Cleanup(func() { ports.InstallRevoker(nil); ports.Offer() })
+	c := bancolombiaSandbox(linkSettings(t))
+	c.BancoDemoClientID = ""
+	providers, fingerprints, err := bankProviders(deps(c))
+	if err != nil || fingerprints == nil {
+		t.Fatal(err)
+	}
+	if _, ok := providers.Provider("banco-demo"); ok {
+		t.Fatal("Banco Demo without its client id")
+	}
+	if _, ok := providers.Provider("bancolombia"); !ok {
+		t.Fatal("no Bancolombia")
+	}
+}
+
+// Outside the sandbox Fynk has no customer document to send (rule 10): Bancolombia is not
+// offered, and Banco Demo keeps working.
+func TestBancolombiaOutsideTheSandboxIsNotOffered(t *testing.T) {
+	t.Cleanup(func() { ports.InstallRevoker(nil); ports.Offer() })
+	c := bancolombiaSandbox(linkSettings(t))
+	c.BancolombiaSandbox, c.BancolombiaSandboxOwnerIDType, c.BancolombiaSandboxOwnerID = false, "", ""
+	providers, _, err := bankProviders(deps(c))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := providers.Provider("bancolombia"); ok {
+		t.Fatal("Bancolombia built outside the sandbox")
+	}
+	if _, ok := ports.Lookup("bancolombia"); ok {
+		t.Fatal("Bancolombia offered outside the sandbox")
+	}
+	if _, ok := providers.Provider("banco-demo"); !ok {
+		t.Fatal("Banco Demo must keep working")
+	}
+}

@@ -1,0 +1,59 @@
+---
+date: 2026-11-19
+developer: Julián Castiblanco
+github: JulCR34l
+module: M11
+jira: [SCRUM-38]
+branch: feature/recommendations-gemini-provider
+tool: Claude Code
+pr: none
+status: done
+---
+
+# Add Gemini and OpenAI compatible models as an alternative to Bedrock
+
+## Instruction
+
+With Bedrock blocked by the AWS account and the demo the next day for about 50 people, Julián chose Gemini over a local Ollama model: "descartemos entonces la opción de Ollama, por ahora, dejemos la rama y el PR, por si acaso, entonces iremos por Gemini". He created a key in Google AI Studio and asked to implement it.
+
+## What was done
+
+* Diagnosis of AWS: account verification in progress (up to two days), Nova Lite quotas at 0 and not adjustable from Service Quotas, CloudShell refused. Recorded in ADR 0009.
+* `internal/recommendations/openaicompat`: an `advisor.Model` adapter on `POST <base>/chat/completions` (Gemini's OpenAI compatible endpoint, Groq, OpenRouter, Ollama), with `response_format` set to `advisor.OutputSchema` (or `json_object`) and an optional `reasoning_effort`. The key goes only in the `Authorization` header; errors carry the provider's message, never the key.
+* `module.go`: `RECOMMENDATIONS_PROVIDER` (`bedrock` by default, `gemini` or `openai`), `RECOMMENDATIONS_API_KEY` (or `GEMINI_API_KEY`), `RECOMMENDATIONS_API_BASE_URL`, `RECOMMENDATIONS_RESPONSE_FORMAT` and `RECOMMENDATIONS_REASONING_EFFORT`. On Gemini the model is `gemini-4-hydrogen` with `low` reasoning by default. A provider without a key answers an error, so the service falls back to the templates.
+* `live_bedrock_test.go`: `-provider=gemini`, through the same settings and model choice as the API.
+* ADR 0009: the finding, the decision, the data that leaves AWS and the capacity for 50 people.
+
+## Result
+
+* Go: `go vet` (with and without the `bedrock` tag), golangci-lint with the repository config and `go test -race` pass for `internal/recommendations/...` and `internal/app`.
+* Not run here against the real Gemini API: the key stays on Julián's computer and this session cannot reach Google. Julián runs the live check.
+* Pull request: opened against `develop`.
+
+## Decisions and problems
+
+* One OpenAI compatible adapter instead of a Gemini SDK: the same code works with Gemini, Groq, OpenRouter and Ollama, so #421 (Ollama) is not needed.
+* The aggregate snapshot leaves AWS with Gemini. It has no personal data, but the team has to accept it (ADR 0009).
+* In staging the key goes in Secrets Manager like the other secrets of the API task (M14), and the API needs outbound access to Google.
+
+## First live check and fixes
+
+Julián's first live run with `-provider=gemini` passed the checks in 2 of 20 answers. Those 2 were correct. The rest failed for four reasons:
+
+* `empty answer (finish reason "length")` and truncated JSON: `gemini-4-hydrogen` thinks before it answers and spent the 800 tokens of the Bedrock budget. Fix: `RECOMMENDATIONS_MAX_TOKENS`, 4096 by default on Gemini and OpenAI compatible providers, 800 on Bedrock.
+* `429 RESOURCE_EXHAUSTED`: the per minute limit of the free tier (about 40 calls in 100 seconds). Fix in the test: `-pause` between runs. For the demo: billing turned on, or a lighter model.
+* `503 UNAVAILABLE`, high demand at Google: a lighter model has less demand.
+* The report was not written because `docs/qa` did not exist. Fix: the test creates the folder.
+
+## End to end in the app
+
+Daniel asked to see the AI text in the app, not only in the tests. Julián ran the local stack with Gemini and the app on the Android emulator (Windows needed a short folder and ninja 1.12 for the native build, because of the 260 character path limit).
+
+* The app called `POST /v1/recommendations` and the API called Gemini, but `gemini-4-hydrogen` answered `429` (20 requests a day on the free tier) and then `503 UNAVAILABLE`, high demand.
+* The API log now names the reason of a failed model call (never the key or the model text), which is how the 503 was found.
+* `gemini-3.5-flash-lite` passed the live check 5 of 5 and the app showed "Texto redactado con IA a partir de tus cifras." It is now the default model on Gemini.
+* Found on the way: the phone kept a fallback answer and never asked again for the same numbers (fixed in #423), and the "Recomendaciones con IA" switch of Privacidad y datos (M13) does not save its value (reported to M13).
+
+## Next step
+
+Julián runs the live check with `-provider=gemini` and reviews the 20 answers. Then the key is set where the demo backend runs.

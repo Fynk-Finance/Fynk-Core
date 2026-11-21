@@ -1,0 +1,133 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390"><title>App azul y verde · Ajustes de notificaciones</title></head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;background:#ffffff;color:#0f2233}
+a{color:#177fa9}
+.vscroll{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;overflow-x:hidden;overflow-y:auto}
+.vscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.btn{cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.row{cursor:pointer;transition:background-color .15s ease}
+.row:hover{background-color:#f4fbfe !important}
+.sw{position:relative;flex-shrink:0;width:48px;height:28px;padding:0;border:none;border-radius:999px;cursor:pointer;transition:background-color .2s ease}
+.sw-k{position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:999px;background:#ffffff;box-shadow:0 2px 6px rgba(15,34,51,.25);transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.chip{cursor:pointer;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
+.chip:hover{border-color:#bfe6f6 !important}
+.field{transition:border-color .2s ease,background-color .2s ease}
+.field:focus-within{border-color:#2fa8d8 !important;background-color:#ffffff !important}
+.field input,.field textarea{border:none;outline:none;background:transparent;font-family:inherit;font-size:15px;color:#0f2233;flex-grow:1;min-width:0;width:100%;resize:none}
+.field input::placeholder,.field textarea::placeholder{color:#8a9ba6}
+.cta{cursor:pointer;transition:background-color .2s ease}
+.cta:hover{background-color:#279dcc !important}
+.cta-red:hover{background-color:#a93226 !important}
+.link{cursor:pointer}
+.btn:focus-visible,.row:focus-visible,.sw:focus-visible,.chip:focus-visible,.cta:focus-visible,.link:focus-visible{outline:3px solid #b5e5f7;outline-offset:2px}
+@keyframes cf-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.cf-in{animation:cf-in .26s ease-out both}
+@keyframes cf-scrim{from{opacity:0}to{opacity:1}}
+@keyframes cf-sheet{from{transform:translateY(100%)}to{transform:none}}
+@keyframes cf-dlg{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes cf-toast{0%{opacity:0;transform:translate(-50%,10px)}12%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,6px)}}
+.cf-scrim{animation:cf-scrim .2s ease-out both}
+.cf-sheet{animation:cf-sheet .36s cubic-bezier(.22,1,.36,1) both}
+.cf-dlg{animation:cf-dlg .26s cubic-bezier(.22,1,.36,1) both}
+.cf-toast{animation:cf-toast 2.6s ease both}
+@media (prefers-reduced-motion:reduce){.cf-in,.cf-scrim,.cf-sheet,.cf-dlg,.cf-toast{animation:none}.sw,.sw-k{transition:none}}
+
+</style>
+
+<div class="cf-root" style="width: 390px; height: 844px; box-sizing: border-box; background-color: #ffffff; position: relative; overflow: hidden">
+<div class="vscroll" style="position: absolute; inset: 0; display: flex; flex-direction: column; padding-bottom: 40px">
+<div style="padding: 16px 16px 0; flex-shrink: 0">
+
+<div style="margin-top: 16px"><div data-dc-group="" style="box-sizing: border-box; display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding-bottom: 16px"><span style="width: 56px; height: 56px; border-radius: 16px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></span><a class="btn" href="DetalleCuentas.html" aria-label="Volver a Mi cuenta" style="width: 48px; height: 48px; box-sizing: border-box; border-radius: 14px; background-color: #f4fbfe; color: #1f93c2; display: flex; align-items: center; justify-content: center; text-decoration: none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></a></div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 28px; line-height: 34px; letter-spacing: -0.01em">Notificaciones</h1>
+<p style="margin: 8px 0 0; font-size: 14px; line-height: 20px; color: #5e7482">Elige qué avisos quieres recibir.</p>
+</div>
+</div>
+<div style="padding: 24px 16px 0; display: flex; flex-direction: column; gap: 24px">
+
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 16px; border-radius: 20px; background-color: #f4fbfe; border: 1px solid #e4f5fc">
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; line-height: 20px; font-weight: 700">Permitir notificaciones</span><span style="font-size: 12px; line-height: 17px; color: #5e7482">Recibirás los avisos que elijas abajo</span></span>
+<button class="sw" type="button" role="switch" aria-checked="true" aria-label="Permitir notificaciones" onClick="" style="background-color: #2fa8d8"><span class="sw-k" style="transform: translateX(20px)"></span></button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 24px; opacity: 1; pointer-events: auto; transition: opacity .2s ease">
+<section style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5e7482">Pagos y gastos fijos</h2>
+<div style="border-radius: 20px; background-color: #ffffff; border: 1px solid #e4f5fc; box-shadow: 0 6px 16px -12px rgba(15, 34, 51, 0.2); padding: 0 16px">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 0; ">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600">Recordatorio de pagos</span><span style="font-size: 12px; line-height: 17px; color: #5e7482">Antes de que venza un gasto fijo</span></span>
+<button class="sw" type="button" role="switch" aria-checked="true" aria-label="Recordatorio de pagos" onClick="" style="background-color: #2fa8d8"><span class="sw-k" style="transform: translateX(20px)"></span></button>
+</div>
+<div role="radiogroup" style="display: flex; gap: 8px; flex-wrap: wrap; padding: 0 0 16px 48px">
+
+<button class="chip" type="button" role="radio" aria-checked="false" onClick="" style="height: 32px; padding: 0 8px; border-radius: 10px; border: 1.5px solid #e4f5fc; background-color: #ffffff; color: #0f2233; font-family: inherit; font-size: 12px; font-weight: 700">El mismo día</button>
+
+<button class="chip" type="button" role="radio" aria-checked="true" onClick="" style="height: 32px; padding: 0 8px; border-radius: 10px; border: 1.5px solid #2fa8d8; background-color: #2fa8d8; color: #ffffff; font-family: inherit; font-size: 12px; font-weight: 700">1 día antes</button>
+
+<button class="chip" type="button" role="radio" aria-checked="false" onClick="" style="height: 32px; padding: 0 8px; border-radius: 10px; border: 1.5px solid #e4f5fc; background-color: #ffffff; color: #0f2233; font-family: inherit; font-size: 12px; font-weight: 700">2 días antes</button>
+
+</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 0; border-top: 1px solid #edf1f4;">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6h20v12H2zM2 10h20"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600">Cobro de suscripciones</span><span style="font-size: 12px; line-height: 17px; color: #5e7482">Cuando se renueve una suscripción</span></span>
+<button class="sw" type="button" role="switch" aria-checked="true" aria-label="Cobro de suscripciones" onClick="" style="background-color: #2fa8d8"><span class="sw-k" style="transform: translateX(20px)"></span></button>
+</div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5e7482">Movimientos y saldos</h2>
+<div style="border-radius: 20px; background-color: #ffffff; border: 1px solid #e4f5fc; box-shadow: 0 6px 16px -12px rgba(15, 34, 51, 0.2); padding: 0 16px">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 0; ">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600">Ingresos recibidos</span><span style="font-size: 12px; line-height: 17px; color: #5e7482">Cuando entre dinero a tus cuentas</span></span>
+<button class="sw" type="button" role="switch" aria-checked="true" aria-label="Ingresos recibidos" onClick="" style="background-color: #2fa8d8"><span class="sw-k" style="transform: translateX(20px)"></span></button>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 0; border-top: 1px solid #edf1f4;">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 7 7 17M16 17H7V8"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600">Gastos grandes</span><span style="font-size: 12px; line-height: 17px; color: #5e7482">Cuando un gasto supere el monto que elijas</span></span>
+<button class="sw" type="button" role="switch" aria-checked="true" aria-label="Gastos grandes" onClick="" style="background-color: #2fa8d8"><span class="sw-k" style="transform: translateX(20px)"></span></button>
+</div>
+<div role="radiogroup" style="display: flex; gap: 8px; flex-wrap: wrap; padding: 0 0 16px 48px">
+
+<button class="chip" type="button" role="radio" aria-checked="false" onClick="" style="height: 32px; padding: 0 8px; border-radius: 10px; border: 1.5px solid #e4f5fc; background-color: #ffffff; color: #0f2233; font-family: inherit; font-size: 12px; font-weight: 700">Más de $100.000</button>
+
+<button class="chip" type="button" role="radio" aria-checked="true" onClick="" style="height: 32px; padding: 0 8px; border-radius: 10px; border: 1.5px solid #2fa8d8; background-color: #2fa8d8; color: #ffffff; font-family: inherit; font-size: 12px; font-weight: 700">Más de $200.000</button>
+
+<button class="chip" type="button" role="radio" aria-checked="false" onClick="" style="height: 32px; padding: 0 8px; border-radius: 10px; border: 1.5px solid #e4f5fc; background-color: #ffffff; color: #0f2233; font-family: inherit; font-size: 12px; font-weight: 700">Más de $500.000</button>
+
+</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 0; border-top: 1px solid #edf1f4;">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600">Saldo bajo</span><span style="font-size: 12px; line-height: 17px; color: #5e7482">Si una cuenta baja de $100.000</span></span>
+<button class="sw" type="button" role="switch" aria-checked="false" aria-label="Saldo bajo" onClick="" style="background-color: #cfdbe3"><span class="sw-k" style="transform: none"></span></button>
+</div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5e7482">Metas y recomendaciones</h2>
+<div style="border-radius: 20px; background-color: #ffffff; border: 1px solid #e4f5fc; box-shadow: 0 6px 16px -12px rgba(15, 34, 51, 0.2); padding: 0 16px">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 0; ">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600">Avance de metas</span><span style="font-size: 12px; line-height: 17px; color: #5e7482">Cuando llegues al 25, 50, 75 y 100 %</span></span>
+<button class="sw" type="button" role="switch" aria-checked="true" aria-label="Avance de metas" onClick="" style="background-color: #2fa8d8"><span class="sw-k" style="transform: translateX(20px)"></span></button>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 0; border-top: 1px solid #edf1f4;">
+<span style="width: 40px; height: 40px; border-radius: 12px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600">Nuevas recomendaciones</span><span style="font-size: 12px; line-height: 17px; color: #5e7482">Ideas para ahorrar según tus gastos</span></span>
+<button class="sw" type="button" role="switch" aria-checked="true" aria-label="Nuevas recomendaciones" onClick="" style="background-color: #2fa8d8"><span class="sw-k" style="transform: translateX(20px)"></span></button>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+
+</div>
+</body></html>

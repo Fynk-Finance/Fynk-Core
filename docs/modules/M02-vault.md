@@ -5,7 +5,7 @@
 | Phase | 1 |
 | Stories | HU-003 SCRUM-7 (3), HU-004 SCRUM-8 (8), HU-045 SCRUM-62 (8), HU-046 SCRUM-63 (5) |
 | Points | 24 |
-| Owner | Daniel Palacios |
+| Owner | Daniel Palacios (`@Komi-yes`) |
 | Owns | `apps/mobile/src/modules/vault/`, `services/api/internal/backup/`, `contracts/modules/backup.yaml` |
 | Depends on | M0, M1 (session, device key pair, `ActivateDevice`) |
 | Used by | every mobile module that stores data (M5 to M12) |
@@ -19,7 +19,7 @@ You are building module M2 of Fynk: the encrypted vault on the phone, biometric 
 ## Read first
 
 1. `CLAUDE.md` (Architecture rules 2 and 3, Security rules), `docs/modules/00-shared-contracts.md` sections 3.1, 3.2 and 5.
-2. Design PNGs: `02-iniciar-sesion.png` (header and biometric button style), `07-mi-cuenta.png` and `07-mi-cuenta-2.png` (Seguridad row), `14-config-correo.png` (code input style), `18-config-listo.png` (summary card style). Read the code of the same screens in `docs/design/source/` first (file map in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs are for checking the result.
+2. Design screens `Login` (header and biometric button style), `CfgSeguridad` (the "Face ID o huella" switch; "Código de recuperación" goes on this screen), `OnbCorreo` (code input style) and `OnbListo` (summary card style). Read the code of these screens in `docs/design/sources/light/` and `docs/design/sources/dark/` first (inventory, gestures and transitions in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` are for checking the result. Every screen works in light and dark (colors only from `useTheme()`), and uses the default transition and back gesture of its kind unless the inventory says otherwise.
 3. Jira SCRUM-7, SCRUM-8, SCRUM-62, SCRUM-63 if the Atlassian connector is available.
 
 ## Stories and criteria
@@ -115,6 +115,8 @@ create table backup.device_approvals (
 * `PUT /backup/records` accepts up to 200 records, rejects a version lower than the stored one with `409 stale_version`. Limit 5 MB per user.
 * `GET /backup/records` pages by `updatedAfter` cursor.
 * `PUT /backup/recovery-key` and `GET /backup/recovery-key`. Only a device with status `active` may call PUT.
+* `POST /backup/recovery-key/activate`: a pending device sends the proof `HKDF-SHA256(DEK, 'fynk/device-proof/v1')`, derived after opening the wrapped DEK with the recovery code; the server activates it when the SHA-256 of the proof matches the stored hash (5 attempts per hour).
+* `POST /backup/reset`: after a password reset with the email code (last 10 minutes), deletes the backup and the recovery key, removes the other devices and activates the calling one. Audit: `backup.reset`.
 * Device approvals: `POST /device-approvals` (new device, pending), `GET /device-approvals/pending` (old device, polled every 5 s while the approval screen is open), `GET /device-approvals/{id}` (new device polls), `POST /device-approvals/{id}/approve` (old active device sends ephemeral key, wrapped DEK, nonce, then calls identity `ActivateDevice`), `POST /device-approvals/{id}/reject`. Requests expire after 10 minutes.
 * Audit: `backup.uploaded` (count only), `backup.restored`, `recovery_key.set`, `device.approved`, `device.rejected`.
 

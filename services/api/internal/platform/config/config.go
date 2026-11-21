@@ -1,0 +1,228 @@
+// Package config reads the API settings from environment variables.
+package config
+
+import (
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+)
+
+// Env is the deployment environment.
+type Env string
+
+// Environments. Only EnvLocal enables development shortcuts such as the dev-token.
+const (
+	EnvLocal   Env = "local"
+	EnvStaging Env = "staging"
+	EnvProd    Env = "prod"
+)
+
+// Config holds every setting the API needs. Secrets come from the environment
+// (Secrets Manager in AWS, .env locally) and never from the repository.
+type Config struct {
+	AppEnv           Env
+	Port             string
+	DatabaseURL      string
+	RedisURL         string
+	KeycloakIssuer   string
+	KeycloakAudience string
+	// KeycloakURL is Keycloak as the API reaches it, for the JWKS and the admin API. Inside
+	// Docker it differs from the issuer host (http://keycloak:8080 vs http://localhost:8081).
+	KeycloakURL   string
+	KeycloakRealm string
+	// EgressURL is the Caddy egress (M14) that adds Fynk's mTLS client certificate to every call
+	// to a bank or a market data provider: <EgressURL>/<provider>/... (M5 and M15). It must be
+	// https. Empty means no outside provider can be reached, and those calls fail closed.
+	EgressURL string
+	// EgressCAFile is the PEM file of the CA that signed the egress's own TLS certificate.
+	// Empty means the system roots. In AWS (Fargate cannot mount a secret as a file) the CA comes
+	// as text in EGRESS_CA_PEM, and Load writes it to a private temporary file (egressCAFromPEM).
+	EgressCAFile string
+	// KeycloakAdminClientSecret is the client secret of the Keycloak client fynk-admin (client
+	// credentials) that M1 uses for the admin API. Optional: when empty, the features that need
+	// it answer 503. Never log it.
+	KeycloakAdminClientSecret string
+
+	// Bank link (M5). Every one is optional: without them the link endpoints fail closed.
+	//
+	// BankSignerKeyFile is the PEM RSA private key that signs the private_key_jwt client
+	// assertions (PS256) on a developer machine. In AWS an asymmetric KMS key replaces it (M14).
+	BankSignerKeyFile string
+	// BankFingerprintKeyFile holds the HMAC key, at least 32 bytes, of the refresh token
+	// fingerprints kept with each bank link. In AWS a KMS HMAC key replaces it (M14).
+	BankFingerprintKeyFile string
+	// BankSignerKMSKeyID and BankFingerprintKMSKeyID are the AWS KMS keys (id, ARN or alias)
+	// that replace the two files in AWS: an RSA_3072 key that signs with RSASSA_PSS_SHA_256 and
+	// an HMAC_256 key (M14's KMS module). When one is set, it is used instead of its file.
+	BankSignerKMSKeyID      string
+	BankFingerprintKMSKeyID string
+	// BankRedirectURI is where a bank sends the authorization code: the app's deep link.
+	BankRedirectURI string
+	// BancoDemoClientID is Fynk's client at the simulated bank (M16), BancoDemoIssuer the
+	// issuer the client assertion is addressed to, and BancoDemoAuthorizeURL the authorization
+	// page the phone opens in the system browser.
+	BancoDemoClientID     string
+	BancoDemoIssuer       string
+	BancoDemoAuthorizeURL string
+
+	// Bancolombia's Open Finance APIs (M5, docs/adr/0003-bancolombia-sandbox.md). Every one is
+	// optional: without the client id and secret Bancolombia is not offered.
+	//
+	// BancolombiaClientID and BancolombiaClientSecret are the credentials of Fynk's application
+	// in Bancolombia's API Market (the Client-Id and Client-Secret headers). Never log the secret.
+	BancolombiaClientID     string
+	BancolombiaClientSecret string
+	// BancolombiaIssuer is the issuer the client assertion is addressed to, and
+	// BancolombiaAuthorizeURL the authorization page the phone opens (both from Bancolombia's
+	// /.well-known/openid-configuration).
+	BancolombiaIssuer       string
+	BancolombiaAuthorizeURL string
+	// BancolombiaSandbox marks Bancolombia's sandbox: its data is fictional, so the app shows
+	// "Simulado". Bancolombia's consent API asks for the customer's ID document, which Fynk
+	// never asks (CLAUDE.md, rule 10), so outside the sandbox Bancolombia is not offered.
+	BancolombiaSandbox bool
+	// BancolombiaSandboxOwner* is the fictional customer of the sandbox, sent as the consent's
+	// AccountOwner. Only allowed with BancolombiaSandbox.
+	BancolombiaSandboxOwnerIDType string
+	BancolombiaSandboxOwnerID     string
+	BancolombiaSandboxOwnerName   string
+}
+
+// IsLocal reports whether the API runs on a developer machine.
+func (c Config) IsLocal() bool { return c.AppEnv == EnvLocal }
+
+// Load reads the configuration through getenv (os.Getenv in production, a map in tests).
+// APP_ENV is required, so a missing variable never falls back to local shortcuts.
+func Load(getenv func(string) string) (Config, error) {
+	c := Config{
+		AppEnv:           Env(getenv("APP_ENV")),
+		Port:             getenv("PORT"),
+		DatabaseURL:      getenv("DATABASE_URL"),
+		RedisURL:         getenv("REDIS_URL"),
+		KeycloakIssuer:   getenv("KEYCLOAK_ISSUER"),
+		KeycloakAudience: getenv("KEYCLOAK_AUDIENCE"),
+		KeycloakURL:      getenv("KEYCLOAK_URL"),
+		KeycloakRealm:    getenv("KEYCLOAK_REALM"),
+		EgressURL:        strings.TrimRight(getenv("EGRESS_URL"), "/"),
+		EgressCAFile:     getenv("EGRESS_CA_FILE"),
+
+		KeycloakAdminClientSecret: getenv("FYNK_ADMIN_CLIENT_SECRET"),
+
+		BankSignerKeyFile:       getenv("BANK_SIGNER_KEY_FILE"),
+		BankFingerprintKeyFile:  getenv("BANK_FINGERPRINT_KEY_FILE"),
+		BankSignerKMSKeyID:      getenv("BANK_SIGNER_KMS_KEY_ID"),
+		BankFingerprintKMSKeyID: getenv("BANK_FINGERPRINT_KMS_KEY_ID"),
+		BankRedirectURI:         getenv("BANK_REDIRECT_URI"),
+		BancoDemoClientID:       getenv("BANCO_DEMO_CLIENT_ID"),
+		BancoDemoIssuer:         getenv("BANCO_DEMO_ISSUER"),
+		BancoDemoAuthorizeURL:   getenv("BANCO_DEMO_AUTHORIZE_URL"),
+
+		BancolombiaClientID:           getenv("BANCOLOMBIA_CLIENT_ID"),
+		BancolombiaClientSecret:       getenv("BANCOLOMBIA_CLIENT_SECRET"),
+		BancolombiaIssuer:             getenv("BANCOLOMBIA_ISSUER"),
+		BancolombiaAuthorizeURL:       getenv("BANCOLOMBIA_AUTHORIZE_URL"),
+		BancolombiaSandboxOwnerIDType: getenv("BANCOLOMBIA_SANDBOX_OWNER_ID_TYPE"),
+		BancolombiaSandboxOwnerID:     getenv("BANCOLOMBIA_SANDBOX_OWNER_ID"),
+		BancolombiaSandboxOwnerName:   getenv("BANCOLOMBIA_SANDBOX_OWNER_NAME"),
+	}
+	if c.Port == "" {
+		c.Port = "8080"
+	}
+	if c.KeycloakRealm == "" {
+		c.KeycloakRealm = "fynk"
+	}
+	if c.BankRedirectURI == "" {
+		c.BankRedirectURI = "fynk://bank/callback"
+	}
+
+	var errs []error
+	if v := getenv("BANCOLOMBIA_SANDBOX"); v != "" {
+		sandbox, err := strconv.ParseBool(v)
+		if err != nil {
+			errs = append(errs, errors.New("BANCOLOMBIA_SANDBOX must be true or false"))
+		}
+		c.BancolombiaSandbox = sandbox
+	}
+	switch c.AppEnv {
+	case EnvLocal, EnvStaging, EnvProd:
+	case "":
+		errs = append(errs, errors.New("APP_ENV is required (local, staging or prod)"))
+	default:
+		errs = append(errs, fmt.Errorf("APP_ENV %q is not one of local, staging or prod", c.AppEnv))
+	}
+	if c.DatabaseURL == "" {
+		errs = append(errs, errors.New("DATABASE_URL is required"))
+	}
+	if c.RedisURL == "" {
+		errs = append(errs, errors.New("REDIS_URL is required"))
+	}
+	if caPEM := getenv("EGRESS_CA_PEM"); caPEM != "" {
+		if c.EgressCAFile != "" {
+			errs = append(errs, errors.New("set EGRESS_CA_FILE or EGRESS_CA_PEM, not both"))
+		} else if path, err := egressCAFromPEM(caPEM); err != nil {
+			errs = append(errs, err)
+		} else {
+			c.EgressCAFile = path
+		}
+	}
+	// TLS on every hop (CLAUDE.md, Security rules): the egress is never reached in clear.
+	if c.EgressURL != "" && !strings.HasPrefix(c.EgressURL, "https://") {
+		errs = append(errs, errors.New("EGRESS_URL must start with https://"))
+	}
+	// The phone opens the bank's authorization page; outside a developer machine it is https.
+	if c.BancoDemoAuthorizeURL != "" && c.AppEnv != EnvLocal &&
+		!strings.HasPrefix(c.BancoDemoAuthorizeURL, "https://") {
+		errs = append(errs, errors.New("BANCO_DEMO_AUTHORIZE_URL must start with https://"))
+	}
+	if c.BancolombiaAuthorizeURL != "" && c.AppEnv != EnvLocal &&
+		!strings.HasPrefix(c.BancolombiaAuthorizeURL, "https://") {
+		errs = append(errs, errors.New("BANCOLOMBIA_AUTHORIZE_URL must start with https://"))
+	}
+	// Fynk never asks a person for their cédula (rule 10): an owner is only the sandbox's.
+	if !c.BancolombiaSandbox && (c.BancolombiaSandboxOwnerIDType != "" || c.BancolombiaSandboxOwnerID != "" ||
+		c.BancolombiaSandboxOwnerName != "") {
+		errs = append(errs, errors.New("BANCOLOMBIA_SANDBOX_OWNER_* is only allowed with BANCOLOMBIA_SANDBOX=true"))
+	}
+	return c, errors.Join(errs...)
+}
+
+// egressCAFromPEM checks that pemText holds at least one certificate and writes it to a new
+// temporary file only this process can read. The modules that call the egress read the CA from
+// that file, as they do with EGRESS_CA_FILE.
+func egressCAFromPEM(pemText string) (string, error) {
+	rest := []byte(strings.ReplaceAll(pemText, `\n`, "\n"))
+	found := 0
+	for {
+		var block *pem.Block
+		block, rest = pem.Decode(rest)
+		if block == nil {
+			break
+		}
+		if block.Type != "CERTIFICATE" {
+			continue
+		}
+		if _, err := x509.ParseCertificate(block.Bytes); err != nil {
+			return "", fmt.Errorf("EGRESS_CA_PEM: %w", err)
+		}
+		found++
+	}
+	if found == 0 {
+		return "", errors.New("EGRESS_CA_PEM holds no PEM certificate")
+	}
+	f, err := os.CreateTemp("", "fynk-egress-ca-*.pem")
+	if err != nil {
+		return "", fmt.Errorf("EGRESS_CA_PEM: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+	if err := f.Chmod(0o600); err != nil {
+		return "", fmt.Errorf("EGRESS_CA_PEM: %w", err)
+	}
+	if _, err := f.WriteString(strings.ReplaceAll(pemText, `\n`, "\n")); err != nil {
+		return "", fmt.Errorf("EGRESS_CA_PEM: %w", err)
+	}
+	return f.Name(), nil
+}

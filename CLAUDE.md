@@ -5,7 +5,7 @@ Fynk is a personal finance app for Colombian users, built as a university projec
 Plan and prompts:
 
 * Overview of all modules and decisions: the doc "Fynk Implementation Plan by Modules".
-* One prompt per module with every technical detail: `docs/modules/M00-foundations.md` to `docs/modules/M16-banco-demo.md`.
+* One prompt per module with every technical detail: `docs/modules/M00-foundations.md` to `docs/modules/M16-banco-demo.md`. `docs/modules/M16b-simulated-banks.md` extends M16.
 * Shared contracts every module builds on: `docs/modules/00-shared-contracts.md`.
 * Phases, order of work and gate checklists: `docs/modules/00-phases-and-gates.md`.
 
@@ -14,7 +14,7 @@ Plan and prompts:
 1. Know your module and the Jira key (project SCRUM). Every line under "Criterios de Calidad" becomes at least one test.
 2. Read the latest session logs of your module in `docs/history/sessions/` to know what was already done and what was left pending.
 3. Read this file, your module prompt in `docs/modules/` and `00-shared-contracts.md`.
-4. Read the design code of your screens in `docs/design/source/` and their PNGs in `docs/design/screens/` (see Design source below).
+4. Read the design code of your screens in `docs/design/sources/light/` and `docs/design/sources/dark/`, and their PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` (see Design source below).
 5. Create your branch from the latest `develop` (see Git workflow). Never work on `develop` or `main` directly.
 6. Write the tests from the criteria first, then the code.
 7. Stay inside your module's folders. Anything another module needs goes through its `index.ts`, a port, or the API contract.
@@ -23,9 +23,10 @@ Plan and prompts:
 ## Design source
 
 * **The only visual source is the design artifact "Diseño App Fynk (Copy)", page "App azul y verde", owned by the team: https://claude.ai/artifact/DzjgXy5aVtdYQiTzq6gquk**
-* The repository keeps the design's own code for every screen in `docs/design/source/` (`Verde*.dc.html`). Read the code of your screens first and take exact colors, fonts, sizes, SVG illustrations, icons and animations from it. Never guess a value that is in that code.
-* `docs/design/screens/` keeps a PNG of each screen to check that the result looks the same. Screens taller than the phone have a second image with the suffix `-2`.
-* `docs/design/README.md` maps each screen to its code file, image and module, and explains how to turn the design's HTML, SVG and CSS animations into React Native.
+* The repository keeps the design's own code for every screen in two themes: `docs/design/sources/light/<Screen>.html` and `docs/design/sources/dark/<Screen>.html`. Both files have the same markup and only the colors differ. Read the code of your screens first and take exact colors, fonts, sizes, SVG illustrations, icons and animations from it. Never guess a value that is in that code. `node scripts/design-color-pairs.mjs '<light color>'` gives the dark value of any color.
+* `docs/design/screens/light/` and `docs/design/screens/dark/` keep a PNG of each screen to check that the result looks the same in both themes.
+* Every screen works in light and dark. The app follows the phone's setting unless the person picks Claro or Oscuro in the app.
+* `docs/design/README.md` maps each screen to its code file, image, module, buttons, gestures and transition, and explains how to turn the design's HTML, SVG, CSS animations and gestures into React Native. Every screen uses the default transition and back gesture of its kind unless its inventory row says otherwise.
 * When the design changes, it is edited in the copy artifact and the affected files in `docs/design/` are updated in a `docs/update-design` pull request.
 * Colors, fonts, spacing and components come only from `apps/mobile/src/shared/ui/` (built by M0 from the design). Never hardcode a color or invent a style.
 * When a screen is missing in the design, build it from existing components and list it in the pull request as "new screen, needs design review".
@@ -42,7 +43,7 @@ These rules are not up for debate inside a task. Changing one needs a team decis
 5. **Code calculates, the LLM writes.** Every number comes from deterministic code in the analytics module. Bedrock only receives the aggregate snapshot and writes text. Raw movements never leave the phone.
 6. **Fynk never moves money.** No transfers, payments, investments or cancellations from the app. "Programar" means a reminder. "+ Invertir" opens the Banco Demo portal.
 7. **One port for every bank.** All bank access goes through the provider port. Banco Demo, Billetera Demo and Bancolombia are adapters. A new bank or an aggregator must be addable without touching the domain.
-8. **Banco Demo is a separate simulated bank.** It has its own login and web portal where money actions happen. Fynk reads it through the same consent, OAuth and mTLS flow as a real bank. Its data is always labeled "Simulado".
+8. **Banco Demo is a separate simulated bank.** It has its own login and web portal where money actions happen. Fynk reads it through the same consent, OAuth and mTLS flow as a real bank. Its data is always labeled "Simulado". For the demo only, the simulator creates a new user's accounts at sign up (ADR 0008).
 9. **Investment is informative only.** The Inversión tab shows the user's own CDTs, a catalog that is the same for every user, and a calculator. Fynk never filters, sorts or highlights products by the user's balance or profile (Decreto 2555, art. 2.40.1.1.2 and 2.40.1.1.3).
 10. **No cédula.** It is not asked for and not stored. The bank identifies the user in its own login.
 
@@ -103,14 +104,14 @@ fynk/
 
 ## Team
 
-| Person | Modules | Points |
-| --- | --- | --- |
-| Daniel Palacios | M1 Identity, M2 Vault and backup | 39 |
-| Sofia Nicolle Ariza | M0 Foundations, M3 Onboarding, M6 Accounts, M7 Transactions | 42 |
-| Juan Carlos Leal | M4 Consents, M5 Bank and sync | 41 |
-| Juan Pablo Contreras | M13 Compliance and audit, M14 Infrastructure, M16 Banco Demo | 35 |
-| Karol | M8 Savings goals, M9 Recurring and subscriptions, M12 Notifications | 36 |
-| Julián Castiblanco | M10 Analytics and caps, M11 AI recommendations, M15 Investment | 42 |
+| Person | GitHub | Modules | Points |
+| --- | --- | --- | --- |
+| Daniel Palacios | `@Komi-yes` | M1 Identity, M2 Vault and backup, simulated banks (M16b) | 54 |
+| Sofia Nicolle Ariza | `@sofia-ariza-783` | M0 Foundations, M3 Onboarding, M6 Accounts, M7 Transactions | 42 |
+| Juan Carlos Leal | `@JuanLeal05` | M4 Consents, M5 Bank and sync | 41 |
+| Juan Pablo Contreras | `@juancontrerasp` | M13 Compliance and audit, M14 Infrastructure, M16 Banco Demo | 35 |
+| Karol | `@Karol2905` | M8 Savings goals, M9 Recurring and subscriptions, M12 Notifications | 36 |
+| Julián Castiblanco | `@JulCR34l` | M10 Analytics and caps, M11 AI recommendations, M15 Investment | 42 |
 
 Each person reviews the pull requests of their modules (see `.github/CODEOWNERS`). A change to another person's module needs that person's approval.
 
@@ -118,8 +119,8 @@ Each person reviews the pull requests of their modules (see `.github/CODEOWNERS`
 
 | Data | Where |
 | --- | --- |
-| Login, password, sessions, email verification | Keycloak (its own database) |
-| Profile name, devices with public keys | Cloud, PostgreSQL schema `identity` |
+| Login, password, sessions, email verification, profile name | Keycloak (its own database) |
+| Devices with public keys | Cloud, PostgreSQL schema `identity` |
 | Consent metadata and acceptance evidence | Cloud, in clear, because it must be auditable |
 | Bank link record with a KMS HMAC fingerprint of the token | Cloud, never the token |
 | Bank token | Phone vault |
@@ -130,7 +131,10 @@ Each person reviews the pull requests of their modules (see `.github/CODEOWNERS`
 | Aggregate snapshot for the AI | In transit only, never stored |
 | Audit events | Cloud, append only, hash chained |
 | Nonces, refresh rate limits, caches | Redis |
-| Banco Demo customers and their simulated data | Its own schema `bankdemo` |
+| Vault owner (the Keycloak `sub` the vault key belongs to) | Phone Keychain, beside the vault key of each account (one vault per account on the phone), not backed up |
+| Biometrics offer mark (yes/no, the one-time question was shown) | Phone Keychain, beside the vault key of each account, not backed up |
+| Theme preference (Sistema, Claro, Oscuro) | Phone, plain app storage outside the vault, not backed up |
+| Banco Demo customers and their simulated data | Its own schema `bankdemo`. A Fynk user's customer id there is their Keycloak `sub`, never the email, name or cédula |
 
 If you are about to store something that is not in this table, ask before you do it.
 
@@ -198,6 +202,17 @@ Git cannot have a branch named `develop` and also branches named `develop/...`, 
 * At least 1 approval from the module owner in CODEOWNERS, plus the owner of any shared file touched. CI must be green.
 * Squash merge, then delete the branch.
 * Keep pull requests under about 400 changed lines (generated files do not count). Split bigger work into several branches.
+* **Dependent work goes in a stack.** Use GitHub's stacked pull requests with the `gh stack` extension (`gh extension install github/gh-stack`) when:
+  * a branch needs another branch that is not merged yet;
+  * big work is split into several branches.
+
+  Rules for a stack:
+  * Never open a pull request on `develop` that also carries another open branch's commits.
+  * The bottom pull request targets `develop`. Each one above targets the branch below it and shows only its own commits.
+  * Every pull request in the stack keeps its own template, session log, review and CI. The rules of `develop` apply to each one.
+  * Merge bottom-up. Merging a pull request also merges the ones below it, and GitHub then rebases and retargets the rest.
+  * A stack is a straight line. Put a pull request under another only when the top one really depends on it, because the one above cannot merge first.
+  * Start each body with the chain, for example `Stacked PR (stack #81: #74 → #76 → #79)`.
 
 ### Steps Claude Code follows for every task
 
@@ -219,7 +234,19 @@ git push -u origin feature/<short-description>
 gh pr create --base develop --fill   # then complete the template
 ```
 
-Claude Code never pushes to `develop` or `main`, never force pushes (only `git push --force-with-lease` on its own branch after a rebase), never merges pull requests, never runs `terraform apply` or `destroy`, and never edits a file outside the module without asking. These limits are also enforced in `.claude/settings.json`.
+When the task needs a branch that is not merged yet, stack on it instead of branching from `develop`:
+
+```
+gh stack init --base develop <branch below>    # or gh stack checkout <stack> for an existing stack
+gh stack add feature/<short-description>
+# tests, code, checks, commits and session log as above
+gh stack rebase                                # after a branch below changes or merges
+gh stack submit --auto --open                  # pushes and opens the pull request on top of the stack
+gh pr edit <number> --body-file <file>         # then complete the template
+gh stack link <bottom PR> ... <top PR> --base develop   # turns open pull requests into a stack
+```
+
+Claude Code never pushes to `develop` or `main`, never force pushes (only `git push --force-with-lease` on its own branch after a rebase), never merges pull requests (neither `gh pr merge` nor `gh stack merge`), never runs `terraform apply` or `destroy`, and never edits a file outside the module without asking. These limits are also enforced in `.claude/settings.json`.
 
 ## Project history log
 
@@ -259,7 +286,7 @@ These rules let 17 modules work in parallel without stepping on each other.
 | Login and recovery | Keycloak for login and password reset. Vault key separate from the password. New phone: approval from the old phone or recovery code |
 | Cédula | Not asked, not stored |
 | Sync | On open, pull to refresh, foreground after 15 minutes, 60 second cooldown, incremental |
-| Simulated bank | Banco Demo with its own portal for money actions, fictional names, accounts created at consent |
+| Simulated bank | Banco Demo with its own portal for money actions, fictional names, accounts created at consent (replaced on 6 Nov, see Simulated banks) |
 | Caps | Weekly or monthly caps per category, "Antojos" under $20.000 by default, alerts at 80 % and 100 % |
 | Ver plan | Removed |
 | Subscriptions | User marks usage, sees the account or card of each subscription, price increase alerts |
@@ -269,15 +296,21 @@ These rules let 17 modules work in parallel without stepping on each other.
 | Branches | Natural names by task type, created from `develop` |
 | Project history | One log file per session in `docs/history/sessions/`, joined at the end into the project history |
 | Team | Modules assigned on 26 Oct 2026, see Team |
+| Dark mode (27 Oct) | Every screen in light and dark. Follows the phone by default, the person can pick Claro or Oscuro in Mi cuenta › Apariencia |
+| Navigation and gestures (27 Oct) | One default transition and back gesture per kind of screen (push, modal, sheet, tab, flow change), changed only when the design inventory says so. Every gesture has a button. Tabs switch by tap and by swipe |
+| Email codes (27 Oct) | Email verification at sign up and password reset use a 6 digit code sent by email, as in the design, instead of Keycloak's links. A Keycloak extension in `services/keycloak/extensions/email-code` does it: 10 minutes, 5 attempts per code, a new code every 60 s, 10 wrong codes in 12 h per user. See `docs/adr/0007-email-codes.md` |
+| Offline sessions (27 Oct) | No `offline_access`. The app keeps a normal refresh session (30 days idle, 90 days max) |
+| Stacked pull requests (28 Oct) | Dependent pull requests are chained as a GitHub stack with `gh stack`, merged bottom-up. See Git workflow › Pull requests |
+| Simulated banks (6 Nov) | Four fictional entities (Banco Demo, Billetera Demo, Banco Digital Demo, Cooperativa Demo) with random non-negative balances, created at the first part of sign up. Only the Keycloak `sub` is sent. See `docs/adr/0008-simulated-bank-provisioning.md` and `docs/modules/M16b-simulated-banks.md` |
 
 ## Open items (ask the team, do not decide in code)
 
 1. Egress cost: without a NAT Gateway, the required VPC endpoints cost about USD 51 a month against about 33 for a NAT Gateway (see `docs/modules/M14-infrastructure.md`).
-2. Email verification and password reset use Keycloak links. The design shows 6 digit codes. Codes need a custom Keycloak extension in Java.
-3. Whether the Bancolombia sandbox allows delegated access to personal accounts (spike in M5).
-4. Audit retention periods (M13).
-5. Offline sessions in Keycloak for long lived mobile logins (M1).
-6. The design has 6 Fynk Plus subscription screens (`VerdeSub*.dc.html`) that are not in Jira or in any module yet. Do not build them until the team plans them.
+2. Whether the Bancolombia sandbox allows delegated access to personal accounts (spike in M5).
+3. Audit retention periods (M13).
+4. The design has 6 Fynk Plus subscription screens (`Sub*.html` in `docs/design/sources/`) that are not in Jira or in any module yet. Do not build them until the team plans them.
+5. "Privacidad y datos" in the design has a "Mejorar Fynk" switch that shares anonymous usage statistics. That data is not in "Where data lives". Hidden until the team decides.
+6. "Centro de ayuda" in the design offers support by WhatsApp. The team has to decide the channel and who answers it.
 
 ## Glossary
 

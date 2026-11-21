@@ -1,0 +1,101 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches:
+      - develop
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build ARM64 & Deploy to ECS
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-east-2
+      ECS_CLUSTER: fynk-staging-cluster
+      STAGING_DOMAIN: habenly.site
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: services/api/go.mod
+          cache-dependency-path: services/*/go.sum
+
+      - name: Set up pnpm (for contract codegen)
+        uses: ./.github/actions/setup-pnpm
+        with:
+          install-args: --filter fynk
+
+      - name: Generate Go Servers
+        run: make generate-go
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
+
+      - name: Set up QEMU for ARM64
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+        with:
+          platforms: linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Build and Push ARM64 Images
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "Building ARM64 container images..."
+          docker buildx build --platform linux/arm64 -t $ECR_REGISTRY/fynk-api:$IMAGE_TAG -t $ECR_REGISTRY/fynk-api:latest ./services/api --push
+          docker buildx build --platform linux/arm64 -t $ECR_REGISTRY/fynk-keycloak:$IMAGE_TAG -t $ECR_REGISTRY/fynk-keycloak:latest ./services/keycloak --push
+          docker buildx build --platform linux/arm64 -t $ECR_REGISTRY/fynk-bank-simulator:$IMAGE_TAG -t $ECR_REGISTRY/fynk-bank-simulator:latest ./services/bank-simulator --push
+
+      - name: Run Database Migrations
+        run: |
+          echo "Running Postgres migrations (/migrate up) on ECS..."
+          SUBNET_ID=$(aws ecs describe-services --cluster $ECS_CLUSTER --services fynk-staging-api --query "services[0].networkConfiguration.awsvpcConfiguration.subnets[0]" --output text)
+          SG_ID=$(aws ecs describe-services --cluster $ECS_CLUSTER --services fynk-staging-api --query "services[0].networkConfiguration.awsvpcConfiguration.securityGroups[0]" --output text)
+          TASK_ARN=$(aws ecs run-task \
+            --cluster $ECS_CLUSTER \
+            --task-definition fynk-staging-api \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_ID],securityGroups=[$SG_ID],assignPublicIp=DISABLED}" \
+            --overrides '{"containerOverrides":[{"name":"api","command":["/migrate","up"]}]}' \
+            --query "tasks[0].taskArn" --output text)
+          aws ecs wait tasks-stopped --cluster $ECS_CLUSTER --tasks "$TASK_ARN"
+          EXIT_CODE=$(aws ecs describe-tasks --cluster $ECS_CLUSTER --tasks "$TASK_ARN" --query "tasks[0].containers[0].exitCode" --output text)
+          echo "Migration exited with code: $EXIT_CODE"
+          test "$EXIT_CODE" = "0"
+
+      - name: Deploy to Amazon ECS
+        run: |
+          echo "Triggering ECS Fargate rolling updates..."
+          aws ecs update-service --cluster $ECS_CLUSTER --service fynk-staging-api --force-new-deployment
+          aws ecs update-service --cluster $ECS_CLUSTER --service fynk-staging-keycloak --force-new-deployment
+          aws ecs update-service --cluster $ECS_CLUSTER --service fynk-staging-bank-simulator --force-new-deployment
+
+      - name: Wait for Services Stability
+        run: |
+          echo "Waiting for ECS services to reach steady state..."
+          aws ecs wait services-stable --cluster $ECS_CLUSTER --services fynk-staging-api fynk-staging-keycloak fynk-staging-bank-simulator
+
+      - name: Run Smoke Tests
+        run: |
+          chmod +x scripts/smoke.sh
+          ./scripts/smoke.sh ${{ env.STAGING_DOMAIN }}

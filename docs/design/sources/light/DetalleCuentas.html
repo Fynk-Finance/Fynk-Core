@@ -1,0 +1,135 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=390"><title>App azul y verde · Mi cuenta</title></head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;background:#ffffff;color:#0f2233}
+a{color:#6a9e12}a:hover{color:#5a8a0c}
+.hscroll{scrollbar-width:none;-ms-overflow-style:none;scroll-snap-type:x mandatory;overflow-x:auto;overflow-y:hidden}
+.hscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.vscroll{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;overflow-x:hidden;overflow-y:auto}
+.vscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.btn{cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn:focus-visible,.nav-item:focus-visible,.card-link:focus-visible,.chip:focus-visible{outline:3px solid #dcf5a8;outline-offset:2px}
+.row{transition:background-color .15s ease}
+.row:hover{background-color:#f4fbfe !important}
+.card-link{transition:transform .2s ease,box-shadow .2s ease}
+.card-link:hover{transform:translateY(-2px)}
+.card-link:hover .go{transform:translateX(3px)}
+.go{transition:transform .2s ease}
+.chip{cursor:pointer}
+.nav-item{cursor:pointer;transition:color .2s ease}
+.nav-item:not([aria-current]):hover{color:#ffffff !important}
+@keyframes vd-shine{0%,62%{transform:translateX(0)}86%,100%{transform:translateX(520px)}}
+.shine{animation:vd-shine 7s ease-in-out infinite 1.5s}
+@keyframes mc-scrim{from{opacity:0}to{opacity:1}}
+@keyframes mc-dlg{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+.mc-scrim{animation:mc-scrim .2s ease-out both}
+.mc-dlg{animation:mc-dlg .26s cubic-bezier(.22,1,.36,1) both}
+.mc-btn{cursor:pointer;transition:background-color .2s ease}
+.mc-sec:hover{background-color:#e4f5fc !important}
+.mc-pri:hover{background-color:#279dcc !important}
+.mc-btn:focus-visible{outline:3px solid #b5e5f7;outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.shine,.mc-scrim,.mc-dlg{animation:none}}
+</style>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: #ffffff; position: relative; overflow: hidden">
+<div style="position: absolute; left: 0; top: 0; width: 390px; height: 257px; background-color: #2fa8d8; border-radius: 0 0 24px 24px; box-shadow: 0 10px 24px -18px rgba(15, 34, 51, 0.35); z-index: 0; overflow: hidden"><svg width="390" height="257" viewBox="0 0 390 257" aria-hidden="true" style="position: absolute; top: 0; left: 0; z-index: 0">
+<rect x="268" y="-70" width="190" height="190" rx="44" fill="#3ab3e3"></rect>
+<rect x="320" y="-26" width="96" height="96" rx="24" fill="#47b6e2"></rect>
+<rect x="-56" y="150" width="140" height="140" rx="34" fill="#279dcc"></rect>
+<g class="shine"><rect x="-120" y="-40" width="46" height="340" fill="#ffffff" fill-opacity=".12" transform="skewX(-18)"></rect></g>
+</svg><div style="position: relative; z-index: 1; padding: 16px 16px 0; display: flex; flex-direction: column; gap: 8px; color: #ffffff; height: 236px">
+<header style="display: flex; align-items: center; justify-content: space-between; min-height: 48px">
+<a class="btn" href="Dashboard.html" aria-label="Volver al dashboard" style="width: 48px; height: 48px; box-sizing: border-box; border-radius: 14px; background-color: rgba(255, 255, 255, 0.2); color: #ffffff; display: flex; align-items: center; justify-content: center; text-decoration: none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></a>
+<div data-dc-group="" style="box-sizing: border-box; display: flex; flex-direction: row; gap: normal; align-items: center; width: 100%; justify-content: center"><h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; line-height: 22px">Mi cuenta</h1></div>
+<span aria-hidden="true" style="width: 48px; flex-shrink: 0"></span>
+</header>
+<div style="display: flex; justify-content: center">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; text-align: center">
+<span style="width: 88px; height: 88px; border-radius: 999px; background-color: #ffffff; color: #2fa8d8; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 32px; flex-shrink: 0; box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.28)">LG</span>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0">
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 24px; white-space: nowrap">Laura Gómez</span>
+<span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; line-height: 14px; font-weight: 700; padding: 4px 8px 4px 8px; border-radius: 999px; background-color: #a8e03a; color: #ffffff"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Perfil verificado</span>
+</div>
+</div>
+
+</div>
+</div></div>
+
+
+<div style="position: absolute; left: 0; top: 258px; width: 390px; height: 586px; box-sizing: border-box; background-color: #ffffff; overflow: hidden">
+<div class="vscroll" style="height: 586px; box-sizing: border-box; padding: 24px 16px 32px; display: flex; flex-direction: column; gap: 8px; padding-right: 16px; padding-left: 16px">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 26px">Información Basica</h2><section style="display: flex; flex-direction: column; gap: 8px; flex-shrink: 0">
+
+
+</section>
+<section aria-label="Datos personales" style="display: flex; flex-direction: column; gap: 16px; padding: 8px 16px; border-radius: 20px; flex-shrink: 0; background-color: #ffffff; border: 1px solid #e4f5fc; box-shadow: 0 6px 16px -12px rgba(15, 34, 51, 0.2)">
+<div style="display: flex; flex-direction: column; margin-top: -1px; clip-path: inset(1px 0 0 0)">
+
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid #edf1f4; padding-top: 8px; padding-bottom: 8px">
+<span style="width: 32px; height: 32px; border-radius: 10px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4zM4 7l8 6 8-6"></path></svg></span>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 11px; line-height: 14px; color: #5e7482">Correo de recuperación</span>
+<span style="font-size: 14px; line-height: 19px; font-weight: 600">[CORREO]</span>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid #edf1f4; padding-top: 8px; padding-bottom: 8px">
+<span style="width: 32px; height: 32px; border-radius: 10px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path></svg></span>
+<div style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+<span style="font-size: 11px; line-height: 14px; color: #5e7482">Miembro desde</span>
+<span style="font-size: 14px; line-height: 19px; font-weight: 600">[FECHA]</span>
+</div>
+</div>
+
+</div>
+</section>
+
+
+<section aria-label="Gestión de cuenta" style="display: flex; flex-direction: column; gap: 8px; flex-shrink: 0">
+<h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; line-height: 26px">Gestión de cuenta</h2>
+<div style="display: flex; flex-direction: column; padding: 4px 8px; border-radius: 20px; background-color: #ffffff; box-shadow: 0 6px 16px -12px rgba(15, 34, 51, 0.2); padding-right: 0px; padding-left: 0px">
+
+<a class="row" href="CfgSeguridad.html" onClick="" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 14px; text-decoration: none; color: #0f2233">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 14px; line-height: 19px; font-weight: 600">Seguridad</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Contraseña, huella y Face ID</span></span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9ba6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="m9 18 6-6-6-6"></path></svg>
+</a>
+
+<a class="row" href="CfgNotificaciones.html" onClick="" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 14px; text-decoration: none; color: #0f2233">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 14px; line-height: 19px; font-weight: 600">Notificaciones</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Alertas de gastos y recordatorios</span></span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9ba6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="m9 18 6-6-6-6"></path></svg>
+</a>
+
+<a class="row" href="CfgPrivacidad.html" onClick="" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 14px; text-decoration: none; color: #0f2233">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 14px; line-height: 19px; font-weight: 600">Privacidad y datos</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Permisos y descarga de tu información</span></span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9ba6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="m9 18 6-6-6-6"></path></svg>
+</a>
+
+<a class="row" href="CfgAyuda.html" onClick="" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 14px; text-decoration: none; color: #0f2233">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 14px; line-height: 19px; font-weight: 600">Centro de ayuda</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Preguntas frecuentes y soporte</span></span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9ba6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="m9 18 6-6-6-6"></path></svg>
+</a>
+
+<a class="row" href="#" onClick="" style="display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: 14px; text-decoration: none; color: #0f2233">
+<span style="width: 40px; height: 40px; border-radius: 11px; background-color: #e4f5fc; color: #1f93c2; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 14px; line-height: 19px; font-weight: 600">Cerrar sesión</span><span style="font-size: 12px; line-height: 16px; color: #5e7482">Salir de Fynk en este dispositivo</span></span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a9ba6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="m9 18 6-6-6-6"></path></svg>
+</a>
+
+</div>
+</section>
+<a class="btn" href="CfgEliminar.html" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; height: 56px; width: 100%; box-sizing: border-box; border-radius: 16px; border: 1.5px solid #f3c7c7; background-color: #fff5f5; color: #c0392b; font-family: inherit; font-size: 15px; font-weight: 700; flex-shrink: 0">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>Eliminar cuenta</a>
+</div>
+</div>
+
+
+
+</div>
+</body></html>

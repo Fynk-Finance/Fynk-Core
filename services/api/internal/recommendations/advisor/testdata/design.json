@@ -1,0 +1,103 @@
+{
+ "snapshot": {
+  "schemaVersion": 1,
+  "periodEnd": "2026-10-28",
+  "months": 12,
+  "monthlyIncomeMinor": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   558000000,
+   558000000,
+   558000000,
+   0
+  ],
+  "monthlySpendMinor": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   40000000,
+   55000000,
+   59500000
+  ],
+  "spendByCategory": [
+   {
+    "categoryId": "groceries",
+    "last30dMinor": 40000000,
+    "prev30dMinor": 40000000
+   },
+   {
+    "categoryId": "restaurants",
+    "last30dMinor": 19500000,
+    "prev30dMinor": 15000000
+   }
+  ],
+  "recurringIncome": [
+   {
+    "kind": "salary",
+    "monthlyMinor": 558000000
+   }
+  ],
+  "fixedExpensesMonthlyMinor": 193060000,
+  "subscriptions": {
+   "count": 4,
+   "monthlyMinor": 11260000,
+   "lowUseCount": 2,
+   "lowUseMonthlyMinor": 5680000
+  },
+  "goals": [
+   {
+    "ref": "goal_1",
+    "categoryId": "savings",
+    "targetMinor": 80000000,
+    "savedMinor": 52000000,
+    "monthsLeft": 2,
+    "onTrack": true
+   }
+  ],
+  "caps": [
+   {
+    "categoryId": "restaurants",
+    "period": "week",
+    "capMinor": 20000000,
+    "spentMinor": 0
+   }
+  ],
+  "opportunities": [
+   {
+    "factKey": "subscriptions.low_use",
+    "kind": "subscriptions",
+    "categoryId": "subscriptions",
+    "monthlyMinor": 5680000
+   },
+   {
+    "factKey": "category_increase.restaurants",
+    "kind": "category_increase",
+    "categoryId": "restaurants",
+    "monthlyMinor": 4500000
+   },
+   {
+    "factKey": "payday_contribution",
+    "kind": "payday_contribution",
+    "categoryId": "savings",
+    "monthlyMinor": 30000000
+   }
+  ]
+ },
+ "factKeys": [
+  "subscriptions.low_use",
+  "category_increase.restaurants",
+  "payday_contribution"
+ ]
+}

@@ -5,7 +5,7 @@
 | Phase | 3 (the catalog backend can start in Phase 2) |
 | Stories | HU-038 SCRUM-54 (3), HU-039 SCRUM-55 (8), HU-040 SCRUM-56 (5), HU-041 SCRUM-57 (3), HU-042 SCRUM-58 (3), HU-044 SCRUM-61 (2) |
 | Points | 24 |
-| Owner | Karol |
+| Owner | Karol (`@Karol2905`) |
 | Owns | `apps/mobile/src/modules/recurring/`, `services/api/internal/catalog/`, `contracts/modules/catalog.yaml` |
 | Depends on | M2 (vault, backup), M7 (movements, `normalizeMerchant`), M12 (reminders), M16 (fixture with recurring charges) |
 | Used by | M3 (onboarding step 5), M7 (catalog categories), M10 (totals for the snapshot), M11 (Suscripciones step) |
@@ -19,7 +19,7 @@ You are building module M9 of Fynk: fixed expenses and subscriptions, their auto
 ## Read first
 
 1. `CLAUDE.md`, `docs/modules/00-shared-contracts.md` sections 2, 3 and 7 (reference numbers).
-2. Design PNGs `09-billetera.png` and `09-billetera-2.png` (lower part), `17-config-recurrentes.png`, `08-notificaciones.png`, `10-recomendaciones.png` and `10-recomendaciones-2.png`. Read the code of the same screens in `docs/design/source/` first (file map in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs are for checking the result.
+2. Design screens `Billetera` (lower part), `OnbGastos`, `Notificaciones` and `Recomendaciones`. Read the code of these screens in `docs/design/sources/light/` and `docs/design/sources/dark/` first (inventory, gestures and transitions in `docs/design/README.md`) and take exact values, SVGs and animations from it. The PNGs in `docs/design/screens/light/` and `docs/design/screens/dark/` are for checking the result. Every screen works in light and dark (colors only from `useTheme()`), and uses the default transition and back gesture of its kind unless the inventory says otherwise.
 3. Jira SCRUM-54 to SCRUM-58 and SCRUM-61.
 
 ## Stories and criteria
