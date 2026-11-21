@@ -34,6 +34,12 @@ export const accountsStrings = {
     connected: (n: number) => `COP · ${n} ${n === 1 ? 'cuenta conectada' : 'cuentas conectadas'}`,
     income: 'Ingresos',
     spending: 'Gastos',
+    // The pills open Movimientos (new behavior, needs design review).
+    incomeLabel: (amount: string | null) =>
+      amount ? `Ingresos de los últimos 30 días: ${amount}` : 'Ingresos de los últimos 30 días',
+    spendingLabel: (amount: string | null) =>
+      amount ? `Gastos de los últimos 30 días: ${amount}` : 'Gastos de los últimos 30 días',
+    pillHint: 'Abre tus movimientos de los últimos 30 días',
     howTitle: 'Cómo se calcula',
     howMessage:
       'Sumamos el saldo de tus cuentas, billeteras y efectivo, y restamos lo que debes en tus ' +

@@ -28,8 +28,8 @@ export function accountRows(accounts: readonly Account[]): AccountRow[] {
   }));
 }
 
-/** Ingresos and Gastos of the current month on the Dashboard card, from M10. */
-export interface MonthSummary {
+/** Ingresos and Gastos of the last 30 days on the Dashboard card, from M7. */
+export interface RecentSummary {
   incomeMinor: MoneyMinor;
   spendingMinor: MoneyMinor;
 }

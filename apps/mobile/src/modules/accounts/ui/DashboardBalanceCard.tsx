@@ -1,13 +1,15 @@
 // "Balance total" card of the Dashboard (design Dashboard and DashboardDetalles): the total,
-// "COP · N cuentas conectadas" and the Ingresos and Gastos boxes. "Balance total" opens
-// "Cómo se calcula" (M6 rules; not in the design, needs design review). While the Dashboard
-// scrolls it shrinks to a compact card, "Balance total" and the amount on one line (QA review
-// 2026-11-07, G3; new state, needs design review).
+// "COP · N cuentas conectadas" and the Ingresos and Gastos boxes of the last 30 days, which open
+// Movimientos with that kind and those days (new behavior, needs design review). "Balance
+// total" opens "Cómo se calcula" (M6 rules; not in the design, needs design review). While the
+// Dashboard scrolls it shrinks to a compact card, "Balance total" and the amount on one line (QA
+// review 2026-11-07, G3; new state, needs design review).
 import { useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import Svg, { Rect } from 'react-native-svg';
 
+import { formatCop } from '@shared/domain/money';
 import type { MoneyMinor } from '@shared/domain/types';
 import {
   AmountText,
@@ -26,7 +28,7 @@ import {
   type Theme,
 } from '@shared/ui';
 
-import type { MonthSummary } from '../domain/dashboard';
+import type { RecentSummary } from '../domain/dashboard';
 import { CARD_OPEN, type CollapseState } from './dashboardCollapse';
 import { accountsStrings } from './strings.es-CO';
 
@@ -39,8 +41,11 @@ export interface DashboardBalanceCardProps {
   /** Null while the accounts load. */
   totalMinor: MoneyMinor | null;
   connectedCount: number;
-  /** Ingresos and Gastos, or null while they load. */
-  summary: MonthSummary | null;
+  /** Ingresos and Gastos of the last 30 days, or null while they load. */
+  summary: RecentSummary | null;
+  /** Opens Movimientos with the Ingresos or the Gastos of the last 30 days. */
+  onPressIncome?: () => void;
+  onPressSpending?: () => void;
   /** The Dashboard's scroll state; without it the card keeps its full height. */
   collapse?: SharedValue<CollapseState>;
 }
@@ -49,6 +54,8 @@ export function DashboardBalanceCard({
   totalMinor,
   connectedCount,
   summary,
+  onPressIncome,
+  onPressSpending,
   collapse,
 }: DashboardBalanceCardProps) {
   const { colors } = useTheme();
@@ -123,15 +130,21 @@ export function DashboardBalanceCard({
         <View style={styles.pills}>
           <Pill
             label={t.income}
+            a11yLabel={t.incomeLabel}
             amountMinor={summary?.incomeMinor ?? null}
             icon="arrowUpRight"
             tone="link"
+            onPress={onPressIncome}
+            testID="accounts.pill.income"
           />
           <Pill
             label={t.spending}
+            a11yLabel={t.spendingLabel}
             amountMinor={summary?.spendingMinor ?? null}
             icon="arrowDownLeft"
             tone="primaryDark"
+            onPress={onPressSpending}
+            testID="accounts.pill.spending"
           />
         </View>
       </Animated.View>
@@ -155,14 +168,27 @@ export function DashboardBalanceCard({
 
 function Pill(props: {
   label: string;
+  a11yLabel: (amount: string | null) => string;
   amountMinor: MoneyMinor | null;
   icon: IconName;
   tone: 'link' | 'primaryDark';
+  onPress?: () => void;
+  testID: string;
 }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   return (
-    <View style={styles.pill} accessible accessibilityLabel={props.label}>
+    <Pressable
+      onPress={props.onPress}
+      disabled={!props.onPress}
+      accessibilityRole="button"
+      accessibilityLabel={props.a11yLabel(
+        props.amountMinor === null ? null : formatCop(props.amountMinor),
+      )}
+      accessibilityHint={t.pillHint}
+      testID={props.testID}
+      style={({ pressed }) => [styles.pill, pressed ? styles.pillPressed : null]}
+    >
       <View style={styles.tile}>
         <Icon name={props.icon} size={16} strokeWidth={2.4} color={colors[props.tone]} />
       </View>
@@ -176,7 +202,7 @@ function Pill(props: {
           <AmountText amountMinor={props.amountMinor} size={13} color="onPrimary" />
         )}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -215,6 +241,7 @@ const createStyles = ({ colors, shadow }: Theme) =>
       borderRadius: radius.input,
       backgroundColor: colors.balanceCardPill,
     },
+    pillPressed: { opacity: 0.7 },
     tile: {
       width: 32,
       height: 32,

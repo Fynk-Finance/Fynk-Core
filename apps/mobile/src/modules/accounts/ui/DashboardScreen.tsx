@@ -1,6 +1,6 @@
 // Dashboard tab (design Dashboard, inventory rows 5 and 6), owned by M6: the blue header with
 // "Hola, <nombre>", the chart icon that opens Estadísticas (M10) and the bell, the "Balance total"
-// card and Detalle de cuentas, which expands in place. The header stays over the page and shrinks
+// card (its Ingresos and Gastos open Movimientos of M7) and Detalle de cuentas, which expands in place. The header stays over the page and shrinks
 // to a fifth of the screen while the page scrolls (QA review 2026-11-07, G3). Dragging the header
 // down or up opens or closes Detalle de cuentas gradually, following the finger (G1). Pulling the
 // page down at the top moves everything down and grows a sync indicator; let go at the maximum,
@@ -39,7 +39,7 @@ import {
 } from '@shared/ui';
 
 import type { AccountsOverview } from '../application/accountsService';
-import { accountRows, type MonthSummary } from '../domain/dashboard';
+import { accountRows, type RecentSummary } from '../domain/dashboard';
 import { ACCOUNT_DETAIL_ROUTE } from './AccountDetailScreen';
 import { AccountsPanel, DetailsTab, TAB_HEIGHT } from './AccountsPanel';
 import { DashboardBalanceCard } from './DashboardBalanceCard';
@@ -62,8 +62,8 @@ const INDICATOR = 32;
 
 export interface DashboardDeps {
   useAccounts: () => Pick<UseQueryResult<AccountsOverview>, 'data' | 'isError' | 'refetch'>;
-  /** null while M10 computes the month. */
-  useMonthSummary: () => MonthSummary | null;
+  /** Ingresos and Gastos of the last 30 days (M7), null while they load. */
+  useRecentSummary: () => RecentSummary | null;
   /** Unread notifications for the bell (M12). */
   useUnreadCount: () => number;
   useDisplayName: () => string | null;
@@ -71,6 +71,10 @@ export interface DashboardDeps {
   notificationsRoute: string;
   /** Estadísticas (M10), opened from the chart icon of the header. */
   statisticsRoute: string;
+  /** Movimientos (M7), opened from Ingresos and Gastos. Read at press time. */
+  transactionsRoute: () => string;
+  /** The filter of the last 30 days that Ingresos or Gastos open Movimientos with (M7). */
+  recentFilter: (kind: 'income' | 'expense') => object;
   /** "Planes de ahorro" with the goals not reached yet (M8's GoalsCarousel). */
   renderGoals?: () => ReactNode;
   /** "Movimientos" with the latest movements (M7's TransactionPreview). */
@@ -97,7 +101,7 @@ export function createDashboardScreen(deps: DashboardDeps) {
     const reduceMotion = useReducedMotion();
     const closeMenu = useCallback(() => setMenuOpen(false), []);
     const accounts = deps.useAccounts();
-    const summary = deps.useMonthSummary();
+    const summary = deps.useRecentSummary();
     const unread = deps.useUnreadCount();
     const name = deps.useDisplayName() ?? t.guest;
     const overview = accounts.data;
@@ -177,6 +181,8 @@ export function createDashboardScreen(deps: DashboardDeps) {
     });
 
     const newMovementRoute = deps.newMovementRoute;
+    const openMovements = (kind: 'income' | 'expense') =>
+      navigation.navigate(deps.transactionsRoute(), { filter: deps.recentFilter(kind) });
 
     // F3: pull to sync. M5's syncNow keeps the 60 s cooldown; the accounts are read again after.
     const sync = deps.refresh;
@@ -315,6 +321,8 @@ export function createDashboardScreen(deps: DashboardDeps) {
                       totalMinor={overview?.balanceTotalMinor ?? null}
                       connectedCount={overview?.connectedCount ?? 0}
                       summary={summary}
+                      onPressIncome={() => openMovements('income')}
+                      onPressSpending={() => openMovements('expense')}
                       collapse={state}
                     />
                     {/* Always there, so a drag can open it; closed, nobody can read or touch it. */}
