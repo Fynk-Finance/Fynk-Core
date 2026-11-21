@@ -6,7 +6,7 @@ module: M6
 jira: [SCRUM-26]
 branch: fix/dashboard-income-spending-pills
 tool: Claude Code
-pr: none
+pr: "#446"
 status: done
 ---
 
@@ -38,7 +38,7 @@ estéticos y muestren los ingresos o gastos registrados de los últimos 30 días
 
 * Tests: the whole mobile suite passes, 252 suites and 2958 tests. `tsc`, ESLint and Prettier pass on the changed
   files.
-* Pull request: not opened yet.
+* Pull request: #446.
 * Not yet checked by hand on a device.
 
 ## Decisions and problems
@@ -52,4 +52,4 @@ estéticos y muestren los ingresos o gastos registrados de los últimos 30 días
 ## Next step
 
 Check it on a device in light and dark: register an Ingreso and a Gasto with the FAB, see the pills update, and tap
-each one. Then open the pull request.
+each one. Then ask for review of #446.
