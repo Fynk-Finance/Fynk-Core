@@ -68,7 +68,15 @@ export function startModules(): void {
  */
 export function bindQueryClient(client: QueryClient): () => void {
   queryClient = client;
+  // The cache holds what was read from the vault of the account that was open. When the vault
+  // locks (sign out, account switch, device removed, idle lock) it is reset, so the next account
+  // never sees it and nothing stays in memory while locked. It fires after the vault is closed,
+  // so the screens still open reload as empty, and again with their data after the unlock.
+  const stopReset = appEvents.on('vault.locked', () => {
+    void client.resetQueries();
+  });
   return () => {
+    stopReset();
     if (queryClient === client) queryClient = null;
   };
 }

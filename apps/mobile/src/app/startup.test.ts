@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import { createElement, type ReactNode } from 'react';
 
@@ -87,5 +87,38 @@ describe('app startup', () => {
     invalidate.mockClear();
     appEvents.emit({ type: 'transactions.changed', ids: ['t2'] });
     expect(invalidate).not.toHaveBeenCalled();
+  });
+
+  it('forgets the cached data when the vault locks, so the next account never sees it', () => {
+    const client = new QueryClient();
+    // Read from the vault of the account that signed out; never stale by time.
+    client.setQueryData(['accounts'], { owner: 'A' });
+    const unbind = bindQueryClient(client);
+
+    appEvents.emit({ type: 'vault.locked' });
+    expect(client.getQueryData(['accounts'])).toBeUndefined();
+
+    unbind();
+    client.setQueryData(['accounts'], { owner: 'B' });
+    appEvents.emit({ type: 'vault.locked' });
+    expect(client.getQueryData(['accounts'])).toEqual({ owner: 'B' });
+  });
+
+  it('reloads a screen that is still open when the vault locks', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const unbind = bindQueryClient(client);
+    let owner = 'A';
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client }, children);
+    const { result } = await renderHook(
+      () => useQuery({ queryKey: ['accounts'], queryFn: () => owner, staleTime: Infinity }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.data).toBe('A'));
+
+    owner = 'B';
+    appEvents.emit({ type: 'vault.locked' });
+    await waitFor(() => expect(result.current.data).toBe('B'));
+    unbind();
   });
 });
