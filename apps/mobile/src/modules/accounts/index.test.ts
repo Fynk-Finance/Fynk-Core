@@ -23,11 +23,14 @@ jest.mock('@modules/notifications', () => ({
 }));
 jest.mock('@modules/transactions', () => ({
   NEW_TRANSACTION_ROUTE: 'transactions.New',
+  TRANSACTIONS_ROUTE: 'transactions.All',
+  recentFilter: () => ({}),
+  useTransactionSummary: () => ({ data: undefined }),
   TransactionList: () => null,
   TransactionPreview: () => null,
 }));
 jest.mock('@modules/savings', () => ({ GoalsCarousel: () => null }));
-jest.mock('@modules/analytics', () => ({ useMonthSummary: () => ({ data: undefined }) }));
+jest.mock('@modules/analytics', () => ({ STATISTICS_ROUTE: 'analytics.Spending' }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => `id-${++mockIds}` }));
 
 let vault: InMemoryVault;

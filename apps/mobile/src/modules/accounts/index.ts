@@ -7,12 +7,19 @@ import type { Account, Clock, Id, IsoDate, MoneyMinor } from '@shared/domain/typ
 import { appEvents } from '@shared/events/appEvents';
 import { registerSlot, type ModuleRoutes } from '@shared/navigation';
 
-import { STATISTICS_ROUTE, useMonthSummary as useAnalyticsMonthSummary } from '@modules/analytics';
+import { STATISTICS_ROUTE } from '@modules/analytics';
 import { disconnectLink, syncNow } from '@modules/bank';
 import { NOTIFICATIONS_ROUTE, useUnreadCount } from '@modules/notifications';
 import { useDisplayName } from '@modules/onboarding';
 import { GoalsCarousel } from '@modules/savings';
-import { NEW_TRANSACTION_ROUTE, TransactionList, TransactionPreview } from '@modules/transactions';
+import {
+  NEW_TRANSACTION_ROUTE,
+  recentFilter,
+  TRANSACTIONS_ROUTE,
+  TransactionList,
+  TransactionPreview,
+  useTransactionSummary,
+} from '@modules/transactions';
 import {
   getVaultDb,
   markDirty,
@@ -28,7 +35,7 @@ import { createCashService } from './application/cashService';
 import { createManualBalanceService } from './application/manualBalanceService';
 import type { BalancePoint, Cash } from './application/ports';
 import { ACCOUNTS_QUERY_KEY, createUseAccounts } from './application/useAccounts';
-import { createUseMonthSummary } from './application/useMonthSummary';
+import { createUseRecentSummary } from './application/useRecentSummary';
 import type { ManualEffect, ManualMovementChange } from './domain/manualBalance';
 import type { ConnectedAccountsSummary } from './domain/netWorth';
 import { ACCOUNT_DETAIL_ROUTE, createAccountDetailScreen } from './ui/AccountDetailScreen';
@@ -150,21 +157,28 @@ export const MisCuentasMiCuenta = createMisCuentasMiCuenta({ useAccounts });
 // close an import cycle (vault imports identity).
 registerSlot('miCuenta.misCuentas', MisCuentasMiCuenta);
 
-// Ingresos and Gastos of this month come from M10, which src/app/startup.ts configures.
-const useMonthSummary = createUseMonthSummary(() => useAnalyticsMonthSummary());
+// Ingresos and Gastos of the last 30 days: M7 sums them with the filter they open Movimientos
+// with. M7 imports this module too: its values are read only when the screen renders.
+const useRecentSummary = createUseRecentSummary({
+  useTotals: (filter: ReturnType<typeof recentFilter>) => useTransactionSummary(filter),
+  recentFilter: (now) => recentFilter(now),
+  clock,
+});
 
 export const routes: ModuleRoutes = {
   module: 'accounts',
   // The Dashboard tab (tabOwners in src/app/registry.ts).
   tab: createDashboardScreen({
     useAccounts,
-    useMonthSummary,
+    useRecentSummary,
     useUnreadCount,
     // The name typed in onboarding, read only when the screen renders (safe in an import cycle).
     useDisplayName: () => useDisplayName(),
     accountRoute: 'identity.Account',
     notificationsRoute: NOTIFICATIONS_ROUTE,
     statisticsRoute: STATISTICS_ROUTE,
+    transactionsRoute: () => TRANSACTIONS_ROUTE,
+    recentFilter: (kind) => recentFilter(clock.now(), kind),
     // M8 and M7 import this module too (M8 through M7): their values are read only when the
     // screen renders.
     renderGoals: () => createElement(GoalsCarousel),

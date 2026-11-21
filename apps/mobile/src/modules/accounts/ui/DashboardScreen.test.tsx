@@ -1,5 +1,5 @@
 // Dashboard card and Detalle de cuentas (HU-012 SCRUM-26, HU-014 SCRUM-28): balance total,
-// "N cuentas conectadas", Ingresos and Gastos, one row per account with only 4 digits, the
+// "N cuentas conectadas", Ingresos and Gastos of the last 30 days that open Movimientos, one row per account with only 4 digits, the
 // cash row, no CDTs, the Simulado badge, "Cómo se calcula", the chart icon that opens
 // Estadísticas (M10), and both themes.
 import { NavigationContainer } from '@react-navigation/native';
@@ -12,7 +12,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { dialog, ThemeProvider, type ThemePreference } from '@shared/ui';
 
 import type { AccountsOverview } from '../application/accountsService';
-import type { MonthSummary } from '../domain/dashboard';
+import type { RecentSummary } from '../domain/dashboard';
 import { connectedAccountsSummary, isActive, sortAccounts } from '../domain/netWorth';
 import { account, card, cash, cdt, savings, wallet } from '../testing/fixtures';
 import { ACCOUNT_DETAIL_ROUTE } from './AccountDetailScreen';
@@ -37,9 +37,16 @@ const overviewOf = (accounts = [savings, wallet, cash, card, cdt]): AccountsOver
 function Target({
   route,
 }: {
-  route: { name: string; params?: { accountId?: string; kind?: string } };
+  route: {
+    name: string;
+    params?: { accountId?: string; kind?: string; filter?: Record<string, string> };
+  };
 }) {
-  const param = route.params?.accountId ?? route.params?.kind ?? '';
+  const filter = route.params?.filter;
+  const param =
+    route.params?.accountId ??
+    route.params?.kind ??
+    (filter ? `${filter.kind}:${filter.from}:${filter.to}` : '');
   return <Text>{`arrived:${route.name}:${param}`}</Text>;
 }
 
@@ -51,7 +58,7 @@ async function renderDashboard(
     name?: string | null;
     withMovements?: boolean;
     withGoals?: boolean;
-    summary?: MonthSummary | null;
+    summary?: RecentSummary | null;
     refresh?: () => Promise<unknown>;
   } = {},
 ) {
@@ -63,7 +70,7 @@ async function renderDashboard(
         isError: !!opts.isError,
         refetch,
       }) as never,
-    useMonthSummary: () =>
+    useRecentSummary: () =>
       opts.summary === undefined
         ? { incomeMinor: 520_000_000, spendingMinor: 231_040_000 }
         : opts.summary,
@@ -72,6 +79,8 @@ async function renderDashboard(
     accountRoute: 'identity.Account',
     notificationsRoute: 'notifications.Inbox',
     statisticsRoute: 'analytics.Spending',
+    transactionsRoute: () => 'transactions.All',
+    recentFilter: (kind) => ({ from: '2026-10-22', to: '2026-11-20', kind }),
     ...(opts.refresh ? { refresh: opts.refresh } : {}),
     ...(opts.withGoals ? { renderGoals: () => <Text>goals of M8</Text> } : {}),
     ...(opts.withMovements
@@ -92,6 +101,7 @@ async function renderDashboard(
             <Stack.Screen name="analytics.Spending" component={Target} />
             <Stack.Screen name={ACCOUNT_DETAIL_ROUTE} component={Target} />
             <Stack.Screen name="transactions.New" component={Target} />
+            <Stack.Screen name="transactions.All" component={Target} />
             <Stack.Screen name="bank.Connect" component={Target} />
           </Stack.Navigator>
         </NavigationContainer>
@@ -121,16 +131,34 @@ describe('Dashboard balance card', () => {
     expect(screen.getByText('COP · 1 cuenta conectada')).toBeTruthy();
   });
 
-  it('shows Ingresos and Gastos of the month', async () => {
+  it('shows Ingresos and Gastos of the last 30 days', async () => {
     await renderDashboard();
-    expect(screen.getByLabelText('Ingresos')).toHaveTextContent(/Ingresos.*\$5\.200\.000/);
-    expect(screen.getByLabelText('Gastos')).toHaveTextContent(/Gastos.*\$2\.310\.400/);
+    expect(screen.getByTestId('accounts.pill.income')).toHaveTextContent(/Ingresos.*\$5\.200\.000/);
+    expect(screen.getByTestId('accounts.pill.spending')).toHaveTextContent(/Gastos.*\$2\.310\.400/);
+    expect(
+      screen.getByRole('button', { name: 'Ingresos de los últimos 30 días: $5.200.000' }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Gastos de los últimos 30 días: $2.310.400' }),
+    ).toBeTruthy();
   });
 
   it('shows placeholders, not $0, while Ingresos and Gastos are loading', async () => {
     await renderDashboard({ summary: null });
-    expect(screen.getByLabelText('Ingresos')).not.toHaveTextContent(/\$/);
-    expect(screen.getByLabelText('Gastos')).not.toHaveTextContent(/\$/);
+    expect(screen.getByTestId('accounts.pill.income')).not.toHaveTextContent(/\$/);
+    expect(screen.getByTestId('accounts.pill.spending')).not.toHaveTextContent(/\$/);
+    expect(screen.getByLabelText('Ingresos de los últimos 30 días')).toBeTruthy();
+  });
+
+  it.each([
+    ['accounts.pill.income', 'income'],
+    ['accounts.pill.spending', 'expense'],
+  ])('%s opens Movimientos with only its kind of the last 30 days', async (testID, kind) => {
+    await renderDashboard();
+    await fireEvent.press(screen.getByTestId(testID));
+    expect(
+      await screen.findByText(`arrived:transactions.All:${kind}:2026-10-22:2026-11-20`),
+    ).toBeTruthy();
   });
 
   it('explains how the total is calculated', async () => {
