@@ -188,6 +188,13 @@ func TestAuthURL_UsesTheIssuerAndPKCE(t *testing.T) {
 	}
 }
 
+func TestLogoutURL_IsTheRealmEndSessionEndpointWithNoQuery(t *testing.T) {
+	c := New(Config{Issuer: testIssuer + "/", ClientID: testClientID})
+	if got, want := c.LogoutURL(), testIssuer+"/protocol/openid-connect/logout"; got != want {
+		t.Fatalf("logout url = %q, want %q", got, want)
+	}
+}
+
 func TestExchange_PostsTheCodeWithPKCEAndReturnsTheIDToken(t *testing.T) {
 	f := newFake(t)
 	f.idToken = "the.id.token"

@@ -42,8 +42,11 @@ type PARRequest struct {
 	State         string
 	Nonce         string
 	ConsentID     string // Fynk's consent id (M4)
-	Purpose       string
-	TermDays      int
+	// Subject is the Fynk user's Keycloak sub. Only simulated banks receive it, so they
+	// can refuse a browser session that belongs to another user. Real banks never do.
+	Subject  string
+	Purpose  string
+	TermDays int
 }
 
 // PARResult is what the app opens in the system browser.

@@ -92,6 +92,9 @@ func (a *Adapter) PushAuthorization(ctx context.Context, r ports.PARRequest) (po
 		"fynk_consent_id":       {r.ConsentID},
 		"entity":                {a.cfg.Provider},
 	}
+	if r.Subject != "" {
+		form.Set("fynk_sub", r.Subject)
+	}
 	var out struct {
 		RequestURI string `json:"request_uri"`
 		ExpiresIn  int    `json:"expires_in"`

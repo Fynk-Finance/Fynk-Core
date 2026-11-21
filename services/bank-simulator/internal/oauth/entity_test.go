@@ -130,11 +130,24 @@ func TestPAR_RequiresKnownEntity(t *testing.T) {
 	}
 }
 
+func TestPAR_RejectsAnInvalidFynkSub(t *testing.T) {
+	e := newEnv(t)
+	for _, sub := range []string{"user@example.com", "has space", strings.Repeat("a", 129)} {
+		f := parForm(domain.ProviderBancoDemo)
+		f.Set("fynk_sub", sub)
+		status, body := e.post("/oauth/par", f)
+		if status != http.StatusBadRequest || body["error"] != "invalid_request" {
+			t.Errorf("fynk_sub %q: expected 400 invalid_request, got %d %v", sub, status, body)
+		}
+	}
+}
+
 func TestPAR_CreatesPendingConsentWithoutCustomer(t *testing.T) {
 	e := newEnv(t)
 	f := parForm(domain.ProviderBancoDigitalDemo)
 	f.Set("nonce", "n-1")
 	f.Set("fynk_consent_id", "fc-1")
+	f.Set("fynk_sub", "0b9c4a52-1111-4222-8333-944455566677")
 	status, par := e.post("/oauth/par", f)
 	if status != http.StatusCreated {
 		t.Fatalf("expected 201, got %d", status)
@@ -147,7 +160,7 @@ func TestPAR_CreatesPendingConsentWithoutCustomer(t *testing.T) {
 		t.Errorf("unexpected consent: %+v", c)
 	}
 	data := e.svc.parData[par["request_uri"].(string)]
-	if data.Nonce != "n-1" || data.FynkConsentID != "fc-1" || data.ProviderID != domain.ProviderBancoDigitalDemo {
+	if data.Nonce != "n-1" || data.FynkConsentID != "fc-1" || data.FynkSub != "0b9c4a52-1111-4222-8333-944455566677" || data.ProviderID != domain.ProviderBancoDigitalDemo {
 		t.Errorf("PAR data not kept: %+v", data)
 	}
 }

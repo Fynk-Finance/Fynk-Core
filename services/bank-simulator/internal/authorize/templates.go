@@ -46,6 +46,20 @@ const pageTemplates = `
     </div>
 {{template "foot"}}{{end}}
 
+{{define "signOut"}}{{template "head" .}}
+    <div class="card">
+      <h2>Cambio de cuenta</h2>
+      <p>Este navegador tenía abierta la sesión de otra persona en el banco simulado. La cerramos para que ingreses con tu propia cuenta.</p>
+      <form id="realm-logout" method="post" action="{{.LogoutURL}}">
+        {{if .IDTokenHint}}<input type="hidden" name="id_token_hint" value="{{.IDTokenHint}}">{{end}}
+        <input type="hidden" name="client_id" value="{{.LogoutClientID}}">
+        <input type="hidden" name="post_logout_redirect_uri" value="{{.ReturnTo}}">
+        <button type="submit">Continuar</button>
+      </form>
+    </div>
+    <script>document.getElementById("realm-logout").submit();</script>
+{{template "foot"}}{{end}}
+
 {{define "noProducts"}}{{template "head" .}}
     <div class="card">
       <h2>Sin productos</h2>

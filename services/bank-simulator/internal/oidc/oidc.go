@@ -30,6 +30,7 @@ const (
 	authPath     = "/protocol/openid-connect/auth"
 	tokenPath    = "/protocol/openid-connect/token"
 	certsPath    = "/protocol/openid-connect/certs"
+	logoutPath   = "/protocol/openid-connect/logout"
 	maxBodyBytes = 1 << 20
 )
 
@@ -100,6 +101,11 @@ func (c *Client) AuthURL(state, nonce, verifier string) string {
 		"code_challenge_method": {"S256"},
 	}
 	return c.cfg.Issuer + authPath + "?" + q.Encode()
+}
+
+// LogoutURL is the realm's RP-initiated logout endpoint, posted to by the browser.
+func (c *Client) LogoutURL() string {
+	return c.cfg.Issuer + logoutPath
 }
 
 // Exchange swaps the code for tokens and returns the raw ID token.

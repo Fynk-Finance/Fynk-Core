@@ -233,6 +233,12 @@ paths:
                 fynk_consent_id:
                   type: string
                   description: Optional. Fynk's own consent id (M4), kept with the bank consent for audit.
+                fynk_sub:
+                  type: string
+                  description: >-
+                    Optional, demo only. The Fynk user's opaque id (the same value sent at provisioning).
+                    When present, the authorization page never acts on a session of another customer:
+                    it forces a fresh login first.
                 code_challenge:
                   type: string
                   description: PKCE challenge.
