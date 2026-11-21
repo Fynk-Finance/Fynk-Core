@@ -6,7 +6,7 @@ module: M0
 jira: [SCRUM-68]
 branch: fix/dev-rebuilds-keycloak-image
 tool: Claude Code
-pr: none
+pr: "#445"
 status: done
 ---
 
@@ -38,7 +38,7 @@ found she asked to prepare the pull request for the `Makefile`.
 
 * `make dev` runs with the change and every service ends healthy (about 45 s with the Docker cache).
 * Prettier passes on `docs/local-dev.md`. No code changed, so there are no new unit tests.
-* Pull request: not opened yet.
+* Pull request: #445.
 
 ## Decisions and problems
 
