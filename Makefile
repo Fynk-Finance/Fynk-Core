@@ -103,7 +103,7 @@ dev: generate-go ## Start the local stack with docker compose and run migrations
 	@[ -f .env ] || { cp .env.example .env; echo "Created .env from .env.example (fake local values)."; }
 	@[ -f certs/ca.crt ] && [ -f certs/bank-signer.pem ] && [ -f certs/bank-fingerprint.key ] || \
 		$(MAKE) --no-print-directory certs
-	$(COMPOSE) up -d --wait postgres redis keycloak mailpit
+	$(COMPOSE) up -d --build --wait postgres redis keycloak mailpit
 	@$(MAKE) --no-print-directory migrate
 	$(COMPOSE) up -d --build --wait api bank-simulator caddy
 	@echo ""
