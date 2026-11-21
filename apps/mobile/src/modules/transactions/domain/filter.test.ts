@@ -6,6 +6,8 @@ import {
   parseDayInput,
   presetOf,
   presetRange,
+  RECENT_DAYS,
+  recentFilter,
 } from './filter';
 
 // Tuesday 22 Sep 2026, 9:00 in Bogotá.
@@ -101,5 +103,36 @@ describe('day input', () => {
     expect(parseDayInput('31/02/2026')).toBeNull();
     expect(parseDayInput('2026-09-22')).toBeNull();
     expect(parseDayInput('ayer')).toBeNull();
+  });
+});
+
+describe('recentFilter (Ingresos and Gastos of the Dashboard, HU-012 SCRUM-26)', () => {
+  it('covers the last 30 Bogotá days, today included', () => {
+    expect(RECENT_DAYS).toBe(30);
+    expect(recentFilter(now)).toEqual({ from: '2026-08-24', to: '2026-09-22' });
+  });
+
+  it('keeps only money in or money out when a kind is given', () => {
+    expect(recentFilter(now, 'income')).toEqual({
+      from: '2026-08-24',
+      to: '2026-09-22',
+      kind: 'income',
+    });
+    expect(recentFilter(now, 'expense').kind).toBe('expense');
+  });
+
+  it('uses the Bogotá day, not the UTC one', () => {
+    // 21 Nov 2026 at 3:00 UTC is still 20 Nov in Bogotá.
+    expect(recentFilter(new Date('2026-11-21T03:00:00Z'))).toEqual({
+      from: '2026-10-22',
+      to: '2026-11-20',
+    });
+  });
+
+  it('crosses years', () => {
+    expect(recentFilter(new Date('2027-01-10T14:00:00Z'))).toEqual({
+      from: '2026-12-12',
+      to: '2027-01-10',
+    });
   });
 });
