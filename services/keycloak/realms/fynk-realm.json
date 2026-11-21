@@ -335,6 +335,7 @@
       "webOrigins": [],
       "attributes": {
         "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:8081/realms/banco-demo/broker/fynk/endpoint/logout_response##${FYNK_AUTH_URL:http://localhost:8081}/realms/banco-demo/broker/fynk/endpoint/logout_response",
         "oauth2.device.authorization.grant.enabled": "false",
         "oidc.ciba.grant.enabled": "false"
       },

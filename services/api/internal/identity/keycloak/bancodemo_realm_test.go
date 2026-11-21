@@ -78,6 +78,34 @@ func fynkProvider(t *testing.T, r bancoDemoRealm) identityProvider {
 	return identityProvider{}
 }
 
+// SCRUM-74: on a shared phone the bank tab keeps the last person's realm sessions. The simulator
+// signs that person out of banco-demo (POST with id_token_hint, back to its authorization page),
+// and banco-demo chains the logout to the fynk realm, so "Ingresar con Fynk" asks who is logging in.
+func TestSigningOutOfBancoDemoAlsoEndsTheFynkBrokerSession(t *testing.T) {
+	r, _ := loadBancoDemo(t)
+	if got := bancoDemoClient(t, r, "bank-portal").Attributes["post.logout.redirect.uris"]; got != "+" {
+		t.Fatalf("bank-portal post.logout.redirect.uris = %q, want + (its redirect URIs)", got)
+	}
+	c := fynkProvider(t, r).Config
+	if c["logoutUrl"] != "${FYNK_AUTH_URL:http://localhost:8081}/realms/fynk/protocol/openid-connect/logout" {
+		t.Fatalf("logoutUrl = %q", c["logoutUrl"])
+	}
+	// The ID token skips the fynk realm's "¿Cerrar sesión?" page; client_id is the fallback.
+	if c["sendIdTokenOnLogout"] != "true" || c["sendClientIdOnLogout"] != "true" {
+		t.Fatalf("sendIdTokenOnLogout = %q, sendClientIdOnLogout = %q", c["sendIdTokenOnLogout"], c["sendClientIdOnLogout"])
+	}
+
+	fynk, _ := loadRealm(t)
+	want := []string{
+		"http://localhost:8081/realms/banco-demo/broker/fynk/endpoint/logout_response",
+		"${FYNK_AUTH_URL:http://localhost:8081}/realms/banco-demo/broker/fynk/endpoint/logout_response",
+	}
+	got := strings.Split(clientByID(t, fynk, "banco-demo-broker").Attributes["post.logout.redirect.uris"], "##")
+	if !slices.Equal(got, want) {
+		t.Fatalf("banco-demo-broker post.logout.redirect.uris = %v, want %v", got, want)
+	}
+}
+
 func TestBancoDemoOffersIngresarConFynk(t *testing.T) {
 	r, _ := loadBancoDemo(t)
 	p := fynkProvider(t, r)

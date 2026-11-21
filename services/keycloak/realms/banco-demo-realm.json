@@ -139,6 +139,9 @@
         "disableUserInfo": "true",
         "syncMode": "IMPORT",
         "backchannelSupported": "false",
+        "logoutUrl": "${FYNK_AUTH_URL:http://localhost:8081}/realms/fynk/protocol/openid-connect/logout",
+        "sendIdTokenOnLogout": "true",
+        "sendClientIdOnLogout": "true",
         "hideOnLoginPage": "false"
       }
     }
@@ -212,7 +215,8 @@
       ],
       "webOrigins": ["http://localhost:8082", "https://bancodemo.habenly.site"],
       "attributes": {
-        "pkce.code.challenge.method": "S256"
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+"
       },
       "defaultClientScopes": [],
       "optionalClientScopes": [],

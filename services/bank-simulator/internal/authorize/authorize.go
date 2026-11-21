@@ -59,9 +59,12 @@ type session struct {
 	customerID string
 	csrf       string
 	expires    time.Time
-	// freshFor is the request_uri whose forced login created this session. That
-	// request accepts the session whoever logged in, so it never loops.
+	// freshFor is the request_uri whose login created this session. That request
+	// accepts the seeded demo customer too, so it never loops.
 	freshFor string
+	// idToken signs this person out of the realm when someone else needs the browser.
+	// Never logged.
+	idToken string
 }
 
 type login struct {
@@ -69,9 +72,7 @@ type login struct {
 	clientID   string
 	// returnTo is the portal page to go back to; empty means the authorization page.
 	returnTo string
-	// forced asks the realm to authenticate again (prompt=login). fynkSub is the Fynk
-	// user that request was started for (never logged).
-	forced   bool
+	// fynkSub is the Fynk user that request was started for (never logged).
 	fynkSub  string
 	nonce    string
 	verifier string
@@ -85,18 +86,26 @@ type Handler struct {
 	log   *slog.Logger
 	now   func() time.Time
 	tmpl  *template.Template
+	// publicURL and clientID build the realm logout that comes back here.
+	publicURL string
+	clientID  string
 
 	mu       sync.Mutex
 	sessions map[string]*session
 	logins   map[string]*login
+	// signedOut keeps the requests that already signed someone out of the realm, so
+	// a realm that answers with the wrong person again is refused instead of looping.
+	signedOut map[string]time.Time
 }
 
 func NewHandler(svc *oauth.Service, st *store.BankStore, cfg Config) *Handler {
 	h := &Handler{
 		svc: svc, store: st, log: cfg.Logger, now: cfg.Now,
-		tmpl:     template.Must(template.New("authorize").Parse(pageTemplates)),
-		sessions: map[string]*session{},
-		logins:   map[string]*login{},
+		tmpl:      template.Must(template.New("authorize").Parse(pageTemplates)),
+		publicURL: strings.TrimRight(cfg.PublicURL, "/"), clientID: cfg.ClientID,
+		sessions:  map[string]*session{},
+		logins:    map[string]*login{},
+		signedOut: map[string]time.Time{},
 	}
 	if h.log == nil {
 		h.log = slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -134,6 +143,11 @@ type page struct {
 	Purpose     string
 	NoProducts  bool
 	ConsentForm bool
+	// The realm logout form (signOut page).
+	LogoutURL      string
+	LogoutClientID string
+	IDTokenHint    string
+	ReturnTo       string
 }
 
 func (h *Handler) render(w http.ResponseWriter, status int, name string, p page) {
@@ -164,11 +178,11 @@ func (h *Handler) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// The browser may hold the session of another person (a shared phone). When Fynk
-	// says who started this request, a session of someone else is dropped and the
-	// person must log in again, unless that login was already forced for this request.
+	// says who started this request, a session of someone else is dropped and that
+	// person is signed out of the realm, unless the session was made for this request.
 	if par.FynkSub != "" && sess.customerID != par.FynkSub && sess.freshFor != par.RequestURI {
 		h.dropSession(w, r)
-		h.beginLogin(w, r, &login{requestURI: par.RequestURI, clientID: par.ClientID, forced: true, fynkSub: par.FynkSub})
+		h.signOutOfRealm(w, par.RequestURI, par.ClientID, sess.idToken)
 		return
 	}
 
@@ -199,7 +213,7 @@ func (h *Handler) pushedRequest(requestURI, clientID string) (oauth.PARData, boo
 }
 
 func (h *Handler) startLogin(w http.ResponseWriter, r *http.Request, par oauth.PARData) {
-	h.beginLogin(w, r, &login{requestURI: par.RequestURI, clientID: par.ClientID})
+	h.beginLogin(w, r, &login{requestURI: par.RequestURI, clientID: par.ClientID, fynkSub: par.FynkSub})
 }
 
 func (h *Handler) beginLogin(w http.ResponseWriter, r *http.Request, l *login) {
@@ -210,11 +224,32 @@ func (h *Handler) beginLogin(w http.ResponseWriter, r *http.Request, l *login) {
 	h.logins[state] = l
 	h.mu.Unlock()
 	h.setCookie(w, r, loginCookie, state, loginTTL)
-	prompt := ""
-	if l.forced {
-		prompt = "login"
+	http.Redirect(w, r, h.oidc.AuthURL(state, nonce, verifier), http.StatusFound)
+}
+
+// signOutOfRealm ends another person's realm session and comes back to the request.
+// Android Custom Tabs keep cookies, so after one Fynk user links a bank the realm (and,
+// through "Ingresar con Fynk", the fynk realm) still knows that person. prompt=login
+// would only ask that same person's password again, and a brokered user has none. The
+// logout is a POST, so the ID token never goes in a URL. Once per request: a realm that
+// answers with someone else again gets a 403 instead of a loop.
+func (h *Handler) signOutOfRealm(w http.ResponseWriter, requestURI, clientID, idToken string) {
+	h.mu.Lock()
+	_, again := h.signedOut[requestURI]
+	if !again {
+		h.signedOut[requestURI] = h.now().Add(loginTTL)
 	}
-	http.Redirect(w, r, h.oidc.AuthURLWithPrompt(state, nonce, verifier, prompt), http.StatusFound)
+	h.mu.Unlock()
+	if again {
+		h.log.Warn("authorize: login returned another customer after the realm logout")
+		h.fail(w, http.StatusForbidden, "Ingresaste con una cuenta distinta a la de Fynk. Cierra sesión en el banco, vuelve a Fynk e inténtalo de nuevo.")
+		return
+	}
+	back := url.Values{"request_uri": {requestURI}, "client_id": {clientID}}
+	h.render(w, http.StatusOK, "signOut", page{
+		Title: "Cambio de cuenta", LogoutURL: h.oidc.LogoutURL(), LogoutClientID: h.clientID,
+		IDTokenHint: idToken, ReturnTo: h.publicURL + authorizePath + "?" + back.Encode(),
+	})
 }
 
 // dropSession ends the browser's session on this side and clears its cookie.
@@ -272,18 +307,17 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, http.StatusBadRequest, "No pudimos identificar tu cuenta del banco simulado.")
 		return
 	}
-	// A forced login must end as the Fynk user who started the request, or as the
-	// seeded demo customer chosen on purpose. Anyone else (a stale Fynk session in a
-	// shared browser) would see that person's bank data.
-	if l.forced && customerID != l.fynkSub && customerID != domain.DemoCustomerID {
-		h.log.Warn("authorize: forced login returned another customer")
-		h.fail(w, http.StatusForbidden, "Ingresaste con una cuenta distinta a la de Fynk. Cierra sesión en el banco, vuelve a Fynk e inténtalo de nuevo.")
+	// A login for a Fynk request must end as that Fynk user, or as the seeded demo
+	// customer chosen on purpose. Anyone else (a realm session left in a shared
+	// browser) would see that person's bank data, so they are signed out instead.
+	if l.fynkSub != "" && customerID != l.fynkSub && customerID != domain.DemoCustomerID {
+		h.signOutOfRealm(w, l.requestURI, l.clientID, raw)
 		return
 	}
 	sid, csrf := oidc.RandomString(), oidc.RandomString()
 	h.mu.Lock()
-	sess := &session{customerID: customerID, csrf: csrf, expires: h.now().Add(sessionTTL)}
-	if l.forced {
+	sess := &session{customerID: customerID, csrf: csrf, expires: h.now().Add(sessionTTL), idToken: raw}
+	if l.fynkSub != "" {
 		sess.freshFor = l.requestURI
 	}
 	h.sessions[sid] = sess
@@ -447,6 +481,11 @@ func (h *Handler) sweepLocked() {
 	for k, l := range h.logins {
 		if now.After(l.expires) {
 			delete(h.logins, k)
+		}
+	}
+	for k, until := range h.signedOut {
+		if now.After(until) {
+			delete(h.signedOut, k)
 		}
 	}
 }
