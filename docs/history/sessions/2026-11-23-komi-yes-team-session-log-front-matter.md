@@ -6,7 +6,7 @@ module: team
 jira: []
 branch: docs/session-log-front-matter
 tool: Claude Code
-pr: none
+pr: "#450"
 status: done
 ---
 
@@ -30,6 +30,7 @@ The developer asked how to build the document with every member's session histor
 
 * The script writes the history with every log in `docs/history/sessions/`, this one included.
 * No code changed, so there are no tests.
+* Pull request: #450, with Julián, Juan Pablo and Sofia (owner of the generated history) as reviewers.
 
 ## Decisions and problems
 
