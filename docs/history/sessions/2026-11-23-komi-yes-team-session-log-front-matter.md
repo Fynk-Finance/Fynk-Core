@@ -25,6 +25,7 @@ The developer asked how to build the document with every member's session histor
   * `2026-11-20-juancontrerasp-m16-bank-simulator-pem-env.md` (Juan Pablo Contreras)
 * Added only the header to each one. The body is unchanged. The values come from the file name, the body (Who, Module, Jira, Branch) and the merged pull requests: #426, #423, #436 and #435.
 * Ran `node scripts/build-history.mjs`, which regenerated `docs/history/PROJECT_HISTORY.md`. That file had not been regenerated for several weeks.
+* The developer then said: "no voy a mergear más a develop", and asked for this branch's fixes and the app-icon branch to be in the history too. The session log of `feature/app-icon-from-fynk-logo` (PR #448, `2026-11-20-sofia-ariza-783-m0-app-icon-and-splash.md`) was copied unchanged into this branch, without the icon code, and the history was regenerated.
 
 ## Result
 
