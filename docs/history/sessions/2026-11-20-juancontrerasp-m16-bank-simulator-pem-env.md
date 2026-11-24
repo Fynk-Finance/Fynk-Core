@@ -1,3 +1,14 @@
+---
+date: 2026-11-20
+developer: Juan Pablo Contreras
+github: juancontrerasp
+module: M16
+jira: []
+branch: feat/bank-simulator-pem-env
+pr: "#435"
+status: done
+---
+
 # 2026-11-20 — Bank Simulator: Accept TLS/CA PEMs from Environment (M16)
 
 ## Context

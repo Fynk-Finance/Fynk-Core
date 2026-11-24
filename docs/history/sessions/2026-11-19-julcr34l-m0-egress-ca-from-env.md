@@ -1,3 +1,14 @@
+---
+date: 2026-11-19
+developer: Julián Castiblanco
+github: JulCR34l
+module: M0
+jira: [SCRUM-45, SCRUM-38]
+branch: feature/egress-ca-from-env
+pr: "#426"
+status: done
+---
+
 # Read the egress CA from EGRESS_CA_PEM
 
 * Who: Julián Castiblanco (`@JulCR34l`), for M0 (owner Sofía Ariza, reviewer)

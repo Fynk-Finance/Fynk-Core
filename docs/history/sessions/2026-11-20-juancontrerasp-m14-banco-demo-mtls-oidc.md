@@ -1,3 +1,14 @@
+---
+date: 2026-11-20
+developer: Juan Pablo Contreras
+github: juancontrerasp
+module: M14
+jira: []
+branch: fix/infra-banco-demo-mtls-oidc
+pr: "#436"
+status: done
+---
+
 # 2026-11-20 — Staging Infra: Wire Banco Demo mTLS, Cloud Map, and Portal OIDC (M14)
 
 ## Context

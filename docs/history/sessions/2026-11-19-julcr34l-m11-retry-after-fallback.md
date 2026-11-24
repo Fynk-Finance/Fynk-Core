@@ -1,3 +1,14 @@
+---
+date: 2026-11-19
+developer: Julián Castiblanco
+github: JulCR34l
+module: M11
+jira: [SCRUM-38]
+branch: fix/recommendations-retry-after-fallback
+pr: "#423"
+status: done
+---
+
 # Retry the AI after 5 minutes when the server fell back
 
 * Who: Julián Castiblanco (`@JulCR34l`)
